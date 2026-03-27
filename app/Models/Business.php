@@ -1,0 +1,45 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class Business extends Model
+{
+    protected $fillable = [
+        'owner_id', 'name', 'slug', 'location', 'phone', 'email',
+        'description', 'logo', 'timezone', 'currency', 'currency_symbol',
+        'slot_duration', 'min_booking_notice', 'max_booking_window',
+        'services_enabled', 'is_active',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'services_enabled' => 'boolean',
+            'is_active' => 'boolean',
+        ];
+    }
+
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'owner_id');
+    }
+
+    public function employees(): HasMany
+    {
+        return $this->hasMany(User::class, 'business_id');
+    }
+
+    public function services(): HasMany
+    {
+        return $this->hasMany(Service::class);
+    }
+
+    public function appointments(): HasMany
+    {
+        return $this->hasMany(Appointment::class);
+    }
+}
