@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Enums\UserRole;
 use App\Models\User;
 use App\Repositories\Interfaces\EmployeeRepositoryInterface;
 use Illuminate\Database\Eloquent\Collection;
@@ -11,7 +12,7 @@ class EmployeeRepository implements EmployeeRepositoryInterface
     public function getByBusiness(int $businessId, array $with = []): Collection
     {
         return User::where('business_id', $businessId)
-            ->where('role', 'employee')
+            ->where('role', UserRole::Employee)
             ->with($with)
             ->get();
     }
@@ -19,7 +20,7 @@ class EmployeeRepository implements EmployeeRepositoryInterface
     public function getActiveByBusiness(int $businessId, array $with = []): Collection
     {
         return User::where('business_id', $businessId)
-            ->where('role', 'employee')
+            ->where('role', UserRole::Employee)
             ->where('is_active', true)
             ->with($with)
             ->get();
@@ -28,14 +29,14 @@ class EmployeeRepository implements EmployeeRepositoryInterface
     public function countByBusiness(int $businessId): int
     {
         return User::where('business_id', $businessId)
-            ->where('role', 'employee')
+            ->where('role', UserRole::Employee)
             ->count();
     }
 
     public function countActiveByBusiness(int $businessId): int
     {
         return User::where('business_id', $businessId)
-            ->where('role', 'employee')
+            ->where('role', UserRole::Employee)
             ->where('is_active', true)
             ->count();
     }

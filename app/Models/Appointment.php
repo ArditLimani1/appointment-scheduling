@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\AppointmentStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -18,6 +19,7 @@ class Appointment extends Model
         return [
             'date' => 'date',
             'price' => 'decimal:2',
+            'status' => AppointmentStatus::class,
         ];
     }
 
@@ -31,8 +33,13 @@ class Appointment extends Model
         return $this->belongsTo(Service::class);
     }
 
+    public function business(): BelongsTo
+    {
+        return $this->belongsTo(Business::class);
+    }
+
     public function getClientFullNameAttribute(): string
     {
-        return $this->client_first_name . ' ' . $this->client_last_name;
+        return $this->client_first_name.' '.$this->client_last_name;
     }
 }

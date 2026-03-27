@@ -1,6 +1,7 @@
 import AdminLayout from '@/Layouts/AdminLayout';
 import Icon from '@/Components/Icon';
 import { Head, Link, usePage } from '@inertiajs/react';
+import { formatAppointmentDate, formatTimeHm } from '@/utils/appointmentDate';
 
 const DEMO_APPOINTMENTS = [
     { client_name: 'James Wilson',   service_name: 'Haircut',        employee_name: 'John Doe',     date: '2026-03-26', start_time: '10:00', status: 'confirmed' },
@@ -24,11 +25,8 @@ export default function Dashboard({
 
     const displayAppointments = recent_appointments.length > 0 ? recent_appointments : DEMO_APPOINTMENTS;
 
-    const formatDate = (dateStr) => {
-        if (!dateStr) return '';
-        const d = new Date(dateStr + 'T00:00:00');
-        return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-    };
+    const formatDate = (dateStr) =>
+        formatAppointmentDate(dateStr, { day: 'numeric', month: 'short', year: 'numeric' });
 
     const statusClass = (status) => {
         switch (status?.toLowerCase()) {
@@ -161,7 +159,7 @@ export default function Dashboard({
                                     <td className="py-5 pr-4">
                                         <div className="flex items-center gap-1.5">
                                             <Icon name="schedule" size="text-sm" className="text-on-surface-variant" />
-                                            <p className="text-on-surface text-sm font-semibold">{apt.start_time}</p>
+                                            <p className="text-on-surface text-sm font-semibold">{formatTimeHm(apt.start_time)}</p>
                                         </div>
                                     </td>
                                     <td className="py-5 pr-4">

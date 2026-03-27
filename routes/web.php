@@ -4,7 +4,6 @@ use App\Http\Controllers\Admin;
 use App\Http\Controllers\Booking\BookingController;
 use App\Http\Controllers\Employee;
 use App\Http\Controllers\ProfileController;
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -18,7 +17,7 @@ Route::get('/', function () {
 Route::get('/dashboard', function () {
     $user = auth()->user();
 
-    if ($user->role === 'admin') {
+    if ($user->isAdmin()) {
         return redirect()->route('admin.dashboard');
     }
 

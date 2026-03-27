@@ -8,7 +8,6 @@ use App\Repositories\Interfaces\AppointmentRepositoryInterface;
 use App\Repositories\Interfaces\EmployeeRepositoryInterface;
 use App\Repositories\Interfaces\ServiceRepositoryInterface;
 use App\Services\Interfaces\DashboardServiceInterface;
-use Carbon\Carbon;
 
 class DashboardService implements DashboardServiceInterface
 {
@@ -23,12 +22,12 @@ class DashboardService implements DashboardServiceInterface
         $recentAppointments = $this->appointmentRepository
             ->getRecent($business->id)
             ->map(fn ($apt) => [
-                'client_name' => $apt->client_first_name . ' ' . $apt->client_last_name,
+                'client_name' => $apt->client_first_name.' '.$apt->client_last_name,
                 'service_name' => $apt->service?->name ?? 'Appointment',
                 'employee_name' => $apt->employee?->name,
                 'date' => $apt->date->toDateString(),
                 'start_time' => $apt->start_time,
-                'status' => $apt->status,
+                'status' => $apt->status->value,
             ]);
 
         return [

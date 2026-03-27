@@ -1,5 +1,5 @@
 import { Head, router } from '@inertiajs/react';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import Icon from '@/Components/Icon';
 
 const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -39,6 +39,8 @@ export default function Index({ employees, services, business, slug }) {
     const [phone, setPhone] = useState('');
     const [notes, setNotes] = useState('');
 
+    const lastEmpDateKeyRef = useRef('');
+
     const dateRange = useMemo(() => buildDateRange(business?.max_booking_window || 30), [business]);
 
     const availableServices = useMemo(() => {
@@ -49,13 +51,22 @@ export default function Index({ employees, services, business, slug }) {
 
     useEffect(() => {
         if (!selectedEmployee || !selectedDate) {
+            lastEmpDateKeyRef.current = '';
             setSlots([]);
             setSelectedSlot(null);
             return;
         }
+
+        const empDateKey = `${selectedEmployee.id}|${selectedDate}`;
+        const employeeOrDateChanged = lastEmpDateKeyRef.current !== empDateKey;
+        if (employeeOrDateChanged) {
+            lastEmpDateKeyRef.current = empDateKey;
+            setSelectedSlot(null);
+        }
+
         setLoadingSlots(true);
         setSlots([]);
-        setSelectedSlot(null);
+
         const params = new URLSearchParams({
             employee_id: selectedEmployee.id,
             date: selectedDate,
@@ -63,10 +74,21 @@ export default function Index({ employees, services, business, slug }) {
         });
         fetch(route('booking.slots', { slug }) + '?' + params)
             .then(r => r.json())
-            .then(data => setSlots(data.slots || []))
-            .catch(() => setSlots([]))
+            .then((data) => {
+                const next = data.slots || [];
+                setSlots(next);
+                if (!employeeOrDateChanged) {
+                    setSelectedSlot((prev) => (prev && next.includes(prev) ? prev : null));
+                }
+            })
+            .catch(() => {
+                setSlots([]);
+                if (!employeeOrDateChanged) {
+                    setSelectedSlot(null);
+                }
+            })
             .finally(() => setLoadingSlots(false));
-    }, [selectedEmployee?.id, selectedDate, selectedService?.id]);
+    }, [selectedEmployee?.id, selectedDate, selectedService?.id, slug]);
 
     const nameParts = fullName.trim().split(' ');
     const firstName = nameParts[0] || '';

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\UserRole;
 use App\Models\Business;
 use App\Models\User;
 use App\Repositories\Interfaces\EmployeeRepositoryInterface;
@@ -32,7 +33,7 @@ class EmployeeService implements EmployeeServiceInterface
             'password' => Hash::make($data['password']),
             'phone' => $data['phone'] ?? null,
             'title' => $data['title'] ?? null,
-            'role' => 'employee',
+            'role' => UserRole::Employee,
             'is_active' => true,
             'business_id' => $business->id,
         ]);

@@ -21,7 +21,7 @@ class AppointmentController extends Controller
     public function index(Request $request): Response
     {
         $business = auth()->user()->ownedBusiness;
-        $filters = $request->only(['employee_id', 'date_from', 'date_to', 'status']);
+        $filters = $this->filtersFromRequest($request);
         $data = $this->appointmentService->getFiltered($business, $filters);
 
         return Inertia::render('Admin/Appointments/Index', $data);
@@ -46,8 +46,38 @@ class AppointmentController extends Controller
     public function export(Request $request): BinaryFileResponse
     {
         $business = auth()->user()->ownedBusiness;
-        $filters = $request->only(['employee_id', 'date_from', 'date_to', 'status']);
+        $filters = $this->filtersFromRequest($request);
 
         return $this->appointmentService->export($business, $filters);
+    }
+
+    /**
+     * @return array{employee_id?: int, date_from?: string, date_to?: string, status?: string}
+     */
+    private function filtersFromRequest(Request $request): array
+    {
+        $filters = [];
+
+        $employeeId = $request->query('employee_id');
+        if ($employeeId !== null && $employeeId !== '' && ctype_digit((string) $employeeId)) {
+            $filters['employee_id'] = (int) $employeeId;
+        }
+
+        $dateFrom = $request->query('date_from');
+        if (is_string($dateFrom) && $dateFrom !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom)) {
+            $filters['date_from'] = $dateFrom;
+        }
+
+        $dateTo = $request->query('date_to');
+        if (is_string($dateTo) && $dateTo !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo)) {
+            $filters['date_to'] = $dateTo;
+        }
+
+        $status = $request->query('status');
+        if (is_string($status) && $status !== '') {
+            $filters['status'] = $status;
+        }
+
+        return $filters;
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
 use App\Repositories\Interfaces\AppointmentRepositoryInterface;
 use Carbon\Carbon;
@@ -15,20 +16,23 @@ class AppointmentRepository implements AppointmentRepositoryInterface
         $query = Appointment::with(['employee', 'service'])
             ->where('business_id', $businessId);
 
-        if (! empty($filters['employee_id'])) {
-            $query->where('employee_id', $filters['employee_id']);
+        if (array_key_exists('employee_id', $filters)) {
+            $query->where('employee_id', (int) $filters['employee_id']);
         }
 
-        if (! empty($filters['date_from'])) {
+        if (array_key_exists('date_from', $filters)) {
             $query->whereDate('date', '>=', $filters['date_from']);
         }
 
-        if (! empty($filters['date_to'])) {
+        if (array_key_exists('date_to', $filters)) {
             $query->whereDate('date', '<=', $filters['date_to']);
         }
 
-        if (! empty($filters['status'])) {
-            $query->where('status', $filters['status']);
+        if (array_key_exists('status', $filters)) {
+            $status = AppointmentStatus::tryFrom((string) $filters['status']);
+            if ($status !== null) {
+                $query->where('status', $status);
+            }
         }
 
         return $query->latest('date')->latest('start_time')->paginate($perPage)->withQueryString();
@@ -37,7 +41,7 @@ class AppointmentRepository implements AppointmentRepositoryInterface
     public function getUpcomingCount(int $businessId): int
     {
         return Appointment::where('business_id', $businessId)
-            ->whereIn('status', ['pending', 'confirmed'])
+            ->whereIn('status', [AppointmentStatus::Pending, AppointmentStatus::Confirmed])
             ->whereDate('date', '>=', Carbon::today())
             ->count();
     }
@@ -45,7 +49,7 @@ class AppointmentRepository implements AppointmentRepositoryInterface
     public function getCompletedRevenue(int $businessId): float
     {
         return (float) Appointment::where('business_id', $businessId)
-            ->where('status', 'completed')
+            ->where('status', AppointmentStatus::Completed)
             ->sum('price');
     }
 
@@ -62,7 +66,7 @@ class AppointmentRepository implements AppointmentRepositoryInterface
     {
         return Appointment::where('employee_id', $employeeId)
             ->whereDate('date', $date)
-            ->whereNotIn('status', ['cancelled'])
+            ->where('status', '!=', AppointmentStatus::Cancelled)
             ->get(['start_time', 'end_time']);
     }
 

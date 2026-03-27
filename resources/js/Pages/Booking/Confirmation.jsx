@@ -1,113 +1,156 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import Icon from '@/Components/Icon';
+import { appointmentDateOnly, formatAppointmentDate, formatTimeHm } from '@/utils/appointmentDate';
+
+function buildCalendarUrl(apt) {
+    const ymd = appointmentDateOnly(apt.date);
+    if (!ymd || !apt.start_time) return null;
+    const toGcalDate = (dateYmd, timeStr) => {
+        const [y, m, d] = dateYmd.split('-');
+        const hm = formatTimeHm(timeStr);
+        const [h, min] = hm.split(':');
+        return `${y}${m}${d}T${h}${min}00`;
+    };
+    const start = toGcalDate(ymd, apt.start_time);
+    const end = toGcalDate(ymd, apt.end_time || apt.start_time);
+    const title = apt.service?.name || 'Appointment';
+    const details = `Professional: ${apt.employee?.name || ''}`;
+    const location = apt.business?.location || '';
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${start}/${end}&details=${encodeURIComponent(details)}&location=${encodeURIComponent(location)}`;
+}
 
 export default function Confirmation({ appointment }) {
     const apt = appointment;
-    const dateFormatted = new Date(apt.date + 'T00:00:00').toLocaleDateString('en-GB', {
-        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-    });
+
+    const dateLong = formatAppointmentDate(apt.date, { day: 'numeric', month: 'long', year: 'numeric' });
+    const dateShort = formatAppointmentDate(apt.date, { weekday: 'long', day: 'numeric', month: 'long' });
+
+    const calendarUrl = buildCalendarUrl(apt);
 
     return (
-        <div className="min-h-screen bg-surface font-body flex flex-col items-center justify-center px-4 py-12">
+        <div className="min-h-screen bg-surface font-body text-on-surface">
             <Head title="Booking Confirmed" />
 
-            {/* Success icon */}
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary-container mb-6">
-                <Icon name="check_circle" size="text-5xl" filled className="text-on-primary-container" />
+            <div className="w-full h-1 bg-surface-container-highest">
+                <div className="h-full bg-on-surface w-full transition-all duration-700" />
             </div>
 
-            <h1 className="text-3xl font-black font-headline text-on-surface tracking-tight text-center mb-2">
-                You're All Set!
-            </h1>
-            <p className="text-on-surface-variant text-sm text-center mb-8 max-w-sm">
-                Your appointment has been booked successfully. We'll be in touch if anything changes.
-            </p>
+            <header className="sticky top-0 z-50 glass-header border-b border-outline-variant/20">
+                <div className="max-w-5xl mx-auto px-6 py-4 flex justify-between items-center">
+                    <p className="text-xl font-extrabold tracking-tight text-on-surface font-headline">
+                        {apt.business?.name || 'Scheduler'}
+                    </p>
+                </div>
+            </header>
 
-            {/* Appointment card */}
-            <div className="w-full max-w-md rounded-3xl bg-surface-container-lowest border border-outline-variant p-6 mb-6">
-                <p className="text-xs font-bold uppercase tracking-widest text-on-surface-variant mb-4">Booking Summary</p>
-
-                <div className="space-y-4">
-                    <div className="flex items-start gap-3">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-container">
-                            <Icon name="person" size="text-lg" className="text-on-primary-container" />
-                        </div>
-                        <div>
-                            <p className="text-xs text-on-surface-variant">Client</p>
-                            <p className="font-semibold text-on-surface">
-                                {apt.client_first_name} {apt.client_last_name}
-                            </p>
-                            <p className="text-xs text-on-surface-variant">{apt.client_phone}</p>
-                        </div>
+            <main className="max-w-xl mx-auto px-6 pt-12 pb-24">
+                <div className="text-center mb-12">
+                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-tertiary-fixed mb-6">
+                        <Icon name="check_circle" size="text-4xl" filled className="text-on-tertiary-fixed" />
                     </div>
+                    <h2 className="font-headline text-3xl font-extrabold tracking-tight text-on-surface mb-2">
+                        Your Appointment is Confirmed!
+                    </h2>
+                    <p className="text-on-surface-variant text-lg">
+                        {dateShort !== '—' ? `See you on ${dateShort}.` : 'Your booking details are below.'}
+                    </p>
+                </div>
 
-                    <div className="flex items-start gap-3">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-secondary-container">
-                            <Icon name="badge" size="text-lg" className="text-on-secondary-container" />
-                        </div>
-                        <div>
-                            <p className="text-xs text-on-surface-variant">Provider</p>
-                            <p className="font-semibold text-on-surface">{apt.employee?.name}</p>
-                            {apt.employee?.title && <p className="text-xs text-on-surface-variant">{apt.employee.title}</p>}
-                        </div>
-                    </div>
+                <div className="bg-surface-container-lowest rounded-xl p-8 mb-10 shadow-[0_4px_24px_rgba(0,0,0,0.06)]">
+                    <p className="font-headline text-xs font-bold uppercase tracking-widest text-on-surface-variant mb-8">
+                        Booking Summary
+                    </p>
 
-                    {apt.service && (
-                        <div className="flex items-start gap-3">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface-container-low">
-                                <Icon name={apt.service.icon || 'content_cut'} size="text-lg" className="text-on-surface-variant" />
+                    <div className="space-y-8">
+                        <div className="flex items-start gap-4">
+                            <div className="w-12 h-12 rounded-xl bg-primary-container flex items-center justify-center shrink-0 text-on-primary-container text-xl font-bold font-headline">
+                                {apt.employee?.name?.charAt(0)?.toUpperCase() ?? '?'}
                             </div>
                             <div>
-                                <p className="text-xs text-on-surface-variant">Service</p>
-                                <p className="font-semibold text-on-surface">{apt.service.name}</p>
-                                <p className="text-xs text-on-surface-variant">{apt.service.duration} min</p>
+                                <p className="text-sm text-on-surface-variant mb-1">Service & Professional</p>
+                                <p className="font-headline text-lg font-bold text-on-surface">
+                                    {apt.service?.name || 'Appointment'}
+                                </p>
+                                <p className="text-on-surface-variant text-sm">
+                                    with {apt.employee?.name}
+                                    {apt.employee?.title ? ` · ${apt.employee.title}` : ''}
+                                </p>
                             </div>
                         </div>
-                    )}
 
-                    <div className="flex items-start gap-3">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-tertiary-fixed/20">
-                            <Icon name="calendar_month" size="text-lg" className="text-on-tertiary-container" />
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-surface-container-low p-4 rounded-lg">
+                                <div className="flex items-center gap-2 mb-2 text-on-surface">
+                                    <Icon name="calendar_today" size="text-sm" />
+                                    <span className="text-xs font-bold uppercase tracking-wider">Date</span>
+                                </div>
+                                <p className="font-headline font-bold text-on-surface">{dateLong}</p>
+                            </div>
+                            <div className="bg-surface-container-low p-4 rounded-lg">
+                                <div className="flex items-center gap-2 mb-2 text-on-surface">
+                                    <Icon name="schedule" size="text-sm" />
+                                    <span className="text-xs font-bold uppercase tracking-wider">Time</span>
+                                </div>
+                                <p className="font-headline font-bold text-on-surface">
+                                    {formatTimeHm(apt.start_time)} — {formatTimeHm(apt.end_time)}
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <p className="text-xs text-on-surface-variant">Date & Time</p>
-                            <p className="font-semibold text-on-surface">{dateFormatted}</p>
-                            <p className="text-xs text-on-surface-variant">{apt.start_time} – {apt.end_time}</p>
-                        </div>
-                    </div>
 
-                    <div className="border-t border-outline-variant pt-4 flex items-center justify-between">
-                        <p className="text-sm text-on-surface-variant">Total</p>
-                        <p className="text-xl font-black font-headline text-on-surface">€{Number(apt.price).toFixed(2)}</p>
+                        {apt.business?.location && (
+                            <div className="flex items-start gap-4 pt-2">
+                                <div className="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center shrink-0">
+                                    <Icon name="location_on" className="text-on-surface" />
+                                </div>
+                                <div>
+                                    <p className="text-sm text-on-surface-variant mb-1">Business Location</p>
+                                    <p className="font-headline font-bold text-on-surface">{apt.business.name}</p>
+                                    <p className="text-on-surface-variant text-sm">{apt.business.location}</p>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="pt-4 border-t border-outline-variant flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Icon name="tag" size="text-sm" className="text-on-surface-variant" />
+                                <span className="text-xs text-on-surface-variant font-semibold">
+                                    Ref #{String(apt.id).padStart(6, '0')}
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <span className="font-headline text-xl font-extrabold text-on-surface">
+                                    {apt.business?.currency_symbol ?? '€'}{Number(apt.price).toFixed(2)}
+                                </span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            {/* Reference number */}
-            <div className="mb-8 flex items-center gap-2 rounded-full bg-surface-container-low px-4 py-2">
-                <Icon name="tag" size="text-sm" className="text-on-surface-variant" />
-                <span className="text-xs font-semibold text-on-surface-variant">Reference #</span>
-                <span className="text-xs font-bold text-on-surface">{String(apt.id).padStart(6, '0')}</span>
-                <span className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase bg-secondary-container text-on-secondary-container`}>
-                    {apt.status}
-                </span>
-            </div>
+                <div className="flex flex-col gap-4">
+                    {calendarUrl && (
+                        <a
+                            href={calendarUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="primary-gradient text-white font-headline font-bold py-4 rounded-xl flex items-center justify-center gap-2 active:scale-[0.98] transition-transform shadow-lg shadow-black/10"
+                        >
+                            <Icon name="event_available" />
+                            Add to Calendar
+                        </a>
+                    )}
+                    <a
+                        href="/"
+                        className="bg-surface-container-high text-on-surface font-headline font-bold py-4 rounded-xl flex items-center justify-center gap-2 active:scale-[0.98] transition-transform hover:bg-surface-container-highest"
+                    >
+                        <Icon name="home" />
+                        Return Home
+                    </a>
+                </div>
 
-            {/* Actions */}
-            <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md">
-                <a
-                    href={route('booking.index')}
-                    className="flex-1 flex items-center justify-center gap-2 rounded-2xl border border-outline-variant px-5 py-3 text-sm font-semibold text-on-surface hover:bg-surface-container-low transition-colors"
-                >
-                    <Icon name="add_circle" size="text-lg" /> Book Another
-                </a>
-                <a
-                    href="/"
-                    className="flex-1 primary-gradient flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold text-white shadow-lg"
-                >
-                    <Icon name="home" size="text-lg" /> Go to Home
-                </a>
-            </div>
+                <p className="mt-8 text-center text-on-surface-variant text-xs max-w-xs mx-auto">
+                    Need to reschedule? Contact the business at least 24 hours before your appointment time.
+                </p>
+            </main>
         </div>
     );
 }

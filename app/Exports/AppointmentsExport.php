@@ -2,9 +2,10 @@
 
 namespace App\Exports;
 
+use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
-use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\Exportable;
+use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
@@ -40,7 +41,10 @@ class AppointmentsExport implements FromQuery, WithHeadings, WithMapping
         }
 
         if (! empty($this->filters['status'])) {
-            $query->where('status', $this->filters['status']);
+            $status = AppointmentStatus::tryFrom((string) $this->filters['status']);
+            if ($status !== null) {
+                $query->where('status', $status);
+            }
         }
 
         return $query->latest('date')->latest('start_time');
@@ -61,18 +65,18 @@ class AppointmentsExport implements FromQuery, WithHeadings, WithMapping
     }
 
     /**
-     * @param  \App\Models\Appointment  $appointment
+     * @param  Appointment  $appointment
      */
     public function map($appointment): array
     {
         return [
             $appointment->id,
             $appointment->employee?->name ?? 'N/A',
-            $appointment->client_first_name . ' ' . $appointment->client_last_name,
+            $appointment->client_first_name.' '.$appointment->client_last_name,
             $appointment->service?->name ?? 'N/A',
             $appointment->date->format('Y-m-d'),
-            $appointment->start_time . ' - ' . $appointment->end_time,
-            ucfirst($appointment->status),
+            $appointment->start_time.' - '.$appointment->end_time,
+            $appointment->status->label(),
             $appointment->price,
         ];
     }

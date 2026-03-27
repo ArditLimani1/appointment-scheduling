@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
 use App\Repositories\Interfaces\AppointmentRepositoryInterface;
 use App\Repositories\Interfaces\BusinessRepositoryInterface;
@@ -86,7 +87,7 @@ class BookingService implements BookingServiceInterface
         $business = $this->businessRepository->findActiveBySlug($slug);
         $service = $this->serviceRepository->findById($data['service_id']);
 
-        $startTime = Carbon::parse($data['date'] . ' ' . $data['start_time']);
+        $startTime = Carbon::parse($data['date'].' '.$data['start_time']);
         $endTime = $startTime->copy()->addMinutes($service->duration);
 
         return $this->appointmentRepository->create([
@@ -101,13 +102,13 @@ class BookingService implements BookingServiceInterface
             'start_time' => $startTime->format('H:i'),
             'end_time' => $endTime->format('H:i'),
             'price' => $service->price,
-            'status' => 'pending',
+            'status' => AppointmentStatus::Pending,
         ]);
     }
 
     public function getConfirmation(Appointment $appointment): array
     {
-        $appointment->load(['employee', 'service']);
+        $appointment->load(['employee', 'service', 'business']);
 
         return ['appointment' => $appointment];
     }
@@ -121,8 +122,8 @@ class BookingService implements BookingServiceInterface
         $existingAppointments
     ): array {
         $slots = [];
-        $scheduleStart = Carbon::parse($date->toDateString() . ' ' . $schedule->start_time);
-        $scheduleEnd = Carbon::parse($date->toDateString() . ' ' . $schedule->end_time);
+        $scheduleStart = Carbon::parse($date->toDateString().' '.$schedule->start_time);
+        $scheduleEnd = Carbon::parse($date->toDateString().' '.$schedule->end_time);
         $current = $scheduleStart->copy();
 
         while ($current->copy()->addMinutes($slotDuration)->lte($scheduleEnd)) {
@@ -131,16 +132,19 @@ class BookingService implements BookingServiceInterface
 
             if ($slotStart->lt($minNoticeTime)) {
                 $current->addMinutes($stepDuration);
+
                 continue;
             }
 
             if ($this->overlapsBreak($slotStart, $slotEnd, $date, $schedule->breaks)) {
                 $current->addMinutes($stepDuration);
+
                 continue;
             }
 
             if ($this->overlapsAppointment($slotStart, $slotEnd, $date, $existingAppointments)) {
                 $current->addMinutes($stepDuration);
+
                 continue;
             }
 
@@ -154,8 +158,8 @@ class BookingService implements BookingServiceInterface
     private function overlapsBreak(Carbon $slotStart, Carbon $slotEnd, Carbon $date, $breaks): bool
     {
         foreach ($breaks as $break) {
-            $breakStart = Carbon::parse($date->toDateString() . ' ' . $break->start_time);
-            $breakEnd = Carbon::parse($date->toDateString() . ' ' . $break->end_time);
+            $breakStart = Carbon::parse($date->toDateString().' '.$break->start_time);
+            $breakEnd = Carbon::parse($date->toDateString().' '.$break->end_time);
             if ($slotStart->lt($breakEnd) && $slotEnd->gt($breakStart)) {
                 return true;
             }
@@ -167,8 +171,8 @@ class BookingService implements BookingServiceInterface
     private function overlapsAppointment(Carbon $slotStart, Carbon $slotEnd, Carbon $date, $appointments): bool
     {
         foreach ($appointments as $appointment) {
-            $apptStart = Carbon::parse($date->toDateString() . ' ' . $appointment->start_time);
-            $apptEnd = Carbon::parse($date->toDateString() . ' ' . $appointment->end_time);
+            $apptStart = Carbon::parse($date->toDateString().' '.$appointment->start_time);
+            $apptEnd = Carbon::parse($date->toDateString().' '.$appointment->end_time);
             if ($slotStart->lt($apptEnd) && $slotEnd->gt($apptStart)) {
                 return true;
             }

@@ -9,12 +9,16 @@ use Symfony\Component\HttpFoundation\Response;
 class RoleMiddleware
 {
     /**
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     * @param  string  ...$roles
+     * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next, string ...$roles): Response
     {
-        if (! $request->user() || ! in_array($request->user()->role, $roles)) {
+        $user = $request->user();
+        if (! $user) {
+            abort(403, 'Unauthorized.');
+        }
+        $current = $user->role instanceof \BackedEnum ? $user->role->value : (string) $user->role;
+        if (! in_array($current, $roles, true)) {
             abort(403, 'Unauthorized.');
         }
 

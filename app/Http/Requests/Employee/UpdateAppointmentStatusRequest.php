@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Employee;
 
+use App\Enums\AppointmentStatus;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateAppointmentStatusRequest extends FormRequest
 {
@@ -14,7 +16,7 @@ class UpdateAppointmentStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => ['required', 'in:confirmed,cancelled,completed,checked_in'],
+            'status' => ['required', Rule::enum(AppointmentStatus::class)->only(AppointmentStatus::employeeUpdatable())],
         ];
     }
 }

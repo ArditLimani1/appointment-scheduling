@@ -1,31 +1,76 @@
-import { Head, useForm, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { Head, router, usePage } from '@inertiajs/react';
+import { useEffect, useMemo, useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import Icon from '@/Components/Icon';
+import AppointmentStatusMenu from '@/Components/AppointmentStatusMenu';
+import { formatAppointmentDate, formatTimeHm } from '@/utils/appointmentDate';
 
-const STATUS_STYLES = {
-    pending: 'bg-secondary-container text-on-secondary-container',
-    confirmed: 'bg-secondary-container text-on-secondary-container',
-    checked_in: 'bg-tertiary-fixed/30 text-on-tertiary-container',
-    completed: 'bg-tertiary-fixed/30 text-on-tertiary-container',
-    cancelled: 'bg-error-container text-on-error-container',
-};
+function pickFilterQuery(f) {
+    const data = {};
+    if (f.employee_id !== '' && f.employee_id != null) {
+        data.employee_id = String(f.employee_id);
+    }
+    if (f.date_from) {
+        data.date_from = f.date_from;
+    }
+    if (f.date_to) {
+        data.date_to = f.date_to;
+    }
+    if (f.status) {
+        data.status = f.status;
+    }
+    return data;
+}
+
+function normalizeAppointments(appointments) {
+    if (!appointments) return { rows: [], meta: null };
+    if (Array.isArray(appointments)) return { rows: appointments, meta: null };
+    if (Array.isArray(appointments.data)) return { rows: appointments.data, meta: appointments };
+    return { rows: [], meta: null };
+}
 
 export default function Index({ appointments, employees, filters = {} }) {
+    const { auth } = usePage().props;
+    const currencySymbol = auth?.business?.currency_symbol ?? '€';
+
+    const { rows, meta } = useMemo(() => normalizeAppointments(appointments), [appointments]);
+    const totalCount = meta?.total ?? rows.length;
+
     const [localFilters, setLocalFilters] = useState({
-        employee_id: filters.employee_id || '',
-        date_from: filters.date_from || '',
-        date_to: filters.date_to || '',
-        status: filters.status || '',
+        employee_id: filters.employee_id != null && filters.employee_id !== '' ? String(filters.employee_id) : '',
+        date_from: filters.date_from ?? '',
+        date_to: filters.date_to ?? '',
+        status: filters.status ?? '',
     });
 
+    useEffect(() => {
+        setLocalFilters({
+            employee_id: filters.employee_id != null && filters.employee_id !== '' ? String(filters.employee_id) : '',
+            date_from: filters.date_from ?? '',
+            date_to: filters.date_to ?? '',
+            status: filters.status ?? '',
+        });
+    }, [filters.employee_id, filters.date_from, filters.date_to, filters.status]);
+
     const applyFilters = () => {
-        router.get(route('admin.appointments.index'), localFilters, { preserveState: true, replace: true });
+        router.visit(route('admin.appointments.index'), {
+            method: 'get',
+            data: pickFilterQuery(localFilters),
+            preserveState: false,
+            replace: true,
+            preserveScroll: true,
+        });
     };
 
     const clearFilters = () => {
         setLocalFilters({ employee_id: '', date_from: '', date_to: '', status: '' });
-        router.get(route('admin.appointments.index'), {}, { preserveState: true, replace: true });
+        router.visit(route('admin.appointments.index'), {
+            method: 'get',
+            data: {},
+            preserveState: false,
+            replace: true,
+            preserveScroll: true,
+        });
     };
 
     const updateStatus = (apt, status) => {
@@ -39,112 +84,217 @@ export default function Index({ appointments, employees, filters = {} }) {
     };
 
     const exportUrl = () => {
-        const params = new URLSearchParams(localFilters).toString();
-        return route('admin.appointments.export') + (params ? '?' + params : '');
+        const params = new URLSearchParams(pickFilterQuery(localFilters));
+        const qs = params.toString();
+        return route('admin.appointments.export') + (qs ? `?${qs}` : '');
+    };
+
+    const goPage = (url) => {
+        if (url) {
+            router.visit(url, { method: 'get', preserveState: false, preserveScroll: true });
+        }
     };
 
     return (
         <AdminLayout>
             <Head title="Appointments" />
 
-            <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
+            <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
-                    <h1 className="text-3xl font-black font-headline tracking-tight text-on-surface">All Appointments</h1>
-                    <p className="mt-1 text-sm text-on-surface-variant">{appointments.length} appointment{appointments.length !== 1 ? 's' : ''} found</p>
+                    <h1 className="text-4xl font-headline font-extrabold tracking-tight text-on-surface">Appointments</h1>
+                    <p className="mt-1.5 text-sm text-on-surface-variant max-w-lg">
+                        View and manage all customer bookings. Filter by staff, date range, or status.
+                    </p>
                 </div>
-                <a href={exportUrl()} className="flex items-center gap-2 rounded-2xl bg-tertiary-fixed/30 px-4 py-2.5 text-sm font-semibold text-on-tertiary-container hover:opacity-80 transition-opacity">
+                <a
+                    href={exportUrl()}
+                    className="flex items-center gap-2 rounded-xl bg-on-surface px-6 py-3 text-sm font-bold text-surface hover:opacity-90 transition-opacity shrink-0"
+                >
                     <Icon name="download" size="text-lg" /> Export Excel
                 </a>
             </div>
 
-            {/* Filters */}
-            <div className="mb-5 rounded-3xl bg-surface-container-lowest border border-outline-variant p-4">
+            <div className="mb-6 rounded-2xl bg-surface-container-lowest p-4 ring-1 ring-slate-100 shadow-sm">
                 <div className="flex flex-wrap gap-3 items-end">
                     <div className="flex-1 min-w-[160px]">
-                        <label className="block text-[10px] font-semibold uppercase tracking-widest text-on-surface-variant mb-1">Employee</label>
-                        <select value={localFilters.employee_id} onChange={e => setLocalFilters(f => ({ ...f, employee_id: e.target.value }))}
-                            className="w-full rounded-xl border-0 bg-surface-container-low px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-surface-tint">
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Employee</label>
+                        <select
+                            value={localFilters.employee_id}
+                            onChange={(e) => setLocalFilters((f) => ({ ...f, employee_id: e.target.value }))}
+                            className="w-full rounded-xl border border-slate-100 bg-white px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-on-primary-container/20"
+                        >
                             <option value="">All Staff</option>
-                            {employees.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                            {employees.map((e) => (
+                                <option key={e.id} value={e.id}>
+                                    {e.name}
+                                </option>
+                            ))}
                         </select>
                     </div>
                     <div className="flex-1 min-w-[140px]">
-                        <label className="block text-[10px] font-semibold uppercase tracking-widest text-on-surface-variant mb-1">From</label>
-                        <input type="date" value={localFilters.date_from} onChange={e => setLocalFilters(f => ({ ...f, date_from: e.target.value }))}
-                            className="w-full rounded-xl border-0 bg-surface-container-low px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-surface-tint" />
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-outline mb-1">From</label>
+                        <input
+                            type="date"
+                            value={localFilters.date_from}
+                            onChange={(e) => setLocalFilters((f) => ({ ...f, date_from: e.target.value }))}
+                            className="w-full rounded-xl border border-slate-100 bg-white px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-on-primary-container/20"
+                        />
                     </div>
                     <div className="flex-1 min-w-[140px]">
-                        <label className="block text-[10px] font-semibold uppercase tracking-widest text-on-surface-variant mb-1">To</label>
-                        <input type="date" value={localFilters.date_to} onChange={e => setLocalFilters(f => ({ ...f, date_to: e.target.value }))}
-                            className="w-full rounded-xl border-0 bg-surface-container-low px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-surface-tint" />
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-outline mb-1">To</label>
+                        <input
+                            type="date"
+                            value={localFilters.date_to}
+                            onChange={(e) => setLocalFilters((f) => ({ ...f, date_to: e.target.value }))}
+                            className="w-full rounded-xl border border-slate-100 bg-white px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-on-primary-container/20"
+                        />
                     </div>
                     <div className="flex-1 min-w-[140px]">
-                        <label className="block text-[10px] font-semibold uppercase tracking-widest text-on-surface-variant mb-1">Status</label>
-                        <select value={localFilters.status} onChange={e => setLocalFilters(f => ({ ...f, status: e.target.value }))}
-                            className="w-full rounded-xl border-0 bg-surface-container-low px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-surface-tint">
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Status</label>
+                        <select
+                            value={localFilters.status}
+                            onChange={(e) => setLocalFilters((f) => ({ ...f, status: e.target.value }))}
+                            className="w-full rounded-xl border border-slate-100 bg-white px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-on-primary-container/20"
+                        >
                             <option value="">All Statuses</option>
-                            {['pending','confirmed','checked_in','completed','cancelled'].map(s => <option key={s} value={s} className="capitalize">{s.replace('_',' ')}</option>)}
+                            {['pending', 'confirmed', 'checked_in', 'completed', 'cancelled'].map((s) => (
+                                <option key={s} value={s}>
+                                    {s.replace('_', ' ')}
+                                </option>
+                            ))}
                         </select>
                     </div>
                     <div className="flex gap-2">
-                        <button onClick={applyFilters} className="primary-gradient rounded-xl px-4 py-2 text-sm font-semibold text-white">Filter</button>
-                        <button onClick={clearFilters} className="rounded-xl border border-outline-variant px-4 py-2 text-sm font-medium text-on-surface hover:bg-surface-container-low">Clear</button>
+                        <button
+                            type="button"
+                            onClick={applyFilters}
+                            className="rounded-xl bg-on-surface px-5 py-2.5 text-sm font-bold text-surface hover:opacity-90 transition-opacity"
+                        >
+                            Filter
+                        </button>
+                        <button
+                            type="button"
+                            onClick={clearFilters}
+                            className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-on-surface hover:bg-slate-50 transition-colors"
+                        >
+                            Clear
+                        </button>
                     </div>
                 </div>
             </div>
 
-            {appointments.length === 0 ? (
-                <div className="flex flex-col items-center justify-center rounded-3xl bg-surface-container-lowest border border-outline-variant py-20">
-                    <Icon name="event_busy" size="text-5xl" className="text-outline mb-4" />
-                    <p className="text-on-surface-variant">No appointments found for the selected filters.</p>
+            <div className="bg-surface-container-lowest rounded-2xl overflow-hidden ring-1 ring-slate-100 shadow-sm">
+                <div className="px-8 py-5 border-b border-slate-50 flex items-center justify-between bg-white">
+                    <h3 className="font-headline font-bold text-base text-on-surface">All bookings</h3>
+                    <p className="text-xs text-on-surface-variant">
+                        {totalCount} appointment{totalCount !== 1 ? 's' : ''} total
+                    </p>
                 </div>
-            ) : (
-                <div className="rounded-3xl bg-surface-container-lowest border border-outline-variant overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full min-w-[700px]">
-                            <thead>
-                                <tr className="border-b border-outline-variant bg-surface-container-low">
-                                    <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Client</th>
-                                    <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Employee</th>
-                                    <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Service</th>
-                                    <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Date & Time</th>
-                                    <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Status</th>
-                                    <th className="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Price</th>
-                                    <th className="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-outline-variant">
-                                {appointments.map(apt => (
-                                    <tr key={apt.id} className="hover:bg-surface-container-low transition-colors">
-                                        <td className="px-4 py-3">
-                                            <p className="font-semibold text-sm text-on-surface">{apt.client_first_name} {apt.client_last_name}</p>
-                                            <p className="text-xs text-on-surface-variant">{apt.client_phone}</p>
-                                        </td>
-                                        <td className="px-4 py-3 text-sm text-on-surface">{apt.employee?.name}</td>
-                                        <td className="px-4 py-3 text-sm text-on-surface-variant">{apt.service?.name || '—'}</td>
-                                        <td className="px-4 py-3">
-                                            <p className="text-sm text-on-surface">{new Date(apt.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
-                                            <p className="text-xs text-on-surface-variant">{apt.start_time} – {apt.end_time}</p>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <select value={apt.status} onChange={e => updateStatus(apt, e.target.value)}
-                                                className={`rounded-full px-2.5 py-1 text-xs font-semibold border-0 focus:ring-1 focus:ring-surface-tint capitalize ${STATUS_STYLES[apt.status] || ''}`}>
-                                                {['pending','confirmed','checked_in','completed','cancelled'].map(s => <option key={s} value={s}>{s.replace('_',' ')}</option>)}
-                                            </select>
-                                        </td>
-                                        <td className="px-4 py-3 text-right text-sm font-semibold text-on-surface">€{Number(apt.price).toFixed(2)}</td>
-                                        <td className="px-4 py-3 text-right">
-                                            <button onClick={() => deleteAppointment(apt)} className="rounded-xl bg-error-container p-1.5 text-on-error-container hover:opacity-80 transition-opacity">
-                                                <Icon name="delete" size="text-sm" />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+
+                {rows.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-24 text-center px-6">
+                        <Icon name="event_busy" size="text-5xl" className="text-outline mb-3" />
+                        <p className="text-sm text-on-surface-variant">No appointments match the selected filters.</p>
                     </div>
-                </div>
-            )}
+                ) : (
+                    <>
+                        <div className="overflow-x-auto">
+                            <table className="w-full min-w-[760px] text-left border-collapse">
+                                <thead>
+                                    <tr className="bg-slate-50/50">
+                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">Client</th>
+                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">Employee</th>
+                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">Service</th>
+                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">Date & Time</th>
+                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">Status</th>
+                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-right">Price</th>
+                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50">
+                                    {rows.map((apt) => (
+                                        <tr key={apt.id} className="hover:bg-slate-50/50 transition-colors">
+                                            <td className="px-8 py-5">
+                                                <p className="font-headline font-bold text-on-surface text-sm">
+                                                    {apt.client_first_name} {apt.client_last_name}
+                                                </p>
+                                                <p className="text-xs text-on-surface-variant">{apt.client_phone}</p>
+                                            </td>
+                                            <td className="px-8 py-5 text-sm text-on-surface-variant">{apt.employee?.name ?? '—'}</td>
+                                            <td className="px-8 py-5 text-sm text-on-surface-variant">{apt.service?.name || '—'}</td>
+                                            <td className="px-8 py-5">
+                                                <p className="text-sm font-semibold text-on-surface">
+                                                    {formatAppointmentDate(apt.date, { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                </p>
+                                                <p className="text-xs text-on-surface-variant">
+                                                    {formatTimeHm(apt.start_time)} – {formatTimeHm(apt.end_time)}
+                                                </p>
+                                            </td>
+                                            <td className="px-8 py-5 align-middle">
+                                                <AppointmentStatusMenu status={apt.status} onChange={(s) => updateStatus(apt, s)} />
+                                            </td>
+                                            <td className="px-8 py-5 text-right text-sm font-bold text-on-surface">
+                                                {currencySymbol}
+                                                {Number(apt.price).toFixed(2)}
+                                            </td>
+                                            <td className="px-8 py-5 text-right">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => deleteAppointment(apt)}
+                                                    className="inline-flex rounded-lg p-2 text-outline hover:text-error hover:bg-error-container transition-colors"
+                                                    title="Delete"
+                                                >
+                                                    <Icon name="delete" size="text-[18px]" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div className="px-8 py-4 bg-slate-50/30 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-50">
+                            <p className="text-sm text-on-surface-variant">
+                                {meta ? (
+                                    <>
+                                        Showing <span className="font-bold text-on-surface">{meta.from}</span>–
+                                        <span className="font-bold text-on-surface">{meta.to}</span> of{' '}
+                                        <span className="font-bold text-on-surface">{meta.total}</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        Showing <span className="font-bold text-on-surface">{rows.length}</span> appointment
+                                        {rows.length !== 1 ? 's' : ''}
+                                    </>
+                                )}
+                            </p>
+                            {meta && meta.last_page > 1 && (
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        disabled={!meta.prev_page_url}
+                                        onClick={() => goPage(meta.prev_page_url)}
+                                        className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-on-surface disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white"
+                                    >
+                                        Previous
+                                    </button>
+                                    <span className="text-sm text-on-surface-variant px-2">
+                                        Page {meta.current_page} of {meta.last_page}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        disabled={!meta.next_page_url}
+                                        onClick={() => goPage(meta.next_page_url)}
+                                        className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-on-surface disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white"
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </>
+                )}
+            </div>
         </AdminLayout>
     );
 }

@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Enums\AppointmentStatus;
+use App\Enums\UserRole;
 use App\Models\Appointment;
 use App\Models\BusinessSetting;
 use App\Models\Schedule;
@@ -35,7 +37,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'Admin',
             'email' => 'admin@stratos.com',
             'password' => Hash::make('password'),
-            'role' => 'admin',
+            'role' => UserRole::Admin,
             'is_active' => true,
         ]);
 
@@ -43,7 +45,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'John',
             'email' => 'john@stratos.com',
             'password' => Hash::make('password'),
-            'role' => 'employee',
+            'role' => UserRole::Employee,
             'phone' => '+1234567001',
             'title' => 'Master Barber',
             'is_active' => true,
@@ -53,7 +55,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'Sarah',
             'email' => 'sarah@stratos.com',
             'password' => Hash::make('password'),
-            'role' => 'employee',
+            'role' => UserRole::Employee,
             'phone' => '+1234567002',
             'title' => 'Senior Stylist',
             'is_active' => true,
@@ -63,7 +65,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'Marcus',
             'email' => 'marcus@stratos.com',
             'password' => Hash::make('password'),
-            'role' => 'employee',
+            'role' => UserRole::Employee,
             'phone' => '+1234567003',
             'title' => 'Detail Expert',
             'is_active' => true,
@@ -73,7 +75,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'Elena',
             'email' => 'elena@stratos.com',
             'password' => Hash::make('password'),
-            'role' => 'employee',
+            'role' => UserRole::Employee,
             'phone' => '+1234567004',
             'title' => 'Color Artist',
             'is_active' => true,
@@ -161,7 +163,7 @@ class DatabaseSeeder extends Seeder
             }
         }
 
-        $statuses = ['pending', 'confirmed', 'checked_in', 'completed', 'cancelled'];
+        $statuses = AppointmentStatus::cases();
         $firstNames = ['James', 'Michael', 'Robert', 'David', 'William', 'Emma', 'Olivia', 'Sophia', 'Isabella', 'Mia', 'Charlotte', 'Amelia', 'Harper', 'Evelyn', 'Lucas', 'Henry', 'Alexander', 'Daniel', 'Matthew', 'Jack'];
         $lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin'];
 
@@ -184,13 +186,14 @@ class DatabaseSeeder extends Seeder
             $minute = [0, 30][array_rand([0, 30])];
 
             $startTime = sprintf('%02d:%02d', $hour, $minute);
-            $endTime = Carbon::parse($date->toDateString() . ' ' . $startTime)
+            $endTime = Carbon::parse($date->toDateString().' '.$startTime)
                 ->addMinutes($service->duration)
                 ->format('H:i');
 
             $status = $statuses[array_rand($statuses)];
             if ($date->lt($today)) {
-                $status = ['completed', 'cancelled'][array_rand(['completed', 'cancelled'])];
+                $pastStatuses = [AppointmentStatus::Completed, AppointmentStatus::Cancelled];
+                $status = $pastStatuses[array_rand($pastStatuses)];
             }
 
             Appointment::create([
@@ -198,7 +201,7 @@ class DatabaseSeeder extends Seeder
                 'service_id' => $service->id,
                 'client_first_name' => $firstNames[array_rand($firstNames)],
                 'client_last_name' => $lastNames[array_rand($lastNames)],
-                'client_phone' => '+1' . rand(1000000000, 9999999999),
+                'client_phone' => '+1'.rand(1000000000, 9999999999),
                 'client_notes' => $i % 3 === 0 ? 'Please be on time.' : null,
                 'date' => $date->toDateString(),
                 'start_time' => $startTime,
