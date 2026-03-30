@@ -74,7 +74,6 @@ export default function Index({ services }) {
         <AdminLayout>
             <Head title="Services" />
 
-            {/* Page header */}
             <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
                     <h1 className="text-4xl font-headline font-extrabold tracking-tight text-on-surface">Services</h1>
@@ -90,9 +89,7 @@ export default function Index({ services }) {
                 </button>
             </div>
 
-            {/* Table card */}
             <div className="bg-surface-container-lowest rounded-2xl overflow-hidden ring-1 ring-slate-100 shadow-sm">
-                {/* Card header */}
                 <div className="px-8 py-5 border-b border-slate-50 flex items-center justify-between bg-white">
                     <h3 className="font-headline font-bold text-base text-on-surface">Active Offerings</h3>
                     <p className="text-xs text-on-surface-variant">
@@ -124,7 +121,6 @@ export default function Index({ services }) {
                                 <tbody className="divide-y divide-slate-50">
                                     {services.map((svc) => (
                                         <tr key={svc.id} className="hover:bg-slate-50/50 transition-colors">
-                                            {/* Name */}
                                             <td className="px-8 py-5">
                                                 <p className="font-headline font-bold text-on-surface text-sm">
                                                     {svc.name}
@@ -139,7 +135,6 @@ export default function Index({ services }) {
                                                 )}
                                             </td>
 
-                                            {/* Duration */}
                                             <td className="px-8 py-5 text-center">
                                                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container text-on-surface-variant text-xs font-medium">
                                                     <Icon name="schedule" size="text-sm" />
@@ -147,14 +142,12 @@ export default function Index({ services }) {
                                                 </span>
                                             </td>
 
-                                            {/* Price */}
                                             <td className="px-8 py-5">
                                                 <span className="font-headline font-extrabold text-on-surface text-base">
                                                     {currencySymbol}{Number(svc.price).toFixed(2)}
                                                 </span>
                                             </td>
 
-                                            {/* Status */}
                                             <td className="px-8 py-5">
                                                 <div className="flex justify-center">
                                                     <button
@@ -167,7 +160,6 @@ export default function Index({ services }) {
                                                 </div>
                                             </td>
 
-                                            {/* Actions */}
                                             <td className="px-8 py-5 text-right">
                                                 <div className="flex items-center justify-end gap-1">
                                                     <button
@@ -192,7 +184,6 @@ export default function Index({ services }) {
                             </table>
                         </div>
 
-                        {/* Footer */}
                         <div className="px-8 py-4 bg-slate-50/30 flex items-center justify-between border-t border-slate-50">
                             <p className="text-sm text-on-surface-variant">
                                 Showing <span className="font-bold text-on-surface">{services.length}</span> service{services.length !== 1 ? 's' : ''}
@@ -202,7 +193,6 @@ export default function Index({ services }) {
                 )}
             </div>
 
-            {/* Delete confirmation modal */}
             <Modal show={!!deleteTarget} onClose={() => setDeleteTarget(null)} maxWidth="sm">
                 <div className="p-6">
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-error-container mx-auto mb-4">
@@ -223,7 +213,6 @@ export default function Index({ services }) {
                 </div>
             </Modal>
 
-            {/* Add / Edit Modal */}
             <Modal show={showModal} onClose={() => setShowModal(false)} maxWidth="md">
                 <form onSubmit={handleSubmit} className="p-6">
                     <div className="flex items-start justify-between mb-5">

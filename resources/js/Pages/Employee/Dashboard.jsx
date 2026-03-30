@@ -60,7 +60,6 @@ export default function Dashboard({ appointments, date }) {
         <EmployeeLayout>
             <Head title="My Appointments" />
 
-            {/* Header */}
             <div className="mb-6">
                 <div className="flex items-center gap-2 mb-1">
                     <span className="inline-flex items-center rounded-full bg-primary-container px-3 py-0.5 text-xs font-semibold text-on-primary-container">
@@ -80,7 +79,6 @@ export default function Dashboard({ appointments, date }) {
                 </p>
             </div>
 
-            {/* Horizontal date scroller */}
             <div className="mb-6 -mx-4 sm:-mx-6">
                 <div className="flex gap-2 overflow-x-auto px-4 sm:px-6 pb-2 hide-scrollbar">
                     {dateRange.map((d) => {
@@ -112,7 +110,6 @@ export default function Dashboard({ appointments, date }) {
                 </div>
             </div>
 
-            {/* Appointments */}
             {appointments.length === 0 ? (
                 <div className="flex flex-col items-center justify-center rounded-3xl bg-surface-container-lowest border border-outline-variant py-20">
                     <Icon name="event_available" size="text-5xl" className="text-outline mb-4" />
@@ -129,14 +126,12 @@ export default function Dashboard({ appointments, date }) {
                         return (
                             <div key={apt.id} className="rounded-3xl bg-surface-container-lowest border border-outline-variant p-5 transition-all hover:shadow-sm">
                                 <div className="flex items-start gap-4">
-                                    {/* Time block */}
                                     <div className="flex flex-col items-center rounded-2xl bg-surface-container-low px-3 py-2 min-w-[64px]">
                                         <span className="text-xs font-semibold text-on-surface-variant">{apt.start_time}</span>
                                         <div className="my-1 h-6 w-px bg-outline-variant" />
                                         <span className="text-xs text-on-surface-variant">{apt.end_time}</span>
                                     </div>
 
-                                    {/* Details */}
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 flex-wrap">
                                             <p className="font-bold font-headline text-on-surface">
@@ -165,13 +160,11 @@ export default function Dashboard({ appointments, date }) {
                                         )}
                                     </div>
 
-                                    {/* Price */}
                                     <div className="shrink-0 text-right">
                                         <p className="font-black font-headline text-on-surface">€{Number(apt.price).toFixed(2)}</p>
                                     </div>
                                 </div>
 
-                                {/* Actions */}
                                 {actions.length > 0 && (
                                     <div className="mt-4 flex gap-2 border-t border-outline-variant pt-4">
                                         {actions.map(action => {

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin;
+use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Booking\BookingController;
 use App\Http\Controllers\Employee;
 use App\Http\Controllers\ProfileController;
@@ -43,6 +44,7 @@ Route::middleware(['auth', 'role:admin', 'has_business'])->prefix('admin')->name
     Route::patch('/appointments/{appointment}', [Admin\AppointmentController::class, 'update'])->name('appointments.update');
     Route::delete('/appointments/{appointment}', [Admin\AppointmentController::class, 'destroy'])->name('appointments.destroy');
     Route::get('/appointments/export', [Admin\AppointmentController::class, 'export'])->name('appointments.export');
+    Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
     Route::get('/settings', [Admin\SettingsController::class, 'index'])->name('settings.index');
     Route::put('/settings', [Admin\SettingsController::class, 'update'])->name('settings.update');
 });

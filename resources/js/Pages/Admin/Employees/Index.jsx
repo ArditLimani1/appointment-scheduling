@@ -74,7 +74,6 @@ export default function Index({ employees, services }) {
         <AdminLayout>
             <Head title="Employees" />
 
-            {/* Page header */}
             <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
                     <h1 className="text-4xl font-headline font-extrabold tracking-tight text-on-surface">Employees</h1>
@@ -90,9 +89,7 @@ export default function Index({ employees, services }) {
                 </button>
             </div>
 
-            {/* Table card */}
             <div className="bg-surface-container-lowest rounded-2xl overflow-hidden ring-1 ring-slate-100 shadow-sm">
-                {/* Card header */}
                 <div className="px-8 py-5 border-b border-slate-50 flex items-center justify-between bg-white">
                     <h3 className="font-headline font-bold text-base text-on-surface">Team Members</h3>
                     <p className="text-xs text-on-surface-variant">
@@ -125,22 +122,18 @@ export default function Index({ employees, services }) {
                                 <tbody className="divide-y divide-slate-50">
                                     {employees.map((emp) => (
                                         <tr key={emp.id} className="hover:bg-slate-50/50 transition-colors">
-                                            {/* Name */}
                                             <td className="px-8 py-5">
                                                 <p className="font-headline font-bold text-on-surface text-sm">{emp.name}</p>
                                             </td>
 
-                                            {/* Email */}
                                             <td className="px-8 py-5">
                                                 <p className="text-sm text-on-surface-variant">{emp.email}</p>
                                             </td>
 
-                                            {/* Title */}
                                             <td className="px-8 py-5">
                                                 <p className="text-sm text-on-surface-variant">{emp.title || '—'}</p>
                                             </td>
 
-                                            {/* Services */}
                                             <td className="px-8 py-5">
                                                 <div className="flex flex-wrap gap-1.5">
                                                     {emp.services?.length > 0 ? emp.services.map(s => (
@@ -151,7 +144,6 @@ export default function Index({ employees, services }) {
                                                 </div>
                                             </td>
 
-                                            {/* Status */}
                                             <td className="px-8 py-5">
                                                 <div className="flex justify-center">
                                                     <button
@@ -164,7 +156,6 @@ export default function Index({ employees, services }) {
                                                 </div>
                                             </td>
 
-                                            {/* Actions */}
                                             <td className="px-8 py-5 text-right">
                                                 <div className="flex items-center justify-end gap-1">
                                                     <button
@@ -189,7 +180,6 @@ export default function Index({ employees, services }) {
                             </table>
                         </div>
 
-                        {/* Footer */}
                         <div className="px-8 py-4 bg-slate-50/30 flex items-center justify-between border-t border-slate-50">
                             <p className="text-sm text-on-surface-variant">
                                 Showing <span className="font-bold text-on-surface">{employees.length}</span> employee{employees.length !== 1 ? 's' : ''}
@@ -199,7 +189,6 @@ export default function Index({ employees, services }) {
                 )}
             </div>
 
-            {/* Delete confirmation modal */}
             <Modal show={!!deleteTarget} onClose={() => setDeleteTarget(null)} maxWidth="sm">
                 <div className="p-6">
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-error-container mx-auto mb-4">
@@ -220,7 +209,6 @@ export default function Index({ employees, services }) {
                 </div>
             </Modal>
 
-            {/* Add / Edit Modal */}
             <Modal show={showModal} onClose={() => setShowModal(false)} maxWidth="lg">
                 <form onSubmit={handleSubmit} className="p-6">
                     <div className="flex items-start justify-between mb-5">

@@ -101,7 +101,6 @@ export default function Index({ schedules: existingSchedules }) {
                             }`}
                         >
                             <div className="flex items-center gap-4 flex-wrap">
-                                {/* Toggle + Day label */}
                                 <div className="flex items-center gap-3 w-[140px]">
                                     <label className="relative inline-flex cursor-pointer items-center">
                                         <input
@@ -117,7 +116,6 @@ export default function Index({ schedules: existingSchedules }) {
                                     </span>
                                 </div>
 
-                                {/* Time inputs */}
                                 {day.is_active && (
                                     <div className="flex items-center gap-2 flex-wrap flex-1">
                                         <div className="flex items-center gap-2">
@@ -151,7 +149,6 @@ export default function Index({ schedules: existingSchedules }) {
                                 )}
                             </div>
 
-                            {/* Breaks */}
                             {day.is_active && day.breaks.length > 0 && (
                                 <div className="mt-4 space-y-2 pl-[156px]">
                                     {day.breaks.map((brk, bi) => (

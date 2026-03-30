@@ -12,11 +12,13 @@ use App\Repositories\Interfaces\ScheduleRepositoryInterface;
 use App\Repositories\Interfaces\ServiceRepositoryInterface;
 use App\Repositories\ScheduleRepository;
 use App\Repositories\ServiceRepository;
+use App\Services\AnalyticsService;
 use App\Services\AppointmentService;
 use App\Services\BookingService;
 use App\Services\BusinessService;
 use App\Services\DashboardService;
 use App\Services\EmployeeService;
+use App\Services\Interfaces\AnalyticsServiceInterface;
 use App\Services\Interfaces\AppointmentServiceInterface;
 use App\Services\Interfaces\BookingServiceInterface;
 use App\Services\Interfaces\BusinessServiceInterface;
@@ -44,6 +46,7 @@ class RepositoryServiceProvider extends ServiceProvider
         ScheduleServiceInterface::class => ScheduleService::class,
         BookingServiceInterface::class => BookingService::class,
         DashboardServiceInterface::class => DashboardService::class,
+        AnalyticsServiceInterface::class => AnalyticsService::class,
     ];
 
     public function register(): void {}

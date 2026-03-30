@@ -13,7 +13,7 @@ function slugify(value) {
 }
 
 export default function Register() {
-    const [step, setStep] = useState(0); // 0 = personal, 1 = business
+    const [step, setStep] = useState(0);
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
         email: '',
@@ -50,8 +50,7 @@ export default function Register() {
         <div className="min-h-screen bg-surface font-body flex">
             <Head title="Create your business" />
 
-            {/* Left panel — branding */}
-            <div className="hidden lg:flex lg:w-2/5 xl:w-1/2 flex-col justify-between bg-primary p-12 relative overflow-hidden">
+            <div className="hidden lg:flex lg:w-2/5 xl:w-1/2 flex-col justify-between bg-primary-container p-12 relative overflow-hidden">
                 <div className="absolute inset-0 opacity-10"
                     style={{ backgroundImage: 'radial-gradient(circle at 30% 20%, white 1px, transparent 1px), radial-gradient(circle at 70% 80%, white 1px, transparent 1px)', backgroundSize: '40px 40px' }}
                 />
@@ -88,18 +87,15 @@ export default function Register() {
                 <p className="relative text-xs text-white/50">© 2026 BookSlot. All rights reserved.</p>
             </div>
 
-            {/* Right panel — form */}
             <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 lg:px-12">
                 <div className="w-full max-w-md">
-                    {/* Mobile logo */}
                     <Link href="/" className="flex items-center gap-2 mb-8 lg:hidden">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
-                            <Icon name="calendar_month" size="text-lg" className="text-on-primary" />
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-container">
+                            <Icon name="calendar_month" size="text-lg" className="text-white" />
                         </div>
                         <span className="text-lg font-black font-headline text-on-surface tracking-tight">BookSlot</span>
                     </Link>
 
-                    {/* Step indicators */}
                     <div className="flex items-center gap-2 mb-8">
                         {['Your account', 'Your business'].map((label, i) => (
                             <div key={i} className="flex items-center gap-2">
@@ -115,7 +111,6 @@ export default function Register() {
                     </div>
 
                     <form onSubmit={submit}>
-                        {/* Step 0: Account */}
                         {step === 0 && (
                             <div className="space-y-1">
                                 <h2 className="text-2xl font-black font-headline text-on-surface mb-1">Create your account</h2>
@@ -188,7 +183,6 @@ export default function Register() {
                             </div>
                         )}
 
-                        {/* Step 1: Business */}
                         {step === 1 && (
                             <div className="space-y-1">
                                 <h2 className="text-2xl font-black font-headline text-on-surface mb-1">Set up your business</h2>

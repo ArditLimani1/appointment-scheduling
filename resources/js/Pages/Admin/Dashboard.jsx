@@ -4,10 +4,10 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import { formatAppointmentDate, formatTimeHm } from '@/utils/appointmentDate';
 
 const DEMO_APPOINTMENTS = [
-    { client_name: 'James Wilson',   service_name: 'Haircut',        employee_name: 'John Doe',     date: '2026-03-26', start_time: '10:00', status: 'confirmed' },
-    { client_name: 'Sarah Johnson',  service_name: 'Full Grooming',  employee_name: 'Alex Smith',   date: '2026-03-26', start_time: '14:00', status: 'pending'   },
-    { client_name: 'Emma Brown',     service_name: 'Nail Treatment', employee_name: 'Maria Garcia', date: '2026-03-27', start_time: '11:00', status: 'confirmed' },
-    { client_name: 'Michael Chen',   service_name: 'Deep Cleanse',   employee_name: 'John Doe',     date: '2026-03-27', start_time: '09:30', status: 'confirmed' },
+    { client_name: 'James Wilson', service_name: 'Haircut', employee_name: 'John Doe', date: '2026-03-26', start_time: '10:00', status: 'confirmed' },
+    { client_name: 'Sarah Johnson', service_name: 'Full Grooming', employee_name: 'Alex Smith', date: '2026-03-26', start_time: '14:00', status: 'pending' },
+    { client_name: 'Emma Brown', service_name: 'Nail Treatment', employee_name: 'Maria Garcia', date: '2026-03-27', start_time: '11:00', status: 'confirmed' },
+    { client_name: 'Michael Chen', service_name: 'Deep Cleanse', employee_name: 'John Doe', date: '2026-03-27', start_time: '09:30', status: 'confirmed' },
 ];
 
 export default function Dashboard({
@@ -31,9 +31,9 @@ export default function Dashboard({
     const statusClass = (status) => {
         switch (status?.toLowerCase()) {
             case 'confirmed': return 'bg-tertiary-fixed text-on-tertiary-fixed-variant';
-            case 'pending':   return 'bg-surface-container-highest text-on-surface-variant';
+            case 'pending': return 'bg-surface-container-highest text-on-surface-variant';
             case 'cancelled': return 'bg-error-container text-on-error-container';
-            default:          return 'bg-surface-container-highest text-on-surface-variant';
+            default: return 'bg-surface-container-highest text-on-surface-variant';
         }
     };
 
@@ -41,16 +41,13 @@ export default function Dashboard({
         <AdminLayout>
             <Head title="Dashboard" />
 
-            {/* Page header */}
             <div className="mb-12">
                 <h1 className="text-4xl font-extrabold font-headline tracking-tight text-on-surface mb-2">Overview</h1>
                 <p className="text-on-surface-variant text-lg">Your organizational performance for the current cycle.</p>
             </div>
 
-            {/* Metric cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 mb-12">
 
-                {/* Active Employees */}
                 <div className="bg-surface-container-lowest p-8 rounded-xl flex flex-col justify-between h-48 hover:-translate-y-1 transition-transform duration-300">
                     <div className="flex justify-between items-start">
                         <span className="p-3 bg-primary-fixed rounded-lg">
@@ -66,7 +63,6 @@ export default function Dashboard({
                     </div>
                 </div>
 
-                {/* Active Services */}
                 <div className="bg-surface-container-lowest p-8 rounded-xl flex flex-col justify-between h-48 hover:-translate-y-1 transition-transform duration-300">
                     <div className="flex justify-between items-start">
                         <span className="p-3 bg-secondary-container rounded-lg">
@@ -82,7 +78,6 @@ export default function Dashboard({
                     </div>
                 </div>
 
-                {/* Upcoming Appointments */}
                 <div className="bg-surface-container-lowest p-8 rounded-xl flex flex-col justify-between h-48 hover:-translate-y-1 transition-transform duration-300">
                     <div className="flex justify-between items-start">
                         <span className="p-3 bg-surface-container rounded-lg">
@@ -98,7 +93,6 @@ export default function Dashboard({
                     </div>
                 </div>
 
-                {/* Total Revenue */}
                 <div className="bg-primary-container p-8 rounded-xl flex flex-col justify-between h-48 relative overflow-hidden hover:-translate-y-1 transition-transform duration-300 shadow-xl">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-3xl" />
                     <div className="flex justify-between items-start z-10">
@@ -116,7 +110,6 @@ export default function Dashboard({
                 </div>
             </div>
 
-            {/* Recent Appointments */}
             <section className="bg-surface-container-lowest rounded-xl p-8">
                 <div className="flex justify-between items-center mb-8">
                     <h2 className="text-2xl font-extrabold font-headline text-on-surface">Recent Appointments</h2>

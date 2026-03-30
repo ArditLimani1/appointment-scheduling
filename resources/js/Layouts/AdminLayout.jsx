@@ -4,19 +4,19 @@ import Dropdown from '@/Components/Dropdown';
 import { useState } from 'react';
 
 const navItems = [
-    { label: 'Dashboard',     icon: 'dashboard',      route: 'admin.dashboard' },
-    { label: 'Employees',     icon: 'badge',           route: 'admin.employees.index' },
-    { label: 'Services',      icon: 'layers',          route: 'admin.services.index' },
-    { label: 'Appointments',  icon: 'calendar_today',  route: 'admin.appointments.index' },
-    { label: 'Reports',       icon: 'analytics',       route: 'admin.appointments.index' },
-    { label: 'Configuration', icon: 'settings',        route: 'admin.settings.index' },
+    { label: 'Dashboard', icon: 'dashboard', route: 'admin.dashboard' },
+    { label: 'Employees', icon: 'badge', route: 'admin.employees.index' },
+    { label: 'Services', icon: 'layers', route: 'admin.services.index' },
+    { label: 'Appointments', icon: 'calendar_today', route: 'admin.appointments.index' },
+    { label: 'Analytics', icon: 'analytics', route: 'admin.analytics.index' },
+    { label: 'Configuration', icon: 'settings', route: 'admin.settings.index' },
 ];
 
 const mobileNavItems = [
-    { label: 'Dashboard',    icon: 'dashboard',      route: 'admin.dashboard' },
-    { label: 'Employees',    icon: 'badge',           route: 'admin.employees.index' },
-    { label: 'Appointments', icon: 'calendar_today',  route: 'admin.appointments.index' },
-    { label: 'Config',       icon: 'settings',        route: 'admin.settings.index' },
+    { label: 'Dashboard', icon: 'dashboard', route: 'admin.dashboard' },
+    { label: 'Employees', icon: 'badge', route: 'admin.employees.index' },
+    { label: 'Appointments', icon: 'calendar_today', route: 'admin.appointments.index' },
+    { label: 'Config', icon: 'settings', route: 'admin.settings.index' },
 ];
 
 export default function AdminLayout({ children }) {
@@ -39,7 +39,6 @@ export default function AdminLayout({ children }) {
 
     return (
         <div className="min-h-screen bg-surface font-body">
-            {/* Mobile overlay */}
             {sidebarOpen && (
                 <div
                     className="fixed inset-0 z-40 bg-black/40 lg:hidden"
@@ -47,13 +46,10 @@ export default function AdminLayout({ children }) {
                 />
             )}
 
-            {/* Sidebar */}
             <aside className={`fixed top-0 left-0 z-50 h-screen w-72 bg-surface flex flex-col transition-transform duration-300 ${
                 sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
             }`}>
                 <div className="flex flex-col h-full py-10 px-8">
-
-                    {/* Brand */}
                     <div className="mb-10">
                         <p className="text-sm font-extrabold font-headline text-on-surface uppercase tracking-widest leading-none">
                             {business?.name ?? 'Admin Panel'}
@@ -63,7 +59,6 @@ export default function AdminLayout({ children }) {
                         </p>
                     </div>
 
-                    {/* Navigation */}
                     <nav className="flex-1 space-y-1">
                         {navItems.map((item) => {
                             const active = isActive(item.route);
@@ -89,9 +84,7 @@ export default function AdminLayout({ children }) {
                         })}
                     </nav>
 
-                    {/* Bottom section */}
                     <div className="pt-8 border-t border-outline-variant/40 space-y-5">
-                        {/* Booking link */}
                         {business?.slug && (
                             <a
                                 href={bookingUrl}
@@ -104,7 +97,6 @@ export default function AdminLayout({ children }) {
                             </a>
                         )}
 
-                        {/* User */}
                         <div className="flex items-center gap-3 px-2">
                             <div className="w-9 h-9 rounded-full bg-primary-container flex items-center justify-center text-on-primary text-xs font-bold shrink-0">
                                 {user?.name?.charAt(0)?.toUpperCase()}
@@ -115,7 +107,6 @@ export default function AdminLayout({ children }) {
                             </div>
                         </div>
 
-                        {/* Logout */}
                         <Link
                             href={route('logout')}
                             method="post"
@@ -129,9 +120,7 @@ export default function AdminLayout({ children }) {
                 </div>
             </aside>
 
-            {/* Main content */}
             <div className="lg:pl-72">
-                {/* Top bar */}
                 <header className="sticky top-0 z-30 flex items-center justify-between bg-surface/80 backdrop-blur-xl border-b border-outline-variant/20 px-8 py-4">
                     <div className="flex items-center gap-4">
                         <button
@@ -174,13 +163,11 @@ export default function AdminLayout({ children }) {
                     </div>
                 </header>
 
-                {/* Page content */}
                 <main className="p-6 sm:p-8 pb-24 lg:pb-8 bg-surface min-h-[calc(100vh-73px)]">
                     {children}
                 </main>
             </div>
 
-            {/* Mobile bottom nav */}
             <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-outline-variant/30 bg-surface px-2 py-1.5 lg:hidden">
                 {mobileNavItems.map((item) => {
                     const active = isActive(item.route);

@@ -6,15 +6,15 @@
 
         <title inertia>{{ config('app.name', 'Stratos Scheduler') }}</title>
 
-        <!-- Fonts -->
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+        <link rel="alternate icon" href="/favicon.ico">
+
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
 
-        <!-- Material Symbols -->
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
 
-        <!-- Scripts -->
         @routes
         @viteReactRefresh
         @vite(['resources/js/app.jsx', "resources/js/Pages/{$page['component']}.jsx"])

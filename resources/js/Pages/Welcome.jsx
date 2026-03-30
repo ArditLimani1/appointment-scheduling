@@ -37,9 +37,8 @@ const features = [
 export default function Welcome({ auth, canLogin, canRegister }) {
     return (
         <div className="min-h-screen bg-surface font-body">
-            <Head title="BookSlot — Online Appointment Scheduling" />
+            <Head title="BookSlot - Online Appointment Scheduling" />
 
-            {/* Nav */}
             <header className="glass-header sticky top-0 z-30 border-b border-outline-variant">
                 <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
                     <Link href="/" className="flex items-center gap-2.5">
@@ -80,7 +79,6 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                 </div>
             </header>
 
-            {/* Hero */}
             <section className="relative overflow-hidden">
                 <div className="absolute inset-0 -z-10 opacity-[0.03]"
                     style={{ backgroundImage: 'radial-gradient(circle, #6750A4 1px, transparent 1px)', backgroundSize: '32px 32px' }}
@@ -121,10 +119,8 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                 </div>
             </section>
 
-            {/* Mock booking URL preview */}
             <section className="mx-auto max-w-2xl px-6 pb-16">
                 <div className="rounded-3xl bg-surface-container-lowest border border-outline-variant overflow-hidden shadow-xl">
-                    {/* Browser chrome */}
                     <div className="flex items-center gap-2 bg-surface-container px-4 py-3 border-b border-outline-variant">
                         <div className="flex gap-1.5">
                             <div className="h-3 w-3 rounded-full bg-error/50" />
@@ -138,7 +134,6 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                             </div>
                         </div>
                     </div>
-                    {/* Page preview */}
                     <div className="p-6 space-y-4">
                         <div className="flex items-center gap-3 mb-5">
                             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary-container text-on-primary-container font-bold font-headline text-lg">B</div>
@@ -166,7 +161,6 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                 </div>
             </section>
 
-            {/* Features */}
             <section className="mx-auto max-w-6xl px-6 py-16">
                 <div className="text-center mb-12">
                     <h2 className="text-3xl sm:text-4xl font-black font-headline text-on-surface tracking-tight mb-3">
@@ -189,7 +183,6 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                 </div>
             </section>
 
-            {/* CTA */}
             <section className="mx-auto max-w-3xl px-6 py-20 text-center">
                 <div className="rounded-3xl bg-primary p-10 relative overflow-hidden">
                     <div className="absolute inset-0 opacity-10"
@@ -214,7 +207,6 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                 </div>
             </section>
 
-            {/* Footer */}
             <footer className="border-t border-outline-variant">
                 <div className="mx-auto max-w-6xl px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div className="flex items-center gap-2">

@@ -32,7 +32,6 @@ export default function EmployeeLayout({ children }) {
 
     return (
         <div className="min-h-screen bg-surface font-body">
-            {/* Mobile sidebar overlay */}
             {sidebarOpen && (
                 <div
                     className="fixed inset-0 z-40 bg-black/50 lg:hidden"
@@ -40,20 +39,17 @@ export default function EmployeeLayout({ children }) {
                 />
             )}
 
-            {/* Sidebar */}
             <aside
                 className={`fixed top-0 left-0 z-50 h-full w-[280px] lg:w-[72px] xl:w-[240px] bg-surface-container-lowest border-r border-outline-variant flex flex-col transition-transform duration-300 ${
                     sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
                 }`}
             >
-                {/* Brand */}
                 <div className="flex items-center gap-2 px-4 py-5 lg:justify-center xl:justify-start">
                     <span className="text-2xl font-black font-headline text-on-surface tracking-tight">
                         S<span className="hidden lg:hidden xl:inline">tratos</span>
                     </span>
                 </div>
 
-                {/* Employee Role Card */}
                 <div className="mx-3 mb-4 rounded-2xl bg-secondary-container px-3 py-2.5 lg:mx-1 lg:px-1 xl:mx-3 xl:px-3">
                     <div className="flex items-center gap-2 lg:justify-center xl:justify-start">
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-on-secondary-container/20">
@@ -66,7 +62,6 @@ export default function EmployeeLayout({ children }) {
                     </div>
                 </div>
 
-                {/* Navigation */}
                 <nav className="flex-1 space-y-1 px-2">
                     {navItems.map((item) => {
                         const active = isActive(item.route);
@@ -92,7 +87,6 @@ export default function EmployeeLayout({ children }) {
                     })}
                 </nav>
 
-                {/* Bottom logout */}
                 <div className="border-t border-outline-variant p-3">
                     <Link
                         href={route('logout')}
@@ -106,9 +100,7 @@ export default function EmployeeLayout({ children }) {
                 </div>
             </aside>
 
-            {/* Main content area */}
             <div className="lg:pl-[72px] xl:pl-[240px]">
-                {/* Top bar */}
                 <header className="glass-header sticky top-0 z-30 flex items-center justify-between border-b border-outline-variant px-4 py-3 sm:px-6">
                     <div className="flex items-center gap-3">
                         <button
@@ -149,13 +141,11 @@ export default function EmployeeLayout({ children }) {
                     </div>
                 </header>
 
-                {/* Page content */}
                 <main className="p-4 sm:p-6 pb-24 lg:pb-6">
                     {children}
                 </main>
             </div>
 
-            {/* Mobile bottom navigation */}
             <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-outline-variant bg-surface-container-lowest px-2 py-1.5 lg:hidden">
                 {mobileNavItems.map((item) => {
                     const active = isActive(item.route);
