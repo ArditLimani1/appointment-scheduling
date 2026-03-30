@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Head, useForm, usePage, router } from '@inertiajs/react';
+import { Head, usePage, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import Icon from '@/Components/Icon';
-import Modal from '@/Components/Modal';
-import InputError from '@/Components/InputError';
+import PageHeader from '@/Components/PageHeader';
+import DeleteConfirmModal from '@/Components/DeleteConfirmModal';
+import ServiceModal from './ServiceModal';
 
 export default function Index({ services }) {
     const { auth } = usePage().props;
@@ -13,44 +14,8 @@ export default function Index({ services }) {
     const [editing, setEditing] = useState(null);
     const [deleteTarget, setDeleteTarget] = useState(null);
 
-    const { data, setData, post, put, processing, errors, reset } = useForm({
-        name: '',
-        duration: 30,
-        price: '',
-        description: '',
-        is_active: true,
-        is_popular: false,
-        icon: 'content_cut',
-    });
-
-    const openCreate = () => { reset(); setEditing(null); setShowModal(true); };
-
-    const openEdit = (svc) => {
-        setEditing(svc);
-        setData({
-            name: svc.name,
-            duration: svc.duration,
-            price: svc.price,
-            description: svc.description || '',
-            is_active: svc.is_active,
-            is_popular: svc.is_popular,
-            icon: svc.icon || 'content_cut',
-        });
-        setShowModal(true);
-    };
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        if (editing) {
-            put(route('admin.services.update', editing.id), {
-                onSuccess: () => { setShowModal(false); reset(); },
-            });
-        } else {
-            post(route('admin.services.store'), {
-                onSuccess: () => { setShowModal(false); reset(); },
-            });
-        }
-    };
+    const openCreate = () => { setEditing(null); setShowModal(true); };
+    const openEdit = (svc) => { setEditing(svc); setShowModal(true); };
 
     const confirmDelete = () => {
         router.delete(route('admin.services.destroy', deleteTarget.id));
@@ -68,26 +33,21 @@ export default function Index({ services }) {
         });
     };
 
-    const inputClass = "w-full rounded-xl border border-outline-variant bg-surface-container-low px-4 py-2.5 text-sm text-on-surface placeholder-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-on-primary-container/30 transition-all";
-
     return (
         <AdminLayout>
             <Head title="Services" />
 
-            <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
-                <div>
-                    <h1 className="text-4xl font-headline font-extrabold tracking-tight text-on-surface">Services</h1>
-                    <p className="mt-1.5 text-sm text-on-surface-variant max-w-lg">
-                        Manage your business service offerings. Define durations, pricing, and availability.
-                    </p>
-                </div>
+            <PageHeader
+                title="Services"
+                description="Manage your business service offerings. Define durations, pricing, and availability."
+            >
                 <button
                     onClick={openCreate}
                     className="flex items-center gap-2 rounded-xl bg-on-surface px-6 py-3 text-sm font-bold text-surface hover:opacity-90 transition-all active:scale-95 shadow-sm shrink-0"
                 >
                     <Icon name="add_circle" size="text-lg" /> Add Service
                 </button>
-            </div>
+            </PageHeader>
 
             <div className="bg-surface-container-lowest rounded-2xl overflow-hidden ring-1 ring-slate-100 shadow-sm">
                 <div className="px-8 py-5 border-b border-slate-50 flex items-center justify-between bg-white">
@@ -134,20 +94,17 @@ export default function Index({ services }) {
                                                     <p className="text-xs text-on-surface-variant mt-0.5">{svc.description}</p>
                                                 )}
                                             </td>
-
                                             <td className="px-8 py-5 text-center">
                                                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container text-on-surface-variant text-xs font-medium">
                                                     <Icon name="schedule" size="text-sm" />
                                                     {svc.duration} min
                                                 </span>
                                             </td>
-
                                             <td className="px-8 py-5">
                                                 <span className="font-headline font-extrabold text-on-surface text-base">
                                                     {currencySymbol}{Number(svc.price).toFixed(2)}
                                                 </span>
                                             </td>
-
                                             <td className="px-8 py-5">
                                                 <div className="flex justify-center">
                                                     <button
@@ -159,7 +116,6 @@ export default function Index({ services }) {
                                                     </button>
                                                 </div>
                                             </td>
-
                                             <td className="px-8 py-5 text-right">
                                                 <div className="flex items-center justify-end gap-1">
                                                     <button
@@ -183,7 +139,6 @@ export default function Index({ services }) {
                                 </tbody>
                             </table>
                         </div>
-
                         <div className="px-8 py-4 bg-slate-50/30 flex items-center justify-between border-t border-slate-50">
                             <p className="text-sm text-on-surface-variant">
                                 Showing <span className="font-bold text-on-surface">{services.length}</span> service{services.length !== 1 ? 's' : ''}
@@ -193,77 +148,20 @@ export default function Index({ services }) {
                 )}
             </div>
 
-            <Modal show={!!deleteTarget} onClose={() => setDeleteTarget(null)} maxWidth="sm">
-                <div className="p-6">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-error-container mx-auto mb-4">
-                        <Icon name="delete" size="text-xl" className="text-error" />
-                    </div>
-                    <h3 className="text-center text-base font-bold text-on-surface mb-1">Delete Service?</h3>
-                    <p className="text-center text-sm text-on-surface-variant mb-6">
-                        <span className="font-medium">"{deleteTarget?.name}"</span> will be permanently removed. This cannot be undone.
-                    </p>
-                    <div className="flex gap-3">
-                        <button onClick={() => setDeleteTarget(null)} className="flex-1 rounded-xl border border-outline-variant px-4 py-2.5 text-sm font-medium text-on-surface hover:bg-surface-container-low transition-colors">
-                            Cancel
-                        </button>
-                        <button onClick={confirmDelete} className="flex-1 rounded-xl bg-error px-4 py-2.5 text-sm font-semibold text-on-error hover:opacity-90 transition-opacity">
-                            Delete
-                        </button>
-                    </div>
-                </div>
-            </Modal>
+            <DeleteConfirmModal
+                show={!!deleteTarget}
+                onClose={() => setDeleteTarget(null)}
+                onConfirm={confirmDelete}
+                title="Delete Service?"
+                message={`"${deleteTarget?.name}" will be permanently removed. This cannot be undone.`}
+            />
 
-            <Modal show={showModal} onClose={() => setShowModal(false)} maxWidth="md">
-                <form onSubmit={handleSubmit} className="p-6">
-                    <div className="flex items-start justify-between mb-5">
-                        <div>
-                            <h2 className="text-lg font-bold text-on-surface">{editing ? 'Edit Service' : 'Add Service'}</h2>
-                            <p className="text-xs text-on-surface-variant mt-0.5">{editing ? 'Update the service details below.' : 'Create a new service offering'}</p>
-                        </div>
-                        <button type="button" onClick={() => setShowModal(false)} className="rounded-lg p-1 text-on-surface-variant hover:bg-surface-container-high transition-colors">
-                            <Icon name="close" size="text-xl" />
-                        </button>
-                    </div>
-
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-on-surface mb-1.5">Service Name <span className="text-error">*</span></label>
-                            <input value={data.name} onChange={e => setData('name', e.target.value)} className={inputClass} placeholder="e.g., Haircut" autoFocus required />
-                            <InputError message={errors.name} className="mt-1" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-on-surface mb-1.5">Duration (minutes) <span className="text-error">*</span></label>
-                            <input type="number" min="5" value={data.duration} onChange={e => setData('duration', parseInt(e.target.value))} className={inputClass} required />
-                            <InputError message={errors.duration} className="mt-1" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-on-surface mb-1.5">Price ({currencySymbol}) <span className="text-error">*</span></label>
-                            <input type="number" step="0.01" min="0" value={data.price} onChange={e => setData('price', e.target.value)} className={inputClass} placeholder="15.00" required />
-                            <InputError message={errors.price} className="mt-1" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-on-surface mb-1.5">Description <span className="text-xs text-on-surface-variant font-normal">(optional)</span></label>
-                            <textarea value={data.description} onChange={e => setData('description', e.target.value)} rows={2} className={`${inputClass} resize-none`} placeholder="Brief description shown in the table..." />
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <label className="relative inline-flex cursor-pointer items-center">
-                                <input type="checkbox" checked={data.is_popular} onChange={e => setData('is_popular', e.target.checked)} className="peer sr-only" />
-                                <div className="peer h-5 w-9 rounded-full bg-outline-variant after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-on-surface peer-checked:after:translate-x-full" />
-                            </label>
-                            <span className="text-sm text-on-surface">Mark as Popular</span>
-                        </div>
-                    </div>
-
-                    <div className="mt-6 flex items-center justify-end gap-3">
-                        <button type="button" onClick={() => setShowModal(false)} className="rounded-xl border border-outline-variant px-5 py-2.5 text-sm font-medium text-on-surface hover:bg-surface-container-low transition-colors">
-                            Cancel
-                        </button>
-                        <button type="submit" disabled={processing} className="rounded-xl bg-on-surface px-5 py-2.5 text-sm font-semibold text-surface hover:opacity-90 transition-opacity disabled:opacity-50">
-                            {processing ? 'Saving...' : (editing ? 'Save Changes' : 'Add Service')}
-                        </button>
-                    </div>
-                </form>
-            </Modal>
+            <ServiceModal
+                show={showModal}
+                onClose={() => setShowModal(false)}
+                editing={editing}
+                currencySymbol={currencySymbol}
+            />
         </AdminLayout>
     );
 }

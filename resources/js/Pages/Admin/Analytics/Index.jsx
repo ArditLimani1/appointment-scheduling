@@ -2,6 +2,7 @@ import { Head, router, usePage } from '@inertiajs/react';
 import { useCallback, useMemo, useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import Icon from '@/Components/Icon';
+import PageHeader from '@/Components/PageHeader';
 import FilterListbox from '@/Components/FilterListbox';
 import DatePicker from '@/Components/DatePicker';
 
@@ -76,22 +77,17 @@ export default function Index({
         <AdminLayout>
             <Head title="Analytics" />
 
-            <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
-                <div>
-                    <h1 className="text-4xl font-headline font-extrabold tracking-tight text-on-surface">
-                        Analytics
-                    </h1>
-                    <p className="mt-1.5 text-sm text-on-surface-variant max-w-lg">
-                        Track your business efficiency and financial growth through detailed appointment metrics.
-                    </p>
-                </div>
+            <PageHeader
+                title="Analytics"
+                description="Track your business efficiency and financial growth through detailed appointment metrics."
+            >
                 <a
                     href={buildExportUrl(localFilters)}
                     className="flex items-center gap-2 rounded-xl bg-on-surface px-6 py-3 text-sm font-bold text-surface hover:opacity-90 transition-opacity shrink-0"
                 >
                     <Icon name="download" size="text-lg" /> Export to Excel
                 </a>
-            </div>
+            </PageHeader>
 
             <section className="mb-8 bg-surface-container-lowest rounded-2xl p-6 ring-1 ring-slate-100 shadow-sm">
                 <div className="flex flex-wrap gap-4 items-end">

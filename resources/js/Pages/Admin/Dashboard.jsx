@@ -1,4 +1,5 @@
 import AdminLayout from '@/Layouts/AdminLayout';
+import MetricCard from '@/Components/MetricCard';
 import Icon from '@/Components/Icon';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { formatAppointmentDate, formatTimeHm } from '@/utils/appointmentDate';
@@ -47,67 +48,36 @@ export default function Dashboard({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 mb-12">
-
-                <div className="bg-surface-container-lowest p-8 rounded-xl flex flex-col justify-between h-48 hover:-translate-y-1 transition-transform duration-300">
-                    <div className="flex justify-between items-start">
-                        <span className="p-3 bg-primary-fixed rounded-lg">
-                            <Icon name="badge" size="text-xl" className="text-on-primary-fixed-variant" />
-                        </span>
-                        <span className="text-xs font-bold text-on-surface-variant bg-surface-container-highest px-2 py-1 rounded-full">
-                            {total_employees} total
-                        </span>
-                    </div>
-                    <div>
-                        <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">Active Employees</p>
-                        <h3 className="text-4xl font-extrabold font-headline text-on-surface">{active_employees}</h3>
-                    </div>
-                </div>
-
-                <div className="bg-surface-container-lowest p-8 rounded-xl flex flex-col justify-between h-48 hover:-translate-y-1 transition-transform duration-300">
-                    <div className="flex justify-between items-start">
-                        <span className="p-3 bg-secondary-container rounded-lg">
-                            <Icon name="category" size="text-xl" className="text-on-secondary-container" />
-                        </span>
-                        <span className="text-xs font-bold text-on-surface-variant bg-surface-container-highest px-2 py-1 rounded-full">
-                            {total_services} total
-                        </span>
-                    </div>
-                    <div>
-                        <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">Active Services</p>
-                        <h3 className="text-4xl font-extrabold font-headline text-on-surface">{active_services}</h3>
-                    </div>
-                </div>
-
-                <div className="bg-surface-container-lowest p-8 rounded-xl flex flex-col justify-between h-48 hover:-translate-y-1 transition-transform duration-300">
-                    <div className="flex justify-between items-start">
-                        <span className="p-3 bg-surface-container rounded-lg">
-                            <Icon name="event_upcoming" size="text-xl" className="text-on-surface-variant" />
-                        </span>
-                        <span className="text-xs font-bold text-on-surface-variant bg-surface-container-highest px-2 py-1 rounded-full">
-                            Scheduled
-                        </span>
-                    </div>
-                    <div>
-                        <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">Upcoming Appts</p>
-                        <h3 className="text-4xl font-extrabold font-headline text-on-surface">{upcoming_appointments}</h3>
-                    </div>
-                </div>
-
-                <div className="bg-primary-container p-8 rounded-xl flex flex-col justify-between h-48 relative overflow-hidden hover:-translate-y-1 transition-transform duration-300 shadow-xl">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-3xl" />
-                    <div className="flex justify-between items-start z-10">
-                        <span className="p-3 bg-on-primary-container/20 rounded-lg">
-                            <Icon name="payments" size="text-xl" className="text-on-primary-container" />
-                        </span>
-                        <Icon name="trending_up" size="text-xl" className="text-on-primary-container" />
-                    </div>
-                    <div className="z-10">
-                        <p className="text-xs font-bold text-on-primary-container/80 uppercase tracking-widest mb-1">Total Revenue</p>
-                        <h3 className="text-4xl font-extrabold font-headline text-white">
-                            {currencySymbol}{Number(total_revenue).toFixed(0)}
-                        </h3>
-                    </div>
-                </div>
+                <MetricCard
+                    icon="badge"
+                    iconBg="bg-primary-fixed"
+                    iconClass="text-on-primary-fixed-variant"
+                    label="Active Employees"
+                    value={active_employees}
+                    badge={`${total_employees} total`}
+                />
+                <MetricCard
+                    icon="category"
+                    iconBg="bg-secondary-container"
+                    iconClass="text-on-secondary-container"
+                    label="Active Services"
+                    value={active_services}
+                    badge={`${total_services} total`}
+                />
+                <MetricCard
+                    icon="event_upcoming"
+                    iconBg="bg-surface-container"
+                    iconClass="text-on-surface-variant"
+                    label="Upcoming Appts"
+                    value={upcoming_appointments}
+                    badge="Scheduled"
+                />
+                <MetricCard
+                    variant="primary"
+                    icon="payments"
+                    label="Total Revenue"
+                    value={`${currencySymbol}${Number(total_revenue).toFixed(0)}`}
+                />
             </div>
 
             <section className="bg-surface-container-lowest rounded-xl p-8">

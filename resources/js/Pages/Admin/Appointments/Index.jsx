@@ -2,6 +2,7 @@ import { Head, router, usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import Icon from '@/Components/Icon';
+import PageHeader from '@/Components/PageHeader';
 import FilterListbox from '@/Components/FilterListbox';
 import AppointmentStatusMenu from '@/Components/AppointmentStatusMenu';
 import { formatAppointmentDate, formatTimeHm } from '@/utils/appointmentDate';
@@ -140,20 +141,17 @@ export default function Index({ appointments, employees, filters = {} }) {
         <AdminLayout>
             <Head title="Appointments" />
 
-            <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
-                <div>
-                    <h1 className="text-4xl font-headline font-extrabold tracking-tight text-on-surface">Appointments</h1>
-                    <p className="mt-1.5 text-sm text-on-surface-variant max-w-lg">
-                        View and manage all customer bookings. Results update when you change staff, dates, or status.
-                    </p>
-                </div>
+            <PageHeader
+                title="Appointments"
+                description="View and manage all customer bookings. Results update when you change staff, dates, or status."
+            >
                 <a
                     href={exportUrl()}
                     className="flex items-center gap-2 rounded-xl bg-on-surface px-6 py-3 text-sm font-bold text-surface hover:opacity-90 transition-opacity shrink-0"
                 >
                     <Icon name="download" size="text-lg" /> Export Excel
                 </a>
-            </div>
+            </PageHeader>
 
             <div className="mb-6 rounded-2xl bg-surface-container-lowest p-4 ring-1 ring-slate-100 shadow-sm">
                 <div className="flex flex-wrap gap-3 items-end">
