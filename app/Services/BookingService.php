@@ -54,21 +54,28 @@ class BookingService implements BookingServiceInterface
         $minNoticeTime = Carbon::now()->addMinutes($business->min_booking_notice ?? 60);
         $dayOfWeek = $date->dayOfWeekIso - 1;
 
-        $schedule = $this->scheduleRepository->findActiveByUserAndDay($data['employee_id'], $dayOfWeek);
+        $employeeId = (int) $data['employee_id'];
+        abort_if(
+            ! $this->employeeRepository->getActiveByBusiness($business->id)->contains('id', $employeeId),
+            422,
+            'The selected employee is not available for this business.'
+        );
+
+        $schedule = $this->scheduleRepository->findActiveByUserAndDay($employeeId, $dayOfWeek);
         if (! $schedule) {
             return [];
         }
 
         $slotDuration = $business->slot_duration ?? 30;
         if (! empty($data['service_id'])) {
-            $service = $this->serviceRepository->findById($data['service_id']);
-            if ($service) {
+            $service = $this->serviceRepository->findById((int) $data['service_id']);
+            if ($service && $service->business_id === $business->id) {
                 $slotDuration = $service->duration;
             }
         }
 
         $existingAppointments = $this->appointmentRepository->getByEmployeeAndDate(
-            $data['employee_id'],
+            $employeeId,
             $date->toDateString()
         );
 
@@ -85,14 +92,23 @@ class BookingService implements BookingServiceInterface
     public function createBooking(string $slug, array $data): Appointment
     {
         $business = $this->businessRepository->findActiveBySlug($slug);
-        $service = $this->serviceRepository->findById($data['service_id']);
+
+        $employeeId = (int) $data['employee_id'];
+        abort_if(
+            ! $this->employeeRepository->getActiveByBusiness($business->id)->contains('id', $employeeId),
+            422,
+            'The selected employee is not available for this business.'
+        );
+
+        $service = $this->serviceRepository->findById((int) $data['service_id']);
+        abort_if(! $service || $service->business_id !== $business->id, 422, 'The selected service is not available for this business.');
 
         $startTime = Carbon::parse($data['date'].' '.$data['start_time']);
         $endTime = $startTime->copy()->addMinutes($service->duration);
 
         return $this->appointmentRepository->create([
             'business_id' => $business->id,
-            'employee_id' => $data['employee_id'],
+            'employee_id' => $employeeId,
             'service_id' => $data['service_id'],
             'client_first_name' => $data['client_first_name'],
             'client_last_name' => $data['client_last_name'],

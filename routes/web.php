@@ -32,8 +32,8 @@ Route::middleware('auth')->group(function () {
 
 Route::get('/book/confirmation/{appointment}', [BookingController::class, 'confirmation'])->name('booking.confirmation');
 Route::get('/book/{slug}', [BookingController::class, 'index'])->name('booking.index');
-Route::get('/book/{slug}/slots', [BookingController::class, 'getAvailableSlots'])->name('booking.slots');
-Route::post('/book/{slug}', [BookingController::class, 'store'])->name('booking.store');
+Route::get('/book/{slug}/slots', [BookingController::class, 'getAvailableSlots'])->middleware('throttle:60,1')->name('booking.slots');
+Route::post('/book/{slug}', [BookingController::class, 'store'])->middleware('throttle:10,1')->name('booking.store');
 
 Route::middleware(['auth', 'role:admin', 'has_business'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [Admin\DashboardController::class, 'index'])->name('dashboard');

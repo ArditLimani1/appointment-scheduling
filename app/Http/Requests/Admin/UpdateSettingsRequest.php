@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateSettingsRequest extends FormRequest
 {
@@ -13,11 +14,14 @@ class UpdateSettingsRequest extends FormRequest
 
     public function rules(): array
     {
-        $businessId = $this->user()->ownedBusiness?->id ?? 'NULL';
+        $ownedBusinessId = $this->user()->ownedBusiness?->id;
 
         return [
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:255', 'regex:/^[a-z0-9-]+$/', 'unique:businesses,slug,' . $businessId],
+            'slug' => [
+                'required', 'string', 'max:255', 'regex:/^[a-z0-9-]+$/',
+                Rule::unique('businesses', 'slug')->ignore($ownedBusinessId),
+            ],
             'location' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:50'],
             'slot_duration' => ['required', 'integer', 'min:5', 'max:120'],

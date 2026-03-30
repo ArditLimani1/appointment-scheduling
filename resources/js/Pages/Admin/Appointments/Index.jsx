@@ -6,33 +6,34 @@ import FilterListbox from '@/Components/FilterListbox';
 import AppointmentStatusMenu from '@/Components/AppointmentStatusMenu';
 import { formatAppointmentDate, formatTimeHm } from '@/utils/appointmentDate';
 
-function routePathOnly(routeName) {
+const APPOINTMENT_STATUSES = ['pending', 'confirmed', 'checked_in', 'completed', 'cancelled'];
+
+function getRoutePathname(routeName) {
     return new URL(route(routeName), window.location.href).pathname;
 }
 
-function pickFilterQuery(f) {
-    const data = {};
-    if (f.employee_id !== '' && f.employee_id != null) {
-        data.employee_id = String(f.employee_id);
+function buildFilterQueryParams(filters) {
+    const queryParams = {};
+    if (filters.employee_id !== '' && filters.employee_id != null) {
+        queryParams.employee_id = String(filters.employee_id);
     }
-    if (f.date_from) {
-        data.date_from = f.date_from;
+    if (filters.date_from) {
+        queryParams.date_from = filters.date_from;
     }
-    if (f.date_to) {
-        data.date_to = f.date_to;
+    if (filters.date_to) {
+        queryParams.date_to = filters.date_to;
     }
-    if (f.status) {
-        data.status = f.status;
+    if (filters.status) {
+        queryParams.status = filters.status;
     }
-    return data;
+    return queryParams;
 }
 
-function appointmentsIndexUrl(filters) {
-    const q = pickFilterQuery(filters);
-    const params = new URLSearchParams(q);
-    const qs = params.toString();
-    const path = routePathOnly('admin.appointments.index');
-    return path + (qs ? `?${qs}` : '');
+function buildAppointmentsUrl(filters) {
+    const queryParams = buildFilterQueryParams(filters);
+    const queryString = new URLSearchParams(queryParams).toString();
+    const pathname = getRoutePathname('admin.appointments.index');
+    return pathname + (queryString ? `?${queryString}` : '');
 }
 
 function normalizeAppointments(appointments) {
@@ -75,17 +76,17 @@ export default function Index({ appointments, employees, filters = {} }) {
     );
 
     const patchFilters = useCallback((patch) => {
-        setLocalFilters((f) => {
-            const next = { ...f, ...patch };
-            router.get(appointmentsIndexUrl(next), {}, visitOpts);
-            return next;
+        setLocalFilters((currentFilters) => {
+            const updatedFilters = { ...currentFilters, ...patch };
+            router.get(buildAppointmentsUrl(updatedFilters), {}, visitOpts);
+            return updatedFilters;
         });
     }, [visitOpts]);
 
     const clearFilters = () => {
-        const empty = { employee_id: '', date_from: '', date_to: '', status: '' };
-        setLocalFilters(empty);
-        router.get(routePathOnly('admin.appointments.index'), {}, visitOpts);
+        const emptyFilters = { employee_id: '', date_from: '', date_to: '', status: '' };
+        setLocalFilters(emptyFilters);
+        router.get(getRoutePathname('admin.appointments.index'), {}, visitOpts);
     };
 
     const updateStatus = (apt, status) => {
@@ -99,18 +100,18 @@ export default function Index({ appointments, employees, filters = {} }) {
     };
 
     const exportUrl = () => {
-        const params = new URLSearchParams(pickFilterQuery(localFilters));
-        const qs = params.toString();
-        const path = routePathOnly('admin.appointments.export');
-        return path + (qs ? `?${qs}` : '');
+        const queryParams = buildFilterQueryParams(localFilters);
+        const queryString = new URLSearchParams(queryParams).toString();
+        const pathname = getRoutePathname('admin.appointments.export');
+        return pathname + (queryString ? `?${queryString}` : '');
     };
 
-    const goPage = (url) => {
+    const navigateToPage = (url) => {
         if (!url) return;
         try {
-            const u = new URL(url, window.location.href);
-            const rel = u.pathname + u.search + u.hash;
-            router.get(rel, {}, { preserveState: false, preserveScroll: true });
+            const parsedUrl = new URL(url, window.location.href);
+            const relativeUrl = parsedUrl.pathname + parsedUrl.search + parsedUrl.hash;
+            router.get(relativeUrl, {}, { preserveState: false, preserveScroll: true });
         } catch {
             router.visit(url, { preserveState: false, preserveScroll: true });
         }
@@ -127,9 +128,9 @@ export default function Index({ appointments, employees, filters = {} }) {
     const statusOptions = useMemo(
         () => [
             { value: '', label: 'All Statuses' },
-            ...['pending', 'confirmed', 'checked_in', 'completed', 'cancelled'].map((s) => ({
-                value: s,
-                label: s.replace('_', ' '),
+            ...APPOINTMENT_STATUSES.map((status) => ({
+                value: status,
+                label: status.replace('_', ' '),
             })),
         ],
         [],
@@ -289,7 +290,7 @@ export default function Index({ appointments, employees, filters = {} }) {
                                     <button
                                         type="button"
                                         disabled={!meta.prev_page_url}
-                                        onClick={() => goPage(meta.prev_page_url)}
+                                        onClick={() => navigateToPage(meta.prev_page_url)}
                                         className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-on-surface disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white"
                                     >
                                         Previous
@@ -300,7 +301,7 @@ export default function Index({ appointments, employees, filters = {} }) {
                                     <button
                                         type="button"
                                         disabled={!meta.next_page_url}
-                                        onClick={() => goPage(meta.next_page_url)}
+                                        onClick={() => navigateToPage(meta.next_page_url)}
                                         className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-on-surface disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white"
                                     >
                                         Next

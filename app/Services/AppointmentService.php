@@ -25,7 +25,7 @@ class AppointmentService implements AppointmentServiceInterface
 
         return [
             'appointments' => $appointments,
-            'employees' => $employees->map(fn ($e) => ['id' => $e->id, 'name' => $e->name]),
+            'employees' => $employees->map(fn ($employee) => ['id' => $employee->id, 'name' => $employee->name]),
             'filters' => $filters,
         ];
     }

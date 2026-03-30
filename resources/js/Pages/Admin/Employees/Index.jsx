@@ -54,11 +54,11 @@ export default function Index({ employees, services }) {
         setDeleteTarget(null);
     };
 
-    const toggleActive = (emp) => {
-        router.patch(route('admin.employees.update', emp.id), {
-            name: emp.name,
-            email: emp.email,
-            is_active: !emp.is_active,
+    const toggleEmployeeActive = (employee) => {
+        router.patch(route('admin.employees.update', employee.id), {
+            name: employee.name,
+            email: employee.email,
+            is_active: !employee.is_active,
         });
     };
 
@@ -156,7 +156,7 @@ export default function Index({ employees, services }) {
                                                 <div className="flex justify-center">
                                                     <button
                                                         type="button"
-                                                        onClick={() => toggleActive(emp)}
+                                                        onClick={() => toggleEmployeeActive(emp)}
                                                         className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${emp.is_active ? 'bg-on-surface' : 'bg-surface-container-highest'}`}
                                                     >
                                                         <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${emp.is_active ? 'translate-x-5' : 'translate-x-0'}`} />

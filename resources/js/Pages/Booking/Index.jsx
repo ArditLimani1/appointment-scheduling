@@ -39,28 +39,28 @@ export default function Index({ employees, services, business, slug }) {
     const [phone, setPhone] = useState('');
     const [notes, setNotes] = useState('');
 
-    const lastEmpDateKeyRef = useRef('');
+    const prevEmployeeDateKeyRef = useRef('');
 
     const dateRange = useMemo(() => buildDateRange(business?.max_booking_window || 30), [business]);
 
     const availableServices = useMemo(() => {
         if (!selectedEmployee) return services;
-        const ids = selectedEmployee.services?.map(s => s.id) || [];
-        return ids.length ? services.filter(s => ids.includes(s.id)) : services;
+        const employeeServiceIds = selectedEmployee.services?.map(s => s.id) || [];
+        return employeeServiceIds.length ? services.filter(s => employeeServiceIds.includes(s.id)) : services;
     }, [selectedEmployee, services]);
 
     useEffect(() => {
         if (!selectedEmployee || !selectedDate) {
-            lastEmpDateKeyRef.current = '';
+            prevEmployeeDateKeyRef.current = '';
             setSlots([]);
             setSelectedSlot(null);
             return;
         }
 
-        const empDateKey = `${selectedEmployee.id}|${selectedDate}`;
-        const employeeOrDateChanged = lastEmpDateKeyRef.current !== empDateKey;
+        const employeeDateKey = `${selectedEmployee.id}|${selectedDate}`;
+        const employeeOrDateChanged = prevEmployeeDateKeyRef.current !== employeeDateKey;
         if (employeeOrDateChanged) {
-            lastEmpDateKeyRef.current = empDateKey;
+            prevEmployeeDateKeyRef.current = employeeDateKey;
             setSelectedSlot(null);
         }
 
@@ -73,12 +73,15 @@ export default function Index({ employees, services, business, slug }) {
             ...(selectedService ? { service_id: selectedService.id } : {}),
         });
         fetch(route('booking.slots', { slug }) + '?' + params)
-            .then(r => r.json())
-            .then((data) => {
-                const next = data.slots || [];
-                setSlots(next);
+            .then(response => {
+                if (!response.ok) throw new Error('Failed to fetch slots');
+                return response.json();
+            })
+            .then((responseData) => {
+                const availableSlots = responseData.slots || [];
+                setSlots(availableSlots);
                 if (!employeeOrDateChanged) {
-                    setSelectedSlot((prev) => (prev && next.includes(prev) ? prev : null));
+                    setSelectedSlot((prev) => (prev && availableSlots.includes(prev) ? prev : null));
                 }
             })
             .catch(() => {
@@ -90,9 +93,13 @@ export default function Index({ employees, services, business, slug }) {
             .finally(() => setLoadingSlots(false));
     }, [selectedEmployee?.id, selectedDate, selectedService?.id, slug]);
 
-    const nameParts = fullName.trim().split(' ');
-    const firstName = nameParts[0] || '';
-    const lastName = nameParts.slice(1).join(' ') || '-';
+    const { firstName, lastName } = useMemo(() => {
+        const parts = fullName.trim().split(' ');
+        return {
+            firstName: parts[0] || '',
+            lastName: parts.slice(1).join(' ') || '-',
+        };
+    }, [fullName]);
 
     const canSubmit = selectedEmployee && selectedDate && selectedSlot && selectedService && firstName && phone;
 

@@ -18,7 +18,7 @@ class StoreEmployeeRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', Rules\Password::defaults()],
-            'phone' => ['nullable', 'string', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:50'],
             'title' => ['nullable', 'string', 'max:255'],
             'service_ids' => ['nullable', 'array'],
             'service_ids.*' => ['exists:services,id'],
