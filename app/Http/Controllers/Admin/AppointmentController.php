@@ -58,9 +58,12 @@ class AppointmentController extends Controller
     {
         $filters = [];
 
-        $employeeId = $request->query('employee_id');
-        if ($employeeId !== null && $employeeId !== '' && ctype_digit((string) $employeeId)) {
-            $filters['employee_id'] = (int) $employeeId;
+        $employeeIdRaw = $request->query('employee_id');
+        if ($employeeIdRaw !== null && $employeeIdRaw !== '' && is_numeric($employeeIdRaw)) {
+            $id = (int) $employeeIdRaw;
+            if ($id > 0) {
+                $filters['employee_id'] = $id;
+            }
         }
 
         $dateFrom = $request->query('date_from');

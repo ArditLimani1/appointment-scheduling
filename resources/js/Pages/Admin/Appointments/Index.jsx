@@ -1,9 +1,14 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import Icon from '@/Components/Icon';
+import FilterListbox from '@/Components/FilterListbox';
 import AppointmentStatusMenu from '@/Components/AppointmentStatusMenu';
 import { formatAppointmentDate, formatTimeHm } from '@/utils/appointmentDate';
+
+function routePathOnly(routeName) {
+    return new URL(route(routeName), window.location.href).pathname;
+}
 
 function pickFilterQuery(f) {
     const data = {};
@@ -20,6 +25,14 @@ function pickFilterQuery(f) {
         data.status = f.status;
     }
     return data;
+}
+
+function appointmentsIndexUrl(filters) {
+    const q = pickFilterQuery(filters);
+    const params = new URLSearchParams(q);
+    const qs = params.toString();
+    const path = routePathOnly('admin.appointments.index');
+    return path + (qs ? `?${qs}` : '');
 }
 
 function normalizeAppointments(appointments) {
@@ -52,25 +65,27 @@ export default function Index({ appointments, employees, filters = {} }) {
         });
     }, [filters.employee_id, filters.date_from, filters.date_to, filters.status]);
 
-    const applyFilters = () => {
-        router.visit(route('admin.appointments.index'), {
-            method: 'get',
-            data: pickFilterQuery(localFilters),
+    const visitOpts = useMemo(
+        () => ({
             preserveState: false,
             replace: true,
             preserveScroll: true,
+        }),
+        [],
+    );
+
+    const patchFilters = useCallback((patch) => {
+        setLocalFilters((f) => {
+            const next = { ...f, ...patch };
+            router.get(appointmentsIndexUrl(next), {}, visitOpts);
+            return next;
         });
-    };
+    }, [visitOpts]);
 
     const clearFilters = () => {
-        setLocalFilters({ employee_id: '', date_from: '', date_to: '', status: '' });
-        router.visit(route('admin.appointments.index'), {
-            method: 'get',
-            data: {},
-            preserveState: false,
-            replace: true,
-            preserveScroll: true,
-        });
+        const empty = { employee_id: '', date_from: '', date_to: '', status: '' };
+        setLocalFilters(empty);
+        router.get(routePathOnly('admin.appointments.index'), {}, visitOpts);
     };
 
     const updateStatus = (apt, status) => {
@@ -86,14 +101,39 @@ export default function Index({ appointments, employees, filters = {} }) {
     const exportUrl = () => {
         const params = new URLSearchParams(pickFilterQuery(localFilters));
         const qs = params.toString();
-        return route('admin.appointments.export') + (qs ? `?${qs}` : '');
+        const path = routePathOnly('admin.appointments.export');
+        return path + (qs ? `?${qs}` : '');
     };
 
     const goPage = (url) => {
-        if (url) {
-            router.visit(url, { method: 'get', preserveState: false, preserveScroll: true });
+        if (!url) return;
+        try {
+            const u = new URL(url, window.location.href);
+            const rel = u.pathname + u.search + u.hash;
+            router.get(rel, {}, { preserveState: false, preserveScroll: true });
+        } catch {
+            router.visit(url, { preserveState: false, preserveScroll: true });
         }
     };
+
+    const employeeOptions = useMemo(
+        () => [
+            { value: '', label: 'All Staff' },
+            ...employees.map((e) => ({ value: String(e.id), label: e.name })),
+        ],
+        [employees],
+    );
+
+    const statusOptions = useMemo(
+        () => [
+            { value: '', label: 'All Statuses' },
+            ...['pending', 'confirmed', 'checked_in', 'completed', 'cancelled'].map((s) => ({
+                value: s,
+                label: s.replace('_', ' '),
+            })),
+        ],
+        [],
+    );
 
     return (
         <AdminLayout>
@@ -103,7 +143,7 @@ export default function Index({ appointments, employees, filters = {} }) {
                 <div>
                     <h1 className="text-4xl font-headline font-extrabold tracking-tight text-on-surface">Appointments</h1>
                     <p className="mt-1.5 text-sm text-on-surface-variant max-w-lg">
-                        View and manage all customer bookings. Filter by staff, date range, or status.
+                        View and manage all customer bookings. Results update when you change staff, dates, or status.
                     </p>
                 </div>
                 <a
@@ -116,27 +156,18 @@ export default function Index({ appointments, employees, filters = {} }) {
 
             <div className="mb-6 rounded-2xl bg-surface-container-lowest p-4 ring-1 ring-slate-100 shadow-sm">
                 <div className="flex flex-wrap gap-3 items-end">
-                    <div className="flex-1 min-w-[160px]">
-                        <label className="block text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Employee</label>
-                        <select
-                            value={localFilters.employee_id}
-                            onChange={(e) => setLocalFilters((f) => ({ ...f, employee_id: e.target.value }))}
-                            className="w-full rounded-xl border border-slate-100 bg-white px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-on-primary-container/20"
-                        >
-                            <option value="">All Staff</option>
-                            {employees.map((e) => (
-                                <option key={e.id} value={e.id}>
-                                    {e.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                    <FilterListbox
+                        label="Employee"
+                        value={localFilters.employee_id}
+                        onChange={(v) => patchFilters({ employee_id: v })}
+                        options={employeeOptions}
+                    />
                     <div className="flex-1 min-w-[140px]">
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-outline mb-1">From</label>
                         <input
                             type="date"
                             value={localFilters.date_from}
-                            onChange={(e) => setLocalFilters((f) => ({ ...f, date_from: e.target.value }))}
+                            onChange={(e) => patchFilters({ date_from: e.target.value })}
                             className="w-full rounded-xl border border-slate-100 bg-white px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-on-primary-container/20"
                         />
                     </div>
@@ -145,33 +176,18 @@ export default function Index({ appointments, employees, filters = {} }) {
                         <input
                             type="date"
                             value={localFilters.date_to}
-                            onChange={(e) => setLocalFilters((f) => ({ ...f, date_to: e.target.value }))}
+                            onChange={(e) => patchFilters({ date_to: e.target.value })}
                             className="w-full rounded-xl border border-slate-100 bg-white px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-on-primary-container/20"
                         />
                     </div>
-                    <div className="flex-1 min-w-[140px]">
-                        <label className="block text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Status</label>
-                        <select
-                            value={localFilters.status}
-                            onChange={(e) => setLocalFilters((f) => ({ ...f, status: e.target.value }))}
-                            className="w-full rounded-xl border border-slate-100 bg-white px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-on-primary-container/20"
-                        >
-                            <option value="">All Statuses</option>
-                            {['pending', 'confirmed', 'checked_in', 'completed', 'cancelled'].map((s) => (
-                                <option key={s} value={s}>
-                                    {s.replace('_', ' ')}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className="flex gap-2">
-                        <button
-                            type="button"
-                            onClick={applyFilters}
-                            className="rounded-xl bg-on-surface px-5 py-2.5 text-sm font-bold text-surface hover:opacity-90 transition-opacity"
-                        >
-                            Filter
-                        </button>
+                    <FilterListbox
+                        label="Status"
+                        value={localFilters.status}
+                        onChange={(v) => patchFilters({ status: v })}
+                        options={statusOptions}
+                        minWidthClass="min-w-[140px]"
+                    />
+                    <div className="flex items-end">
                         <button
                             type="button"
                             onClick={clearFilters}
