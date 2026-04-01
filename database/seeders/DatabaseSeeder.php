@@ -5,7 +5,7 @@ namespace Database\Seeders;
 use App\Enums\AppointmentStatus;
 use App\Enums\UserRole;
 use App\Models\Appointment;
-use App\Models\BusinessSetting;
+use App\Models\Business;
 use App\Models\Schedule;
 use App\Models\ScheduleBreak;
 use App\Models\Service;
@@ -21,23 +21,26 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
-        BusinessSetting::create([
-            'business_name' => 'Stratos Barbershop',
-            'slug' => 'stratos-barbershop',
-            'slot_duration' => 30,
-            'min_booking_notice' => 60,
-            'max_booking_window' => 30,
-            'services_enabled' => true,
-            'timezone' => 'Europe/Berlin',
-            'currency' => 'EUR',
-            'currency_symbol' => '€',
-        ]);
-
         $admin = User::create([
             'name' => 'Admin',
             'email' => 'admin@stratos.com',
             'password' => Hash::make('password'),
             'role' => UserRole::Admin,
+            'is_active' => true,
+        ]);
+
+        $business = Business::create([
+            'owner_id' => $admin->id,
+            'name' => 'Tiki Style',
+            'slug' => 'tiki-style',
+            'location' => 'Rimanishte, Prishtine',
+            'timezone' => 'Europe/Berlin',
+            'currency' => 'EUR',
+            'currency_symbol' => '€',
+            'slot_duration' => 30,
+            'min_booking_notice' => 60,
+            'max_booking_window' => 30,
+            'services_enabled' => true,
             'is_active' => true,
         ]);
 
@@ -49,6 +52,7 @@ class DatabaseSeeder extends Seeder
             'phone' => '+1234567001',
             'title' => 'Master Barber',
             'is_active' => true,
+            'business_id' => $business->id,
         ]);
 
         $sarah = User::create([
@@ -59,6 +63,7 @@ class DatabaseSeeder extends Seeder
             'phone' => '+1234567002',
             'title' => 'Senior Stylist',
             'is_active' => true,
+            'business_id' => $business->id,
         ]);
 
         $marcus = User::create([
@@ -69,6 +74,7 @@ class DatabaseSeeder extends Seeder
             'phone' => '+1234567003',
             'title' => 'Detail Expert',
             'is_active' => true,
+            'business_id' => $business->id,
         ]);
 
         $elena = User::create([
@@ -79,11 +85,13 @@ class DatabaseSeeder extends Seeder
             'phone' => '+1234567004',
             'title' => 'Color Artist',
             'is_active' => true,
+            'business_id' => $business->id,
         ]);
 
         $employees = [$john, $sarah, $marcus, $elena];
 
         $signatureHaircut = Service::create([
+            'business_id' => $business->id,
             'name' => 'Signature Haircut',
             'description' => 'Premium haircut with consultation and styling',
             'duration' => 45,
@@ -95,6 +103,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $beardSculpt = Service::create([
+            'business_id' => $business->id,
             'name' => 'Beard Sculpt',
             'description' => 'Professional beard trimming and shaping',
             'duration' => 30,
@@ -106,6 +115,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $fullExecutive = Service::create([
+            'business_id' => $business->id,
             'name' => 'The Full Executive',
             'description' => 'Complete grooming package including haircut, beard trim, and styling',
             'duration' => 75,
@@ -117,6 +127,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $expressTrim = Service::create([
+            'business_id' => $business->id,
             'name' => 'Express Trim',
             'description' => 'Quick trim for maintaining your look',
             'duration' => 15,
@@ -128,6 +139,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $colorTreatment = Service::create([
+            'business_id' => $business->id,
             'name' => 'Color Treatment',
             'description' => 'Professional hair coloring service',
             'duration' => 60,
@@ -197,6 +209,7 @@ class DatabaseSeeder extends Seeder
             }
 
             Appointment::create([
+                'business_id' => $business->id,
                 'employee_id' => $employee->id,
                 'service_id' => $service->id,
                 'client_first_name' => $firstNames[array_rand($firstNames)],

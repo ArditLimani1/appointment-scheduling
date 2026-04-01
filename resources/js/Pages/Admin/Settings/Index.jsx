@@ -1,4 +1,4 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import Icon from '@/Components/Icon';
 import InputError from '@/Components/InputError';
@@ -8,6 +8,7 @@ function slugify(v) {
 }
 
 export default function Index({ settings, owner_email }) {
+    const { flash } = usePage().props;
     const { data, setData, put, processing, errors, recentlySuccessful } = useForm({
         name: settings.name || '',
         slug: settings.slug || '',
@@ -48,6 +49,25 @@ export default function Index({ settings, owner_email }) {
                 <h1 className="text-4xl font-extrabold font-headline tracking-tight text-on-surface mb-2">Business Configuration</h1>
                 <p className="text-on-surface-variant max-w-2xl text-base leading-relaxed">Refine your brand identity and operational constraints for a seamless booking experience.</p>
             </header>
+
+            {flash?.info && (
+                <div className="mb-6 flex items-start gap-3 rounded-2xl border border-outline-variant/40 bg-primary-container/15 px-5 py-4 text-sm text-on-surface">
+                    <Icon name="info" size="text-lg" className="mt-0.5 shrink-0 text-on-surface" />
+                    <div>
+                        <p className="font-bold">Finish business setup to unlock the dashboard.</p>
+                        <p className="mt-1 text-on-surface-variant">
+                            {flash.info}
+                        </p>
+                    </div>
+                </div>
+            )}
+
+            {flash?.success && (
+                <div className="mb-6 flex items-center gap-3 rounded-2xl bg-tertiary-fixed/20 px-5 py-4 text-sm font-medium text-on-tertiary-container">
+                    <Icon name="check_circle" size="text-lg" filled />
+                    <span>{flash.success}</span>
+                </div>
+            )}
 
             <form onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">

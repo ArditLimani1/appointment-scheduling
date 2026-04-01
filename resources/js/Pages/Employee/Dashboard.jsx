@@ -1,12 +1,15 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import EmployeeLayout from '@/Layouts/EmployeeLayout';
+import MetricCard from '@/Components/MetricCard';
 import Icon from '@/Components/Icon';
+import { formatAppointmentDate, formatTimeHm } from '@/utils/appointmentDate';
+import { useEffect, useState } from 'react';
 
 const STATUS_STYLES = {
-    pending: { bg: 'bg-secondary-container text-on-secondary-container', label: 'Pending' },
-    confirmed: { bg: 'bg-primary-container text-on-primary-container', label: 'Confirmed' },
-    checked_in: { bg: 'bg-tertiary-fixed/30 text-on-tertiary-container', label: 'Checked In' },
-    completed: { bg: 'bg-tertiary-fixed/30 text-on-tertiary-container', label: 'Completed' },
+    pending: { bg: 'bg-surface-container-highest text-on-surface-variant', label: 'Pending' },
+    confirmed: { bg: 'bg-tertiary-fixed text-on-tertiary-fixed-variant', label: 'Confirmed' },
+    checked_in: { bg: 'bg-primary-container text-on-primary-container', label: 'Checked In' },
+    completed: { bg: 'bg-primary-fixed text-on-primary-fixed-variant', label: 'Completed' },
     cancelled: { bg: 'bg-error-container text-on-error-container', label: 'Cancelled' },
 };
 
@@ -25,28 +28,58 @@ const ACTION_LABELS = {
     cancelled: { label: 'Cancel', icon: 'cancel' },
 };
 
-function buildDateRange(selectedDate) {
-    const days = [];
-    const base = new Date(selectedDate + 'T00:00:00');
-    for (let i = -6; i <= 7; i++) {
-        const d = new Date(base);
-        d.setDate(base.getDate() + i);
-        days.push(d);
-    }
-    return days;
-}
-
 function fmt(d, opts) {
     return new Intl.DateTimeFormat('en-GB', opts).format(d);
 }
 
-export default function Dashboard({ appointments, date }) {
-    const dateRange = buildDateRange(date);
-    const todayStr = new Date().toISOString().split('T')[0];
+function formatDateInput(value) {
+    const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})$/);
 
-    const goToDate = (d) => {
-        const ds = d.toISOString().split('T')[0];
-        router.get(route('employee.dashboard'), { date: ds }, { preserveState: false });
+    if (!match) {
+        return value;
+    }
+
+    return `${match[3]}.${match[2]}.${match[1]}`;
+}
+
+function parseDateInput(value) {
+    const match = String(value).trim().match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+
+    if (!match) {
+        return null;
+    }
+
+    const isoDate = `${match[3]}-${match[2]}-${match[1]}`;
+    const parsedDate = new Date(`${isoDate}T00:00:00`);
+
+    if (Number.isNaN(parsedDate.getTime())) {
+        return null;
+    }
+
+    return isoDate;
+}
+
+export default function Dashboard({
+    appointments = [],
+    appointments_count = 0,
+    confirmed_appointments = 0,
+    cancelled_appointments = 0,
+    completed_appointments = 0,
+    daily_revenue = 0,
+    date,
+}) {
+    const { auth } = usePage().props;
+    const business = auth.business;
+    const currencySymbol = business?.currency_symbol ?? '€';
+    const todayStr = new Date().toISOString().split('T')[0];
+    const [dateInput, setDateInput] = useState(formatDateInput(date));
+
+    useEffect(() => {
+        setDateInput(formatDateInput(date));
+    }, [date]);
+
+    const goToDate = (selectedDate) => {
+        router.get(route('employee.dashboard'), { date: selectedDate }, { preserveState: false });
     };
 
     const updateStatus = (apt, status) => {
@@ -58,140 +91,214 @@ export default function Dashboard({ appointments, date }) {
 
     return (
         <EmployeeLayout>
-            <Head title="My Appointments" />
+            <Head title="Appointments" />
 
-            <div className="mb-6">
-                <div className="flex items-center gap-2 mb-1">
-                    <span className="inline-flex items-center rounded-full bg-primary-container px-3 py-0.5 text-xs font-semibold text-on-primary-container">
+            <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                    <h1 className="text-4xl font-extrabold font-headline tracking-tight text-on-surface mb-2">Appointments</h1>
+                    <p className="text-on-surface-variant text-lg">
                         {isToday ? 'Today' : fmt(selectedDate, { weekday: 'long' })}
-                    </span>
-                    {appointments.length > 0 && (
-                        <span className="inline-flex items-center rounded-full bg-surface-container-high px-2.5 py-0.5 text-xs font-medium text-on-surface-variant">
-                            {appointments.length} appointment{appointments.length !== 1 ? 's' : ''}
-                        </span>
-                    )}
+                    </p>
                 </div>
-                <h1 className="text-3xl font-black font-headline tracking-tight text-on-surface">
-                    Daily Orchestration
-                </h1>
-                <p className="mt-1 text-sm text-on-surface-variant">
-                    {fmt(selectedDate, { day: 'numeric', month: 'long', year: 'numeric' })}
-                </p>
-            </div>
 
-            <div className="mb-6 -mx-4 sm:-mx-6">
-                <div className="flex gap-2 overflow-x-auto px-4 sm:px-6 pb-2 hide-scrollbar">
-                    {dateRange.map((d) => {
-                        const ds = d.toISOString().split('T')[0];
-                        const isSelected = ds === date;
-                        const isDateToday = ds === todayStr;
-                        return (
-                            <button
-                                key={ds}
-                                onClick={() => goToDate(d)}
-                                className={`flex shrink-0 flex-col items-center rounded-2xl px-3 py-2.5 transition-all ${
-                                    isSelected
-                                        ? 'bg-on-surface text-surface'
-                                        : 'bg-surface-container-lowest border border-outline-variant text-on-surface-variant hover:bg-surface-container-low'
-                                }`}
-                            >
-                                <span className="text-[10px] font-semibold uppercase tracking-widest mb-1">
-                                    {fmt(d, { weekday: 'short' })}
-                                </span>
-                                <span className={`text-lg font-black font-headline leading-none ${isSelected ? 'text-surface' : 'text-on-surface'}`}>
-                                    {d.getDate()}
-                                </span>
-                                {isDateToday && (
-                                    <span className={`mt-1 h-1.5 w-1.5 rounded-full ${isSelected ? 'bg-primary-container' : 'bg-primary'}`} />
-                                )}
-                            </button>
-                        );
-                    })}
+                <div className="w-full max-w-sm">
+                    <label className="mb-2 block text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">
+                        Select date
+                    </label>
+                    <div className="relative">
+                        <input
+                            type="text"
+                            value={dateInput}
+                            inputMode="numeric"
+                            placeholder="dd.mm.YYYY"
+                            onChange={(e) => {
+                                const { value } = e.target;
+                                setDateInput(value);
+
+                                const parsedDate = parseDateInput(value);
+
+                                if (parsedDate) {
+                                    goToDate(parsedDate);
+                                }
+                            }}
+                            onBlur={() => {
+                                const parsedDate = parseDateInput(dateInput);
+
+                                if (!parsedDate) {
+                                    setDateInput(formatDateInput(date));
+                                } else {
+                                    setDateInput(formatDateInput(parsedDate));
+                                }
+                            }}
+                            className="w-full rounded-2xl border border-outline-variant bg-surface-container-lowest px-4 py-3 text-sm font-medium text-on-surface shadow-sm focus:border-on-surface focus:outline-none focus:ring-2 focus:ring-on-surface/10"
+                        />
+                    </div>
                 </div>
             </div>
 
             {appointments.length === 0 ? (
-                <div className="flex flex-col items-center justify-center rounded-3xl bg-surface-container-lowest border border-outline-variant py-20">
-                    <Icon name="event_available" size="text-5xl" className="text-outline mb-4" />
-                    <p className="font-semibold text-on-surface mb-1">No appointments scheduled</p>
-                    <p className="text-sm text-on-surface-variant">
-                        {fmt(selectedDate, { weekday: 'long', day: 'numeric', month: 'long' })} is free.
+                <section className="bg-surface-container-lowest rounded-xl p-10 sm:p-12">
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <Icon name="event_available" size="text-5xl" className="text-outline mb-4" />
+                        <p className="font-semibold text-on-surface mb-1">No appointments scheduled</p>
+                        <p className="text-sm text-on-surface-variant">
+                            {fmt(selectedDate, { weekday: 'long', day: 'numeric', month: 'long' })} is free.
+                        </p>
+                    </div>
+                </section>
+            ) : (
+                <section className="bg-surface-container-lowest rounded-xl p-8">
+                    <div className="flex justify-between items-center mb-8">
+                        <h2 className="text-2xl font-extrabold font-headline text-on-surface">Appointments</h2>
+                        <span className="text-sm font-bold text-on-surface-variant">
+                            {fmt(selectedDate, { weekday: 'short', day: 'numeric', month: 'short' })}
+                        </span>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead>
+                                <tr className="border-b border-surface-container-highest">
+                                    <th className="pb-5 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">Client Name</th>
+                                    <th className="pb-5 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">Service</th>
+                                    <th className="pb-5 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">Time</th>
+                                    <th className="pb-5 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">Status</th>
+                                    <th className="pb-5 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">Phone</th>
+                                    <th className="pb-5 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-surface-container-low">
+                                {appointments.map((apt) => {
+                                    const style = STATUS_STYLES[apt.status] || STATUS_STYLES.pending;
+                                    const actions = STATUS_ACTIONS[apt.status] || [];
+
+                                    return (
+                                        <tr key={apt.id} className="hover:bg-surface-container-low/50 transition-colors align-top">
+                                            <td className="py-5 pr-4">
+                                                <div>
+                                                    <p className="font-bold text-on-surface">
+                                                        {apt.client_first_name} {apt.client_last_name}
+                                                    </p>
+                                                    {apt.client_notes && (
+                                                        <p className="mt-1 text-xs text-on-surface-variant italic line-clamp-1">
+                                                            "{apt.client_notes}"
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="py-5 pr-4">
+                                                <div className="flex items-center gap-1.5 text-sm text-on-surface-variant">
+                                                    <Icon name="content_cut" size="text-sm" />
+                                                    <span>{apt.service?.name ?? 'Appointment'}</span>
+                                                </div>
+                                            </td>
+                                            <td className="py-5 pr-4">
+                                                <div className="flex items-center gap-1.5">
+                                                    <Icon name="schedule" size="text-sm" className="text-on-surface-variant" />
+                                                    <p className="text-on-surface text-sm font-semibold">
+                                                        {formatTimeHm(apt.start_time)} - {formatTimeHm(apt.end_time)}
+                                                    </p>
+                                                </div>
+                                                <p className="mt-1 text-xs text-on-surface-variant">
+                                                    {currencySymbol}{Number(apt.price).toFixed(2)}
+                                                </p>
+                                            </td>
+                                            <td className="py-5 pr-4">
+                                                <span className={`px-3 py-1 text-[10px] font-extrabold uppercase rounded-full ${style.bg}`}>
+                                                    {style.label}
+                                                </span>
+                                            </td>
+                                            <td className="py-5 pr-4">
+                                                <div className="flex items-center gap-1.5 text-sm text-on-surface-variant">
+                                                    <Icon name="call" size="text-sm" />
+                                                    <span>{apt.client_phone}</span>
+                                                </div>
+                                            </td>
+                                            <td className="py-5 text-right">
+                                                {actions.length > 0 ? (
+                                                    <div className="flex justify-end gap-2 flex-wrap">
+                                                        {actions.map((action) => {
+                                                            const info = ACTION_LABELS[action];
+                                                            const isDanger = action === 'cancelled';
+
+                                                            return (
+                                                                <button
+                                                                    key={action}
+                                                                    onClick={() => updateStatus(apt, action)}
+                                                                    className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-all ${
+                                                                        isDanger
+                                                                            ? 'bg-error-container text-on-error-container hover:opacity-80'
+                                                                            : 'bg-surface-container-high text-on-surface hover:bg-surface-container-highest'
+                                                                    }`}
+                                                                >
+                                                                    <Icon name={info.icon} size="text-sm" />
+                                                                    {info.label}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-sm text-on-surface-variant">No actions</span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            )}
+
+            <section className="mt-8">
+                <div className="mb-5">
+                    <h2 className="text-2xl font-extrabold font-headline text-on-surface">Overview</h2>
+                    <p className="text-sm text-on-surface-variant mt-1">
+                        Daily performance summary for the selected date.
                     </p>
                 </div>
-            ) : (
-                <div className="space-y-3">
-                    {appointments.map((apt, index) => {
-                        const style = STATUS_STYLES[apt.status] || STATUS_STYLES.pending;
-                        const actions = STATUS_ACTIONS[apt.status] || [];
-                        return (
-                            <div key={apt.id} className="rounded-3xl bg-surface-container-lowest border border-outline-variant p-5 transition-all hover:shadow-sm">
-                                <div className="flex items-start gap-4">
-                                    <div className="flex flex-col items-center rounded-2xl bg-surface-container-low px-3 py-2 min-w-[64px]">
-                                        <span className="text-xs font-semibold text-on-surface-variant">{apt.start_time}</span>
-                                        <div className="my-1 h-6 w-px bg-outline-variant" />
-                                        <span className="text-xs text-on-surface-variant">{apt.end_time}</span>
-                                    </div>
 
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <p className="font-bold font-headline text-on-surface">
-                                                {apt.client_first_name} {apt.client_last_name}
-                                            </p>
-                                            <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${style.bg}`}>
-                                                {style.label}
-                                            </span>
-                                        </div>
-                                        <div className="mt-1 flex items-center gap-3 flex-wrap">
-                                            {apt.service && (
-                                                <span className="flex items-center gap-1 text-sm text-on-surface-variant">
-                                                    <Icon name="content_cut" size="text-sm" />
-                                                    {apt.service.name}
-                                                </span>
-                                            )}
-                                            <span className="flex items-center gap-1 text-sm text-on-surface-variant">
-                                                <Icon name="call" size="text-sm" />
-                                                {apt.client_phone}
-                                            </span>
-                                        </div>
-                                        {apt.client_notes && (
-                                            <p className="mt-1.5 text-xs text-on-surface-variant italic line-clamp-1">
-                                                "{apt.client_notes}"
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    <div className="shrink-0 text-right">
-                                        <p className="font-black font-headline text-on-surface">€{Number(apt.price).toFixed(2)}</p>
-                                    </div>
-                                </div>
-
-                                {actions.length > 0 && (
-                                    <div className="mt-4 flex gap-2 border-t border-outline-variant pt-4">
-                                        {actions.map(action => {
-                                            const info = ACTION_LABELS[action];
-                                            const isDanger = action === 'cancelled';
-                                            return (
-                                                <button
-                                                    key={action}
-                                                    onClick={() => updateStatus(apt, action)}
-                                                    className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-semibold transition-all ${
-                                                        isDanger
-                                                            ? 'bg-error-container text-on-error-container hover:opacity-80'
-                                                            : 'primary-gradient text-white hover:opacity-90'
-                                                    }`}
-                                                >
-                                                    <Icon name={info.icon} size="text-sm" />
-                                                    {info.label}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })}
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-6">
+                    <MetricCard
+                        icon="event_upcoming"
+                        iconBg="bg-primary-fixed"
+                        iconClass="text-on-primary-fixed-variant"
+                        label="Appointments"
+                        value={appointments_count}
+                        badge={isToday ? 'Today' : 'Selected day'}
+                    />
+                    <MetricCard
+                        icon="check_circle"
+                        iconBg="bg-secondary-container"
+                        iconClass="text-on-secondary-container"
+                        label="Confirmed"
+                        value={confirmed_appointments}
+                        badge="Approved"
+                    />
+                    <MetricCard
+                        icon="cancel"
+                        iconBg="bg-error-container"
+                        iconClass="text-on-error-container"
+                        label="Cancelled"
+                        value={cancelled_appointments}
+                        badge="Lost"
+                    />
+                    <MetricCard
+                        icon="task_alt"
+                        iconBg="bg-tertiary-fixed"
+                        iconClass="text-on-tertiary-fixed-variant"
+                        label="Completed"
+                        value={completed_appointments}
+                        badge="Finished"
+                    />
+                    <MetricCard
+                        variant="primary"
+                        icon="payments"
+                        label="Revenue"
+                        value={`${currencySymbol}${Number(daily_revenue).toFixed(0)}`}
+                    />
                 </div>
-            )}
+            </section>
         </EmployeeLayout>
     );
 }

@@ -17,7 +17,25 @@ class DashboardController extends Controller
 
     public function index(Request $request): Response
     {
-        $date = $request->input('date', Carbon::today()->toDateString());
+        $inputDate = $request->input('date');
+
+        try {
+            $date = $inputDate
+                ? (
+                    Carbon::createFromFormat('d.m.Y', $inputDate)->toDateString()
+                    ?? Carbon::createFromFormat('Y-m-d', $inputDate)->toDateString()
+                )
+                : Carbon::today()->toDateString();
+        } catch (\Throwable) {
+            try {
+                $date = $inputDate
+                    ? Carbon::createFromFormat('Y-m-d', $inputDate)->toDateString()
+                    : Carbon::today()->toDateString();
+            } catch (\Throwable) {
+                $date = Carbon::today()->toDateString();
+            }
+        }
+
         $data = $this->dashboardService->getEmployeeDashboardData(auth()->user(), $date);
 
         return Inertia::render('Employee/Dashboard', $data);

@@ -24,7 +24,15 @@ class SettingsController extends Controller
 
     public function update(UpdateSettingsRequest $request): RedirectResponse
     {
+        $hadBusiness = auth()->user()->ownedBusiness()->exists();
+
         $this->businessService->updateSettings(auth()->user(), $request->validated());
+
+        if (! $hadBusiness) {
+            return redirect()
+                ->route('admin.dashboard')
+                ->with('success', 'Business setup completed. Welcome to your dashboard.');
+        }
 
         return redirect()->back()->with('success', 'Settings updated successfully.');
     }

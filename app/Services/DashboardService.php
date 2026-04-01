@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\AppointmentStatus;
 use App\Models\Business;
 use App\Models\User;
 use App\Repositories\Interfaces\AppointmentRepositoryInterface;
@@ -51,6 +52,11 @@ class DashboardService implements DashboardServiceInterface
 
         return [
             'appointments' => $appointments,
+            'appointments_count' => $appointments->count(),
+            'confirmed_appointments' => $appointments->where('status', AppointmentStatus::Confirmed)->count(),
+            'cancelled_appointments' => $appointments->where('status', AppointmentStatus::Cancelled)->count(),
+            'completed_appointments' => $appointments->where('status', AppointmentStatus::Completed)->count(),
+            'daily_revenue' => $appointments->where('status', AppointmentStatus::Completed)->sum('price'),
             'date' => $date,
         ];
     }
