@@ -67,7 +67,7 @@ export default function Index({ settings, owner_email }) {
                 </div>
             )}
 
-            <div className="space-y-8 max-w-3xl">
+            <div className="space-y-8">
 
                 {/* Business Identity — read-only */}
                 <section className="bg-surface-container-low p-8 rounded-xl">
@@ -109,61 +109,62 @@ export default function Index({ settings, owner_email }) {
                             <h3 className="text-xl font-bold font-headline text-on-surface">Booking Rules</h3>
                         </div>
 
-                        <div className="space-y-7">
-
-                            {/* Time Slot Duration */}
-                            <div className="flex items-center justify-between gap-4">
+                        {/* Top row: three numeric rules in a grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
+                            <div className="bg-surface rounded-xl p-6 flex flex-col gap-4">
                                 <div>
                                     <p className="text-sm font-bold text-on-surface">Time Slot Duration</p>
                                     <p className="text-xs text-on-surface-variant mt-0.5 leading-tight">Minimum interval between available appointments.</p>
                                 </div>
-                                <div className="flex items-center gap-2 shrink-0">
+                                <div className="flex items-center gap-2">
                                     <input
                                         type="number" min="5" max="240"
                                         value={data.slot_duration}
                                         onChange={e => setData('slot_duration', parseInt(e.target.value))}
-                                        className="w-20 bg-white border-0 rounded-lg py-2 px-3 text-sm font-bold text-on-surface shadow-sm focus:ring-2 focus:ring-on-surface/10 text-center"
+                                        className="w-24 bg-surface-container-highest border-0 rounded-lg py-2 px-3 text-sm font-bold text-on-surface shadow-sm focus:ring-2 focus:ring-on-surface/10 text-center"
                                     />
                                     <span className="text-xs font-bold text-on-surface-variant uppercase">min</span>
                                 </div>
                             </div>
 
-                            {/* Minimum Notice */}
-                            <div className="flex items-center justify-between gap-4">
+                            <div className="bg-surface rounded-xl p-6 flex flex-col gap-4">
                                 <div>
                                     <p className="text-sm font-bold text-on-surface">Minimum Notice</p>
                                     <p className="text-xs text-on-surface-variant mt-0.5 leading-tight">Lead time required before a booking can be made.</p>
                                 </div>
-                                <div className="flex items-center gap-2 shrink-0">
+                                <div className="flex items-center gap-2">
                                     <input
                                         type="number" min="0"
                                         value={data.min_booking_notice}
                                         onChange={e => setData('min_booking_notice', parseInt(e.target.value))}
-                                        className="w-20 bg-white border-0 rounded-lg py-2 px-3 text-sm font-bold text-on-surface shadow-sm focus:ring-2 focus:ring-on-surface/10 text-center"
+                                        className="w-24 bg-surface-container-highest border-0 rounded-lg py-2 px-3 text-sm font-bold text-on-surface shadow-sm focus:ring-2 focus:ring-on-surface/10 text-center"
                                     />
                                     <span className="text-xs font-bold text-on-surface-variant uppercase">min</span>
                                 </div>
                             </div>
 
-                            {/* Booking Window */}
-                            <div className="flex items-center justify-between gap-4">
+                            <div className="bg-surface rounded-xl p-6 flex flex-col gap-4">
                                 <div>
                                     <p className="text-sm font-bold text-on-surface">Booking Window</p>
                                     <p className="text-xs text-on-surface-variant mt-0.5 leading-tight">How far in advance clients can schedule.</p>
                                 </div>
-                                <div className="flex items-center gap-2 shrink-0">
+                                <div className="flex items-center gap-2">
                                     <input
                                         type="number" min="1" max="365"
                                         value={data.max_booking_window}
                                         onChange={e => setData('max_booking_window', parseInt(e.target.value))}
-                                        className="w-20 bg-white border-0 rounded-lg py-2 px-3 text-sm font-bold text-on-surface shadow-sm focus:ring-2 focus:ring-on-surface/10 text-center"
+                                        className="w-24 bg-surface-container-highest border-0 rounded-lg py-2 px-3 text-sm font-bold text-on-surface shadow-sm focus:ring-2 focus:ring-on-surface/10 text-center"
                                     />
                                     <span className="text-xs font-bold text-on-surface-variant uppercase">days</span>
                                 </div>
                             </div>
+                        </div>
+
+                        {/* Bottom row: Service Selection + Client Identification side by side */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6 border-t border-outline-variant/40">
 
                             {/* Service Selection toggle */}
-                            <div className="pt-6 border-t border-outline-variant/40 flex items-center justify-between gap-4">
+                            <div className="bg-surface rounded-xl p-6 flex items-center justify-between gap-4">
                                 <div>
                                     <p className="text-sm font-bold text-on-surface">Service Selection</p>
                                     <p className="text-xs text-on-surface-variant mt-0.5">Allow clients to pick specific treatments.</p>
@@ -178,31 +179,29 @@ export default function Index({ settings, owner_email }) {
                             </div>
 
                             {/* Client Identification */}
-                            <div className="pt-6 border-t border-outline-variant/40">
-                                <div className="mb-4">
-                                    <p className="text-sm font-bold text-on-surface">Client Identification</p>
-                                    <p className="text-xs text-on-surface-variant mt-0.5">How clients are identified when booking an appointment.</p>
-                                </div>
+                            <div className="bg-surface rounded-xl p-6">
+                                <p className="text-sm font-bold text-on-surface mb-1">Client Identification</p>
+                                <p className="text-xs text-on-surface-variant mb-4">How clients are identified when booking.</p>
                                 <div className="flex gap-3">
                                     <button
                                         type="button"
                                         onClick={() => setData('client_identifier_type', 'phone')}
-                                        className={`flex items-center gap-2 flex-1 justify-center py-3 rounded-xl text-sm font-bold border-2 transition-all ${
+                                        className={`flex items-center gap-2 flex-1 justify-center py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${
                                             data.client_identifier_type === 'phone'
                                                 ? 'border-on-surface bg-on-surface text-surface'
-                                                : 'border-outline-variant bg-surface text-on-surface-variant hover:border-on-surface/40'
+                                                : 'border-outline-variant bg-surface-container-highest text-on-surface-variant hover:border-on-surface/40'
                                         }`}
                                     >
                                         <Icon name="phone" size="text-base" />
-                                        Phone Number
+                                        Phone
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => setData('client_identifier_type', 'email')}
-                                        className={`flex items-center gap-2 flex-1 justify-center py-3 rounded-xl text-sm font-bold border-2 transition-all ${
+                                        className={`flex items-center gap-2 flex-1 justify-center py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${
                                             data.client_identifier_type === 'email'
                                                 ? 'border-on-surface bg-on-surface text-surface'
-                                                : 'border-outline-variant bg-surface text-on-surface-variant hover:border-on-surface/40'
+                                                : 'border-outline-variant bg-surface-container-highest text-on-surface-variant hover:border-on-surface/40'
                                         }`}
                                     >
                                         <Icon name="mail" size="text-base" />
@@ -210,22 +209,22 @@ export default function Index({ settings, owner_email }) {
                                     </button>
                                 </div>
                             </div>
+                        </div>
 
-                            {/* Save button */}
-                            <div className="pt-6">
-                                <button
-                                    type="submit"
-                                    disabled={processing}
-                                    className="w-full bg-on-surface text-surface py-4 rounded-xl font-bold font-headline text-base hover:opacity-90 active:-translate-y-px transition-all disabled:opacity-50"
-                                >
-                                    {processing ? 'Saving...' : 'Save Configuration'}
-                                </button>
-                                {recentlySuccessful && (
-                                    <p className="text-center mt-3 flex items-center justify-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">
-                                        <Icon name="check_circle" size="text-sm" className="text-on-primary-container" /> Saved successfully
-                                    </p>
-                                )}
-                            </div>
+                        {/* Save button */}
+                        <div className="pt-6 border-t border-outline-variant/40 flex items-center gap-6">
+                            <button
+                                type="submit"
+                                disabled={processing}
+                                className="bg-on-surface text-surface px-10 py-4 rounded-xl font-bold font-headline text-base hover:opacity-90 active:-translate-y-px transition-all disabled:opacity-50"
+                            >
+                                {processing ? 'Saving...' : 'Save Configuration'}
+                            </button>
+                            {recentlySuccessful && (
+                                <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">
+                                    <Icon name="check_circle" size="text-sm" className="text-on-primary-container" /> Saved successfully
+                                </p>
+                            )}
                         </div>
                     </section>
                 </form>
