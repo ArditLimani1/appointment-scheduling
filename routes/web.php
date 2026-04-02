@@ -45,6 +45,7 @@ Route::middleware(['auth', 'role:admin', 'has_business'])->prefix('admin')->name
     Route::delete('/appointments/{appointment}', [Admin\AppointmentController::class, 'destroy'])->name('appointments.destroy');
     Route::get('/appointments/export', [Admin\AppointmentController::class, 'export'])->name('appointments.export');
     Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
+    Route::get('/analytics/export', [AnalyticsController::class, 'export'])->name('analytics.export');
     Route::get('/settings', [Admin\SettingsController::class, 'index'])->name('settings.index');
     Route::put('/settings', [Admin\SettingsController::class, 'update'])->name('settings.update');
 });

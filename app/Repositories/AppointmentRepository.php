@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Collection;
 
 class AppointmentRepository implements AppointmentRepositoryInterface
 {
-    public function getFilteredByBusiness(int $businessId, array $filters, int $perPage = 20): LengthAwarePaginator
+    public function getFilteredByBusiness(int $businessId, array $filters, int $perPage = 10): LengthAwarePaginator
     {
         $query = Appointment::with(['employee', 'service'])
             ->where('business_id', $businessId);
@@ -42,24 +42,37 @@ class AppointmentRepository implements AppointmentRepositoryInterface
     {
         return Appointment::where('business_id', $businessId)
             ->whereIn('status', [AppointmentStatus::Pending, AppointmentStatus::Confirmed])
-            ->whereDate('date', '>=', Carbon::today())
+            ->whereDate('date', Carbon::today())
             ->count();
     }
 
     public function getCompletedRevenue(int $businessId): float
     {
         return (float) Appointment::where('business_id', $businessId)
-            ->where('status', AppointmentStatus::Completed)
+            ->where('status', AppointmentStatus::Confirmed)
             ->sum('price');
     }
 
-    public function getRecent(int $businessId, int $limit = 10): Collection
+    public function getCurrentMonthRevenue(int $businessId): float
     {
-        return Appointment::with(['employee', 'service'])
-            ->where('business_id', $businessId)
-            ->latest()
-            ->take($limit)
-            ->get();
+        return (float) Appointment::where('business_id', $businessId)
+            ->whereIn('status', [AppointmentStatus::Pending, AppointmentStatus::Confirmed])
+            ->whereYear('date', Carbon::now()->year)
+            ->whereMonth('date', Carbon::now()->month)
+            ->whereDate('date', '<=', Carbon::today())
+            ->sum('price');
+    }
+
+    public function getRecent(int $businessId, int $limit = 10, ?string $date = null): Collection
+    {
+        $query = Appointment::with(['employee', 'service'])
+            ->where('business_id', $businessId);
+
+        if ($date !== null) {
+            $query->whereDate('date', $date);
+        }
+
+        return $query->orderBy('date')->orderBy('start_time')->take($limit)->get();
     }
 
     public function getByEmployeeAndDate(int $employeeId, string $date): Collection

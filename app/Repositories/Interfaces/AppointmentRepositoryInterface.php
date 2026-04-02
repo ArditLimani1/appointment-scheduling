@@ -8,13 +8,15 @@ use Illuminate\Database\Eloquent\Collection;
 
 interface AppointmentRepositoryInterface
 {
-    public function getFilteredByBusiness(int $businessId, array $filters, int $perPage = 20): LengthAwarePaginator;
+    public function getFilteredByBusiness(int $businessId, array $filters, int $perPage = 10): LengthAwarePaginator;
 
     public function getUpcomingCount(int $businessId): int;
 
     public function getCompletedRevenue(int $businessId): float;
 
-    public function getRecent(int $businessId, int $limit = 10): Collection;
+    public function getCurrentMonthRevenue(int $businessId): float;
+
+    public function getRecent(int $businessId, int $limit = 10, ?string $date = null): Collection;
 
     public function getByEmployeeAndDate(int $employeeId, string $date): Collection;
 

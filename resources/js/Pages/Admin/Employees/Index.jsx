@@ -23,7 +23,10 @@ export default function Index({ employees, services }) {
         router.patch(route('admin.employees.update', employee.id), {
             name: employee.name,
             email: employee.email,
+            phone: employee.phone ?? null,
+            title: employee.title ?? null,
             is_active: !employee.is_active,
+            service_ids: employee.services?.map(s => s.id) ?? [],
         });
     };
 
@@ -75,7 +78,7 @@ export default function Index({ employees, services }) {
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
                                     {employees.map((emp) => (
-                                        <tr key={emp.id} className="hover:bg-slate-50/50 transition-colors">
+                                        <tr key={emp.id} className={`transition-colors ${emp.is_active ? 'hover:bg-slate-50/50' : 'bg-slate-200/70 opacity-50 hover:opacity-70'}`}>
                                             <td className="px-8 py-5">
                                                 <p className="font-headline font-bold text-on-surface text-sm">{emp.name}</p>
                                             </td>

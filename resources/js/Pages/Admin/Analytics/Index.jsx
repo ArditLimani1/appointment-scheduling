@@ -29,8 +29,18 @@ function buildExportUrl(filters) {
         queryParams.employee_id = String(filters.employee_id);
     }
     const queryString = new URLSearchParams(queryParams).toString();
-    const pathname = new URL(route('admin.appointments.export'), window.location.href).pathname;
+    const pathname = new URL(route('admin.analytics.export'), window.location.href).pathname;
     return pathname + (queryString ? `?${queryString}` : '');
+}
+
+function currentMonthStart() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+}
+
+function currentMonthEnd() {
+    const d = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 export default function Index({
@@ -42,11 +52,12 @@ export default function Index({
     currency_symbol,
 }) {
     const { auth } = usePage().props;
-    const symbol = currency_symbol ?? auth?.business?.currency_symbol ?? '€';
+    const CURRENCY_SYMBOLS = { EUR: '€', USD: '$', GBP: '£', CHF: 'CHF' };
+    const symbol = CURRENCY_SYMBOLS[auth?.business?.currency] ?? currency_symbol ?? '€';
 
     const [localFilters, setLocalFilters] = useState({
-        date_from: filters.date_from ?? '',
-        date_to: filters.date_to ?? '',
+        date_from: filters.date_from ?? currentMonthStart(),
+        date_to: filters.date_to ?? currentMonthEnd(),
         employee_id: filters.employee_id != null ? String(filters.employee_id) : '',
     });
 
@@ -61,9 +72,9 @@ export default function Index({
     }, [visitOpts]);
 
     const clearFilters = useCallback(() => {
-        const emptyFilters = { date_from: '', date_to: '', employee_id: '' };
-        setLocalFilters(emptyFilters);
-        router.get(getAnalyticsPathname(), {}, visitOpts);
+        const defaultFilters = { date_from: currentMonthStart(), date_to: currentMonthEnd(), employee_id: '' };
+        setLocalFilters(defaultFilters);
+        router.get(buildAnalyticsUrl(defaultFilters), {}, visitOpts);
     }, [visitOpts]);
 
     const employeeOptions = useMemo(() => [
@@ -71,7 +82,7 @@ export default function Index({
         ...employees.map((employee) => ({ value: String(employee.id), label: employee.name })),
     ], [employees]);
 
-    const hasActiveFilters = localFilters.date_from || localFilters.date_to || localFilters.employee_id;
+    const fmt = (num) => Number(num).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     return (
         <AdminLayout>
@@ -89,6 +100,7 @@ export default function Index({
                 </a>
             </PageHeader>
 
+            {/* Filters */}
             <section className="mb-8 bg-surface-container-lowest rounded-2xl p-6 ring-1 ring-slate-100 shadow-sm">
                 <div className="flex flex-wrap gap-4 items-end">
                     <DatePicker
@@ -109,27 +121,23 @@ export default function Index({
                         onChange={(value) => patchFilters({ employee_id: value })}
                         options={employeeOptions}
                     />
-                    {hasActiveFilters && (
-                        <div className="flex items-end">
-                            <button
-                                type="button"
-                                onClick={clearFilters}
-                                className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-on-surface hover:bg-slate-50 transition-colors"
-                            >
-                                Clear
-                            </button>
-                        </div>
-                    )}
+                    <div className="flex items-end">
+                        <button
+                            type="button"
+                            onClick={clearFilters}
+                            className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-on-surface hover:bg-slate-50 transition-colors"
+                        >
+                            Reset
+                        </button>
+                    </div>
                 </div>
             </section>
 
+            {/* Widgets */}
             <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-
                 <div className="bg-surface-container-lowest rounded-3xl border border-slate-100 shadow-sm p-8 flex items-center justify-between">
                     <div className="space-y-2">
-                        <p className="text-xs font-bold text-outline uppercase tracking-widest">
-                            Total Appointments
-                        </p>
+                        <p className="text-xs font-bold text-outline uppercase tracking-widest">Total Appointments</p>
                         <p className="text-5xl font-extrabold font-headline tracking-tight text-on-surface">
                             {total_appointments.toLocaleString()}
                         </p>
@@ -141,20 +149,19 @@ export default function Index({
 
                 <div className="bg-primary-container rounded-3xl shadow-xl p-8 flex items-center justify-between">
                     <div className="space-y-2">
-                        <p className="text-xs font-bold text-slate-300 uppercase tracking-widest">
-                            Total Revenue
-                        </p>
+                        <p className="text-xs font-bold text-slate-300 uppercase tracking-widest">Total Revenue</p>
                         <p className="text-5xl font-extrabold font-headline tracking-tight text-white">
-                            {symbol}{Number(total_revenue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            {fmt(total_revenue)} {symbol}
                         </p>
+                        <p className="text-xs text-white/60">Based on confirmed appointments</p>
                     </div>
                     <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center shrink-0">
                         <Icon name="payments" size="text-3xl" filled className="text-white" />
                     </div>
                 </div>
-
             </section>
 
+            {/* Table */}
             <section className="bg-surface-container-lowest rounded-2xl overflow-hidden ring-1 ring-slate-100 shadow-sm">
                 <div className="px-8 py-5 border-b border-slate-50 flex items-center justify-between bg-white">
                     <div>
@@ -172,70 +179,45 @@ export default function Index({
                         </p>
                     </div>
                 ) : (
-                    <>
-                        <div className="overflow-x-auto">
-                            <table className="w-full min-w-[600px] text-left border-collapse">
-                                <thead>
-                                    <tr className="bg-slate-50/50">
-                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">Employee</th>
-                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">Title</th>
-                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-right">Appointments</th>
-                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-right">Revenue</th>
-                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-right">Share</th>
+                    <div className="overflow-x-auto">
+                        <table className="w-full min-w-[640px] text-left border-collapse">
+                            <thead>
+                                <tr className="bg-slate-50/50">
+                                    <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">Employee</th>
+                                    <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-right">Cancelled</th>
+                                    <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-right">Pending</th>
+                                    <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-right">Confirmed</th>
+                                    <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-right">Revenue</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-50">
+                                {employee_stats.map((stat, index) => (
+                                    <tr key={index} className="hover:bg-slate-50/50 transition-colors">
+                                        <td className="px-8 py-5">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-xl bg-primary-container flex items-center justify-center text-on-primary text-sm font-bold font-headline shrink-0">
+                                                    {stat.name.charAt(0).toUpperCase()}
+                                                </div>
+                                                <p className="text-sm font-bold text-on-surface">{stat.name}</p>
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-5 text-right">
+                                            <span className="text-sm font-semibold text-red-600">{stat.cancelled_count}</span>
+                                        </td>
+                                        <td className="px-8 py-5 text-right">
+                                            <span className="text-sm font-semibold text-amber-600">{stat.pending_count}</span>
+                                        </td>
+                                        <td className="px-8 py-5 text-right">
+                                            <span className="text-sm font-semibold text-emerald-600">{stat.confirmed_count}</span>
+                                        </td>
+                                        <td className="px-8 py-5 text-right font-extrabold text-on-surface">
+                                            {fmt(stat.revenue)} {symbol}
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-50">
-                                    {employee_stats.map((stat, index) => (
-                                        <tr key={index} className="hover:bg-slate-50/50 transition-colors">
-                                            <td className="px-8 py-5">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-xl bg-primary-container flex items-center justify-center text-on-primary text-sm font-bold font-headline shrink-0">
-                                                        {stat.name.charAt(0).toUpperCase()}
-                                                    </div>
-                                                    <p className="text-sm font-bold text-on-surface">{stat.name}</p>
-                                                </div>
-                                            </td>
-                                            <td className="px-8 py-5">
-                                                {stat.title ? (
-                                                    <span className="px-2.5 py-1 bg-surface-container text-on-surface-variant text-[10px] font-bold rounded-lg uppercase tracking-tight">
-                                                        {stat.title}
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-xs text-outline">—</span>
-                                                )}
-                                            </td>
-                                            <td className="px-8 py-5 text-right font-bold text-on-surface-variant">
-                                                {stat.appointment_count}
-                                            </td>
-                                            <td className="px-8 py-5 text-right font-extrabold text-on-surface">
-                                                {symbol}{Number(stat.revenue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                            </td>
-                                            <td className="px-8 py-5">
-                                                <div className="flex items-center justify-end gap-3">
-                                                    <div className="w-24 h-1.5 bg-surface-container rounded-full overflow-hidden">
-                                                        <div
-                                                            className="bg-on-surface h-full rounded-full transition-all duration-500"
-                                                            style={{ width: `${stat.performance_pct}%` }}
-                                                        />
-                                                    </div>
-                                                    <span className="text-xs font-bold text-outline w-8 text-right">
-                                                        {stat.performance_pct}%
-                                                    </span>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                        <div className="px-8 py-4 bg-slate-50/30 border-t border-slate-50">
-                            <p className="text-xs text-on-surface-variant">
-                                Showing{' '}
-                                <span className="font-bold text-on-surface">{employee_stats.length}</span>{' '}
-                                employee{employee_stats.length !== 1 ? 's' : ''}
-                            </p>
-                        </div>
-                    </>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 )}
             </section>
         </AdminLayout>

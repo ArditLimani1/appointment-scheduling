@@ -102,7 +102,7 @@ export default function Index({ services }) {
                                             </td>
                                             <td className="px-8 py-5">
                                                 <span className="font-headline font-extrabold text-on-surface text-base">
-                                                    {currencySymbol}{Number(svc.price).toFixed(2)}
+                                                    {Number(svc.price).toFixed(2)} {currencySymbol}
                                                 </span>
                                             </td>
                                             <td className="px-8 py-5">

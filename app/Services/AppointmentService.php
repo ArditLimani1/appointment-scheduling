@@ -18,7 +18,7 @@ class AppointmentService implements AppointmentServiceInterface
         private EmployeeRepositoryInterface $employeeRepository,
     ) {}
 
-    public function getFiltered(Business $business, array $filters, int $perPage = 20): array
+    public function getFiltered(Business $business, array $filters, int $perPage = 10): array
     {
         $appointments = $this->appointmentRepository->getFilteredByBusiness($business->id, $filters, $perPage);
         $employees = $this->employeeRepository->getByBusiness($business->id);

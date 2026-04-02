@@ -22,9 +22,14 @@ export default function Dashboard({
 }) {
     const { auth } = usePage().props;
     const business = auth.business;
-    const currencySymbol = business?.currency_symbol ?? '€';
 
-    const displayAppointments = recent_appointments.length > 0 ? recent_appointments : DEMO_APPOINTMENTS;
+    const CURRENCY_SYMBOLS = { EUR: '€', USD: '$', GBP: '£', CHF: 'CHF' };
+    const currencySymbol = CURRENCY_SYMBOLS[business?.currency] ?? business?.currency_symbol ?? '€';
+
+    const ALLOWED_STATUSES = ['pending', 'confirmed', 'cancelled'];
+
+    const displayAppointments = (recent_appointments.length > 0 ? recent_appointments : DEMO_APPOINTMENTS)
+        .filter(apt => ALLOWED_STATUSES.includes(apt.status?.toLowerCase()));
 
     const formatDate = (dateStr) =>
         formatAppointmentDate(dateStr, { day: 'numeric', month: 'short', year: 'numeric' });
@@ -32,8 +37,8 @@ export default function Dashboard({
     const statusClass = (status) => {
         switch (status?.toLowerCase()) {
             case 'confirmed': return 'bg-tertiary-fixed text-on-tertiary-fixed-variant';
-            case 'pending': return 'bg-surface-container-highest text-on-surface-variant';
             case 'cancelled': return 'bg-error-container text-on-error-container';
+            case 'pending': return 'bg-surface-container-highest text-on-surface-variant';
             default: return 'bg-surface-container-highest text-on-surface-variant';
         }
     };
@@ -68,21 +73,21 @@ export default function Dashboard({
                     icon="event_upcoming"
                     iconBg="bg-surface-container"
                     iconClass="text-on-surface-variant"
-                    label="Upcoming Appts"
+                    label="Today's Appointments"
                     value={upcoming_appointments}
-                    badge="Scheduled"
+                    badge="Today"
                 />
                 <MetricCard
                     variant="primary"
                     icon="payments"
-                    label="Total Revenue"
-                    value={`${currencySymbol}${Number(total_revenue).toFixed(0)}`}
+                    label="Total Revenue of Current Month"
+                    value={`${Number(total_revenue).toFixed(2)} ${currencySymbol}`}
                 />
             </div>
 
             <section className="bg-surface-container-lowest rounded-xl p-8">
                 <div className="flex justify-between items-center mb-8">
-                    <h2 className="text-2xl font-extrabold font-headline text-on-surface">Recent Appointments</h2>
+                    <h2 className="text-2xl font-extrabold font-headline text-on-surface">Today Appointments</h2>
                     <Link
                         href={(() => { try { return route('admin.appointments.index'); } catch { return '#'; } })()}
                         className="text-sm font-bold text-on-surface hover:underline decoration-2 underline-offset-4 transition-all"
@@ -97,21 +102,32 @@ export default function Dashboard({
                             <tr className="border-b border-surface-container-highest">
                                 <th className="pb-5 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">Client Name</th>
                                 <th className="pb-5 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">Service</th>
+                                <th className="pb-5 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">Price</th>
                                 <th className="pb-5 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">Employee</th>
                                 <th className="pb-5 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">Date</th>
                                 <th className="pb-5 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">Time</th>
                                 <th className="pb-5 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">Status</th>
-                                <th className="pb-5 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-surface-container-low">
-                            {displayAppointments.map((apt, i) => (
+                            {displayAppointments.length === 0 ? (
+                                <tr>
+                                    <td colSpan={7} className="py-10 text-center text-on-surface-variant text-sm">
+                                        No appointments for today.
+                                    </td>
+                                </tr>
+                            ) : displayAppointments.map((apt, i) => (
                                 <tr key={i} className="hover:bg-surface-container-low/50 transition-colors">
                                     <td className="py-5 pr-4">
                                         <p className="font-bold text-on-surface">{apt.client_name}</p>
                                     </td>
                                     <td className="py-5 pr-4">
                                         <p className="text-on-surface-variant text-sm">{apt.service_name}</p>
+                                    </td>
+                                    <td className="py-5 pr-4">
+                                        <p className="text-on-surface text-sm font-semibold">
+                                            {Number(apt.service_price ?? 0).toFixed(2)} {currencySymbol}
+                                        </p>
                                     </td>
                                     <td className="py-5 pr-4">
                                         <p className="text-on-surface-variant text-sm">{apt.employee_name || '—'}</p>
@@ -129,11 +145,6 @@ export default function Dashboard({
                                         <span className={`px-3 py-1 text-[10px] font-extrabold uppercase rounded-full ${statusClass(apt.status)}`}>
                                             {apt.status}
                                         </span>
-                                    </td>
-                                    <td className="py-5 text-right">
-                                        <button className="p-2 hover:bg-surface-container-high rounded-lg transition-colors group">
-                                            <Icon name="arrow_forward" size="text-base" className="text-on-surface-variant group-hover:text-on-surface transition-colors" />
-                                        </button>
                                     </td>
                                 </tr>
                             ))}

@@ -8,23 +8,17 @@ import { useEffect, useState } from 'react';
 const STATUS_STYLES = {
     pending: { bg: 'bg-surface-container-highest text-on-surface-variant', label: 'Pending' },
     confirmed: { bg: 'bg-tertiary-fixed text-on-tertiary-fixed-variant', label: 'Confirmed' },
-    checked_in: { bg: 'bg-primary-container text-on-primary-container', label: 'Checked In' },
-    completed: { bg: 'bg-primary-fixed text-on-primary-fixed-variant', label: 'Completed' },
     cancelled: { bg: 'bg-error-container text-on-error-container', label: 'Cancelled' },
 };
 
 const STATUS_ACTIONS = {
     pending: ['confirmed', 'cancelled'],
-    confirmed: ['checked_in', 'cancelled'],
-    checked_in: ['completed'],
-    completed: [],
+    confirmed: ['cancelled'],
     cancelled: [],
 };
 
 const ACTION_LABELS = {
     confirmed: { label: 'Confirm', icon: 'check_circle' },
-    checked_in: { label: 'Check In', icon: 'login' },
-    completed: { label: 'Complete', icon: 'task_alt' },
     cancelled: { label: 'Cancel', icon: 'cancel' },
 };
 
@@ -200,7 +194,7 @@ export default function Dashboard({
                                                     </p>
                                                 </div>
                                                 <p className="mt-1 text-xs text-on-surface-variant">
-                                                    {currencySymbol}{Number(apt.price).toFixed(2)}
+                                                    {Number(apt.price).toFixed(2)} {currencySymbol}
                                                 </p>
                                             </td>
                                             <td className="py-5 pr-4">
@@ -284,18 +278,10 @@ export default function Dashboard({
                         badge="Lost"
                     />
                     <MetricCard
-                        icon="task_alt"
-                        iconBg="bg-tertiary-fixed"
-                        iconClass="text-on-tertiary-fixed-variant"
-                        label="Completed"
-                        value={completed_appointments}
-                        badge="Finished"
-                    />
-                    <MetricCard
                         variant="primary"
                         icon="payments"
                         label="Revenue"
-                        value={`${currencySymbol}${Number(daily_revenue).toFixed(0)}`}
+                        value={`${Number(daily_revenue).toFixed(2)} ${currencySymbol}`}
                     />
                 </div>
             </section>

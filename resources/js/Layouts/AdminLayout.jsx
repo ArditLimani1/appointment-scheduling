@@ -5,8 +5,8 @@ import { useState } from 'react';
 
 const navItems = [
     { label: 'Dashboard', icon: 'dashboard', route: 'admin.dashboard' },
-    { label: 'Employees', icon: 'badge', route: 'admin.employees.index' },
     { label: 'Services', icon: 'layers', route: 'admin.services.index' },
+    { label: 'Employees', icon: 'badge', route: 'admin.employees.index' },
     { label: 'Appointments', icon: 'calendar_today', route: 'admin.appointments.index' },
     { label: 'Analytics', icon: 'analytics', route: 'admin.analytics.index' },
     { label: 'Configuration', icon: 'settings', route: 'admin.settings.index' },

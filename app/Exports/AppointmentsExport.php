@@ -53,7 +53,6 @@ class AppointmentsExport implements FromQuery, WithHeadings, WithMapping
     public function headings(): array
     {
         return [
-            'ID',
             'Employee Name',
             'Client Name',
             'Service',
@@ -70,7 +69,6 @@ class AppointmentsExport implements FromQuery, WithHeadings, WithMapping
     public function map($appointment): array
     {
         return [
-            $appointment->id,
             $appointment->employee?->name ?? 'N/A',
             $appointment->client_first_name.' '.$appointment->client_last_name,
             $appointment->service?->name ?? 'N/A',

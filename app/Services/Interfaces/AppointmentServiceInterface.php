@@ -8,7 +8,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 interface AppointmentServiceInterface
 {
-    public function getFiltered(Business $business, array $filters, int $perPage = 20): array;
+    public function getFiltered(Business $business, array $filters, int $perPage = 10): array;
 
     public function updateStatus(Business $business, Appointment $appointment, array $data): Appointment;
 

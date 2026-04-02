@@ -17,20 +17,6 @@ const OPTIONS = [
         dot: 'bg-emerald-500',
     },
     {
-        value: 'checked_in',
-        label: 'Checked in',
-        trigger: 'bg-sky-50 text-sky-950 ring-sky-200/90 hover:bg-sky-100/90',
-        itemIdle: 'text-sky-950',
-        dot: 'bg-sky-500',
-    },
-    {
-        value: 'completed',
-        label: 'Completed',
-        trigger: 'bg-slate-200/90 text-slate-900 ring-slate-300/80 hover:bg-slate-300/80',
-        itemIdle: 'text-slate-800',
-        dot: 'bg-slate-600',
-    },
-    {
         value: 'cancelled',
         label: 'Cancelled',
         trigger: 'bg-red-50 text-red-950 ring-red-200/90 hover:bg-red-100/90',

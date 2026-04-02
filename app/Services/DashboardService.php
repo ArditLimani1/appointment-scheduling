@@ -20,11 +20,14 @@ class DashboardService implements DashboardServiceInterface
 
     public function getAdminDashboardData(Business $business): array
     {
+        $today = now()->toDateString();
+
         $recentAppointments = $this->appointmentRepository
-            ->getRecent($business->id)
+            ->getRecent($business->id, 10, $today)
             ->map(fn ($apt) => [
                 'client_name' => $apt->client_first_name.' '.$apt->client_last_name,
                 'service_name' => $apt->service?->name ?? 'Appointment',
+                'service_price' => $apt->price,
                 'employee_name' => $apt->employee?->name,
                 'date' => $apt->date->toDateString(),
                 'start_time' => $apt->start_time,
@@ -37,7 +40,7 @@ class DashboardService implements DashboardServiceInterface
             'active_services' => $this->serviceRepository->countActiveByBusiness($business->id),
             'total_services' => $this->serviceRepository->countByBusiness($business->id),
             'upcoming_appointments' => $this->appointmentRepository->getUpcomingCount($business->id),
-            'total_revenue' => $this->appointmentRepository->getCompletedRevenue($business->id),
+            'total_revenue' => $this->appointmentRepository->getCurrentMonthRevenue($business->id),
             'recent_appointments' => $recentAppointments,
         ];
     }
@@ -55,8 +58,8 @@ class DashboardService implements DashboardServiceInterface
             'appointments_count' => $appointments->count(),
             'confirmed_appointments' => $appointments->where('status', AppointmentStatus::Confirmed)->count(),
             'cancelled_appointments' => $appointments->where('status', AppointmentStatus::Cancelled)->count(),
-            'completed_appointments' => $appointments->where('status', AppointmentStatus::Completed)->count(),
-            'daily_revenue' => $appointments->where('status', AppointmentStatus::Completed)->sum('price'),
+            'completed_appointments' => $appointments->where('status', AppointmentStatus::Confirmed)->count(),
+            'daily_revenue' => $appointments->where('status', AppointmentStatus::Confirmed)->sum('price'),
             'date' => $date,
         ];
     }

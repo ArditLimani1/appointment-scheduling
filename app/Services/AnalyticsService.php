@@ -20,41 +20,41 @@ class AnalyticsService implements AnalyticsServiceInterface
             ->when(! empty($filters['date_from']), fn ($q) => $q->whereDate('date', '>=', $filters['date_from']))
             ->when(! empty($filters['date_to']), fn ($q) => $q->whereDate('date', '<=', $filters['date_to']))
             ->when(! empty($filters['employee_id']), fn ($q) => $q->where('employee_id', (int) $filters['employee_id']))
-            ->with('employee:id,name,title')
+            ->with('employee:id,name')
             ->get(['employee_id', 'status', 'price']);
 
         $totalAppointments = $appointments->count();
-        $totalRevenue = $appointments->where('status', AppointmentStatus::Completed)->sum('price');
+        $totalRevenue = $appointments->where('status', AppointmentStatus::Confirmed)->sum('price');
 
         $groupedByEmployee = $appointments->groupBy('employee_id');
-        $maxAppointmentCount = $groupedByEmployee->map->count()->max() ?: 1;
 
         $employeeStats = $groupedByEmployee
-            ->map(function ($group) use ($maxAppointmentCount) {
+            ->map(function ($group) {
                 $firstRecord = $group->first();
-                $appointmentCount = $group->count();
-                $revenue = $group->where('status', AppointmentStatus::Completed)->sum('price');
 
                 return [
-                    'name' => $firstRecord->employee?->name ?? 'Unknown',
-                    'title' => $firstRecord->employee?->title ?? '',
-                    'appointment_count' => $appointmentCount,
-                    'revenue' => (float) $revenue,
-                    'performance_pct' => (int) round(($appointmentCount / $maxAppointmentCount) * 100),
+                    'name'              => $firstRecord->employee?->name ?? 'Unknown',
+                    'cancelled_count'   => $group->where('status', AppointmentStatus::Cancelled)->count(),
+                    'pending_count'     => $group->where('status', AppointmentStatus::Pending)->count(),
+                    'confirmed_count'   => $group->where('status', AppointmentStatus::Confirmed)->count(),
+                    'revenue'           => (float) $group->where('status', AppointmentStatus::Confirmed)->sum('price'),
                 ];
             })
-            ->sortByDesc('appointment_count')
+            ->sortByDesc('confirmed_count')
             ->values();
 
         $employees = $this->employeeRepository->getByBusiness($business->id);
 
+        $CURRENCY_SYMBOLS = ['EUR' => '€', 'USD' => '$', 'GBP' => '£', 'CHF' => 'CHF'];
+        $currencySymbol = $CURRENCY_SYMBOLS[$business->currency ?? ''] ?? $business->currency_symbol ?? '€';
+
         return [
             'total_appointments' => $totalAppointments,
-            'total_revenue' => (float) $totalRevenue,
-            'employee_stats' => $employeeStats,
-            'employees' => $employees->map(fn ($employee) => ['id' => $employee->id, 'name' => $employee->name]),
-            'filters' => $filters,
-            'currency_symbol' => $business->currency_symbol ?? '€',
+            'total_revenue'      => (float) $totalRevenue,
+            'employee_stats'     => $employeeStats,
+            'employees'          => $employees->map(fn ($e) => ['id' => $e->id, 'name' => $e->name]),
+            'filters'            => $filters,
+            'currency_symbol'    => $currencySymbol,
         ];
     }
 }

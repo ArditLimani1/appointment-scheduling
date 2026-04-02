@@ -7,7 +7,17 @@ import FilterListbox from '@/Components/FilterListbox';
 import AppointmentStatusMenu from '@/Components/AppointmentStatusMenu';
 import { formatAppointmentDate, formatTimeHm } from '@/utils/appointmentDate';
 
-const APPOINTMENT_STATUSES = ['pending', 'confirmed', 'checked_in', 'completed', 'cancelled'];
+const APPOINTMENT_STATUSES = ['pending', 'confirmed', 'cancelled'];
+
+function currentMonthStart() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+}
+
+function currentMonthEnd() {
+    const d = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
 function getRoutePathname(routeName) {
     return new URL(route(routeName), window.location.href).pathname;
@@ -46,23 +56,24 @@ function normalizeAppointments(appointments) {
 
 export default function Index({ appointments, employees, filters = {} }) {
     const { auth } = usePage().props;
-    const currencySymbol = auth?.business?.currency_symbol ?? '€';
+    const CURRENCY_SYMBOLS = { EUR: '€', USD: '$', GBP: '£', CHF: 'CHF' };
+    const currencySymbol = CURRENCY_SYMBOLS[auth?.business?.currency] ?? auth?.business?.currency_symbol ?? '€';
 
     const { rows, meta } = useMemo(() => normalizeAppointments(appointments), [appointments]);
     const totalCount = meta?.total ?? rows.length;
 
     const [localFilters, setLocalFilters] = useState({
         employee_id: filters.employee_id != null && filters.employee_id !== '' ? String(filters.employee_id) : '',
-        date_from: filters.date_from ?? '',
-        date_to: filters.date_to ?? '',
+        date_from: filters.date_from ?? currentMonthStart(),
+        date_to: filters.date_to ?? currentMonthEnd(),
         status: filters.status ?? '',
     });
 
     useEffect(() => {
         setLocalFilters({
             employee_id: filters.employee_id != null && filters.employee_id !== '' ? String(filters.employee_id) : '',
-            date_from: filters.date_from ?? '',
-            date_to: filters.date_to ?? '',
+            date_from: filters.date_from ?? currentMonthStart(),
+            date_to: filters.date_to ?? currentMonthEnd(),
             status: filters.status ?? '',
         });
     }, [filters.employee_id, filters.date_from, filters.date_to, filters.status]);
@@ -85,9 +96,9 @@ export default function Index({ appointments, employees, filters = {} }) {
     }, [visitOpts]);
 
     const clearFilters = () => {
-        const emptyFilters = { employee_id: '', date_from: '', date_to: '', status: '' };
-        setLocalFilters(emptyFilters);
-        router.get(getRoutePathname('admin.appointments.index'), {}, visitOpts);
+        const defaultFilters = { employee_id: '', date_from: currentMonthStart(), date_to: currentMonthEnd(), status: '' };
+        setLocalFilters(defaultFilters);
+        router.get(buildAppointmentsUrl(defaultFilters), {}, visitOpts);
     };
 
     const updateStatus = (apt, status) => {
@@ -249,8 +260,7 @@ export default function Index({ appointments, employees, filters = {} }) {
                                                 <AppointmentStatusMenu status={apt.status} onChange={(s) => updateStatus(apt, s)} />
                                             </td>
                                             <td className="px-8 py-5 text-right text-sm font-bold text-on-surface">
-                                                {currencySymbol}
-                                                {Number(apt.price).toFixed(2)}
+                                                {Number(apt.price).toFixed(2)} {currencySymbol}
                                             </td>
                                             <td className="px-8 py-5 text-right">
                                                 <button

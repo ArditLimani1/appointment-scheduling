@@ -298,7 +298,7 @@ export default function Index({ employees, services, business, slug }) {
                                                     <Icon name="schedule" size="text-sm" /> {svc.duration} min
                                                 </span>
                                                 <span className="flex items-center gap-1 font-bold text-on-surface">
-                                                    <Icon name="payments" size="text-sm" /> {currencySymbol}{Number(svc.price).toFixed(2)}
+                                                    <Icon name="payments" size="text-sm" /> {Number(svc.price).toFixed(2)} {currencySymbol}
                                                 </span>
                                             </div>
                                             {svc.description && (
@@ -403,7 +403,7 @@ export default function Index({ employees, services, business, slug }) {
                                         {selectedService ? (
                                             <>
                                                 <p className="font-bold text-on-surface">{selectedService.name}</p>
-                                                <p className="text-sm text-on-surface-variant">{selectedService.duration} min • {currencySymbol}{Number(selectedService.price).toFixed(2)}</p>
+                                                <p className="text-sm text-on-surface-variant">{selectedService.duration} min • {Number(selectedService.price).toFixed(2)} {currencySymbol}</p>
                                             </>
                                         ) : (
                                             <p className="text-outline text-sm">Not selected</p>
@@ -417,7 +417,7 @@ export default function Index({ employees, services, business, slug }) {
                                     <div className="flex justify-between items-center mb-6">
                                         <span className="font-medium text-on-surface-variant">Total Cost</span>
                                         <span className="font-headline text-3xl font-extrabold text-on-surface">
-                                            {currencySymbol}{Number(selectedService.price).toFixed(2)}
+                                            {Number(selectedService.price).toFixed(2)} {currencySymbol}
                                         </span>
                                     </div>
                                 )}

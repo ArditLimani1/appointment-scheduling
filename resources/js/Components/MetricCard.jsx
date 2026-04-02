@@ -14,6 +14,7 @@ export default function MetricCard({ icon, iconBg, iconClass, label, value, badg
                 <div className="z-10">
                     <p className="text-xs font-bold text-on-primary-container/80 uppercase tracking-widest mb-1">{label}</p>
                     <h3 className="text-4xl font-extrabold font-headline text-white">{value}</h3>
+                    {badge && <p className="text-xs text-on-primary-container/70 mt-1">{badge}</p>}
                 </div>
             </div>
         );

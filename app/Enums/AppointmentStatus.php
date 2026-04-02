@@ -6,8 +6,6 @@ enum AppointmentStatus: string
 {
     case Pending = 'pending';
     case Confirmed = 'confirmed';
-    case CheckedIn = 'checked_in';
-    case Completed = 'completed';
     case Cancelled = 'cancelled';
 
     public function label(): string
@@ -15,8 +13,6 @@ enum AppointmentStatus: string
         return match ($this) {
             self::Pending => 'Pending',
             self::Confirmed => 'Confirmed',
-            self::CheckedIn => 'Checked in',
-            self::Completed => 'Completed',
             self::Cancelled => 'Cancelled',
         };
     }
@@ -28,8 +24,6 @@ enum AppointmentStatus: string
     {
         return [
             self::Confirmed,
-            self::CheckedIn,
-            self::Completed,
             self::Cancelled,
         ];
     }
