@@ -205,7 +205,7 @@ export default function Dashboard({
                                             <td className="py-5 pr-4">
                                                 <div className="flex items-center gap-1.5 text-sm text-on-surface-variant">
                                                     <Icon name="call" size="text-sm" />
-                                                    <span>{apt.client_phone}</span>
+                                                    <span>{apt.client_email || apt.client_phone || '—'}</span>
                                                 </div>
                                             </td>
                                             <td className="py-5 text-right">

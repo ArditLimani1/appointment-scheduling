@@ -80,7 +80,7 @@ export default function Dashboard({
                 <MetricCard
                     variant="primary"
                     icon="payments"
-                    label="Total Revenue of Current Month"
+                    label="Total Revenue Today"
                     value={`${Number(total_revenue).toFixed(2)} ${currencySymbol}`}
                 />
             </div>

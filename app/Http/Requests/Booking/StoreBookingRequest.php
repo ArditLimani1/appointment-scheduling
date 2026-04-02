@@ -16,15 +16,23 @@ class StoreBookingRequest extends FormRequest
 
     public function rules(): array
     {
+        $business = Business::where('slug', $this->route('slug'))->first();
+        $identifierType = $business?->client_identifier_type ?? 'phone';
+
         return [
-            'client_first_name' => ['required', 'string', 'max:100'],
-            'client_last_name' => ['required', 'string', 'max:100'],
-            'client_phone' => ['required', 'string', 'max:50'],
-            'client_notes' => ['nullable', 'string', 'max:2000'],
-            'employee_id' => ['required', 'integer', 'exists:users,id'],
-            'service_id' => ['required', 'integer', 'exists:services,id'],
-            'date' => ['required', 'date', 'after_or_equal:today'],
-            'start_time' => ['required', 'date_format:H:i'],
+            'client_first_name'  => ['required', 'string', 'max:100'],
+            'client_last_name'   => ['required', 'string', 'max:100'],
+            'client_phone'       => $identifierType === 'phone'
+                ? ['required', 'string', 'max:50']
+                : ['nullable', 'string', 'max:50'],
+            'client_email'       => $identifierType === 'email'
+                ? ['required', 'email', 'max:255']
+                : ['nullable', 'email', 'max:255'],
+            'client_notes'       => ['nullable', 'string', 'max:2000'],
+            'employee_id'        => ['required', 'integer', 'exists:users,id'],
+            'service_id'         => ['required', 'integer', 'exists:services,id'],
+            'date'               => ['required', 'date', 'after_or_equal:today'],
+            'start_time'         => ['required', 'date_format:H:i'],
         ];
     }
 

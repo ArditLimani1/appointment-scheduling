@@ -244,7 +244,7 @@ export default function Index({ appointments, employees, filters = {} }) {
                                                 <p className="font-headline font-bold text-on-surface text-sm">
                                                     {apt.client_first_name} {apt.client_last_name}
                                                 </p>
-                                                <p className="text-xs text-on-surface-variant">{apt.client_phone}</p>
+                                                <p className="text-xs text-on-surface-variant">{apt.client_email || apt.client_phone || '—'}</p>
                                             </td>
                                             <td className="px-8 py-5 text-sm text-on-surface-variant">{apt.employee?.name ?? '—'}</td>
                                             <td className="px-8 py-5 text-sm text-on-surface-variant">{apt.service?.name || '—'}</td>

@@ -10,7 +10,7 @@ class Appointment extends Model
 {
     protected $fillable = [
         'business_id', 'employee_id', 'service_id', 'client_first_name', 'client_last_name',
-        'client_phone', 'client_notes', 'date', 'start_time', 'end_time',
+        'client_phone', 'client_email', 'client_notes', 'date', 'start_time', 'end_time',
         'price', 'status',
     ];
 

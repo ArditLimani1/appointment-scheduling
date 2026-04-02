@@ -37,7 +37,11 @@ export default function Index({ employees, services, business, slug }) {
     const [errors, setErrors] = useState({});
     const [fullName, setFullName] = useState('');
     const [phone, setPhone] = useState('');
+    const [email, setEmail] = useState('');
     const [notes, setNotes] = useState('');
+
+    const identifierType = business?.client_identifier_type ?? 'phone';
+    const identifierValue = identifierType === 'email' ? email : phone;
 
     const prevEmployeeDateKeyRef = useRef('');
 
@@ -101,9 +105,9 @@ export default function Index({ employees, services, business, slug }) {
         };
     }, [fullName]);
 
-    const canSubmit = selectedEmployee && selectedDate && selectedSlot && selectedService && firstName && phone;
+    const canSubmit = selectedEmployee && selectedDate && selectedSlot && selectedService && firstName && identifierValue;
 
-    const progress = [selectedEmployee, selectedDate && selectedSlot, selectedService, firstName && phone].filter(Boolean).length;
+    const progress = [selectedEmployee, selectedDate && selectedSlot, selectedService, firstName && identifierValue].filter(Boolean).length;
 
     const handleSubmit = () => {
         if (!canSubmit || submitting) return;
@@ -115,7 +119,7 @@ export default function Index({ employees, services, business, slug }) {
             start_time: selectedSlot,
             client_first_name: firstName,
             client_last_name: lastName,
-            client_phone: phone,
+            ...(identifierType === 'phone' ? { client_phone: phone } : { client_email: email }),
             client_notes: notes,
         }, {
             onError: (errs) => { setErrors(errs); setSubmitting(false); },
@@ -335,17 +339,31 @@ export default function Index({ employees, services, business, slug }) {
                                     />
                                     {errors.client_first_name && <p className="text-xs text-error mt-1">{errors.client_first_name}</p>}
                                 </div>
-                                <div className="sm:col-span-2 space-y-2">
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant px-1">Phone Number</label>
-                                    <input
-                                        type="tel"
-                                        value={phone}
-                                        onChange={e => setPhone(e.target.value)}
-                                        className="w-full h-14 px-6 rounded-xl bg-surface-container-highest border-none focus:ring-2 focus:ring-on-surface/20 transition-all placeholder:text-outline text-sm text-on-surface"
-                                        placeholder="+1 (555) 000-0000"
-                                    />
-                                    {errors.client_phone && <p className="text-xs text-error mt-1">{errors.client_phone}</p>}
-                                </div>
+                                {identifierType === 'phone' ? (
+                                    <div className="sm:col-span-2 space-y-2">
+                                        <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant px-1">Phone Number</label>
+                                        <input
+                                            type="tel"
+                                            value={phone}
+                                            onChange={e => setPhone(e.target.value)}
+                                            className="w-full h-14 px-6 rounded-xl bg-surface-container-highest border-none focus:ring-2 focus:ring-on-surface/20 transition-all placeholder:text-outline text-sm text-on-surface"
+                                            placeholder="+1 (555) 000-0000"
+                                        />
+                                        {errors.client_phone && <p className="text-xs text-error mt-1">{errors.client_phone}</p>}
+                                    </div>
+                                ) : (
+                                    <div className="sm:col-span-2 space-y-2">
+                                        <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant px-1">Email Address</label>
+                                        <input
+                                            type="email"
+                                            value={email}
+                                            onChange={e => setEmail(e.target.value)}
+                                            className="w-full h-14 px-6 rounded-xl bg-surface-container-highest border-none focus:ring-2 focus:ring-on-surface/20 transition-all placeholder:text-outline text-sm text-on-surface"
+                                            placeholder="jane@example.com"
+                                        />
+                                        {errors.client_email && <p className="text-xs text-error mt-1">{errors.client_email}</p>}
+                                    </div>
+                                )}
                                 <div className="sm:col-span-2 space-y-2">
                                     <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant px-1">
                                         Notes <span className="normal-case font-normal">(optional)</span>

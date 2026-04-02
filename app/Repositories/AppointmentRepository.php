@@ -56,10 +56,8 @@ class AppointmentRepository implements AppointmentRepositoryInterface
     public function getCurrentMonthRevenue(int $businessId): float
     {
         return (float) Appointment::where('business_id', $businessId)
-            ->whereIn('status', [AppointmentStatus::Pending, AppointmentStatus::Confirmed])
-            ->whereYear('date', Carbon::now()->year)
-            ->whereMonth('date', Carbon::now()->month)
-            ->whereDate('date', '<=', Carbon::today())
+            ->where('status', AppointmentStatus::Confirmed)
+            ->whereDate('date', Carbon::today())
             ->sum('price');
     }
 
