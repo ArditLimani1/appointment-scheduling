@@ -45,11 +45,12 @@ class DashboardService implements DashboardServiceInterface
         ];
     }
 
-    public function getEmployeeDashboardData(User $user, string $date): array
+    public function getEmployeeDashboardData(User $user, string $dateFrom, string $dateTo): array
     {
         $appointments = $user->appointments()
             ->with('service')
-            ->whereDate('date', $date)
+            ->whereBetween('date', [$dateFrom, $dateTo])
+            ->orderBy('date')
             ->orderBy('start_time')
             ->get();
 
@@ -60,7 +61,8 @@ class DashboardService implements DashboardServiceInterface
             'cancelled_appointments' => $appointments->where('status', AppointmentStatus::Cancelled)->count(),
             'completed_appointments' => $appointments->where('status', AppointmentStatus::Confirmed)->count(),
             'daily_revenue' => $appointments->where('status', AppointmentStatus::Confirmed)->sum('price'),
-            'date' => $date,
+            'date_from' => $dateFrom,
+            'date_to' => $dateTo,
         ];
     }
 }

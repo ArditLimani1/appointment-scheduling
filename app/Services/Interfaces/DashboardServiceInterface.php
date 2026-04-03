@@ -9,5 +9,5 @@ interface DashboardServiceInterface
 {
     public function getAdminDashboardData(Business $business): array;
 
-    public function getEmployeeDashboardData(User $user, string $date): array;
+    public function getEmployeeDashboardData(User $user, string $dateFrom, string $dateTo): array;
 }

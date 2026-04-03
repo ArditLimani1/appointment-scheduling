@@ -17,27 +17,46 @@ class DashboardController extends Controller
 
     public function index(Request $request): Response
     {
-        $inputDate = $request->input('date');
+        $today = Carbon::today()->toDateString();
 
-        try {
-            $date = $inputDate
-                ? (
-                    Carbon::createFromFormat('d.m.Y', $inputDate)->toDateString()
-                    ?? Carbon::createFromFormat('Y-m-d', $inputDate)->toDateString()
-                )
-                : Carbon::today()->toDateString();
-        } catch (\Throwable) {
-            try {
-                $date = $inputDate
-                    ? Carbon::createFromFormat('Y-m-d', $inputDate)->toDateString()
-                    : Carbon::today()->toDateString();
-            } catch (\Throwable) {
-                $date = Carbon::today()->toDateString();
+        $from = $this->parseDashboardDate($request->input('date_from'));
+        $to = $this->parseDashboardDate($request->input('date_to'));
+
+        if ($request->filled('date') && $from === null && $to === null) {
+            $legacy = $this->parseDashboardDate($request->input('date'));
+            if ($legacy !== null) {
+                $from = $legacy;
+                $to = $legacy;
             }
         }
 
-        $data = $this->dashboardService->getEmployeeDashboardData(auth()->user(), $date);
+        $from ??= $today;
+        $to ??= $today;
+
+        if ($from > $to) {
+            $to = $from;
+        }
+
+        $data = $this->dashboardService->getEmployeeDashboardData(auth()->user(), $from, $to);
 
         return Inertia::render('Employee/Dashboard', $data);
+    }
+
+    private function parseDashboardDate(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $value = (string) $value;
+
+        foreach (['Y-m-d', 'd.m.Y'] as $format) {
+            try {
+                return Carbon::createFromFormat($format, $value)->toDateString();
+            } catch (\Throwable) {
+            }
+        }
+
+        return null;
     }
 }

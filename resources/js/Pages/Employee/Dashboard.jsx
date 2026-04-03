@@ -3,7 +3,7 @@ import EmployeeLayout from '@/Layouts/EmployeeLayout';
 import MetricCard from '@/Components/MetricCard';
 import Icon from '@/Components/Icon';
 import { formatAppointmentDate, formatTimeHm } from '@/utils/appointmentDate';
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 
 const STATUS_STYLES = {
     pending: { bg: 'bg-surface-container-highest text-on-surface-variant', label: 'Pending' },
@@ -26,31 +26,25 @@ function fmt(d, opts) {
     return new Intl.DateTimeFormat('en-GB', opts).format(d);
 }
 
-function formatDateInput(value) {
-    const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})$/);
-
-    if (!match) {
-        return value;
-    }
-
-    return `${match[3]}.${match[2]}.${match[1]}`;
+function preventManualDateInputKeyDown(e) {
+    const allowed = new Set([
+        'Tab', 'Escape', 'Enter',
+        'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+        'Home', 'End', 'PageUp', 'PageDown',
+    ]);
+    if (allowed.has(e.key)) return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    e.preventDefault();
 }
 
-function parseDateInput(value) {
-    const match = String(value).trim().match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
-
-    if (!match) {
-        return null;
+function openDatePickerOnClick(e) {
+    const el = e.currentTarget;
+    if (typeof el.showPicker !== 'function') return;
+    try {
+        el.showPicker();
+    } catch {
+        /* not supported or blocked */
     }
-
-    const isoDate = `${match[3]}-${match[2]}-${match[1]}`;
-    const parsedDate = new Date(`${isoDate}T00:00:00`);
-
-    if (Number.isNaN(parsedDate.getTime())) {
-        return null;
-    }
-
-    return isoDate;
 }
 
 export default function Dashboard({
@@ -60,73 +54,103 @@ export default function Dashboard({
     cancelled_appointments = 0,
     completed_appointments = 0,
     daily_revenue = 0,
-    date,
+    date_from: dateFromProp,
+    date_to: dateToProp,
 }) {
     const { auth } = usePage().props;
     const business = auth.business;
     const currencySymbol = business?.currency_symbol ?? '€';
     const todayStr = new Date().toISOString().split('T')[0];
-    const [dateInput, setDateInput] = useState(formatDateInput(date));
 
-    useEffect(() => {
-        setDateInput(formatDateInput(date));
-    }, [date]);
+    const dateFrom = dateFromProp ?? todayStr;
+    const dateTo = dateToProp ?? todayStr;
 
-    const goToDate = (selectedDate) => {
-        router.get(route('employee.dashboard'), { date: selectedDate }, { preserveState: false });
+    const isRange = dateFrom !== dateTo;
+    const isToday = dateFrom === todayStr && dateTo === todayStr;
+
+    const rangeLabel = useMemo(() => {
+        const d1 = new Date(`${dateFrom}T00:00:00`);
+        const d2 = new Date(`${dateTo}T00:00:00`);
+        if (!isRange) {
+            return fmt(d1, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        }
+        return `${fmt(d1, { day: 'numeric', month: 'short', year: 'numeric' })} – ${fmt(d2, { day: 'numeric', month: 'short', year: 'numeric' })}`;
+    }, [dateFrom, dateTo, isRange]);
+
+    const goToRange = (from, to) => {
+        router.get(route('employee.dashboard'), { date_from: from, date_to: to }, { preserveState: false });
+    };
+
+    const handleFromChange = (e) => {
+        const v = e.target.value;
+        if (!v) return;
+        const to = dateTo >= v ? dateTo : v;
+        goToRange(v, to);
+    };
+
+    const handleToChange = (e) => {
+        const v = e.target.value;
+        if (!v) return;
+        if (v < dateFrom) {
+            goToRange(dateFrom, dateFrom);
+        } else {
+            goToRange(dateFrom, v);
+        }
     };
 
     const updateStatus = (apt, status) => {
         router.patch(route('employee.appointments.update', apt.id), { status }, { preserveScroll: true });
     };
 
-    const selectedDate = new Date(date + 'T00:00:00');
-    const isToday = date === todayStr;
+    const dateInputClass =
+        'w-full min-w-[10.5rem] cursor-pointer rounded-xl border border-slate-100 bg-white px-3 py-2.5 text-sm font-medium text-on-surface shadow-sm focus:border-on-surface focus:outline-none focus:ring-2 focus:ring-on-surface/10';
 
     return (
         <EmployeeLayout>
             <Head title="Appointments" />
 
-            <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div className="mb-8">
+                <h1 className="text-4xl font-extrabold font-headline tracking-tight text-on-surface mb-2">Appointments</h1>
+                <p className="text-on-surface-variant text-lg">{rangeLabel}</p>
+            </div>
+
+            <div className="mb-4 flex flex-wrap items-end gap-4">
                 <div>
-                    <h1 className="text-4xl font-extrabold font-headline tracking-tight text-on-surface mb-2">Appointments</h1>
-                    <p className="text-on-surface-variant text-lg">
-                        {isToday ? 'Today' : fmt(selectedDate, { weekday: 'long' })}
-                    </p>
-                </div>
-
-                <div className="w-full max-w-sm">
-                    <label className="mb-2 block text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">
-                        Select date
+                    <label
+                        htmlFor="employee-dashboard-date-from"
+                        className="mb-1.5 block text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant"
+                    >
+                        From
                     </label>
-                    <div className="relative">
-                        <input
-                            type="text"
-                            value={dateInput}
-                            inputMode="numeric"
-                            placeholder="dd.mm.YYYY"
-                            onChange={(e) => {
-                                const { value } = e.target;
-                                setDateInput(value);
-
-                                const parsedDate = parseDateInput(value);
-
-                                if (parsedDate) {
-                                    goToDate(parsedDate);
-                                }
-                            }}
-                            onBlur={() => {
-                                const parsedDate = parseDateInput(dateInput);
-
-                                if (!parsedDate) {
-                                    setDateInput(formatDateInput(date));
-                                } else {
-                                    setDateInput(formatDateInput(parsedDate));
-                                }
-                            }}
-                            className="w-full rounded-2xl border border-outline-variant bg-surface-container-lowest px-4 py-3 text-sm font-medium text-on-surface shadow-sm focus:border-on-surface focus:outline-none focus:ring-2 focus:ring-on-surface/10"
-                        />
-                    </div>
+                    <input
+                        id="employee-dashboard-date-from"
+                        type="date"
+                        value={dateFrom}
+                        autoComplete="off"
+                        onKeyDown={preventManualDateInputKeyDown}
+                        onClick={openDatePickerOnClick}
+                        onChange={handleFromChange}
+                        className={dateInputClass}
+                    />
+                </div>
+                <div>
+                    <label
+                        htmlFor="employee-dashboard-date-to"
+                        className="mb-1.5 block text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant"
+                    >
+                        To
+                    </label>
+                    <input
+                        id="employee-dashboard-date-to"
+                        type="date"
+                        value={dateTo}
+                        min={dateFrom}
+                        autoComplete="off"
+                        onKeyDown={preventManualDateInputKeyDown}
+                        onClick={openDatePickerOnClick}
+                        onChange={handleToChange}
+                        className={dateInputClass}
+                    />
                 </div>
             </div>
 
@@ -135,24 +159,25 @@ export default function Dashboard({
                     <div className="flex flex-col items-center justify-center py-12 text-center">
                         <Icon name="event_available" size="text-5xl" className="text-outline mb-4" />
                         <p className="font-semibold text-on-surface mb-1">No appointments scheduled</p>
-                        <p className="text-sm text-on-surface-variant">
-                            {fmt(selectedDate, { weekday: 'long', day: 'numeric', month: 'long' })} is free.
-                        </p>
+                        <p className="text-sm text-on-surface-variant">Nothing in this period ({rangeLabel}).</p>
                     </div>
                 </section>
             ) : (
                 <section className="bg-surface-container-lowest rounded-xl p-8">
                     <div className="flex justify-between items-center mb-8">
                         <h2 className="text-2xl font-extrabold font-headline text-on-surface">Appointments</h2>
-                        <span className="text-sm font-bold text-on-surface-variant">
-                            {fmt(selectedDate, { weekday: 'short', day: 'numeric', month: 'short' })}
-                        </span>
+                        <span className="text-sm font-bold text-on-surface-variant">{rangeLabel}</span>
                     </div>
 
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
                             <thead>
                                 <tr className="border-b border-surface-container-highest">
+                                    {isRange ? (
+                                        <th className="pb-5 pr-4 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">
+                                            Date
+                                        </th>
+                                    ) : null}
                                     <th className="pb-5 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">Client Name</th>
                                     <th className="pb-5 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">Service</th>
                                     <th className="pb-5 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">Time</th>
@@ -168,6 +193,13 @@ export default function Dashboard({
 
                                     return (
                                         <tr key={apt.id} className="hover:bg-surface-container-low/50 transition-colors align-top">
+                                            {isRange ? (
+                                                <td className="py-5 pr-4 whitespace-nowrap">
+                                                    <p className="text-sm font-semibold text-on-surface">
+                                                        {formatAppointmentDate(apt.date, { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                    </p>
+                                                </td>
+                                            ) : null}
                                             <td className="py-5 pr-4">
                                                 <div>
                                                     <p className="font-bold text-on-surface">
@@ -218,6 +250,7 @@ export default function Dashboard({
                                                             return (
                                                                 <button
                                                                     key={action}
+                                                                    type="button"
                                                                     onClick={() => updateStatus(apt, action)}
                                                                     className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-all ${
                                                                         isDanger
@@ -248,7 +281,7 @@ export default function Dashboard({
                 <div className="mb-5">
                     <h2 className="text-2xl font-extrabold font-headline text-on-surface">Overview</h2>
                     <p className="text-sm text-on-surface-variant mt-1">
-                        Daily performance summary for the selected date.
+                        Summary for the selected {isRange ? 'date range' : 'day'}.
                     </p>
                 </div>
 
@@ -259,7 +292,7 @@ export default function Dashboard({
                         iconClass="text-on-primary-fixed-variant"
                         label="Appointments"
                         value={appointments_count}
-                        badge={isToday ? 'Today' : 'Selected day'}
+                        badge={isToday ? 'Today' : isRange ? 'Range' : 'Selected day'}
                     />
                     <MetricCard
                         icon="check_circle"

@@ -5,6 +5,7 @@ namespace App\Http\Requests\Booking;
 use App\Models\Business;
 use App\Models\Service;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreBookingRequest extends FormRequest
@@ -20,19 +21,20 @@ class StoreBookingRequest extends FormRequest
         $identifierType = $business?->client_identifier_type ?? 'phone';
 
         return [
-            'client_first_name'  => ['required', 'string', 'max:100'],
-            'client_last_name'   => ['required', 'string', 'max:100'],
-            'client_phone'       => $identifierType === 'phone'
+            'client_first_name' => ['required', 'string', 'max:100'],
+            'client_last_name' => ['required', 'string', 'max:100'],
+            'client_phone' => $identifierType === 'phone'
                 ? ['required', 'string', 'max:50']
                 : ['nullable', 'string', 'max:50'],
-            'client_email'       => $identifierType === 'email'
+            'client_email' => $identifierType === 'email'
                 ? ['required', 'email', 'max:255']
                 : ['nullable', 'email', 'max:255'],
-            'client_notes'       => ['nullable', 'string', 'max:2000'],
-            'employee_id'        => ['required', 'integer', 'exists:users,id'],
-            'service_id'         => ['required', 'integer', 'exists:services,id'],
-            'date'               => ['required', 'date', 'after_or_equal:today'],
-            'start_time'         => ['required', 'date_format:H:i'],
+            'client_notes' => ['nullable', 'string', 'max:2000'],
+            'employee_id' => ['required', 'integer', 'exists:users,id'],
+            'service_ids' => ['required', 'array', 'min:1'],
+            'service_ids.*' => ['integer', 'exists:services,id'],
+            'date' => ['required', 'date_format:Y-m-d'],
+            'start_time' => ['required', 'date_format:H:i'],
         ];
     }
 
@@ -47,8 +49,18 @@ class StoreBookingRequest extends FormRequest
                 return;
             }
 
+            $timezone = $business->timezone ?: config('app.timezone');
+            $dateInput = $this->input('date');
+            if ($dateInput) {
+                $requestDay = Carbon::parse($dateInput, $timezone)->startOfDay();
+                $todayBusiness = Carbon::now($timezone)->startOfDay();
+                if ($requestDay->lt($todayBusiness)) {
+                    $validator->errors()->add('date', 'The date must be today or later.');
+                }
+            }
+
             $employeeId = (int) $this->input('employee_id');
-            $serviceId = (int) $this->input('service_id');
+            $ids = array_values(array_unique(array_map('intval', $this->input('service_ids', []))));
 
             $employeeBelongsToBusiness = User::where('id', $employeeId)
                 ->where('business_id', $business->id)
@@ -59,13 +71,26 @@ class StoreBookingRequest extends FormRequest
                 $validator->errors()->add('employee_id', 'The selected employee is not available for this business.');
             }
 
-            $serviceBelongsToBusiness = Service::where('id', $serviceId)
-                ->where('business_id', $business->id)
-                ->where('is_active', true)
-                ->exists();
+            if (count($ids) === 0) {
+                return;
+            }
 
-            if (! $serviceBelongsToBusiness) {
-                $validator->errors()->add('service_id', 'The selected service is not available for this business.');
+            $validCount = Service::where('business_id', $business->id)
+                ->where('is_active', true)
+                ->whereIn('id', $ids)
+                ->count();
+
+            if ($validCount !== count($ids)) {
+                $validator->errors()->add('service_ids', 'One or more selected services are not available for this business.');
+            }
+
+            $employee = User::with(['services' => fn ($q) => $q->where('is_active', true)])->find($employeeId);
+            foreach ($ids as $sid) {
+                if (! $employee || ! $employee->services->contains('id', $sid)) {
+                    $validator->errors()->add('service_ids', 'The selected professional does not offer all of the chosen services.');
+
+                    break;
+                }
             }
         });
     }

@@ -34,15 +34,18 @@ class BookingController extends Controller
 
     public function store(StoreBookingRequest $request, string $slug): RedirectResponse
     {
-        $appointment = $this->bookingService->createBooking($slug, $request->validated());
+        $appointments = $this->bookingService->createBooking($slug, $request->validated());
 
-        return redirect()->route('booking.confirmation', $appointment);
+        return redirect()->route('booking.confirmation', $appointments->first());
     }
 
     public function confirmation(Appointment $appointment): Response
     {
         $data = $this->bookingService->getConfirmation($appointment);
 
-        return Inertia::render('Booking/Confirmation', $data);
+        return Inertia::render('Booking/Confirmation', [
+            'appointment' => $data['appointment'],
+            'bookingBundle' => $data['bookingBundle'],
+        ]);
     }
 }

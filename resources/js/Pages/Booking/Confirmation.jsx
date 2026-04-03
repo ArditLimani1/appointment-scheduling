@@ -2,30 +2,37 @@ import { Head } from '@inertiajs/react';
 import Icon from '@/Components/Icon';
 import { appointmentDateOnly, formatAppointmentDate, formatTimeHm } from '@/utils/appointmentDate';
 
-function buildCalendarUrl(apt) {
-    const ymd = appointmentDateOnly(apt.date);
-    if (!ymd || !apt.start_time) return null;
+function buildCalendarUrlForBundle(bundle) {
+    const first = bundle[0];
+    const ymd = appointmentDateOnly(first.date);
+    if (!ymd || !first.start_time) return null;
     const toGcalDate = (dateYmd, timeStr) => {
         const [y, m, d] = dateYmd.split('-');
         const hm = formatTimeHm(timeStr);
         const [h, min] = hm.split(':');
         return `${y}${m}${d}T${h}${min}00`;
     };
-    const start = toGcalDate(ymd, apt.start_time);
-    const end = toGcalDate(ymd, apt.end_time || apt.start_time);
-    const title = apt.service?.name || 'Appointment';
-    const details = `Professional: ${apt.employee?.name || ''}`;
-    const location = apt.business?.location || '';
+    const last = bundle[bundle.length - 1];
+    const start = toGcalDate(ymd, first.start_time);
+    const end = toGcalDate(ymd, last.end_time || last.start_time);
+    const serviceNames = bundle.map((a) => a.service?.name).filter(Boolean);
+    const title = serviceNames.length > 1 ? `${serviceNames.length} services` : (serviceNames[0] || 'Appointment');
+    const details = `Professional: ${first.employee?.name || ''}${serviceNames.length ? `\n${serviceNames.join(', ')}` : ''}`;
+    const location = first.business?.location || '';
     return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${start}/${end}&details=${encodeURIComponent(details)}&location=${encodeURIComponent(location)}`;
 }
 
-export default function Confirmation({ appointment }) {
-    const apt = appointment;
+export default function Confirmation({ appointment, bookingBundle }) {
+    const bundle = bookingBundle?.length ? bookingBundle : [appointment];
+    const apt = bundle[0];
 
     const dateLong = formatAppointmentDate(apt.date, { day: 'numeric', month: 'long', year: 'numeric' });
     const dateShort = formatAppointmentDate(apt.date, { weekday: 'long', day: 'numeric', month: 'long' });
 
-    const calendarUrl = buildCalendarUrl(apt);
+    const totalPrice = bundle.reduce((sum, a) => sum + Number(a.price || 0), 0);
+    const currencySymbol = apt.business?.currency_symbol ?? '€';
+
+    const calendarUrl = buildCalendarUrlForBundle(bundle);
 
     return (
         <div className="min-h-screen bg-surface font-body text-on-surface">
@@ -66,12 +73,19 @@ export default function Confirmation({ appointment }) {
                             <div className="w-12 h-12 rounded-xl bg-primary-container flex items-center justify-center shrink-0 text-on-primary-container text-xl font-bold font-headline">
                                 {apt.employee?.name?.charAt(0)?.toUpperCase() ?? '?'}
                             </div>
-                            <div>
-                                <p className="text-sm text-on-surface-variant mb-1">Service & Professional</p>
-                                <p className="font-headline text-lg font-bold text-on-surface">
-                                    {apt.service?.name || 'Appointment'}
-                                </p>
-                                <p className="text-on-surface-variant text-sm">
+                            <div className="min-w-0 flex-1">
+                                <p className="text-sm text-on-surface-variant mb-1">Services & professional</p>
+                                <ul className="space-y-2">
+                                    {bundle.map((row) => (
+                                        <li key={row.id} className="font-headline text-base font-bold text-on-surface">
+                                            {row.service?.name || 'Service'}
+                                            <span className="font-medium text-on-surface-variant text-sm ml-2">
+                                                {formatTimeHm(row.start_time)} — {formatTimeHm(row.end_time)}
+                                            </span>
+                                        </li>
+                                    ))}
+                                </ul>
+                                <p className="text-on-surface-variant text-sm mt-2">
                                     with {apt.employee?.name}
                                     {apt.employee?.title ? ` · ${apt.employee.title}` : ''}
                                 </p>
@@ -92,7 +106,7 @@ export default function Confirmation({ appointment }) {
                                     <span className="text-xs font-bold uppercase tracking-wider">Time</span>
                                 </div>
                                 <p className="font-headline font-bold text-on-surface">
-                                    {formatTimeHm(apt.start_time)} — {formatTimeHm(apt.end_time)}
+                                    {formatTimeHm(apt.start_time)} — {formatTimeHm(bundle[bundle.length - 1].end_time || apt.end_time)}
                                 </p>
                             </div>
                         </div>
@@ -119,7 +133,7 @@ export default function Confirmation({ appointment }) {
                             </div>
                             <div className="flex items-center gap-3">
                                 <span className="font-headline text-xl font-extrabold text-on-surface">
-                                    {apt.business?.currency_symbol ?? '€'}{Number(apt.price).toFixed(2)}
+                                    {currencySymbol}{totalPrice.toFixed(2)}
                                 </span>
                             </div>
                         </div>

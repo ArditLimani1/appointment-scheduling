@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Appointment extends Model
 {
     protected $fillable = [
-        'business_id', 'employee_id', 'service_id', 'client_first_name', 'client_last_name',
+        'booking_reference', 'business_id', 'employee_id', 'service_id', 'client_first_name', 'client_last_name',
         'client_phone', 'client_email', 'client_notes', 'date', 'start_time', 'end_time',
         'price', 'status',
     ];
