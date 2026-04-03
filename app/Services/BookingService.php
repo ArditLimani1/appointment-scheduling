@@ -260,6 +260,10 @@ class BookingService implements BookingServiceInterface
         $scheduleStart = Carbon::parse($dateStr.' '.$schedule->start_time, $timezone);
         $scheduleEnd = Carbon::parse($dateStr.' '.$schedule->end_time, $timezone);
         $stepDuration = max(1, $stepDuration);
+        $slotDuration = max(1, $slotDuration);
+        // Admin "slot duration" is the coarse grid; when the requested block is shorter, step by that
+        // block length so every valid start (e.g. 14:15 for a 15‑min service) is considered.
+        $stepDuration = min($stepDuration, $slotDuration);
 
         $freeIntervals = $this->buildFreeIntervalsWithinSchedule(
             $dateStr,
