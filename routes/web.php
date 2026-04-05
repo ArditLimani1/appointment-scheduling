@@ -41,9 +41,11 @@ Route::middleware(['auth', 'role:admin', 'has_business'])->prefix('admin')->name
     Route::resource('employees', Admin\EmployeeController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::resource('services', Admin\ServiceController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::get('/appointments', [Admin\AppointmentController::class, 'index'])->name('appointments.index');
-    Route::patch('/appointments/{appointment}', [Admin\AppointmentController::class, 'update'])->name('appointments.update');
-    Route::delete('/appointments/{appointment}', [Admin\AppointmentController::class, 'destroy'])->name('appointments.destroy');
+    Route::get('/appointments/slots', [Admin\AppointmentController::class, 'slots'])->name('appointments.slots');
     Route::get('/appointments/export', [Admin\AppointmentController::class, 'export'])->name('appointments.export');
+    Route::patch('/appointments/{appointment}', [Admin\AppointmentController::class, 'update'])->name('appointments.update');
+    Route::put('/appointments/{appointment}', [Admin\AppointmentController::class, 'edit'])->name('appointments.edit');
+    Route::delete('/appointments/{appointment}', [Admin\AppointmentController::class, 'destroy'])->name('appointments.destroy');
     Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
     Route::get('/analytics/export', [AnalyticsController::class, 'export'])->name('analytics.export');
     Route::get('/settings', [Admin\SettingsController::class, 'index'])->name('settings.index');

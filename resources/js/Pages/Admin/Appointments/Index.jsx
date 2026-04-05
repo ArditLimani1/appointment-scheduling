@@ -6,6 +6,7 @@ import PageHeader from '@/Components/PageHeader';
 import FilterListbox from '@/Components/FilterListbox';
 import DatePicker from '@/Components/DatePicker';
 import AppointmentStatusMenu from '@/Components/AppointmentStatusMenu';
+import EditAppointmentModal from '@/Components/EditAppointmentModal';
 import { formatAppointmentDate, formatTimeHm } from '@/utils/appointmentDate';
 
 const APPOINTMENT_STATUSES = ['pending', 'confirmed', 'cancelled'];
@@ -55,7 +56,7 @@ function normalizeAppointments(appointments) {
     return { rows: [], meta: null };
 }
 
-export default function Index({ appointments, employees, filters = {} }) {
+export default function Index({ appointments, employees, services = [], filters = {} }) {
     const { auth } = usePage().props;
     const CURRENCY_SYMBOLS = { EUR: '€', USD: '$', GBP: '£', CHF: 'CHF' };
     const currencySymbol = CURRENCY_SYMBOLS[auth?.business?.currency] ?? auth?.business?.currency_symbol ?? '€';
@@ -101,6 +102,8 @@ export default function Index({ appointments, employees, filters = {} }) {
         setLocalFilters(defaultFilters);
         router.get(buildAppointmentsUrl(defaultFilters), {}, visitOpts);
     };
+
+    const [editingAppointment, setEditingAppointment] = useState(null);
 
     const updateStatus = (apt, status) => {
         router.patch(route('admin.appointments.update', apt.id), { status }, { preserveScroll: true });
@@ -258,14 +261,24 @@ export default function Index({ appointments, employees, filters = {} }) {
                                                 {Number(apt.price).toFixed(2)} {currencySymbol}
                                             </td>
                                             <td className="px-8 py-5 text-right">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => deleteAppointment(apt)}
-                                                    className="inline-flex rounded-lg p-2 text-outline hover:text-error hover:bg-error-container transition-colors"
-                                                    title="Delete"
-                                                >
-                                                    <Icon name="delete" size="text-[18px]" />
-                                                </button>
+                                                <div className="inline-flex items-center gap-1">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setEditingAppointment(apt)}
+                                                        className="inline-flex rounded-lg p-2 text-outline hover:text-on-surface hover:bg-surface-container transition-colors"
+                                                        title="Edit"
+                                                    >
+                                                        <Icon name="edit" size="text-[18px]" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => deleteAppointment(apt)}
+                                                        className="inline-flex rounded-lg p-2 text-outline hover:text-error hover:bg-error-container transition-colors"
+                                                        title="Delete"
+                                                    >
+                                                        <Icon name="delete" size="text-[18px]" />
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -315,6 +328,15 @@ export default function Index({ appointments, employees, filters = {} }) {
                     </>
                 )}
             </div>
+            {editingAppointment && (
+                <EditAppointmentModal
+                    appointment={editingAppointment}
+                    employees={employees}
+                    services={services}
+                    business={auth?.business}
+                    onClose={() => setEditingAppointment(null)}
+                />
+            )}
         </AdminLayout>
     );
 }

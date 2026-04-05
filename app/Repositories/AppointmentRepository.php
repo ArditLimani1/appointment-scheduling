@@ -73,12 +73,13 @@ class AppointmentRepository implements AppointmentRepositoryInterface
         return $query->orderBy('date')->orderBy('start_time')->take($limit)->get();
     }
 
-    public function getByEmployeeAndDate(int $employeeId, string $date): Collection
+    public function getByEmployeeAndDate(int $employeeId, string $date, ?int $excludeAppointmentId = null): Collection
     {
         return Appointment::where('employee_id', $employeeId)
             ->whereDate('date', $date)
             ->where('status', '!=', AppointmentStatus::Cancelled)
-            ->get(['start_time', 'end_time']);
+            ->when($excludeAppointmentId, fn ($q) => $q->where('id', '!=', $excludeAppointmentId))
+            ->get(['id', 'start_time', 'end_time']);
     }
 
     public function create(array $data): Appointment

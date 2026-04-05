@@ -11,7 +11,7 @@ class Appointment extends Model
     protected $fillable = [
         'booking_reference', 'business_id', 'employee_id', 'service_id', 'client_first_name', 'client_last_name',
         'client_phone', 'client_email', 'client_notes', 'date', 'start_time', 'end_time',
-        'price', 'status',
+        'price', 'status', 'updated_by',
     ];
 
     protected function casts(): array

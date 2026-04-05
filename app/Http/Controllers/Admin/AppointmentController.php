@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\UpdateAppointmentRequest;
 use App\Http\Requests\Admin\UpdateAppointmentStatusRequest;
 use App\Models\Appointment;
 use App\Services\Interfaces\AppointmentServiceInterface;
+use App\Services\Interfaces\BookingServiceInterface;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -17,23 +20,52 @@ class AppointmentController extends Controller
 {
     public function __construct(
         private AppointmentServiceInterface $appointmentService,
+        private BookingServiceInterface $bookingService,
     ) {}
 
     public function index(Request $request): Response
     {
         $business = auth()->user()->ownedBusiness;
-        $filters = $this->filtersFromRequest($request);
-        $data = $this->appointmentService->getFiltered($business, $filters);
+        $filters  = $this->filtersFromRequest($request);
+        $data     = $this->appointmentService->getFiltered($business, $filters);
 
         return Inertia::render('Admin/Appointments/Index', $data);
     }
 
+    /** PATCH — status-only update (from the inline status menu) */
     public function update(UpdateAppointmentStatusRequest $request, Appointment $appointment): RedirectResponse
     {
         $business = auth()->user()->ownedBusiness;
         $this->appointmentService->updateStatus($business, $appointment, $request->validated());
 
         return redirect()->back()->with('success', 'Appointment updated successfully.');
+    }
+
+    /** PUT — full appointment edit (from the edit modal) */
+    public function edit(UpdateAppointmentRequest $request, Appointment $appointment): RedirectResponse
+    {
+        $business = auth()->user()->ownedBusiness;
+        $this->appointmentService->updateAppointment($business, $appointment, $request->validated());
+
+        return redirect()->back()->with('success', 'Appointment updated successfully.');
+    }
+
+    /** GET — available time slots for admin edit modal */
+    public function slots(Request $request): JsonResponse
+    {
+        $request->validate([
+            'employee_id' => ['required', 'integer', 'exists:users,id'],
+            'service_id'  => ['required', 'integer', 'exists:services,id'],
+            'date'        => ['required', 'date_format:Y-m-d'],
+            'exclude_id'  => ['nullable', 'integer'],
+        ]);
+
+        $business = auth()->user()->ownedBusiness;
+        $slots    = $this->bookingService->getAdminAvailableSlots($business, $request->only([
+            'employee_id', 'service_id', 'date', 'exclude_id',
+        ]));
+
+        return response()->json(['slots' => $slots]);
     }
 
     public function destroy(Appointment $appointment): RedirectResponse
@@ -47,7 +79,7 @@ class AppointmentController extends Controller
     public function export(Request $request): BinaryFileResponse
     {
         $business = auth()->user()->ownedBusiness;
-        $filters = $this->filtersFromRequest($request);
+        $filters  = $this->filtersFromRequest($request);
 
         return $this->appointmentService->export($business, $filters);
     }

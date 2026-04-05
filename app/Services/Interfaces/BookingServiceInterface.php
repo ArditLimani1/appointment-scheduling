@@ -3,6 +3,7 @@
 namespace App\Services\Interfaces;
 
 use App\Models\Appointment;
+use App\Models\Business;
 use Illuminate\Support\Collection;
 
 interface BookingServiceInterface
@@ -17,4 +18,6 @@ interface BookingServiceInterface
     public function createBooking(string $slug, array $data): Collection;
 
     public function getConfirmation(Appointment $appointment): array;
+
+    public function getAdminAvailableSlots(Business $business, array $data): array;
 }

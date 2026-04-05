@@ -10,6 +10,8 @@ interface AppointmentServiceInterface
 {
     public function getFiltered(Business $business, array $filters, int $perPage = 10): array;
 
+    public function updateAppointment(Business $business, Appointment $appointment, array $data): Appointment;
+
     public function updateStatus(Business $business, Appointment $appointment, array $data): Appointment;
 
     public function updateEmployeeAppointmentStatus(int $employeeId, Appointment $appointment, array $data): Appointment;

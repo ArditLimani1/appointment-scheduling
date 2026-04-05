@@ -18,7 +18,7 @@ interface AppointmentRepositoryInterface
 
     public function getRecent(int $businessId, int $limit = 10, ?string $date = null): Collection;
 
-    public function getByEmployeeAndDate(int $employeeId, string $date): Collection;
+    public function getByEmployeeAndDate(int $employeeId, string $date, ?int $excludeAppointmentId = null): Collection;
 
     public function create(array $data): Appointment;
 

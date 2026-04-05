@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
+use App\Models\Business;
 use App\Repositories\Interfaces\AppointmentRepositoryInterface;
 use App\Repositories\Interfaces\BusinessRepositoryInterface;
 use App\Repositories\Interfaces\EmployeeRepositoryInterface;
@@ -156,6 +157,45 @@ class BookingService implements BookingServiceInterface
 
             return $created;
         });
+    }
+
+    public function getAdminAvailableSlots(Business $business, array $data): array
+    {
+        $date      = Carbon::parse($data['date']);
+        $dayOfWeek = $date->dayOfWeekIso - 1;
+        $employeeId = (int) $data['employee_id'];
+
+        $schedule = $this->scheduleRepository->findActiveByUserAndDay($employeeId, $dayOfWeek);
+        if (! $schedule) {
+            return [];
+        }
+
+        $slotDuration = $business->slot_duration ?? 30;
+        if (! empty($data['service_id'])) {
+            $service = $this->serviceRepository->findById((int) $data['service_id']);
+            if ($service && $service->business_id === $business->id) {
+                $slotDuration = $service->duration;
+            }
+        }
+
+        $excludeId = isset($data['exclude_id']) ? (int) $data['exclude_id'] : null;
+        $existingAppointments = $this->appointmentRepository->getByEmployeeAndDate(
+            $employeeId,
+            $date->toDateString(),
+            $excludeId
+        );
+
+        // Admin bypasses min-notice: use a past timestamp so all slots are eligible
+        $minNoticeTime = Carbon::createFromTimestamp(0);
+
+        return $this->calculateSlots(
+            $date,
+            $schedule,
+            $slotDuration,
+            $business->slot_duration ?? 30,
+            $minNoticeTime,
+            $existingAppointments
+        );
     }
 
     public function getConfirmation(Appointment $appointment): array
