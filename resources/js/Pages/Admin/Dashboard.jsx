@@ -4,12 +4,6 @@ import Icon from '@/Components/Icon';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { formatAppointmentDate, formatTimeHm } from '@/utils/appointmentDate';
 
-const DEMO_APPOINTMENTS = [
-    { client_name: 'James Wilson', service_name: 'Haircut', employee_name: 'John Doe', date: '2026-03-26', start_time: '10:00', status: 'confirmed' },
-    { client_name: 'Sarah Johnson', service_name: 'Full Grooming', employee_name: 'Alex Smith', date: '2026-03-26', start_time: '14:00', status: 'pending' },
-    { client_name: 'Emma Brown', service_name: 'Nail Treatment', employee_name: 'Maria Garcia', date: '2026-03-27', start_time: '11:00', status: 'confirmed' },
-    { client_name: 'Michael Chen', service_name: 'Deep Cleanse', employee_name: 'John Doe', date: '2026-03-27', start_time: '09:30', status: 'confirmed' },
-];
 
 export default function Dashboard({
     active_employees = 0,
@@ -28,7 +22,7 @@ export default function Dashboard({
 
     const ALLOWED_STATUSES = ['pending', 'confirmed', 'cancelled'];
 
-    const displayAppointments = (recent_appointments.length > 0 ? recent_appointments : DEMO_APPOINTMENTS)
+    const displayAppointments = recent_appointments
         .filter(apt => ALLOWED_STATUSES.includes(apt.status?.toLowerCase()));
 
     const formatDate = (dateStr) =>
