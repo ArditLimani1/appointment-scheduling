@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\AppointmentStatus;
 use App\Exports\AppointmentsExport;
 use App\Models\Appointment;
 use App\Models\Business;
@@ -10,6 +11,7 @@ use App\Repositories\Interfaces\EmployeeRepositoryInterface;
 use App\Repositories\Interfaces\ServiceRepositoryInterface;
 use App\Services\Interfaces\AppointmentServiceInterface;
 use Carbon\Carbon;
+use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -49,8 +51,25 @@ class AppointmentService implements AppointmentServiceInterface
         abort_if($appointment->business_id !== $business->id, 403);
 
         $service   = $this->serviceRepository->findById((int) $data['service_id']);
+        abort_if(! $service, 422, 'Service not found.');
+
         $startTime = Carbon::parse($data['date'].' '.$data['start_time']);
         $endTime   = $startTime->copy()->addMinutes($service->duration);
+
+        // Check if the new time window overlaps with any other appointment for this employee
+        $hasConflict = Appointment::where('employee_id', (int) $data['employee_id'])
+            ->whereDate('date', $data['date'])
+            ->where('id', '!=', $appointment->id)
+            ->where('status', '!=', AppointmentStatus::Cancelled->value)
+            ->where('start_time', '<', $endTime->format('H:i:s'))
+            ->where('end_time', '>', $startTime->format('H:i:s'))
+            ->exists();
+
+        if ($hasConflict) {
+            throw ValidationException::withMessages([
+                'start_time' => 'This time slot conflicts with another appointment for this employee. Please choose a different time or date where the employee is available.',
+            ]);
+        }
 
         return $this->appointmentRepository->update($appointment, array_merge($data, [
             'end_time'   => $endTime->format('H:i'),

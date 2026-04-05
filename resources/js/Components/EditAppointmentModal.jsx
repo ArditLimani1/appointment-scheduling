@@ -7,8 +7,10 @@ function toDateString(d) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-export default function EditAppointmentModal({ appointment, employees, services, business, onClose }) {
-    const identifierType = business?.client_identifier_type ?? 'phone';
+export default function EditAppointmentModal({ appointment, employees, services, onClose }) {
+    // Derive identifier type from the appointment's own stored data, not the business setting.
+    // If the appointment was booked with an email → show email. Otherwise → show phone.
+    const identifierType = (appointment.client_email && appointment.client_email.trim()) ? 'email' : 'phone';
     const today = toDateString(new Date());
     const isPast = appointment.date < today;
 
@@ -93,8 +95,9 @@ export default function EditAppointmentModal({ appointment, employees, services,
             {
                 client_first_name: form.client_first_name,
                 client_last_name:  form.client_last_name,
-                client_phone:      identifierType === 'phone' ? form.client_phone : null,
-                client_email:      identifierType === 'email' ? form.client_email : null,
+                // Send the editable identifier; keep the other field from original data
+                client_phone:      identifierType === 'phone' ? form.client_phone : (appointment.client_phone ?? null),
+                client_email:      identifierType === 'email' ? form.client_email : (appointment.client_email ?? null),
                 client_notes:      form.client_notes,
                 service_id:        Number(form.service_id),
                 employee_id:       Number(form.employee_id),

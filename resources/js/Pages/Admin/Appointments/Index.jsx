@@ -333,7 +333,6 @@ export default function Index({ appointments, employees, services = [], filters 
                     appointment={editingAppointment}
                     employees={employees}
                     services={services}
-                    business={auth?.business}
                     onClose={() => setEditingAppointment(null)}
                 />
             )}
