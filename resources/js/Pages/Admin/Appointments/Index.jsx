@@ -4,6 +4,7 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import Icon from '@/Components/Icon';
 import PageHeader from '@/Components/PageHeader';
 import FilterListbox from '@/Components/FilterListbox';
+import DatePicker from '@/Components/DatePicker';
 import AppointmentStatusMenu from '@/Components/AppointmentStatusMenu';
 import { formatAppointmentDate, formatTimeHm } from '@/utils/appointmentDate';
 
@@ -172,24 +173,18 @@ export default function Index({ appointments, employees, filters = {} }) {
                         onChange={(v) => patchFilters({ employee_id: v })}
                         options={employeeOptions}
                     />
-                    <div className="flex-1 min-w-[140px]">
-                        <label className="block text-[10px] font-bold uppercase tracking-widest text-outline mb-1">From</label>
-                        <input
-                            type="date"
-                            value={localFilters.date_from}
-                            onChange={(e) => patchFilters({ date_from: e.target.value })}
-                            className="w-full rounded-xl border border-slate-100 bg-white px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-on-primary-container/20"
-                        />
-                    </div>
-                    <div className="flex-1 min-w-[140px]">
-                        <label className="block text-[10px] font-bold uppercase tracking-widest text-outline mb-1">To</label>
-                        <input
-                            type="date"
-                            value={localFilters.date_to}
-                            onChange={(e) => patchFilters({ date_to: e.target.value })}
-                            className="w-full rounded-xl border border-slate-100 bg-white px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-on-primary-container/20"
-                        />
-                    </div>
+                    <DatePicker
+                        label="From"
+                        value={localFilters.date_from}
+                        onChange={(value) => patchFilters({ date_from: value })}
+                        placeholder="Start date"
+                    />
+                    <DatePicker
+                        label="To"
+                        value={localFilters.date_to}
+                        onChange={(value) => patchFilters({ date_to: value })}
+                        placeholder="End date"
+                    />
                     <FilterListbox
                         label="Status"
                         value={localFilters.status}

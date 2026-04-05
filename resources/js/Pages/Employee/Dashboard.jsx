@@ -2,6 +2,7 @@ import { Head, router, usePage } from '@inertiajs/react';
 import EmployeeLayout from '@/Layouts/EmployeeLayout';
 import MetricCard from '@/Components/MetricCard';
 import Icon from '@/Components/Icon';
+import DatePicker from '@/Components/DatePicker';
 import { formatAppointmentDate, formatTimeHm } from '@/utils/appointmentDate';
 import { useMemo } from 'react';
 
@@ -26,26 +27,6 @@ function fmt(d, opts) {
     return new Intl.DateTimeFormat('en-GB', opts).format(d);
 }
 
-function preventManualDateInputKeyDown(e) {
-    const allowed = new Set([
-        'Tab', 'Escape', 'Enter',
-        'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
-        'Home', 'End', 'PageUp', 'PageDown',
-    ]);
-    if (allowed.has(e.key)) return;
-    if (e.ctrlKey || e.metaKey || e.altKey) return;
-    e.preventDefault();
-}
-
-function openDatePickerOnClick(e) {
-    const el = e.currentTarget;
-    if (typeof el.showPicker !== 'function') return;
-    try {
-        el.showPicker();
-    } catch {
-        /* not supported or blocked */
-    }
-}
 
 export default function Dashboard({
     appointments = [],
@@ -81,15 +62,13 @@ export default function Dashboard({
         router.get(route('employee.dashboard'), { date_from: from, date_to: to }, { preserveState: false });
     };
 
-    const handleFromChange = (e) => {
-        const v = e.target.value;
+    const handleFromChange = (v) => {
         if (!v) return;
         const to = dateTo >= v ? dateTo : v;
         goToRange(v, to);
     };
 
-    const handleToChange = (e) => {
-        const v = e.target.value;
+    const handleToChange = (v) => {
         if (!v) return;
         if (v < dateFrom) {
             goToRange(dateFrom, dateFrom);
@@ -102,9 +81,6 @@ export default function Dashboard({
         router.patch(route('employee.appointments.update', apt.id), { status }, { preserveScroll: true });
     };
 
-    const dateInputClass =
-        'w-full min-w-[10.5rem] cursor-pointer rounded-xl border border-slate-100 bg-white px-3 py-2.5 text-sm font-medium text-on-surface shadow-sm focus:border-on-surface focus:outline-none focus:ring-2 focus:ring-on-surface/10';
-
     return (
         <EmployeeLayout>
             <Head title="Appointments" />
@@ -115,43 +91,18 @@ export default function Dashboard({
             </div>
 
             <div className="mb-4 flex flex-wrap items-end gap-4">
-                <div>
-                    <label
-                        htmlFor="employee-dashboard-date-from"
-                        className="mb-1.5 block text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant"
-                    >
-                        From
-                    </label>
-                    <input
-                        id="employee-dashboard-date-from"
-                        type="date"
-                        value={dateFrom}
-                        autoComplete="off"
-                        onKeyDown={preventManualDateInputKeyDown}
-                        onClick={openDatePickerOnClick}
-                        onChange={handleFromChange}
-                        className={dateInputClass}
-                    />
-                </div>
-                <div>
-                    <label
-                        htmlFor="employee-dashboard-date-to"
-                        className="mb-1.5 block text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant"
-                    >
-                        To
-                    </label>
-                    <input
-                        id="employee-dashboard-date-to"
-                        type="date"
-                        value={dateTo}
-                        min={dateFrom}
-                        autoComplete="off"
-                        onKeyDown={preventManualDateInputKeyDown}
-                        onClick={openDatePickerOnClick}
-                        onChange={handleToChange}
-                        className={dateInputClass}
-                    />
-                </div>
+                <DatePicker
+                    label="From"
+                    value={dateFrom}
+                    onChange={handleFromChange}
+                    placeholder="Start date"
+                />
+                <DatePicker
+                    label="To"
+                    value={dateTo}
+                    onChange={handleToChange}
+                    placeholder="End date"
+                />
             </div>
 
             {appointments.length === 0 ? (
