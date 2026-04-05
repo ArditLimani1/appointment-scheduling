@@ -1,6 +1,7 @@
 import { Head, router } from '@inertiajs/react';
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import Icon from '@/Components/Icon';
+import DatePicker from '@/Components/DatePicker';
 
 const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -41,30 +42,6 @@ function formatDateLabel(ds) {
     if (!ds) return null;
     const d = new Date(ds + 'T00:00:00');
     return `${DAY_SHORT[d.getDay()]}, ${MONTH_SHORT[d.getMonth()]} ${d.getDate()}`;
-}
-
-/** `hm` is "H:i" from the API; returns end time of a booking block of `addMins` minutes. */
-/** Blocks typing in `type="date"` while keeping the native picker (readOnly breaks picker + icon in WebKit / some Chromium). */
-function preventManualDateInputKeyDown(e) {
-    const allowed = new Set([
-        'Tab', 'Escape', 'Enter',
-        'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
-        'Home', 'End', 'PageUp', 'PageDown',
-    ]);
-    if (allowed.has(e.key)) return;
-    if (e.ctrlKey || e.metaKey || e.altKey) return;
-    e.preventDefault();
-}
-
-/** Chromium often focuses `type="date"` on click without opening the popover; `showPicker()` fixes that (must run in the user gesture). */
-function openDatePickerOnClick(e) {
-    const el = e.currentTarget;
-    if (typeof el.showPicker !== 'function') return;
-    try {
-        el.showPicker();
-    } catch {
-        /* not supported or blocked */
-    }
 }
 
 function addMinutesToTimeString(hm, addMins) {
@@ -164,11 +141,6 @@ export default function Index({ employees, services, business, slug }) {
         () => buildDateRange(business?.max_booking_window || 30),
         [business?.max_booking_window]
     );
-
-    const datePickerBounds = useMemo(() => ({
-        min: toDateString(fullDateRange[0]),
-        max: toDateString(fullDateRange[fullDateRange.length - 1]),
-    }), [fullDateRange]);
 
     const bookableDates = useMemo(() => {
         if (!selectedEmployee) {
@@ -565,28 +537,15 @@ export default function Index({ employees, services, business, slug }) {
                                 {selectedServices.length > 0 && selectedEmployee && bookableDates.length > 0 && (
                                     <div className="rounded-2xl bg-surface-container-lowest p-4 ring-1 ring-slate-100 shadow-sm">
                                         <div className="flex flex-wrap gap-3 items-end">
-                                            <div className="flex-1 min-w-[160px] max-w-xs">
-                                                <label htmlFor="booking-date" className="block text-[10px] font-bold uppercase tracking-widest text-outline mb-1">
-                                                    Date
-                                                </label>
-                                                <input
-                                                    id="booking-date"
-                                                    type="date"
-                                                    autoComplete="off"
-                                                    value={selectedDate ?? ''}
-                                                    min={datePickerBounds.min}
-                                                    max={datePickerBounds.max}
-                                                    onKeyDown={preventManualDateInputKeyDown}
-                                                    onClick={openDatePickerOnClick}
-                                                    onPaste={(e) => e.preventDefault()}
-                                                    onChange={(e) => {
-                                                        const v = e.target.value;
-                                                        setSelectedDate(v || null);
-                                                        setSelectedSlot(null);
-                                                    }}
-                                                    className="w-full cursor-pointer rounded-xl border border-slate-100 bg-white px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-on-primary-container/20"
-                                                />
-                                            </div>
+                                            <DatePicker
+                                                label="Date"
+                                                value={selectedDate ?? ''}
+                                                onChange={(value) => {
+                                                    setSelectedDate(value || null);
+                                                    setSelectedSlot(null);
+                                                }}
+                                                placeholder="Select a date"
+                                            />
                                         </div>
                                         {selectedDate && !selectedDateIsBookable ? (
                                             <p className="mt-3 text-sm text-on-surface-variant">
