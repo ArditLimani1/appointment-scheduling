@@ -69,10 +69,10 @@ function BookingAccordionStep({
 }) {
     return (
         <div
-            className={`rounded-2xl border overflow-hidden transition-shadow ${
+            className={`rounded-2xl border transition-shadow ${
                 expanded
-                    ? 'border-outline-variant shadow-sm bg-surface-container-lowest'
-                    : 'border-outline-variant/50 bg-surface-container-lowest/70'
+                    ? 'border-outline-variant shadow-sm bg-surface-container-lowest overflow-visible'
+                    : 'border-outline-variant/50 bg-surface-container-lowest/70 overflow-hidden'
             }`}
         >
             <button
