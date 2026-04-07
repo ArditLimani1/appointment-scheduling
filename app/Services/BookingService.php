@@ -161,8 +161,9 @@ class BookingService implements BookingServiceInterface
 
     public function getAdminAvailableSlots(Business $business, array $data): array
     {
-        $date      = Carbon::parse($data['date']);
-        $dayOfWeek = $date->dayOfWeekIso - 1;
+        $timezone   = $business->timezone ?: config('app.timezone');
+        $date       = Carbon::parse($data['date'], $timezone)->startOfDay();
+        $dayOfWeek  = $date->dayOfWeekIso - 1;
         $employeeId = (int) $data['employee_id'];
 
         $schedule = $this->scheduleRepository->findActiveByUserAndDay($employeeId, $dayOfWeek);
@@ -194,7 +195,8 @@ class BookingService implements BookingServiceInterface
             $slotDuration,
             $business->slot_duration ?? 30,
             $minNoticeTime,
-            $existingAppointments
+            $existingAppointments,
+            $timezone
         );
     }
 

@@ -20,6 +20,7 @@ class UpdateAppointmentRequest extends FormRequest
             'client_email'      => ['nullable', 'email', 'max:255'],
             'client_notes'      => ['nullable', 'string', 'max:2000'],
             'service_id'        => ['required', 'integer', 'exists:services,id'],
+            'status'            => ['required', 'in:pending,confirmed,cancelled'],
             'employee_id'       => ['required', 'integer', 'exists:users,id'],
             'date'              => ['required', 'date_format:Y-m-d'],
             'start_time'        => ['required', 'date_format:H:i'],

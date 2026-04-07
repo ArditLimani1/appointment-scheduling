@@ -7,12 +7,21 @@ function toDateString(d) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+const TABS = [
+    { id: 'schedule', label: 'Service & Schedule', icon: 'calendar_month' },
+    { id: 'client',   label: 'Client Details',     icon: 'person'         },
+];
+
 export default function EditAppointmentModal({ appointment, employees, services, onClose }) {
-    // Derive identifier type from the appointment's own stored data, not the business setting.
-    // If the appointment was booked with an email → show email. Otherwise → show phone.
     const identifierType = (appointment.client_email && appointment.client_email.trim()) ? 'email' : 'phone';
-    const today = toDateString(new Date());
-    const isPast = appointment.date < today;
+    const today    = toDateString(new Date());
+
+    // Normalize: Eloquent 'date' cast serializes as ISO datetime in JSON
+    // (e.g. "2026-04-07T00:00:00.000000Z"). Slice to plain YYYY-MM-DD.
+    const apptDate = appointment.date ? String(appointment.date).slice(0, 10) : today;
+    const isPast   = apptDate < today;
+
+    const [activeTab, setActiveTab] = useState('schedule');
 
     const [form, setForm] = useState({
         client_first_name: appointment.client_first_name ?? '',
@@ -21,8 +30,9 @@ export default function EditAppointmentModal({ appointment, employees, services,
         client_email:      appointment.client_email ?? '',
         client_notes:      appointment.client_notes ?? '',
         service_id:        String(appointment.service_id ?? ''),
+        status:            appointment.status ?? 'pending',
         employee_id:       String(appointment.employee_id ?? ''),
-        date:              appointment.date ?? today,
+        date:              apptDate,
         start_time:        appointment.start_time ? appointment.start_time.slice(0, 5) : '',
     });
 
@@ -34,7 +44,7 @@ export default function EditAppointmentModal({ appointment, employees, services,
 
     const patch = (field, value) => setForm((f) => ({ ...f, [field]: value }));
 
-    // Employees who can do the selected service
+    // Employees who can perform the selected service
     const eligibleEmployees = useMemo(() => {
         if (!form.service_id) return employees;
         const sid = Number(form.service_id);
@@ -79,7 +89,7 @@ export default function EditAppointmentModal({ appointment, employees, services,
             .finally(() => setLoadingSlots(false));
     }, [form.employee_id, form.date, form.service_id]);
 
-    // Keep current slot selected if it's still available after re-fetch
+    // Keep pre-selected slot if still available; clear only on a key change (not initial load)
     useEffect(() => {
         if (slots.length && !slots.includes(form.start_time)) {
             patch('start_time', '');
@@ -95,17 +105,25 @@ export default function EditAppointmentModal({ appointment, employees, services,
             {
                 client_first_name: form.client_first_name,
                 client_last_name:  form.client_last_name,
-                // Send the editable identifier; keep the other field from original data
                 client_phone:      identifierType === 'phone' ? form.client_phone : (appointment.client_phone ?? null),
                 client_email:      identifierType === 'email' ? form.client_email : (appointment.client_email ?? null),
                 client_notes:      form.client_notes,
                 service_id:        Number(form.service_id),
+                status:            form.status,
                 employee_id:       Number(form.employee_id),
                 date:              form.date,
                 start_time:        form.start_time,
             },
             {
-                onError:   (errs) => { setErrors(errs); setSubmitting(false); },
+                onError:   (errs) => {
+                    setErrors(errs);
+                    setSubmitting(false);
+                    // Switch to the tab that contains the error
+                    const scheduleFields = ['service_id', 'employee_id', 'date', 'start_time'];
+                    const hasScheduleErr = scheduleFields.some((f) => errs[f]);
+                    if (hasScheduleErr) setActiveTab('schedule');
+                    else setActiveTab('client');
+                },
                 onSuccess: () => { setSubmitting(false); onClose(); },
             }
         );
@@ -114,20 +132,21 @@ export default function EditAppointmentModal({ appointment, employees, services,
     const labelCls = 'block text-[10px] font-bold uppercase tracking-widest text-outline mb-1.5';
     const inputCls = 'w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-on-surface/10';
 
+    // Count errors per tab for badge
+    const scheduleErrors = ['service_id', 'employee_id', 'date', 'start_time'].filter((f) => errors[f]).length;
+    const clientErrors   = ['client_first_name', 'client_last_name', 'client_phone', 'client_email'].filter((f) => errors[f]).length;
+
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             {/* Backdrop */}
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
             {/* Panel */}
-            <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-2xl">
+            <div className="relative w-full max-w-2xl max-h-[90vh] flex flex-col bg-white rounded-2xl shadow-2xl">
 
                 {/* Header */}
-                <div className="sticky top-0 z-10 bg-white border-b border-slate-100 px-6 py-5 flex items-center justify-between">
-                    <div>
-                        <h2 className="text-xl font-extrabold font-headline text-on-surface">Edit Appointment</h2>
-                        <p className="text-xs text-on-surface-variant mt-0.5">#{appointment.id} · {appointment.date}</p>
-                    </div>
+                <div className="shrink-0 bg-white border-b border-slate-100 px-6 py-5 flex items-center justify-between rounded-t-2xl">
+                    <h2 className="text-xl font-extrabold font-headline text-on-surface">Edit Appointment</h2>
                     <button type="button" onClick={onClose} className="p-2 rounded-xl hover:bg-slate-100 transition-colors">
                         <Icon name="close" size="text-xl" className="text-on-surface-variant" />
                     </button>
@@ -135,7 +154,7 @@ export default function EditAppointmentModal({ appointment, employees, services,
 
                 {/* Past-date warning */}
                 {isPast && (
-                    <div className="mx-6 mt-5 flex items-start gap-3 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
+                    <div className="shrink-0 mx-6 mt-4 flex items-start gap-3 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
                         <Icon name="warning" size="text-lg" className="text-amber-500 shrink-0 mt-0.5" />
                         <p className="text-sm text-amber-800">
                             <span className="font-bold">This appointment is in the past.</span> Are you sure you want to modify it?
@@ -143,174 +162,240 @@ export default function EditAppointmentModal({ appointment, employees, services,
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="px-6 py-5 space-y-6">
+                {/* Tabs */}
+                <div className="shrink-0 flex border-b border-slate-100 px-6 mt-2">
+                    {TABS.map((tab) => {
+                        const errCount = tab.id === 'schedule' ? scheduleErrors : clientErrors;
+                        return (
+                            <button
+                                key={tab.id}
+                                type="button"
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`flex items-center gap-2 px-1 py-3 mr-6 text-sm font-semibold border-b-2 transition-colors ${
+                                    activeTab === tab.id
+                                        ? 'border-on-surface text-on-surface'
+                                        : 'border-transparent text-on-surface-variant hover:text-on-surface'
+                                }`}
+                            >
+                                <Icon name={tab.icon} size="text-base" />
+                                {tab.label}
+                                {errCount > 0 && (
+                                    <span className="flex items-center justify-center w-4 h-4 rounded-full bg-error text-white text-[9px] font-bold">
+                                        {errCount}
+                                    </span>
+                                )}
+                            </button>
+                        );
+                    })}
+                </div>
 
-                    {/* Client details */}
-                    <section>
-                        <h3 className="text-xs font-bold uppercase tracking-widest text-outline mb-4">Client Details</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label className={labelCls}>First Name</label>
-                                <input
-                                    value={form.client_first_name}
-                                    onChange={(e) => patch('client_first_name', e.target.value)}
-                                    className={inputCls}
-                                    required
-                                />
-                                {errors.client_first_name && <p className="text-xs text-error mt-1">{errors.client_first_name}</p>}
-                            </div>
-                            <div>
-                                <label className={labelCls}>Last Name</label>
-                                <input
-                                    value={form.client_last_name}
-                                    onChange={(e) => patch('client_last_name', e.target.value)}
-                                    className={inputCls}
-                                    required
-                                />
-                                {errors.client_last_name && <p className="text-xs text-error mt-1">{errors.client_last_name}</p>}
-                            </div>
-                            <div className="sm:col-span-2">
-                                {identifierType === 'phone' ? (
-                                    <>
-                                        <label className={labelCls}>Phone Number</label>
-                                        <input
-                                            type="tel"
-                                            value={form.client_phone}
-                                            onChange={(e) => patch('client_phone', e.target.value)}
+                {/* Tab content — scrollable */}
+                <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+                    <div className="flex-1 overflow-y-auto px-6 py-5">
+
+                        {/* ── Tab: Service & Schedule ── */}
+                        {activeTab === 'schedule' && (
+                            <div className="space-y-6">
+
+                                {/* Service */}
+                                <section>
+                                    <h3 className="text-xs font-bold uppercase tracking-widest text-outline mb-4">Service</h3>
+                                    <div>
+                                        <label className={labelCls}>Service</label>
+                                        <select
+                                            value={form.service_id}
+                                            onChange={(e) => { patch('service_id', e.target.value); patch('start_time', ''); }}
                                             className={inputCls}
-                                        />
-                                        {errors.client_phone && <p className="text-xs text-error mt-1">{errors.client_phone}</p>}
-                                    </>
-                                ) : (
-                                    <>
-                                        <label className={labelCls}>Email</label>
-                                        <input
-                                            type="email"
-                                            value={form.client_email}
-                                            onChange={(e) => patch('client_email', e.target.value)}
+                                            required
+                                        >
+                                            <option value="">Select a service</option>
+                                            {services.map((s) => (
+                                                <option key={s.id} value={s.id}>{s.name} ({s.duration} min)</option>
+                                            ))}
+                                        </select>
+                                        {errors.service_id && <p className="text-xs text-error mt-1">{errors.service_id}</p>}
+                                    </div>
+                                </section>
+
+                                {/* Status */}
+                                <section>
+                                    <h3 className="text-xs font-bold uppercase tracking-widest text-outline mb-4">Status</h3>
+                                    <div>
+                                        <label className={labelCls}>Appointment Status</label>
+                                        <select
+                                            value={form.status}
+                                            onChange={(e) => patch('status', e.target.value)}
                                             className={inputCls}
+                                        >
+                                            <option value="pending">Pending</option>
+                                            <option value="confirmed">Confirmed</option>
+                                            <option value="cancelled">Cancelled</option>
+                                        </select>
+                                        {errors.status && <p className="text-xs text-error mt-1">{errors.status}</p>}
+                                    </div>
+                                </section>
+
+                                {/* Employee */}
+                                <section>
+                                    <h3 className="text-xs font-bold uppercase tracking-widest text-outline mb-4">Employee</h3>
+                                    <div>
+                                        <label className={labelCls}>Assigned Employee</label>
+                                        <select
+                                            value={form.employee_id}
+                                            onChange={(e) => { patch('employee_id', e.target.value); patch('start_time', ''); }}
+                                            className={inputCls}
+                                            required
+                                        >
+                                            <option value="">Select employee</option>
+                                            {eligibleEmployees.map((e) => (
+                                                <option key={e.id} value={e.id}>{e.name}</option>
+                                            ))}
+                                        </select>
+                                        {errors.employee_id && <p className="text-xs text-error mt-1">{errors.employee_id}</p>}
+                                        {form.service_id && eligibleEmployees.length === 0 && (
+                                            <p className="text-xs text-amber-600 mt-1">No employee offers this service.</p>
+                                        )}
+                                    </div>
+                                </section>
+
+                                {/* Date & Time */}
+                                <section>
+                                    <h3 className="text-xs font-bold uppercase tracking-widest text-outline mb-4">Date &amp; Time</h3>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className={labelCls}>Date</label>
+                                            <DatePicker
+                                                value={form.date}
+                                                onChange={(v) => { patch('date', v || apptDate); patch('start_time', ''); }}
+                                                placeholder="Pick a date"
+                                                portal
+                                            />
+                                            {errors.date && <p className="text-xs text-error mt-1">{errors.date}</p>}
+                                        </div>
+
+                                        <div>
+                                            <label className={labelCls}>Time Slot</label>
+                                            {(!form.employee_id || !form.date || !form.service_id) ? (
+                                                <p className="text-sm text-on-surface-variant py-2">Select service, employee &amp; date first.</p>
+                                            ) : loadingSlots ? (
+                                                <div className="flex items-center gap-2 py-2 text-sm text-on-surface-variant">
+                                                    <Icon name="sync" size="text-base" className="animate-spin" /> Loading slots…
+                                                </div>
+                                            ) : slots.length === 0 ? (
+                                                <p className="text-sm text-on-surface-variant py-2">No available slots on this date.</p>
+                                            ) : (
+                                                <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                                                    {slots.map((slot) => (
+                                                        <button
+                                                            key={slot}
+                                                            type="button"
+                                                            onClick={() => patch('start_time', slot)}
+                                                            className={`h-10 rounded-xl text-xs font-bold transition-all ${
+                                                                form.start_time === slot
+                                                                    ? 'bg-on-surface text-surface'
+                                                                    : 'bg-slate-100 text-on-surface hover:bg-slate-200'
+                                                            }`}
+                                                        >
+                                                            {slot}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            {errors.start_time && <p className="text-xs text-error mt-1">{errors.start_time}</p>}
+                                        </div>
+                                    </div>
+                                </section>
+                            </div>
+                        )}
+
+                        {/* ── Tab: Client Details ── */}
+                        {activeTab === 'client' && (
+                            <div className="space-y-4">
+                                <h3 className="text-xs font-bold uppercase tracking-widest text-outline mb-4">Client Information</h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className={labelCls}>First Name</label>
+                                        <input
+                                            value={form.client_first_name}
+                                            onChange={(e) => patch('client_first_name', e.target.value)}
+                                            className={inputCls}
+                                            required
                                         />
-                                        {errors.client_email && <p className="text-xs text-error mt-1">{errors.client_email}</p>}
-                                    </>
-                                )}
-                            </div>
-                            <div className="sm:col-span-2">
-                                <label className={labelCls}>Notes <span className="normal-case font-normal">(optional)</span></label>
-                                <textarea
-                                    value={form.client_notes}
-                                    onChange={(e) => patch('client_notes', e.target.value)}
-                                    rows={2}
-                                    className={`${inputCls} resize-none`}
-                                />
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* Service */}
-                    <section>
-                        <h3 className="text-xs font-bold uppercase tracking-widest text-outline mb-4">Service</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="sm:col-span-2">
-                                <label className={labelCls}>Service</label>
-                                <select
-                                    value={form.service_id}
-                                    onChange={(e) => { patch('service_id', e.target.value); patch('start_time', ''); }}
-                                    className={inputCls}
-                                    required
-                                >
-                                    <option value="">Select a service</option>
-                                    {services.map((s) => (
-                                        <option key={s.id} value={s.id}>{s.name} ({s.duration} min)</option>
-                                    ))}
-                                </select>
-                                {errors.service_id && <p className="text-xs text-error mt-1">{errors.service_id}</p>}
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* Employee + Date + Time */}
-                    <section>
-                        <h3 className="text-xs font-bold uppercase tracking-widest text-outline mb-4">Schedule</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-                            <div className="sm:col-span-2">
-                                <label className={labelCls}>Employee</label>
-                                <select
-                                    value={form.employee_id}
-                                    onChange={(e) => { patch('employee_id', e.target.value); patch('start_time', ''); }}
-                                    className={inputCls}
-                                    required
-                                >
-                                    <option value="">Select employee</option>
-                                    {eligibleEmployees.map((e) => (
-                                        <option key={e.id} value={e.id}>{e.name}</option>
-                                    ))}
-                                </select>
-                                {errors.employee_id && <p className="text-xs text-error mt-1">{errors.employee_id}</p>}
-                                {form.service_id && eligibleEmployees.length === 0 && (
-                                    <p className="text-xs text-amber-600 mt-1">No employee offers this service.</p>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className={labelCls}>Date</label>
-                                <DatePicker
-                                    value={form.date}
-                                    onChange={(v) => { patch('date', v || today); patch('start_time', ''); }}
-                                    placeholder="Pick a date"
-                                />
-                                {errors.date && <p className="text-xs text-error mt-1">{errors.date}</p>}
-                            </div>
-
-                            <div>
-                                <label className={labelCls}>Time Slot</label>
-                                {(!form.employee_id || !form.date || !form.service_id) ? (
-                                    <p className="text-sm text-on-surface-variant py-2">Select employee, date &amp; service first.</p>
-                                ) : loadingSlots ? (
-                                    <div className="flex items-center gap-2 py-2 text-sm text-on-surface-variant">
-                                        <Icon name="sync" size="text-base" className="animate-spin" /> Loading slots…
+                                        {errors.client_first_name && <p className="text-xs text-error mt-1">{errors.client_first_name}</p>}
                                     </div>
-                                ) : slots.length === 0 ? (
-                                    <p className="text-sm text-on-surface-variant py-2">No available slots on this date.</p>
-                                ) : (
-                                    <div className="grid grid-cols-3 gap-1.5 max-h-36 overflow-y-auto pr-1">
-                                        {slots.map((slot) => (
-                                            <button
-                                                key={slot}
-                                                type="button"
-                                                onClick={() => patch('start_time', slot)}
-                                                className={`h-9 rounded-lg text-xs font-bold transition-all ${
-                                                    form.start_time === slot
-                                                        ? 'bg-on-surface text-surface'
-                                                        : 'bg-slate-100 text-on-surface hover:bg-slate-200'
-                                                }`}
-                                            >
-                                                {slot}
-                                            </button>
-                                        ))}
+                                    <div>
+                                        <label className={labelCls}>Last Name</label>
+                                        <input
+                                            value={form.client_last_name}
+                                            onChange={(e) => patch('client_last_name', e.target.value)}
+                                            className={inputCls}
+                                            required
+                                        />
+                                        {errors.client_last_name && <p className="text-xs text-error mt-1">{errors.client_last_name}</p>}
                                     </div>
-                                )}
-                                {errors.start_time && <p className="text-xs text-error mt-1">{errors.start_time}</p>}
+                                    <div className="sm:col-span-2">
+                                        {identifierType === 'phone' ? (
+                                            <>
+                                                <label className={labelCls}>Phone Number</label>
+                                                <input
+                                                    type="tel"
+                                                    value={form.client_phone}
+                                                    onChange={(e) => patch('client_phone', e.target.value)}
+                                                    className={inputCls}
+                                                />
+                                                {errors.client_phone && <p className="text-xs text-error mt-1">{errors.client_phone}</p>}
+                                            </>
+                                        ) : (
+                                            <>
+                                                <label className={labelCls}>Email</label>
+                                                <input
+                                                    type="email"
+                                                    value={form.client_email}
+                                                    onChange={(e) => patch('client_email', e.target.value)}
+                                                    className={inputCls}
+                                                />
+                                                {errors.client_email && <p className="text-xs text-error mt-1">{errors.client_email}</p>}
+                                            </>
+                                        )}
+                                    </div>
+                                    <div className="sm:col-span-2">
+                                        <label className={labelCls}>Notes <span className="normal-case font-normal">(optional)</span></label>
+                                        <textarea
+                                            value={form.client_notes}
+                                            onChange={(e) => patch('client_notes', e.target.value)}
+                                            rows={3}
+                                            className={`${inputCls} resize-none`}
+                                        />
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </section>
+                        )}
+                    </div>
 
-                    {/* Footer */}
-                    <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-on-surface hover:bg-slate-50 transition-colors"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={submitting || !form.start_time}
-                            className="rounded-xl bg-on-surface px-6 py-2.5 text-sm font-bold text-surface hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                            {submitting ? 'Saving…' : 'Save Changes'}
-                        </button>
+                    {/* Footer — always visible */}
+                    <div className="shrink-0 flex items-center justify-between gap-3 px-6 py-4 border-t border-slate-100 rounded-b-2xl bg-white">
+                        <div className="text-xs text-on-surface-variant">
+                            {form.start_time
+                                ? <span className="font-medium text-on-surface">{form.date} · {form.start_time}</span>
+                                : <span className="italic">No time slot selected yet</span>
+                            }
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-on-surface hover:bg-slate-50 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={submitting || !form.start_time}
+                                className="rounded-xl bg-on-surface px-6 py-2.5 text-sm font-bold text-surface hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                                {submitting ? 'Saving…' : 'Save Changes'}
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
