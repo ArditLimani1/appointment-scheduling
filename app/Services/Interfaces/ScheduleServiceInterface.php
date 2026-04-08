@@ -10,4 +10,8 @@ interface ScheduleServiceInterface
     public function getSchedules(User $user): Collection;
 
     public function updateSchedules(User $user, array $data): void;
+
+    public function getDaysForRange(User $user, string $dateFrom, string $dateTo): array;
+
+    public function saveOverrides(User $user, array $data): void;
 }
