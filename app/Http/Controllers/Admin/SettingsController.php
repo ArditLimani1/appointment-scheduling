@@ -24,9 +24,21 @@ class SettingsController extends Controller
 
     public function update(UpdateSettingsRequest $request): RedirectResponse
     {
-        $hadBusiness = auth()->user()->ownedBusiness()->exists();
+        $hadBusiness = auth()->user()->panelBusiness() !== null;
 
-        $this->businessService->updateSettings(auth()->user(), $request->validated());
+        $validated = $request->validated();
+        $ownerStaff = null;
+        if (array_key_exists('owner_also_works_as_staff', $validated)) {
+            $ownerStaff = (bool) $validated['owner_also_works_as_staff'];
+            unset($validated['owner_also_works_as_staff']);
+        }
+
+        $user = auth()->user();
+        $business = $this->businessService->updateSettings($user, $validated);
+
+        if ($user->isAdmin() && $ownerStaff !== null && (int) $business->owner_id === (int) $user->id) {
+            $user->syncAlsoWorksAsStaff($business, $ownerStaff);
+        }
 
         if (! $hadBusiness) {
             return redirect()

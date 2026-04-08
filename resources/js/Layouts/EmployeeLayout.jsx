@@ -4,20 +4,25 @@ import Dropdown from '@/Components/Dropdown';
 import { useState } from 'react';
 
 const navItems = [
-    { label: 'Appointments', icon: 'dashboard', route: 'employee.dashboard' },
-    { label: 'Schedule', icon: 'calendar_today', route: 'employee.schedule.index' },
+    { label: 'Appointments', icon: 'dashboard', route: 'employee.dashboard', permission: 'employee.dashboard' },
+    { label: 'Schedule', icon: 'calendar_today', route: 'employee.schedule.index', permission: 'employee.schedule' },
 ];
 
 const mobileNavItems = [
-    { label: 'Appointments', icon: 'dashboard', route: 'employee.dashboard' },
-    { label: 'Schedule', icon: 'calendar_today', route: 'employee.schedule.index' },
+    { label: 'Appointments', icon: 'dashboard', route: 'employee.dashboard', permission: 'employee.dashboard' },
+    { label: 'Schedule', icon: 'calendar_today', route: 'employee.schedule.index', permission: 'employee.schedule' },
 ];
 
 export default function EmployeeLayout({ children }) {
     const { auth } = usePage().props;
     const user = auth.user;
     const business = auth.business;
+    const permissions = auth.permissions ?? [];
+    const can = (key) => permissions.includes(key);
     const [sidebarOpen, setSidebarOpen] = useState(false);
+
+    const visibleNav = navItems.filter((item) => can(item.permission));
+    const visibleMobileNav = mobileNavItems.filter((item) => can(item.permission));
 
     const isActive = (routeName) => {
         try {
@@ -50,7 +55,7 @@ export default function EmployeeLayout({ children }) {
                     </div>
 
                     <nav className="flex-1 space-y-1">
-                        {navItems.map((item) => {
+                        {visibleNav.map((item) => {
                             const active = isActive(item.route);
                             return (
                                 <Link
@@ -135,7 +140,7 @@ export default function EmployeeLayout({ children }) {
             </div>
 
             <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-outline-variant/30 bg-surface px-2 py-1.5 lg:hidden">
-                {mobileNavItems.map((item) => {
+                {visibleMobileNav.map((item) => {
                     const active = isActive(item.route);
                     return (
                         <Link

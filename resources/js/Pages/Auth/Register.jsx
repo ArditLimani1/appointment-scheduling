@@ -23,6 +23,7 @@ export default function Register() {
         slug: '',
         location: '',
         phone: '',
+        also_works_as_staff: false,
     });
 
     const handleBusinessName = (value) => {
@@ -242,6 +243,22 @@ export default function Register() {
                                         />
                                         <InputError message={errors.phone} className="mt-1" />
                                     </div>
+
+                                    <label className="flex items-start gap-3 rounded-2xl border border-outline-variant/60 bg-surface-container-low/50 px-4 py-3 cursor-pointer hover:bg-surface-container-low transition-colors">
+                                        <input
+                                            type="checkbox"
+                                            className="mt-0.5 rounded border-outline-variant text-on-surface focus:ring-primary/40"
+                                            checked={data.also_works_as_staff}
+                                            onChange={(e) => setData('also_works_as_staff', e.target.checked)}
+                                        />
+                                        <span className="text-sm text-on-surface leading-snug">
+                                            <span className="font-semibold">I also provide services</span>
+                                            <span className="block text-xs text-on-surface-variant mt-0.5">
+                                                Show me on the booking page and team list so clients can book with me.
+                                                You can change this later in Configuration.
+                                            </span>
+                                        </span>
+                                    </label>
                                 </div>
 
                                 <div className="pt-6 flex items-center gap-3">

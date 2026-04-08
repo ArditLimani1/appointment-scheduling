@@ -4,26 +4,32 @@ import Dropdown from '@/Components/Dropdown';
 import { useState } from 'react';
 
 const navItems = [
-    { label: 'Dashboard', icon: 'dashboard', route: 'admin.dashboard' },
-    { label: 'Services', icon: 'layers', route: 'admin.services.index' },
-    { label: 'Employees', icon: 'badge', route: 'admin.employees.index' },
-    { label: 'Appointments', icon: 'calendar_today', route: 'admin.appointments.index' },
-    { label: 'Analytics', icon: 'analytics', route: 'admin.analytics.index' },
-    { label: 'Configuration', icon: 'settings', route: 'admin.settings.index' },
+    { label: 'Dashboard', icon: 'dashboard', route: 'admin.dashboard', permission: 'admin.dashboard' },
+    { label: 'Services', icon: 'layers', route: 'admin.services.index', permission: 'admin.services' },
+    { label: 'Employees', icon: 'badge', route: 'admin.employees.index', permission: 'admin.employees' },
+    { label: 'Roles', icon: 'key', route: 'admin.roles.index', permission: 'admin.roles' },
+    { label: 'Appointments', icon: 'calendar_today', route: 'admin.appointments.index', permission: 'admin.appointments' },
+    { label: 'Analytics', icon: 'analytics', route: 'admin.analytics.index', permission: 'admin.analytics' },
+    { label: 'Configuration', icon: 'settings', route: 'admin.settings.index', permission: 'admin.settings' },
 ];
 
 const mobileNavItems = [
-    { label: 'Dashboard', icon: 'dashboard', route: 'admin.dashboard' },
-    { label: 'Employees', icon: 'badge', route: 'admin.employees.index' },
-    { label: 'Appointments', icon: 'calendar_today', route: 'admin.appointments.index' },
-    { label: 'Config', icon: 'settings', route: 'admin.settings.index' },
+    { label: 'Dashboard', icon: 'dashboard', route: 'admin.dashboard', permission: 'admin.dashboard' },
+    { label: 'Employees', icon: 'badge', route: 'admin.employees.index', permission: 'admin.employees' },
+    { label: 'Appointments', icon: 'calendar_today', route: 'admin.appointments.index', permission: 'admin.appointments' },
+    { label: 'Config', icon: 'settings', route: 'admin.settings.index', permission: 'admin.settings' },
 ];
 
 export default function AdminLayout({ children }) {
     const { auth } = usePage().props;
     const user = auth.user;
     const business = auth.business;
+    const permissions = auth.permissions ?? [];
+    const can = (key) => permissions.includes(key);
     const [sidebarOpen, setSidebarOpen] = useState(false);
+
+    const visibleNav = navItems.filter((item) => can(item.permission));
+    const visibleMobileNav = mobileNavItems.filter((item) => can(item.permission));
 
     const isActive = (routeName) => {
         try {
@@ -60,7 +66,7 @@ export default function AdminLayout({ children }) {
                     </div>
 
                     <nav className="flex-1 space-y-1">
-                        {navItems.map((item) => {
+                        {visibleNav.map((item) => {
                             const active = isActive(item.route);
                             return (
                                 <Link
@@ -156,7 +162,9 @@ export default function AdminLayout({ children }) {
                             </Dropdown.Trigger>
                             <Dropdown.Content>
                                 <Dropdown.Link href={route('profile.edit')}>Profile</Dropdown.Link>
-                                <Dropdown.Link href={route('admin.settings.index')}>Configuration</Dropdown.Link>
+                                {can('admin.settings') && (
+                                    <Dropdown.Link href={route('admin.settings.index')}>Configuration</Dropdown.Link>
+                                )}
                                 <Dropdown.Link href={route('logout')} method="post" as="button">Log Out</Dropdown.Link>
                             </Dropdown.Content>
                         </Dropdown>
@@ -169,7 +177,7 @@ export default function AdminLayout({ children }) {
             </div>
 
             <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-outline-variant/30 bg-surface px-2 py-1.5 lg:hidden">
-                {mobileNavItems.map((item) => {
+                {visibleMobileNav.map((item) => {
                     const active = isActive(item.route);
                     return (
                         <Link

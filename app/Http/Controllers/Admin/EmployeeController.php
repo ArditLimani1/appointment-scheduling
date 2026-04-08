@@ -19,15 +19,19 @@ class EmployeeController extends Controller
 
     public function index(): Response
     {
-        $business = auth()->user()->ownedBusiness;
+        $business = auth()->user()->panelBusiness();
+        abort_unless($business, 403);
         $data = $this->employeeService->getEmployeesWithServices($business);
+        $data['businessRoles'] = $business->businessRoles()->orderBy('name')->get();
+        $data['businessOwnerId'] = $business->owner_id;
 
         return Inertia::render('Admin/Employees/Index', $data);
     }
 
     public function store(StoreEmployeeRequest $request): RedirectResponse
     {
-        $business = auth()->user()->ownedBusiness;
+        $business = auth()->user()->panelBusiness();
+        abort_unless($business, 403);
         $this->employeeService->store($business, $request->validated());
 
         return redirect()->back()->with('success', 'Employee created successfully.');
@@ -35,7 +39,8 @@ class EmployeeController extends Controller
 
     public function update(UpdateEmployeeRequest $request, User $employee): RedirectResponse
     {
-        $business = auth()->user()->ownedBusiness;
+        $business = auth()->user()->panelBusiness();
+        abort_unless($business, 403);
         $this->employeeService->update($business, $employee, $request->validated());
 
         return redirect()->back()->with('success', 'Employee updated successfully.');
@@ -43,7 +48,8 @@ class EmployeeController extends Controller
 
     public function destroy(User $employee): RedirectResponse
     {
-        $business = auth()->user()->ownedBusiness;
+        $business = auth()->user()->panelBusiness();
+        abort_unless($business, 403);
         $this->employeeService->delete($business, $employee);
 
         return redirect()->back()->with('success', 'Employee deleted successfully.');

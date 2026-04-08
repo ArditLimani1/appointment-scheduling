@@ -5,22 +5,37 @@ namespace App\Repositories;
 use App\Enums\UserRole;
 use App\Models\User;
 use App\Repositories\Interfaces\EmployeeRepositoryInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
 class EmployeeRepository implements EmployeeRepositoryInterface
 {
+    /**
+     * Employees plus the business owner when they opted in as bookable staff.
+     */
+    private function staffMembersBaseQuery(int $businessId): Builder
+    {
+        return User::query()
+            ->where('business_id', $businessId)
+            ->where(function (Builder $q) {
+                $q->where('role', UserRole::Employee)
+                    ->orWhere(function (Builder $q2) {
+                        $q2->where('role', UserRole::Admin)
+                            ->where('also_works_as_staff', true);
+                    });
+            });
+    }
+
     public function getByBusiness(int $businessId, array $with = []): Collection
     {
-        return User::where('business_id', $businessId)
-            ->where('role', UserRole::Employee)
+        return $this->staffMembersBaseQuery($businessId)
             ->with($with)
             ->get();
     }
 
     public function getActiveByBusiness(int $businessId, array $with = []): Collection
     {
-        return User::where('business_id', $businessId)
-            ->where('role', UserRole::Employee)
+        return $this->staffMembersBaseQuery($businessId)
             ->where('is_active', true)
             ->with($with)
             ->get();
@@ -28,15 +43,12 @@ class EmployeeRepository implements EmployeeRepositoryInterface
 
     public function countByBusiness(int $businessId): int
     {
-        return User::where('business_id', $businessId)
-            ->where('role', UserRole::Employee)
-            ->count();
+        return $this->staffMembersBaseQuery($businessId)->count();
     }
 
     public function countActiveByBusiness(int $businessId): int
     {
-        return User::where('business_id', $businessId)
-            ->where('role', UserRole::Employee)
+        return $this->staffMembersBaseQuery($businessId)
             ->where('is_active', true)
             ->count();
     }

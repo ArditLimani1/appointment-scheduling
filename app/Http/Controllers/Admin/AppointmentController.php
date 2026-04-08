@@ -25,7 +25,8 @@ class AppointmentController extends Controller
 
     public function index(Request $request): Response
     {
-        $business = auth()->user()->ownedBusiness;
+        $business = auth()->user()->panelBusiness();
+        abort_unless($business, 403);
         $filters  = $this->filtersFromRequest($request);
         $data     = $this->appointmentService->getFiltered($business, $filters);
 
@@ -35,7 +36,8 @@ class AppointmentController extends Controller
     /** PATCH — status-only update (from the inline status menu) */
     public function update(UpdateAppointmentStatusRequest $request, Appointment $appointment): RedirectResponse
     {
-        $business = auth()->user()->ownedBusiness;
+        $business = auth()->user()->panelBusiness();
+        abort_unless($business, 403);
         $this->appointmentService->updateStatus($business, $appointment, $request->validated());
 
         return redirect()->back()->with('success', 'Appointment updated successfully.');
@@ -44,7 +46,8 @@ class AppointmentController extends Controller
     /** PUT — full appointment edit (from the edit modal) */
     public function edit(UpdateAppointmentRequest $request, Appointment $appointment): RedirectResponse
     {
-        $business = auth()->user()->ownedBusiness;
+        $business = auth()->user()->panelBusiness();
+        abort_unless($business, 403);
         $this->appointmentService->updateAppointment($business, $appointment, $request->validated());
 
         return redirect()->back()->with('success', 'Appointment updated successfully.');
@@ -60,7 +63,8 @@ class AppointmentController extends Controller
             'exclude_id'  => ['nullable', 'integer'],
         ]);
 
-        $business = auth()->user()->ownedBusiness;
+        $business = auth()->user()->panelBusiness();
+        abort_unless($business, 403);
         $slots    = $this->bookingService->getAdminAvailableSlots($business, $request->only([
             'employee_id', 'service_id', 'date', 'exclude_id',
         ]));
@@ -70,7 +74,8 @@ class AppointmentController extends Controller
 
     public function destroy(Appointment $appointment): RedirectResponse
     {
-        $business = auth()->user()->ownedBusiness;
+        $business = auth()->user()->panelBusiness();
+        abort_unless($business, 403);
         $this->appointmentService->delete($business, $appointment);
 
         return redirect()->back()->with('success', 'Appointment deleted successfully.');
@@ -78,7 +83,8 @@ class AppointmentController extends Controller
 
     public function export(Request $request): BinaryFileResponse
     {
-        $business = auth()->user()->ownedBusiness;
+        $business = auth()->user()->panelBusiness();
+        abort_unless($business, 403);
         $filters  = $this->filtersFromRequest($request);
 
         return $this->appointmentService->export($business, $filters);

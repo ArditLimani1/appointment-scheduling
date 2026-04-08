@@ -6,7 +6,7 @@ import PageHeader from '@/Components/PageHeader';
 import DeleteConfirmModal from '@/Components/DeleteConfirmModal';
 import EmployeeModal from './EmployeeModal';
 
-export default function Index({ employees, services }) {
+export default function Index({ employees, services, businessRoles = [], businessOwnerId }) {
     const [showModal, setShowModal] = useState(false);
     const [editing, setEditing] = useState(null);
     const [deleteTarget, setDeleteTarget] = useState(null);
@@ -27,6 +27,7 @@ export default function Index({ employees, services }) {
             title: employee.title ?? null,
             is_active: !employee.is_active,
             service_ids: employee.services?.map(s => s.id) ?? [],
+            business_role_id: employee.business_role_id ?? null,
         });
     };
 
@@ -68,25 +69,42 @@ export default function Index({ employees, services }) {
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="bg-slate-50/50">
-                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">Name</th>
+                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">
+                                            Name
+                                        </th>
                                         <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">Email</th>
                                         <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">Title</th>
+                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">Role</th>
                                         <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">Services</th>
                                         <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-center">Status</th>
                                         <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
-                                    {employees.map((emp) => (
+                                    {employees.map((emp) => {
+                                        const isOwner = businessOwnerId != null && emp.id === businessOwnerId;
+                                        return (
                                         <tr key={emp.id} className={`transition-colors ${emp.is_active ? 'hover:bg-slate-50/50' : 'bg-slate-200/70 opacity-50 hover:opacity-70'}`}>
                                             <td className="px-8 py-5">
-                                                <p className="font-headline font-bold text-on-surface text-sm">{emp.name}</p>
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <p className="font-headline font-bold text-on-surface text-sm">{emp.name}</p>
+                                                    {isOwner && (
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-primary-container/40 text-on-surface text-[10px] font-bold uppercase tracking-wide">
+                                                            Owner
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="px-8 py-5">
                                                 <p className="text-sm text-on-surface-variant">{emp.email}</p>
                                             </td>
                                             <td className="px-8 py-5">
                                                 <p className="text-sm text-on-surface-variant">{emp.title || '—'}</p>
+                                            </td>
+                                            <td className="px-8 py-5">
+                                                <p className="text-sm text-on-surface-variant">
+                                                    {isOwner ? 'Owner account' : (emp.business_role?.name ?? 'Default')}
+                                                </p>
                                             </td>
                                             <td className="px-8 py-5">
                                                 <div className="flex flex-wrap gap-1.5">
@@ -117,17 +135,20 @@ export default function Index({ employees, services }) {
                                                     >
                                                         <Icon name="edit" size="text-[18px]" />
                                                     </button>
-                                                    <button
-                                                        onClick={() => setDeleteTarget(emp)}
-                                                        className="p-2 text-outline hover:text-error transition-colors rounded-lg hover:bg-error-container"
-                                                        title="Delete"
-                                                    >
-                                                        <Icon name="delete" size="text-[18px]" />
-                                                    </button>
+                                                    {!isOwner && (
+                                                        <button
+                                                            onClick={() => setDeleteTarget(emp)}
+                                                            className="p-2 text-outline hover:text-error transition-colors rounded-lg hover:bg-error-container"
+                                                            title="Delete"
+                                                        >
+                                                            <Icon name="delete" size="text-[18px]" />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
-                                    ))}
+                                    );
+                                    })}
                                 </tbody>
                             </table>
                         </div>
@@ -153,6 +174,8 @@ export default function Index({ employees, services }) {
                 onClose={() => setShowModal(false)}
                 editing={editing}
                 services={services}
+                businessRoles={businessRoles}
+                businessOwnerId={businessOwnerId}
             />
         </AdminLayout>
     );

@@ -4,7 +4,7 @@ import Modal from '@/Components/Modal';
 import Icon from '@/Components/Icon';
 import InputError from '@/Components/InputError';
 
-export default function EmployeeModal({ show, onClose, editing, services }) {
+export default function EmployeeModal({ show, onClose, editing, services, businessRoles = [], businessOwnerId }) {
     const { data, setData, post, put, processing, errors, reset } = useForm({
         name: '',
         email: '',
@@ -13,6 +13,7 @@ export default function EmployeeModal({ show, onClose, editing, services }) {
         title: '',
         is_active: true,
         service_ids: [],
+        business_role_id: '',
     });
 
     useEffect(() => {
@@ -26,6 +27,7 @@ export default function EmployeeModal({ show, onClose, editing, services }) {
                     title: editing.title || '',
                     is_active: editing.is_active,
                     service_ids: editing.services?.map(s => s.id) || [],
+                    business_role_id: editing.business_role_id != null ? String(editing.business_role_id) : '',
                 });
             } else {
                 reset();
@@ -53,6 +55,8 @@ export default function EmployeeModal({ show, onClose, editing, services }) {
     };
 
     const inputClass = "w-full rounded-xl border border-outline-variant bg-surface-container-low px-4 py-2.5 text-sm text-on-surface placeholder-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-on-primary-container/30 transition-all";
+
+    const editingOwner = editing && businessOwnerId != null && editing.id === businessOwnerId;
 
     return (
         <Modal show={show} onClose={onClose} maxWidth="lg">
@@ -93,6 +97,38 @@ export default function EmployeeModal({ show, onClose, editing, services }) {
                         <label className="block text-sm font-medium text-on-surface mb-1.5">Job Title <span className="text-xs text-on-surface-variant font-normal">(optional)</span></label>
                         <input value={data.title} onChange={e => setData('title', e.target.value)} className={inputClass} placeholder="e.g., Barber, Nail Technician" />
                     </div>
+                    {!editingOwner && (
+                        <div className="sm:col-span-2">
+                            <label className="block text-sm font-medium text-on-surface mb-1.5">
+                                Access role <span className="text-xs text-on-surface-variant font-normal">(optional)</span>
+                            </label>
+                            <select
+                                value={data.business_role_id}
+                                onChange={(e) => setData('business_role_id', e.target.value)}
+                                className={inputClass}
+                            >
+                                <option value="">Default — full employee workspace only</option>
+                                {businessRoles.map((r) => (
+                                    <option key={r.id} value={String(r.id)}>
+                                        {r.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <p className="text-xs text-on-surface-variant mt-1.5">
+                                Create roles under Roles &amp; permissions to give managers access to parts of the admin panel.
+                            </p>
+                            <InputError message={errors.business_role_id} className="mt-1" />
+                        </div>
+                    )}
+                    {editingOwner && (
+                        <div className="sm:col-span-2 rounded-xl border border-outline-variant/50 bg-surface-container-low/40 px-4 py-3">
+                            <p className="text-sm font-medium text-on-surface">Business owner</p>
+                            <p className="text-xs text-on-surface-variant mt-1">
+                                Admin access is always available. To appear on the booking page as staff, use{' '}
+                                <strong>Configuration</strong> → <strong>I also work as staff</strong>.
+                            </p>
+                        </div>
+                    )}
                 </div>
 
                 {services?.length > 0 && (

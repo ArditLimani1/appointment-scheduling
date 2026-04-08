@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\UserRole;
 use App\Models\Schedule;
 use App\Models\ScheduleBreak;
 use App\Models\User;
@@ -11,7 +12,17 @@ class ScheduleSeeder extends Seeder
 {
     public function run(): void
     {
-        $employees = User::where('role', 'employee')->where('is_active', true)->get();
+        $employees = User::query()
+            ->where('is_active', true)
+            ->whereNotNull('business_id')
+            ->where(function ($q) {
+                $q->where('role', UserRole::Employee)
+                    ->orWhere(function ($q2) {
+                        $q2->where('role', UserRole::Admin)
+                            ->where('also_works_as_staff', true);
+                    });
+            })
+            ->get();
 
         foreach ($employees as $employee) {
             // Monday (0) → Saturday (5), closed Sunday (6)
