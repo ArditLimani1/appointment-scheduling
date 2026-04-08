@@ -53,6 +53,7 @@ Route::middleware(['auth', 'admin_panel', 'has_business'])->prefix('admin')->nam
         Route::get('/appointments', [Admin\AppointmentController::class, 'index'])->name('appointments.index');
         Route::get('/appointments/slots', [Admin\AppointmentController::class, 'slots'])->name('appointments.slots');
         Route::get('/appointments/export', [Admin\AppointmentController::class, 'export'])->name('appointments.export');
+        Route::get('/appointments/export-pdf', [Admin\AppointmentController::class, 'exportPdf'])->name('appointments.export-pdf');
         Route::patch('/appointments/{appointment}', [Admin\AppointmentController::class, 'update'])->name('appointments.update');
         Route::put('/appointments/{appointment}', [Admin\AppointmentController::class, 'edit'])->name('appointments.edit');
         Route::delete('/appointments/{appointment}', [Admin\AppointmentController::class, 'destroy'])->name('appointments.destroy');
@@ -61,6 +62,7 @@ Route::middleware(['auth', 'admin_panel', 'has_business'])->prefix('admin')->nam
     Route::middleware('permission:admin.analytics')->group(function () {
         Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
         Route::get('/analytics/export', [AnalyticsController::class, 'export'])->name('analytics.export');
+        Route::get('/analytics/export-pdf', [AnalyticsController::class, 'exportPdf'])->name('analytics.export-pdf');
     });
 
     Route::middleware('permission:admin.settings')->group(function () {

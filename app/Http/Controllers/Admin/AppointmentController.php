@@ -8,10 +8,12 @@ use App\Http\Requests\Admin\UpdateAppointmentStatusRequest;
 use App\Models\Appointment;
 use App\Services\Interfaces\AppointmentServiceInterface;
 use App\Services\Interfaces\BookingServiceInterface;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -88,6 +90,65 @@ class AppointmentController extends Controller
         $filters  = $this->filtersFromRequest($request);
 
         return $this->appointmentService->export($business, $filters);
+    }
+
+    public function exportPdf(Request $request): HttpResponse
+    {
+        $business = auth()->user()->panelBusiness();
+        abort_unless($business, 403);
+
+        $filters = $this->filtersFromRequest($request);
+
+        $query = Appointment::query()
+            ->with(['employee', 'service'])
+            ->where('business_id', $business->id);
+
+        if (! empty($filters['employee_id'])) {
+            $query->where('employee_id', $filters['employee_id']);
+        }
+        if (! empty($filters['date_from'])) {
+            $query->whereDate('date', '>=', $filters['date_from']);
+        }
+        if (! empty($filters['date_to'])) {
+            $query->whereDate('date', '<=', $filters['date_to']);
+        }
+        if (! empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        $appointments = $query->latest('date')->latest('start_time')->get();
+
+        $currencySymbol = $business->currency_symbol ?? '€';
+
+        $confirmedCount = $appointments->where('status->value', 'confirmed')
+            ->count() ?: $appointments->filter(fn ($a) => $a->status->value === 'confirmed')->count();
+        $pendingCount   = $appointments->filter(fn ($a) => $a->status->value === 'pending')->count();
+        $cancelledCount = $appointments->filter(fn ($a) => $a->status->value === 'cancelled')->count();
+        $totalRevenue   = $appointments->filter(fn ($a) => $a->status->value === 'confirmed')
+            ->sum(fn ($a) => (float) $a->price);
+
+        $employeeFilter = null;
+        if (! empty($filters['employee_id'])) {
+            $employeeFilter = $business->employees()->find($filters['employee_id'])?->name;
+        }
+
+        $pdf = Pdf::loadView('exports.appointments-pdf', [
+            'businessName'   => $business->name,
+            'generatedAt'    => Carbon::now()->format('d M Y, H:i'),
+            'dateFrom'       => $filters['date_from'],
+            'dateTo'         => $filters['date_to'],
+            'employeeFilter' => $employeeFilter,
+            'statusFilter'   => $filters['status'] ?? null,
+            'appointments'   => $appointments,
+            'totalCount'     => $appointments->count(),
+            'confirmedCount' => $confirmedCount,
+            'pendingCount'   => $pendingCount,
+            'cancelledCount' => $cancelledCount,
+            'totalRevenue'   => $totalRevenue,
+            'currencySymbol' => $currencySymbol,
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download('appointments-' . $filters['date_from'] . '_' . $filters['date_to'] . '.pdf');
     }
 
     /**

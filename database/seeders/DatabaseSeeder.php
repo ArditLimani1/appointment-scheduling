@@ -40,7 +40,6 @@ class DatabaseSeeder extends Seeder
             'slot_duration' => 30,
             'min_booking_notice' => 60,
             'max_booking_window' => 30,
-            'services_enabled' => true,
             'is_active' => true,
         ]);
 
