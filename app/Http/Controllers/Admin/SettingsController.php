@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateSettingsRequest;
 use App\Services\Interfaces\BusinessServiceInterface;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -34,6 +35,14 @@ class SettingsController extends Controller
         }
 
         $user = auth()->user();
+        $currentBusiness = $user->panelBusiness();
+        if ($request->hasFile('logo')) {
+            if ($currentBusiness?->logo) {
+                Storage::disk('public')->delete($currentBusiness->logo);
+            }
+            $validated['logo'] = $request->file('logo')->store('business-logos', 'public');
+        }
+
         $business = $this->businessService->updateSettings($user, $validated);
 
         if ($user->isAdmin() && $ownerStaff !== null && (int) $business->owner_id === (int) $user->id) {

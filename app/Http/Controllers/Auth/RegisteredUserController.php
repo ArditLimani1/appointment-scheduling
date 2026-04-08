@@ -36,8 +36,13 @@ class RegisteredUserController extends Controller
             'slug' => 'required|string|max:255|unique:businesses,slug|regex:/^[a-z0-9-]+$/',
             'location' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:50',
+            'logo' => 'nullable|image|max:2048',
             'also_works_as_staff' => ['sometimes', 'boolean'],
         ]);
+
+        $logoPath = $request->hasFile('logo')
+            ? $request->file('logo')->store('business-logos', 'public')
+            : null;
 
         $user = User::create([
             'name' => $request->name,
@@ -52,6 +57,7 @@ class RegisteredUserController extends Controller
             'slug' => $request->slug,
             'location' => $request->location,
             'phone' => $request->phone,
+            'logo' => $logoPath,
             'timezone' => 'UTC',
             'currency' => 'EUR',
             'currency_symbol' => '€',

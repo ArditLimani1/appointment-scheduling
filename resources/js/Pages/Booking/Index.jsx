@@ -336,6 +336,7 @@ export default function Index({ employees, services, business, slug }) {
     };
 
     const currencySymbol = business?.currency_symbol ?? '€';
+    const businessLogoUrl = business?.logo ? `/storage/${business.logo}` : null;
 
     const servicesTotalPrice = useMemo(
         () => selectedServices.reduce((sum, s) => sum + Number(s.price), 0),
@@ -384,9 +385,22 @@ export default function Index({ employees, services, business, slug }) {
 
             <header className="sticky top-0 z-50 glass-header border-b border-outline-variant/20">
                 <div className="max-w-5xl mx-auto px-6 py-4 flex justify-between items-center">
-                    <p className="text-xl font-extrabold tracking-tight text-on-surface font-headline">
-                        {business?.name || 'Scheduler'}
-                    </p>
+                    <div className="flex items-center gap-3 min-w-0">
+                        {businessLogoUrl ? (
+                            <img
+                                src={businessLogoUrl}
+                                alt={`${business?.name || 'Business'} logo`}
+                                className="h-11 w-11 rounded-2xl object-cover border border-outline-variant/30 bg-surface-container-low"
+                            />
+                        ) : (
+                            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-container text-on-primary-container">
+                                <Icon name="storefront" size="text-xl" />
+                            </div>
+                        )}
+                        <p className="text-xl font-extrabold tracking-tight text-on-surface font-headline truncate">
+                            {business?.name || 'Scheduler'}
+                        </p>
+                    </div>
                     <a
                         href="/"
                         className="rounded-xl border border-outline-variant px-4 py-2 text-sm font-medium text-on-surface-variant hover:bg-surface-container-low transition-colors"

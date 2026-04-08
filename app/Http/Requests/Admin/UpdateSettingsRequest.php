@@ -22,6 +22,7 @@ class UpdateSettingsRequest extends FormRequest
             'location' => ['sometimes', 'nullable', 'string', 'max:255'],
             'slug'     => ['sometimes', 'required', 'string', 'max:100', 'alpha_dash',
                            "unique:businesses,slug,{$businessId}"],
+            'logo'     => ['sometimes', 'nullable', 'image', 'max:2048'],
 
             // Booking rule fields — sent by the Booking Rules form
             'slot_duration'          => ['sometimes', 'required', 'integer', 'min:5', 'max:120'],

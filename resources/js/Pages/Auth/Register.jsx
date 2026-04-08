@@ -23,6 +23,7 @@ export default function Register() {
         slug: '',
         location: '',
         phone: '',
+        logo: null,
         also_works_as_staff: false,
     });
 
@@ -41,6 +42,7 @@ export default function Register() {
     const submit = (e) => {
         e.preventDefault();
         post(route('register'), {
+            forceFormData: true,
             onFinish: () => reset('password', 'password_confirmation'),
         });
     };
@@ -242,6 +244,34 @@ export default function Register() {
                                             placeholder="+1 555 000 0000"
                                         />
                                         <InputError message={errors.phone} className="mt-1" />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-1.5">
+                                            Business Logo <span className="normal-case font-normal">(optional)</span>
+                                        </label>
+                                        <div className="rounded-2xl border border-dashed border-outline-variant/70 bg-surface-container-low px-4 py-4">
+                                            <label className="flex cursor-pointer items-center justify-between gap-3 rounded-xl bg-surface px-4 py-3 transition-colors hover:bg-surface-container-low">
+                                                <div className="min-w-0">
+                                                    <p className="text-sm font-medium text-on-surface">
+                                                        {data.logo ? data.logo.name : 'Upload your business logo'}
+                                                    </p>
+                                                    <p className="mt-1 text-xs text-on-surface-variant">
+                                                        PNG, JPG, WEBP up to 2 MB.
+                                                    </p>
+                                                </div>
+                                                <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-container text-on-primary-container">
+                                                    <Icon name="upload" size="text-lg" />
+                                                </span>
+                                                <input
+                                                    type="file"
+                                                    accept="image/png,image/jpeg,image/webp,image/jpg"
+                                                    className="hidden"
+                                                    onChange={(e) => setData('logo', e.target.files?.[0] ?? null)}
+                                                />
+                                            </label>
+                                        </div>
+                                        <InputError message={errors.logo} className="mt-1" />
                                     </div>
 
                                     <label className="flex items-start gap-3 rounded-2xl border border-outline-variant/60 bg-surface-container-low/50 px-4 py-3 cursor-pointer hover:bg-surface-container-low transition-colors">

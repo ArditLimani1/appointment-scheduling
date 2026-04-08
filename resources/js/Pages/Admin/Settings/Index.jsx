@@ -1,5 +1,5 @@
 import { Head, useForm, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import Icon from '@/Components/Icon';
 
@@ -61,6 +61,7 @@ export default function Index({
     owner_also_works_as_staff = false,
 }) {
     const { flash } = usePage().props;
+    const [successToastMessage, setSuccessToastMessage] = useState(flash?.success || null);
 
     // Which confirm modal is open: null | 'identity' | 'rules'
     const [confirmSection, setConfirmSection] = useState(null);
@@ -71,7 +72,28 @@ export default function Index({
         phone:    settings.phone    || '',
         location: settings.location || '',
         slug:     settings.slug     || '',
+        logo:     null,
     });
+    const currentLogoUrl = settings.logo ? `/storage/${settings.logo}` : null;
+    const [selectedLogoPreview, setSelectedLogoPreview] = useState(null);
+
+    useEffect(() => {
+        if (!identity.data.logo) {
+            setSelectedLogoPreview(null);
+            return;
+        }
+
+        const objectUrl = URL.createObjectURL(identity.data.logo);
+        setSelectedLogoPreview(objectUrl);
+
+        return () => URL.revokeObjectURL(objectUrl);
+    }, [identity.data.logo]);
+
+    useEffect(() => {
+        if (flash?.success) {
+            setSuccessToastMessage(flash.success);
+        }
+    }, [flash?.success]);
 
     const handleIdentitySubmit = (e) => {
         e.preventDefault();
@@ -80,7 +102,10 @@ export default function Index({
 
     const doSaveIdentity = () => {
         setConfirmSection(null);
-        identity.put(route('admin.settings.update'));
+        identity.transform((formData) => ({ ...formData, _method: 'put' }));
+        identity.post(route('admin.settings.update'), {
+            forceFormData: true,
+        });
     };
 
     // Form 2 — Booking Rules
@@ -132,10 +157,18 @@ export default function Index({
                 </div>
             )}
 
-            {flash?.success && (
+            {successToastMessage && (
                 <div className="mb-6 flex items-center gap-3 rounded-2xl bg-tertiary-fixed/20 px-5 py-4 text-sm font-medium text-on-tertiary-container">
                     <Icon name="check_circle" size="text-lg" filled />
-                    <span>{flash.success}</span>
+                    <span className="flex-1">{successToastMessage}</span>
+                    <button
+                        type="button"
+                        onClick={() => setSuccessToastMessage(null)}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-on-tertiary-container/70 transition-colors hover:bg-black/5 hover:text-on-tertiary-container"
+                        aria-label="Dismiss success message"
+                    >
+                        <Icon name="close" size="text-base" />
+                    </button>
                 </div>
             )}
 
@@ -213,6 +246,48 @@ export default function Index({
                                     </button>
                                 </div>
                                 {identity.errors.slug && <p className="text-xs text-error mt-1">{identity.errors.slug}</p>}
+                            </div>
+
+                            <div className="sm:col-span-2">
+                                <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">Business Logo</label>
+                                <div className="rounded-2xl border border-dashed border-outline-variant/60 bg-surface px-4 py-4">
+                                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="flex items-center gap-4 min-w-0">
+                                            {selectedLogoPreview || currentLogoUrl ? (
+                                                <img
+                                                    src={selectedLogoPreview || currentLogoUrl}
+                                                    alt={`${identity.data.name || 'Business'} logo`}
+                                                    className="h-16 w-16 rounded-2xl object-cover border border-outline-variant/30 bg-surface-container-highest"
+                                                />
+                                            ) : (
+                                                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-surface-container-highest text-on-surface-variant">
+                                                    <Icon name="storefront" size="text-2xl" />
+                                                </div>
+                                            )}
+
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-semibold text-on-surface">
+                                                    {identity.data.logo ? identity.data.logo.name : currentLogoUrl ? 'Current business logo' : 'No logo uploaded yet'}
+                                                </p>
+                                                <p className="mt-1 text-xs text-on-surface-variant">
+                                                    Upload a PNG, JPG, or WEBP file up to 2 MB. New uploads replace the current logo.
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-surface-container-highest px-4 py-3 text-sm font-semibold text-on-surface hover:bg-surface-container transition-colors">
+                                            <Icon name="upload" size="text-base" />
+                                            Choose logo
+                                            <input
+                                                type="file"
+                                                accept="image/png,image/jpeg,image/webp,image/jpg"
+                                                className="hidden"
+                                                onChange={(e) => identity.setData('logo', e.target.files?.[0] ?? null)}
+                                            />
+                                        </label>
+                                    </div>
+                                </div>
+                                {identity.errors.logo && <p className="text-xs text-error mt-1">{identity.errors.logo}</p>}
                             </div>
                         </div>
 
