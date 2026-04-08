@@ -120,110 +120,118 @@ export default function Dashboard({
                         <span className="text-sm font-bold text-on-surface-variant">{rangeLabel}</span>
                     </div>
 
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead>
-                                <tr className="border-b border-surface-container-highest">
-                                    {isRange ? (
-                                        <th className="pb-5 pr-4 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">
-                                            Date
-                                        </th>
-                                    ) : null}
-                                    <th className="pb-5 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">Client Name</th>
-                                    <th className="pb-5 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">Service</th>
-                                    <th className="pb-5 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">Time</th>
-                                    <th className="pb-5 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">Status</th>
-                                    <th className="pb-5 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">Phone</th>
-                                    <th className="pb-5 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-surface-container-low">
-                                {appointments.map((apt) => {
-                                    const style = STATUS_STYLES[apt.status] || STATUS_STYLES.pending;
-                                    const actions = STATUS_ACTIONS[apt.status] || [];
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+                        {appointments.map((apt) => {
+                            const style = STATUS_STYLES[apt.status] || STATUS_STYLES.pending;
+                            const actions = STATUS_ACTIONS[apt.status] || [];
 
-                                    return (
-                                        <tr key={apt.id} className="hover:bg-surface-container-low/50 transition-colors align-top">
-                                            {isRange ? (
-                                                <td className="py-5 pr-4 whitespace-nowrap">
-                                                    <p className="text-sm font-semibold text-on-surface">
-                                                        {formatAppointmentDate(apt.date, { day: 'numeric', month: 'short', year: 'numeric' })}
-                                                    </p>
-                                                </td>
-                                            ) : null}
-                                            <td className="py-5 pr-4">
-                                                <div>
-                                                    <p className="font-bold text-on-surface">
+                            return (
+                                <article
+                                    key={apt.id}
+                                    className="rounded-2xl border border-surface-container-high bg-surface px-5 py-5 shadow-sm transition-colors hover:bg-surface-container-low/40"
+                                >
+                                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                                        <div className="min-w-0">
+                                            <div className="flex items-start gap-3">
+                                                <div className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-fixed text-on-primary-fixed-variant">
+                                                    <Icon name="person" size="text-base" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="text-lg font-bold text-on-surface">
                                                         {apt.client_first_name} {apt.client_last_name}
                                                     </p>
-                                                    {apt.client_notes && (
-                                                        <p className="mt-1 text-xs text-on-surface-variant italic line-clamp-1">
-                                                            "{apt.client_notes}"
-                                                        </p>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td className="py-5 pr-4">
-                                                <div className="flex items-center gap-1.5 text-sm text-on-surface-variant">
-                                                    <Icon name="content_cut" size="text-sm" />
-                                                    <span>{apt.service?.name ?? 'Appointment'}</span>
-                                                </div>
-                                            </td>
-                                            <td className="py-5 pr-4">
-                                                <div className="flex items-center gap-1.5">
-                                                    <Icon name="schedule" size="text-sm" className="text-on-surface-variant" />
-                                                    <p className="text-on-surface text-sm font-semibold">
-                                                        {formatTimeHm(apt.start_time)} - {formatTimeHm(apt.end_time)}
-                                                    </p>
-                                                </div>
-                                                <p className="mt-1 text-xs text-on-surface-variant">
-                                                    {Number(apt.price).toFixed(2)} {currencySymbol}
-                                                </p>
-                                            </td>
-                                            <td className="py-5 pr-4">
-                                                <span className={`px-3 py-1 text-[10px] font-extrabold uppercase rounded-full ${style.bg}`}>
-                                                    {style.label}
-                                                </span>
-                                            </td>
-                                            <td className="py-5 pr-4">
-                                                <div className="flex items-center gap-1.5 text-sm text-on-surface-variant">
-                                                    <Icon name="call" size="text-sm" />
-                                                    <span>{apt.client_email || apt.client_phone || '—'}</span>
-                                                </div>
-                                            </td>
-                                            <td className="py-5 text-right">
-                                                {actions.length > 0 ? (
-                                                    <div className="flex justify-end gap-2 flex-wrap">
-                                                        {actions.map((action) => {
-                                                            const info = ACTION_LABELS[action];
-                                                            const isDanger = action === 'cancelled';
-
-                                                            return (
-                                                                <button
-                                                                    key={action}
-                                                                    type="button"
-                                                                    onClick={() => updateStatus(apt, action)}
-                                                                    className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-all ${
-                                                                        isDanger
-                                                                            ? 'bg-error-container text-on-error-container hover:opacity-80'
-                                                                            : 'bg-surface-container-high text-on-surface hover:bg-surface-container-highest'
-                                                                    }`}
-                                                                >
-                                                                    <Icon name={info.icon} size="text-sm" />
-                                                                    {info.label}
-                                                                </button>
-                                                            );
-                                                        })}
+                                                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-on-surface-variant">
+                                                        <span className="inline-flex items-center gap-1.5">
+                                                            <Icon name="content_cut" size="text-sm" />
+                                                            {apt.service?.name ?? 'Appointment'}
+                                                        </span>
+                                                        {isRange ? (
+                                                            <span className="inline-flex items-center gap-1.5">
+                                                                <Icon name="calendar_today" size="text-sm" />
+                                                                {formatAppointmentDate(apt.date, { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                            </span>
+                                                        ) : null}
                                                     </div>
-                                                ) : (
-                                                    <span className="text-sm text-on-surface-variant">No actions</span>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+                                                </div>
+                                            </div>
+                                            {apt.client_notes && (
+                                                <p className="mt-3 text-sm italic text-on-surface-variant line-clamp-2">
+                                                    "{apt.client_notes}"
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        <div className="shrink-0">
+                                            <span className={`inline-flex px-3 py-1 text-[10px] font-extrabold uppercase rounded-full ${style.bg}`}>
+                                                {style.label}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                        <div className="rounded-xl bg-surface-container-low px-4 py-3">
+                                            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-on-surface-variant">Time</p>
+                                            <div className="mt-2 flex items-center gap-2">
+                                                <Icon name="schedule" size="text-sm" className="text-on-surface-variant" />
+                                                <p className="text-sm font-semibold text-on-surface">
+                                                    {formatTimeHm(apt.start_time)} - {formatTimeHm(apt.end_time)}
+                                                </p>
+                                            </div>
+                                            <p className="mt-1 text-xs text-on-surface-variant">
+                                                {Number(apt.price).toFixed(2)} {currencySymbol}
+                                            </p>
+                                        </div>
+
+                                        <div className="rounded-xl bg-surface-container-low px-4 py-3">
+                                            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-on-surface-variant">Contact</p>
+                                            <div className="mt-2 flex items-center gap-2">
+                                                <Icon
+                                                    name={apt.client_phone ? 'call' : apt.client_email ? 'mail' : 'info'}
+                                                    size="text-sm"
+                                                    className="text-on-surface-variant"
+                                                />
+                                                <p className="text-sm font-medium text-on-surface break-all">
+                                                    {apt.client_phone || apt.client_email || 'No contact provided'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-5 flex flex-col gap-3 border-t border-surface-container-high pt-4 sm:flex-row sm:items-center sm:justify-between">
+                                        <p className="text-sm text-on-surface-variant">
+                                            Appointment #{apt.id}
+                                        </p>
+
+                                        {actions.length > 0 ? (
+                                            <div className="flex flex-wrap gap-2">
+                                                {actions.map((action) => {
+                                                    const info = ACTION_LABELS[action];
+                                                    const isDanger = action === 'cancelled';
+
+                                                    return (
+                                                        <button
+                                                            key={action}
+                                                            type="button"
+                                                            onClick={() => updateStatus(apt, action)}
+                                                            className={`inline-flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-all ${
+                                                                isDanger
+                                                                    ? 'bg-error-container text-on-error-container hover:opacity-80'
+                                                                    : 'bg-surface-container-high text-on-surface hover:bg-surface-container-highest'
+                                                            }`}
+                                                        >
+                                                            <Icon name={info.icon} size="text-sm" />
+                                                            {info.label}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        ) : (
+                                            <span className="text-sm text-on-surface-variant">No actions</span>
+                                        )}
+                                    </div>
+                                </article>
+                            );
+                        })}
                     </div>
                 </section>
             )}
