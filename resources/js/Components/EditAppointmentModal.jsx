@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { router } from '@inertiajs/react';
 import Icon from '@/Components/Icon';
 import DatePicker from '@/Components/DatePicker';
+import FilterListbox from '@/Components/FilterListbox';
 
 function toDateString(d) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -200,62 +201,47 @@ export default function EditAppointmentModal({ appointment, employees, services,
                                 {/* Service */}
                                 <section>
                                     <h3 className="text-xs font-bold uppercase tracking-widest text-outline mb-4">Service</h3>
-                                    <div>
-                                        <label className={labelCls}>Service</label>
-                                        <select
-                                            value={form.service_id}
-                                            onChange={(e) => { patch('service_id', e.target.value); patch('start_time', ''); }}
-                                            className={inputCls}
-                                            required
-                                        >
-                                            <option value="">Select a service</option>
-                                            {services.map((s) => (
-                                                <option key={s.id} value={s.id}>{s.name} ({s.duration} min)</option>
-                                            ))}
-                                        </select>
-                                        {errors.service_id && <p className="text-xs text-error mt-1">{errors.service_id}</p>}
-                                    </div>
+                                    <FilterListbox
+                                        label="Service"
+                                        value={form.service_id}
+                                        onChange={(v) => { patch('service_id', v); patch('start_time', ''); }}
+                                        options={services.map((s) => ({ value: String(s.id), label: `${s.name} (${s.duration} min)` }))}
+                                        minWidthClass="w-full"
+                                    />
+                                    {errors.service_id && <p className="text-xs text-error mt-1">{errors.service_id}</p>}
                                 </section>
 
                                 {/* Status */}
                                 <section>
                                     <h3 className="text-xs font-bold uppercase tracking-widest text-outline mb-4">Status</h3>
-                                    <div>
-                                        <label className={labelCls}>Appointment Status</label>
-                                        <select
-                                            value={form.status}
-                                            onChange={(e) => patch('status', e.target.value)}
-                                            className={inputCls}
-                                        >
-                                            <option value="pending">Pending</option>
-                                            <option value="confirmed">Confirmed</option>
-                                            <option value="cancelled">Cancelled</option>
-                                        </select>
-                                        {errors.status && <p className="text-xs text-error mt-1">{errors.status}</p>}
-                                    </div>
+                                    <FilterListbox
+                                        label="Appointment Status"
+                                        value={form.status}
+                                        onChange={(v) => patch('status', v)}
+                                        options={[
+                                            { value: 'pending',   label: 'Pending'   },
+                                            { value: 'confirmed', label: 'Confirmed' },
+                                            { value: 'cancelled', label: 'Cancelled' },
+                                        ]}
+                                        minWidthClass="w-full"
+                                    />
+                                    {errors.status && <p className="text-xs text-error mt-1">{errors.status}</p>}
                                 </section>
 
                                 {/* Employee */}
                                 <section>
                                     <h3 className="text-xs font-bold uppercase tracking-widest text-outline mb-4">Employee</h3>
-                                    <div>
-                                        <label className={labelCls}>Assigned Employee</label>
-                                        <select
-                                            value={form.employee_id}
-                                            onChange={(e) => { patch('employee_id', e.target.value); patch('start_time', ''); }}
-                                            className={inputCls}
-                                            required
-                                        >
-                                            <option value="">Select employee</option>
-                                            {eligibleEmployees.map((e) => (
-                                                <option key={e.id} value={e.id}>{e.name}</option>
-                                            ))}
-                                        </select>
-                                        {errors.employee_id && <p className="text-xs text-error mt-1">{errors.employee_id}</p>}
-                                        {form.service_id && eligibleEmployees.length === 0 && (
-                                            <p className="text-xs text-amber-600 mt-1">No employee offers this service.</p>
-                                        )}
-                                    </div>
+                                    <FilterListbox
+                                        label="Assigned Employee"
+                                        value={form.employee_id}
+                                        onChange={(v) => { patch('employee_id', v); patch('start_time', ''); }}
+                                        options={eligibleEmployees.map((e) => ({ value: String(e.id), label: e.name }))}
+                                        minWidthClass="w-full"
+                                    />
+                                    {errors.employee_id && <p className="text-xs text-error mt-1">{errors.employee_id}</p>}
+                                    {form.service_id && eligibleEmployees.length === 0 && (
+                                        <p className="text-xs text-amber-600 mt-1">No employee offers this service.</p>
+                                    )}
                                 </section>
 
                                 {/* Date & Time */}
