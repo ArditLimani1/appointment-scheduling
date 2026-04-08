@@ -18,8 +18,11 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->alias([
-            'role'     => \App\Http\Middleware\RoleMiddleware::class,
+            'role' => \App\Http\Middleware\RoleMiddleware::class,
             'has_business' => \App\Http\Middleware\EnsureBusinessExists::class,
+            'admin_panel' => \App\Http\Middleware\EnsureAdminPanelAccess::class,
+            'employee_area' => \App\Http\Middleware\EnsureEmployeeOrAdmin::class,
+            'permission' => \App\Http\Middleware\EnsurePermission::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

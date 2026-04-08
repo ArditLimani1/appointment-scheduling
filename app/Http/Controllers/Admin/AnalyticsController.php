@@ -20,7 +20,8 @@ class AnalyticsController extends Controller
 
     public function index(Request $request): Response
     {
-        $business = auth()->user()->ownedBusiness;
+        $business = auth()->user()->panelBusiness();
+        abort_unless($business, 403);
         $filters = $this->filtersFromRequest($request);
         $data = $this->analyticsService->getAnalyticsData($business, $filters);
 
@@ -29,7 +30,8 @@ class AnalyticsController extends Controller
 
     public function export(Request $request): BinaryFileResponse
     {
-        $business = auth()->user()->ownedBusiness;
+        $business = auth()->user()->panelBusiness();
+        abort_unless($business, 403);
         $filters = $this->filtersFromRequest($request);
         $data = $this->analyticsService->getAnalyticsData($business, $filters);
 

@@ -14,7 +14,12 @@ function ReadOnlyField({ label, value, icon }) {
     );
 }
 
-export default function Index({ settings, owner_email }) {
+export default function Index({
+    settings,
+    owner_email,
+    show_owner_staff_toggle = false,
+    owner_also_works_as_staff = false,
+}) {
     const { flash } = usePage().props;
 
     const { data, setData, put, processing, recentlySuccessful } = useForm({
@@ -23,6 +28,7 @@ export default function Index({ settings, owner_email }) {
         max_booking_window: settings.max_booking_window || 30,
         services_enabled: settings.services_enabled ?? true,
         client_identifier_type: settings.client_identifier_type || 'phone',
+        ...(show_owner_staff_toggle ? { owner_also_works_as_staff: !!owner_also_works_as_staff } : {}),
     });
 
     const handleSubmit = (e) => {
@@ -210,6 +216,35 @@ export default function Index({ settings, owner_email }) {
                                 </div>
                             </div>
                         </div>
+
+                        {show_owner_staff_toggle && (
+                            <div className="pt-6 border-t border-outline-variant/40">
+                                <div className="bg-surface rounded-xl p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                    <div className="max-w-xl">
+                                        <p className="text-sm font-bold text-on-surface">I also work as staff</p>
+                                        <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">
+                                            Turn this on if you take appointments yourself. You will appear on the public
+                                            booking page and in the team list so you can assign services and set your
+                                            schedule like other employees. Your account stays the business owner.
+                                        </p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setData('owner_also_works_as_staff', !data.owner_also_works_as_staff)}
+                                        className={`relative shrink-0 w-12 h-6 rounded-full transition-colors duration-200 self-start sm:self-center ${
+                                            data.owner_also_works_as_staff ? 'bg-on-surface' : 'bg-surface-container-highest'
+                                        }`}
+                                        aria-pressed={data.owner_also_works_as_staff}
+                                    >
+                                        <span
+                                            className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all duration-200 ${
+                                                data.owner_also_works_as_staff ? 'right-1' : 'left-1'
+                                            }`}
+                                        />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Save button */}
                         <div className="pt-6 border-t border-outline-variant/40 flex items-center gap-6">

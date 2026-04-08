@@ -36,6 +36,7 @@ class RegisteredUserController extends Controller
             'slug' => 'required|string|max:255|unique:businesses,slug|regex:/^[a-z0-9-]+$/',
             'location' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:50',
+            'also_works_as_staff' => ['sometimes', 'boolean'],
         ]);
 
         $user = User::create([
@@ -45,7 +46,7 @@ class RegisteredUserController extends Controller
             'role' => UserRole::Admin,
         ]);
 
-        Business::create([
+        $business = Business::create([
             'owner_id' => $user->id,
             'name' => $request->business_name,
             'slug' => $request->slug,
@@ -55,6 +56,13 @@ class RegisteredUserController extends Controller
             'currency' => 'EUR',
             'currency_symbol' => '€',
         ]);
+
+        if ($request->boolean('also_works_as_staff')) {
+            $user->update([
+                'also_works_as_staff' => true,
+                'business_id' => $business->id,
+            ]);
+        }
 
         event(new Registered($user));
 

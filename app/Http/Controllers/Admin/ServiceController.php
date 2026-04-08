@@ -19,7 +19,8 @@ class ServiceController extends Controller
 
     public function index(): Response
     {
-        $business = auth()->user()->ownedBusiness;
+        $business = auth()->user()->panelBusiness();
+        abort_unless($business, 403);
         $services = $this->serviceService->getServices($business);
 
         return Inertia::render('Admin/Services/Index', [
@@ -29,7 +30,8 @@ class ServiceController extends Controller
 
     public function store(StoreServiceRequest $request): RedirectResponse
     {
-        $business = auth()->user()->ownedBusiness;
+        $business = auth()->user()->panelBusiness();
+        abort_unless($business, 403);
         $this->serviceService->store($business, $request->validated());
 
         return redirect()->back()->with('success', 'Service created successfully.');
@@ -37,7 +39,8 @@ class ServiceController extends Controller
 
     public function update(UpdateServiceRequest $request, Service $service): RedirectResponse
     {
-        $business = auth()->user()->ownedBusiness;
+        $business = auth()->user()->panelBusiness();
+        abort_unless($business, 403);
         $this->serviceService->update($business, $service, $request->validated());
 
         return redirect()->back()->with('success', 'Service updated successfully.');
@@ -45,7 +48,8 @@ class ServiceController extends Controller
 
     public function destroy(Service $service): RedirectResponse
     {
-        $business = auth()->user()->ownedBusiness;
+        $business = auth()->user()->panelBusiness();
+        abort_unless($business, 403);
         $this->serviceService->delete($business, $service);
 
         return redirect()->back()->with('success', 'Service deleted successfully.');

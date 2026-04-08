@@ -42,4 +42,9 @@ class Business extends Model
     {
         return $this->hasMany(Appointment::class);
     }
+
+    public function businessRoles(): HasMany
+    {
+        return $this->hasMany(BusinessRole::class);
+    }
 }

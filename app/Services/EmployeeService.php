@@ -20,7 +20,7 @@ class EmployeeService implements EmployeeServiceInterface
     public function getEmployeesWithServices(Business $business): array
     {
         return [
-            'employees' => $this->employeeRepository->getByBusiness($business->id, ['services']),
+            'employees' => $this->employeeRepository->getByBusiness($business->id, ['services', 'businessRole']),
             'services' => $this->serviceRepository->getActiveByBusiness($business->id),
         ];
     }
@@ -36,6 +36,7 @@ class EmployeeService implements EmployeeServiceInterface
             'role' => UserRole::Employee,
             'is_active' => true,
             'business_id' => $business->id,
+            'business_role_id' => $data['business_role_id'] ?? null,
         ]);
 
         if (! empty($data['service_ids'])) {
@@ -49,12 +50,19 @@ class EmployeeService implements EmployeeServiceInterface
     {
         abort_if($employee->business_id !== $business->id, 403);
 
+        if ($employee->isOwnerOf($business)) {
+            unset($data['business_role_id']);
+        }
+
         $this->employeeRepository->update($employee, [
             'name' => $data['name'],
             'email' => $data['email'],
             'phone' => $data['phone'] ?? null,
             'title' => $data['title'] ?? null,
             'is_active' => $data['is_active'] ?? $employee->is_active,
+            'business_role_id' => array_key_exists('business_role_id', $data)
+                ? $data['business_role_id']
+                : $employee->business_role_id,
         ]);
 
         if (! empty($data['password'])) {
@@ -69,6 +77,7 @@ class EmployeeService implements EmployeeServiceInterface
     public function delete(Business $business, User $employee): void
     {
         abort_if($employee->business_id !== $business->id, 403);
+        abort_if($employee->isOwnerOf($business), 403);
 
         $this->employeeRepository->delete($employee);
     }

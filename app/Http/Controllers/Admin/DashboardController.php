@@ -15,7 +15,8 @@ class DashboardController extends Controller
 
     public function index(): Response
     {
-        $business = auth()->user()->ownedBusiness;
+        $business = auth()->user()->panelBusiness();
+        abort_unless($business, 403);
         $data = $this->dashboardService->getAdminDashboardData($business);
 
         return Inertia::render('Admin/Dashboard', $data);

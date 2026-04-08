@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\Permission;
 use App\Enums\UserRole;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -19,7 +20,7 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
-        'name', 'email', 'password', 'role', 'phone', 'title', 'avatar', 'is_active', 'business_id',
+        'name', 'email', 'password', 'role', 'phone', 'title', 'avatar', 'is_active', 'business_id', 'business_role_id', 'also_works_as_staff',
     ];
 
     protected $hidden = [
@@ -32,8 +33,45 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'also_works_as_staff' => 'boolean',
             'role' => UserRole::class,
         ];
+    }
+
+    public function isOwnerOf(Business $business): bool
+    {
+        return (int) $this->id === (int) $business->owner_id;
+    }
+
+    /**
+     * Owner appears as bookable staff (booking page, schedules, team list) while keeping the admin account.
+     */
+    public function syncAlsoWorksAsStaff(Business $business, bool $enabled): void
+    {
+        abort_unless($this->isOwnerOf($business), 403);
+
+        if ($enabled) {
+            $this->forceFill([
+                'also_works_as_staff' => true,
+                'business_id' => $business->id,
+            ])->save();
+
+            return;
+        }
+
+        $this->loadMissing('schedules');
+        foreach ($this->schedules as $schedule) {
+            $schedule->breaks()->delete();
+        }
+        $this->schedules()->delete();
+
+        $this->services()->detach();
+
+        $this->forceFill([
+            'also_works_as_staff' => false,
+            'business_id' => null,
+            'business_role_id' => null,
+        ])->save();
     }
 
     public function isAdmin(): bool
@@ -51,9 +89,138 @@ class User extends Authenticatable
         return $this->hasOne(Business::class, 'owner_id');
     }
 
+    /**
+     * Business context for the admin panel (owner or staff with admin permissions).
+     */
+    public function panelBusiness(): ?Business
+    {
+        if ($this->isAdmin()) {
+            return $this->ownedBusiness;
+        }
+
+        if ($this->isEmployee()) {
+            return $this->business;
+        }
+
+        return null;
+    }
+
     public function business(): BelongsTo
     {
         return $this->belongsTo(Business::class);
+    }
+
+    public function businessRole(): BelongsTo
+    {
+        return $this->belongsTo(BusinessRole::class);
+    }
+
+    public function hasAdminPanelAccess(): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        return $this->isEmployee() && $this->hasAnyAdminPermission();
+    }
+
+    public function hasAnyAdminPermission(): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        foreach (Permission::adminCases() as $permission) {
+            if ($this->hasPermission($permission->value)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function hasPermission(string $permission): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        if (! $this->isEmployee()) {
+            return false;
+        }
+
+        if (! $this->business_role_id) {
+            return str_starts_with($permission, 'employee.');
+        }
+
+        $this->loadMissing('businessRole');
+
+        if (! $this->businessRole) {
+            return str_starts_with($permission, 'employee.');
+        }
+
+        $assigned = $this->businessRole->permissions ?? [];
+
+        if ($permission === Permission::AdminDashboard->value) {
+            if (in_array($permission, $assigned, true)) {
+                return true;
+            }
+
+            foreach (Permission::adminCases() as $p) {
+                if ($p === Permission::AdminDashboard) {
+                    continue;
+                }
+                if (in_array($p->value, $assigned, true)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        return in_array($permission, $assigned, true);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function effectivePermissionKeys(): array
+    {
+        if ($this->isAdmin()) {
+            return Permission::values();
+        }
+
+        if (! $this->isEmployee()) {
+            return [];
+        }
+
+        if (! $this->business_role_id) {
+            return array_map(
+                fn (Permission $p) => $p->value,
+                Permission::employeeCases()
+            );
+        }
+
+        $this->loadMissing('businessRole');
+
+        $keys = array_values($this->businessRole->permissions ?? []);
+
+        $hasOtherAdmin = false;
+        foreach (Permission::adminCases() as $p) {
+            if ($p === Permission::AdminDashboard) {
+                continue;
+            }
+            if (in_array($p->value, $keys, true)) {
+                $hasOtherAdmin = true;
+                break;
+            }
+        }
+
+        if ($hasOtherAdmin && ! in_array(Permission::AdminDashboard->value, $keys, true)) {
+            $keys[] = Permission::AdminDashboard->value;
+        }
+
+        return array_values(array_unique($keys));
     }
 
     public function services(): BelongsToMany

@@ -30,6 +30,7 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $user,
                 'business' => $business,
+                'permissions' => $user ? $user->effectivePermissionKeys() : [],
             ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
