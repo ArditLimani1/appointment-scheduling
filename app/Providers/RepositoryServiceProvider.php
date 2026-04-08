@@ -10,8 +10,10 @@ use App\Repositories\Interfaces\AppointmentRepositoryInterface;
 use App\Repositories\Interfaces\BusinessRepositoryInterface;
 use App\Repositories\Interfaces\BusinessRoleRepositoryInterface;
 use App\Repositories\Interfaces\EmployeeRepositoryInterface;
+use App\Repositories\Interfaces\ScheduleOverrideRepositoryInterface;
 use App\Repositories\Interfaces\ScheduleRepositoryInterface;
 use App\Repositories\Interfaces\ServiceRepositoryInterface;
+use App\Repositories\ScheduleOverrideRepository;
 use App\Repositories\ScheduleRepository;
 use App\Repositories\ServiceRepository;
 use App\Services\AnalyticsService;
@@ -42,7 +44,8 @@ class RepositoryServiceProvider extends ServiceProvider
         EmployeeRepositoryInterface::class => EmployeeRepository::class,
         ServiceRepositoryInterface::class => ServiceRepository::class,
         AppointmentRepositoryInterface::class => AppointmentRepository::class,
-        ScheduleRepositoryInterface::class => ScheduleRepository::class,
+        ScheduleRepositoryInterface::class         => ScheduleRepository::class,
+        ScheduleOverrideRepositoryInterface::class => ScheduleOverrideRepository::class,
 
         BusinessServiceInterface::class => BusinessService::class,
         BusinessRoleServiceInterface::class => BusinessRoleService::class,

@@ -8,6 +8,7 @@ use App\Models\Business;
 use App\Repositories\Interfaces\AppointmentRepositoryInterface;
 use App\Repositories\Interfaces\BusinessRepositoryInterface;
 use App\Repositories\Interfaces\EmployeeRepositoryInterface;
+use App\Repositories\Interfaces\ScheduleOverrideRepositoryInterface;
 use App\Repositories\Interfaces\ScheduleRepositoryInterface;
 use App\Repositories\Interfaces\ServiceRepositoryInterface;
 use App\Services\Interfaces\BookingServiceInterface;
@@ -23,6 +24,7 @@ class BookingService implements BookingServiceInterface
         private EmployeeRepositoryInterface $employeeRepository,
         private ServiceRepositoryInterface $serviceRepository,
         private ScheduleRepositoryInterface $scheduleRepository,
+        private ScheduleOverrideRepositoryInterface $scheduleOverrideRepository,
         private AppointmentRepositoryInterface $appointmentRepository,
     ) {}
 
@@ -57,7 +59,6 @@ class BookingService implements BookingServiceInterface
         }
 
         $minNoticeTime = Carbon::now($timezone)->addMinutes($business->min_booking_notice ?? 60);
-        $dayOfWeek = $date->dayOfWeekIso - 1;
 
         $employeeId = (int) $data['employee_id'];
         abort_if(
@@ -66,7 +67,7 @@ class BookingService implements BookingServiceInterface
             'The selected employee is not available for this business.'
         );
 
-        $schedule = $this->scheduleRepository->findActiveByUserAndDay($employeeId, $dayOfWeek);
+        $schedule = $this->resolveEffectiveSchedule($employeeId, $date);
         if (! $schedule) {
             return [];
         }
@@ -163,10 +164,9 @@ class BookingService implements BookingServiceInterface
     {
         $timezone   = $business->timezone ?: config('app.timezone');
         $date       = Carbon::parse($data['date'], $timezone)->startOfDay();
-        $dayOfWeek  = $date->dayOfWeekIso - 1;
         $employeeId = (int) $data['employee_id'];
 
-        $schedule = $this->scheduleRepository->findActiveByUserAndDay($employeeId, $dayOfWeek);
+        $schedule = $this->resolveEffectiveSchedule($employeeId, $date);
         if (! $schedule) {
             return [];
         }
@@ -255,9 +255,8 @@ class BookingService implements BookingServiceInterface
         Carbon $blockEnd,
         string $timezone
     ): void {
-        $date = Carbon::parse($dateYmd, $timezone)->startOfDay();
-        $dayOfWeek = $date->dayOfWeekIso - 1;
-        $schedule = $this->scheduleRepository->findActiveByUserAndDay($employeeId, $dayOfWeek);
+        $date     = Carbon::parse($dateYmd, $timezone)->startOfDay();
+        $schedule = $this->resolveEffectiveSchedule($employeeId, $date);
         abort_if(! $schedule, 422, 'This time is not available.');
 
         $scheduleStart = Carbon::parse($dateYmd.' '.$schedule->start_time, $timezone);
@@ -287,6 +286,24 @@ class BookingService implements BookingServiceInterface
                 abort(422, 'This time is no longer available.');
             }
         }
+    }
+
+    /**
+     * Returns the effective schedule for a given employee + date.
+     * Checks date-specific overrides first; falls back to the weekly base schedule.
+     * Returns null when the employee is unavailable (no schedule or override marks day off).
+     */
+    private function resolveEffectiveSchedule(int $employeeId, Carbon $date): ?object
+    {
+        $override = $this->scheduleOverrideRepository->findByUserAndDate($employeeId, $date->toDateString());
+
+        if ($override !== null) {
+            return $override->is_active ? $override : null;
+        }
+
+        $dayOfWeek = $date->dayOfWeekIso - 1;
+
+        return $this->scheduleRepository->findActiveByUserAndDay($employeeId, $dayOfWeek);
     }
 
     private function calculateSlots(

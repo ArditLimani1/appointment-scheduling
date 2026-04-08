@@ -81,8 +81,13 @@ Route::middleware(['auth', 'employee_area'])->prefix('employee')->name('employee
     });
 
     Route::middleware('permission:employee.schedule')->group(function () {
+        // Date-range / weekly override view
         Route::get('/schedule', [Employee\ScheduleController::class, 'index'])->name('schedule.index');
-        Route::put('/schedule', [Employee\ScheduleController::class, 'update'])->name('schedule.update');
+        Route::put('/schedule/overrides', [Employee\ScheduleController::class, 'saveOverrides'])->name('schedule.overrides.update');
+
+        // Default (base) weekly schedule configuration
+        Route::get('/schedule/configuration', [Employee\ScheduleController::class, 'configuration'])->name('schedule.configuration');
+        Route::put('/schedule/configuration', [Employee\ScheduleController::class, 'update'])->name('schedule.update');
     });
 
     Route::middleware('permission:employee.appointments')->group(function () {

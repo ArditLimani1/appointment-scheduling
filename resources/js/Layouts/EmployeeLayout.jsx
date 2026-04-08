@@ -4,13 +4,15 @@ import Dropdown from '@/Components/Dropdown';
 import { useState } from 'react';
 
 const navItems = [
-    { label: 'Appointments', icon: 'dashboard', route: 'employee.dashboard', permission: 'employee.dashboard' },
-    { label: 'Schedule', icon: 'calendar_today', route: 'employee.schedule.index', permission: 'employee.schedule' },
+    { label: 'Appointments', icon: 'dashboard',      route: 'employee.dashboard',              permission: 'employee.dashboard' },
+    { label: 'Schedule',     icon: 'calendar_today', route: 'employee.schedule.index',          permission: 'employee.schedule' },
+    { label: 'Configuration',icon: 'tune',           route: 'employee.schedule.configuration',  permission: 'employee.schedule' },
 ];
 
 const mobileNavItems = [
-    { label: 'Appointments', icon: 'dashboard', route: 'employee.dashboard', permission: 'employee.dashboard' },
-    { label: 'Schedule', icon: 'calendar_today', route: 'employee.schedule.index', permission: 'employee.schedule' },
+    { label: 'Appointments', icon: 'dashboard',      route: 'employee.dashboard',              permission: 'employee.dashboard' },
+    { label: 'Schedule',     icon: 'calendar_today', route: 'employee.schedule.index',          permission: 'employee.schedule' },
+    { label: 'Config',       icon: 'tune',           route: 'employee.schedule.configuration',  permission: 'employee.schedule' },
 ];
 
 export default function EmployeeLayout({ children }) {
@@ -26,7 +28,11 @@ export default function EmployeeLayout({ children }) {
 
     const isActive = (routeName) => {
         try {
-            return route().current(routeName) || route().current(routeName + '.*');
+            // Exact match first, then wildcard children but exclude sibling routes
+            if (route().current(routeName)) return true;
+            // For schedule.index, don't highlight when on configuration
+            if (routeName === 'employee.schedule.index' && route().current('employee.schedule.configuration')) return false;
+            return route().current(routeName + '.*');
         } catch {
             return false;
         }
