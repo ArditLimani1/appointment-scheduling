@@ -1,5 +1,5 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import Icon from '@/Components/Icon';
 import PageHeader from '@/Components/PageHeader';
@@ -21,7 +21,7 @@ function buildAnalyticsUrl(filters) {
     return getAnalyticsPathname() + (queryString ? `?${queryString}` : '');
 }
 
-function buildExportUrl(filters) {
+function buildExportUrl(filters, routeName = 'admin.analytics.export') {
     const queryParams = {};
     if (filters.date_from) queryParams.date_from = filters.date_from;
     if (filters.date_to) queryParams.date_to = filters.date_to;
@@ -29,7 +29,7 @@ function buildExportUrl(filters) {
         queryParams.employee_id = String(filters.employee_id);
     }
     const queryString = new URLSearchParams(queryParams).toString();
-    const pathname = new URL(route('admin.analytics.export'), window.location.href).pathname;
+    const pathname = new URL(route(routeName), window.location.href).pathname;
     return pathname + (queryString ? `?${queryString}` : '');
 }
 
@@ -41,6 +41,54 @@ function currentMonthStart() {
 function currentMonthEnd() {
     const d = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function ExportDropdown({ filters }) {
+    const [open, setOpen] = useState(false);
+    const ref = useRef(null);
+
+    // Close on outside click
+    useMemo(() => {
+        if (!open) return;
+        const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, [open]);
+
+    return (
+        <div className="relative shrink-0" ref={ref}>
+            <button
+                type="button"
+                onClick={() => setOpen((o) => !o)}
+                className="flex items-center gap-2 rounded-xl bg-on-surface px-6 py-3 text-sm font-bold text-surface hover:opacity-90 transition-opacity"
+            >
+                <Icon name="download" size="text-lg" />
+                Export
+                <Icon name="expand_more" size="text-base" className={`transition-transform duration-150 ${open ? 'rotate-180' : ''}`} />
+            </button>
+
+            {open && (
+                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl border border-slate-100 shadow-xl z-50 overflow-hidden">
+                    <a
+                        href={buildExportUrl(filters, 'admin.analytics.export')}
+                        onClick={() => setOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 text-sm text-on-surface hover:bg-slate-50 transition-colors"
+                    >
+                        <Icon name="table_view" size="text-base" className="text-green-600" />
+                        <span className="font-semibold">Export to Excel</span>
+                    </a>
+                    <a
+                        href={buildExportUrl(filters, 'admin.analytics.export-pdf')}
+                        onClick={() => setOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 text-sm text-on-surface hover:bg-slate-50 transition-colors border-t border-slate-100"
+                    >
+                        <Icon name="picture_as_pdf" size="text-base" className="text-red-500" />
+                        <span className="font-semibold">Export to PDF</span>
+                    </a>
+                </div>
+            )}
+        </div>
+    );
 }
 
 export default function Index({
@@ -92,12 +140,7 @@ export default function Index({
                 title="Analytics"
                 description="Track your business efficiency and financial growth through detailed appointment metrics."
             >
-                <a
-                    href={buildExportUrl(localFilters)}
-                    className="flex items-center gap-2 rounded-xl bg-on-surface px-6 py-3 text-sm font-bold text-surface hover:opacity-90 transition-opacity shrink-0"
-                >
-                    <Icon name="download" size="text-lg" /> Export to Excel
-                </a>
+                <ExportDropdown filters={localFilters} />
             </PageHeader>
 
             {/* Filters */}
@@ -184,10 +227,10 @@ export default function Index({
                             <thead>
                                 <tr className="bg-slate-50/50">
                                     <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">Employee</th>
-                                    <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-right">Cancelled</th>
-                                    <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-right">Pending</th>
-                                    <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-right">Confirmed</th>
-                                    <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-right">Revenue</th>
+                                    <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-center">Cancelled</th>
+                                    <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-center">Pending</th>
+                                    <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-center">Confirmed</th>
+                                    <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-center">Revenue</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50">
@@ -201,16 +244,16 @@ export default function Index({
                                                 <p className="text-sm font-bold text-on-surface">{stat.name}</p>
                                             </div>
                                         </td>
-                                        <td className="px-8 py-5 text-right">
+                                        <td className="px-8 py-5 text-center">
                                             <span className="text-sm font-semibold text-red-600">{stat.cancelled_count}</span>
                                         </td>
-                                        <td className="px-8 py-5 text-right">
+                                        <td className="px-8 py-5 text-center">
                                             <span className="text-sm font-semibold text-amber-600">{stat.pending_count}</span>
                                         </td>
-                                        <td className="px-8 py-5 text-right">
+                                        <td className="px-8 py-5 text-center">
                                             <span className="text-sm font-semibold text-emerald-600">{stat.confirmed_count}</span>
                                         </td>
-                                        <td className="px-8 py-5 text-right font-extrabold text-on-surface">
+                                        <td className="px-8 py-5 text-center font-extrabold text-on-surface">
                                             {fmt(stat.revenue)} {symbol}
                                         </td>
                                     </tr>

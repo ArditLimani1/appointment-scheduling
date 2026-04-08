@@ -24,7 +24,6 @@ class BusinessService implements BusinessServiceInterface
             'slot_duration' => 30,
             'min_booking_notice' => 120,
             'max_booking_window' => 30,
-            'services_enabled' => true,
             'client_identifier_type' => 'phone',
         ]);
 

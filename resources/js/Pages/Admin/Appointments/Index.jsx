@@ -1,5 +1,5 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import Icon from '@/Components/Icon';
 import PageHeader from '@/Components/PageHeader';
@@ -8,6 +8,51 @@ import DatePicker from '@/Components/DatePicker';
 import AppointmentStatusMenu from '@/Components/AppointmentStatusMenu';
 import EditAppointmentModal from '@/Components/EditAppointmentModal';
 import { formatAppointmentDate, formatTimeHm } from '@/utils/appointmentDate';
+
+function DeleteConfirmModal({ appointment, onConfirm, onCancel }) {
+    return (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onCancel} />
+            <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl p-6">
+                <div className="flex items-start gap-4">
+                    <div className="shrink-0 flex items-center justify-center w-11 h-11 rounded-full bg-red-100">
+                        <Icon name="delete" size="text-xl" className="text-red-600" />
+                    </div>
+                    <div>
+                        <h2 className="text-base font-extrabold text-on-surface">Delete Appointment</h2>
+                        <p className="mt-1 text-sm text-on-surface-variant">
+                            Are you sure you want to delete the appointment for{' '}
+                            <span className="font-semibold text-on-surface">
+                                {appointment.client_first_name} {appointment.client_last_name}
+                            </span>
+                            {' '}on{' '}
+                            <span className="font-semibold text-on-surface">
+                                {appointment.date ? String(appointment.date).slice(0, 10) : ''} at {appointment.start_time ? appointment.start_time.slice(0, 5) : ''}
+                            </span>
+                            ? This action cannot be undone.
+                        </p>
+                    </div>
+                </div>
+                <div className="mt-6 flex items-center justify-end gap-3">
+                    <button
+                        type="button"
+                        onClick={onCancel}
+                        className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-on-surface hover:bg-slate-50 transition-colors"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onConfirm}
+                        className="rounded-xl bg-red-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-red-700 transition-colors"
+                    >
+                        Yes, Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 const APPOINTMENT_STATUSES = ['pending', 'confirmed', 'cancelled'];
 
@@ -54,6 +99,49 @@ function normalizeAppointments(appointments) {
     if (Array.isArray(appointments)) return { rows: appointments, meta: null };
     if (Array.isArray(appointments.data)) return { rows: appointments.data, meta: appointments };
     return { rows: [], meta: null };
+}
+
+function ExportDropdown({ excelUrl, pdfUrl }) {
+    const [open, setOpen] = useState(false);
+    const ref = useRef(null);
+
+    useEffect(() => {
+        if (!open) return;
+        const handleClick = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+        document.addEventListener('mousedown', handleClick);
+        return () => document.removeEventListener('mousedown', handleClick);
+    }, [open]);
+
+    return (
+        <div ref={ref} className="relative shrink-0">
+            <button
+                onClick={() => setOpen((v) => !v)}
+                className="flex items-center gap-2 rounded-xl bg-on-surface px-6 py-3 text-sm font-bold text-surface hover:opacity-90 transition-opacity"
+            >
+                <Icon name="download" size="text-lg" />
+                Export
+                <span className="ml-1 text-xs opacity-70">▾</span>
+            </button>
+            {open && (
+                <div className="absolute right-0 mt-2 w-44 rounded-xl bg-white shadow-lg ring-1 ring-black/10 z-50 overflow-hidden">
+                    <a
+                        href={excelUrl}
+                        onClick={() => setOpen(false)}
+                        className="flex items-center gap-2 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                        <Icon name="table_chart" size="text-base" /> Export Excel
+                    </a>
+                    <a
+                        href={pdfUrl}
+                        onClick={() => setOpen(false)}
+                        className="flex items-center gap-2 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                        <Icon name="picture_as_pdf" size="text-base" /> Export PDF
+                    </a>
+                </div>
+            )}
+        </div>
+    );
 }
 
 export default function Index({ appointments, employees, services = [], filters = {} }) {
@@ -103,22 +191,29 @@ export default function Index({ appointments, employees, services = [], filters 
         router.get(buildAppointmentsUrl(defaultFilters), {}, visitOpts);
     };
 
-    const [editingAppointment, setEditingAppointment] = useState(null);
+    const [editingAppointment, setEditingAppointment]   = useState(null);
+    const [deletingAppointment, setDeletingAppointment] = useState(null);
 
     const updateStatus = (apt, status) => {
         router.patch(route('admin.appointments.update', apt.id), { status }, { preserveScroll: true });
     };
 
-    const deleteAppointment = (apt) => {
-        if (confirm('Delete this appointment?')) {
-            router.delete(route('admin.appointments.destroy', apt.id), { preserveScroll: true });
-        }
+    const confirmDelete = () => {
+        if (!deletingAppointment) return;
+        router.delete(
+            route('admin.appointments.destroy', deletingAppointment.id),
+            {
+                preserveScroll: true,
+                onSuccess: () => setDeletingAppointment(null),
+                onError:   () => setDeletingAppointment(null),
+            }
+        );
     };
 
-    const exportUrl = () => {
+    const buildExportUrl = (routeName) => {
         const queryParams = buildFilterQueryParams(localFilters);
         const queryString = new URLSearchParams(queryParams).toString();
-        const pathname = getRoutePathname('admin.appointments.export');
+        const pathname = getRoutePathname(routeName);
         return pathname + (queryString ? `?${queryString}` : '');
     };
 
@@ -160,12 +255,10 @@ export default function Index({ appointments, employees, services = [], filters 
                 title="Appointments"
                 description="View and manage all customer bookings. Results update when you change staff, dates, or status."
             >
-                <a
-                    href={exportUrl()}
-                    className="flex items-center gap-2 rounded-xl bg-on-surface px-6 py-3 text-sm font-bold text-surface hover:opacity-90 transition-opacity shrink-0"
-                >
-                    <Icon name="download" size="text-lg" /> Export Excel
-                </a>
+                <ExportDropdown
+                    excelUrl={buildExportUrl('admin.appointments.export')}
+                    pdfUrl={buildExportUrl('admin.appointments.export-pdf')}
+                />
             </PageHeader>
 
             <div className="mb-6 rounded-2xl bg-surface-container-lowest p-4 ring-1 ring-slate-100 shadow-sm">
@@ -272,7 +365,7 @@ export default function Index({ appointments, employees, services = [], filters 
                                                     </button>
                                                     <button
                                                         type="button"
-                                                        onClick={() => deleteAppointment(apt)}
+                                                        onClick={() => setDeletingAppointment(apt)}
                                                         className="inline-flex rounded-lg p-2 text-outline hover:text-error hover:bg-error-container transition-colors"
                                                         title="Delete"
                                                     >
@@ -334,6 +427,14 @@ export default function Index({ appointments, employees, services = [], filters 
                     employees={employees}
                     services={services}
                     onClose={() => setEditingAppointment(null)}
+                />
+            )}
+
+            {deletingAppointment && (
+                <DeleteConfirmModal
+                    appointment={deletingAppointment}
+                    onConfirm={confirmDelete}
+                    onCancel={() => setDeletingAppointment(null)}
                 />
             )}
         </AdminLayout>
