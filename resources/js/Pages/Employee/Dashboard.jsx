@@ -1,10 +1,11 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import EmployeeLayout from '@/Layouts/EmployeeLayout';
 import MetricCard from '@/Components/MetricCard';
 import Icon from '@/Components/Icon';
 import DatePicker from '@/Components/DatePicker';
+import EmployeeRescheduleModal from '@/Components/EmployeeRescheduleModal';
 import { formatAppointmentDate, formatTimeHm } from '@/utils/appointmentDate';
-import { useMemo } from 'react';
 
 const STATUS_STYLES = {
     pending: { bg: 'bg-surface-container-highest text-on-surface-variant', label: 'Pending' },
@@ -12,19 +13,68 @@ const STATUS_STYLES = {
     cancelled: { bg: 'bg-error-container text-on-error-container', label: 'Cancelled' },
 };
 
-const STATUS_ACTIONS = {
-    pending: ['confirmed', 'cancelled'],
-    confirmed: ['cancelled'],
-    cancelled: [],
-};
-
-const ACTION_LABELS = {
-    confirmed: { label: 'Confirm', icon: 'check_circle' },
-    cancelled: { label: 'Cancel', icon: 'cancel' },
-};
-
 function fmt(d, opts) {
     return new Intl.DateTimeFormat('en-GB', opts).format(d);
+}
+
+function Toast({ message, onDismiss }) {
+    useEffect(() => {
+        const t = setTimeout(onDismiss, 5000);
+        return () => clearTimeout(t);
+    }, [onDismiss]);
+
+    return (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-2xl bg-on-surface px-5 py-3 text-sm font-semibold text-surface shadow-xl">
+            <Icon name="check_circle" size="text-lg" filled />
+            {message}
+        </div>
+    );
+}
+
+function CancelConfirmModal({ appointment, onConfirm, onClose }) {
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+            <div className="w-full max-w-sm rounded-3xl bg-surface p-6 shadow-2xl">
+                <div className="mb-4 flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-error-container">
+                        <Icon name="warning" size="text-lg" className="text-on-error-container" />
+                    </div>
+                    <div>
+                        <h3 className="font-headline text-base font-bold text-on-surface">Cancel Appointment</h3>
+                        <p className="mt-1 text-sm text-on-surface-variant">
+                            Are you sure you want to cancel this appointment?
+                        </p>
+                    </div>
+                </div>
+
+                <div className="mb-5 rounded-2xl bg-surface-container-low px-4 py-3 text-sm">
+                    <p className="font-semibold text-on-surface">
+                        {appointment.client_first_name} {appointment.client_last_name}
+                    </p>
+                    <p className="text-on-surface-variant mt-0.5">
+                        {appointment.service?.name ?? 'Appointment'} · {formatTimeHm(appointment.start_time)}
+                    </p>
+                </div>
+
+                <div className="flex gap-3 justify-end">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="rounded-xl border border-outline-variant px-4 py-2 text-sm font-medium text-on-surface-variant hover:bg-surface-container transition-colors"
+                    >
+                        No, keep it
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onConfirm}
+                        className="rounded-xl bg-error px-5 py-2 text-sm font-semibold text-on-error hover:opacity-90 transition-opacity"
+                    >
+                        Yes, cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
 }
 
 function AppointmentStatusBadge({ status }) {
@@ -36,35 +86,13 @@ function AppointmentStatusBadge({ status }) {
     );
 }
 
-function AppointmentActionButtons({ appointment, onStatusChange, align = 'end' }) {
-    const actions = STATUS_ACTIONS[appointment.status] || [];
-    if (actions.length === 0) {
-        return <span className="text-xs text-on-surface-variant">No actions</span>;
-    }
-    const justify = align === 'start' ? 'justify-start' : 'justify-end';
-    return (
-        <div className={`flex flex-wrap gap-2 ${justify}`}>
-            {actions.map((action) => {
-                const info = ACTION_LABELS[action];
-                const isDanger = action === 'cancelled';
-                return (
-                    <button
-                        key={action}
-                        type="button"
-                        onClick={() => onStatusChange(appointment, action)}
-                        className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-all ${
-                            isDanger
-                                ? 'bg-error-container text-on-error-container hover:opacity-80'
-                                : 'bg-surface-container-high text-on-surface hover:bg-surface-container-highest'
-                        }`}
-                    >
-                        <Icon name={info.icon} size="text-sm" />
-                        {info.label}
-                    </button>
-                );
-            })}
-        </div>
-    );
+function matchesAppointmentSearch(apt, rawQuery) {
+    const q = rawQuery.trim().toLowerCase();
+    if (!q) return true;
+    const name = `${apt.client_first_name ?? ''} ${apt.client_last_name ?? ''}`.toLowerCase();
+    const email = String(apt.client_email ?? '').toLowerCase();
+    const service = String(apt.service?.name ?? '').toLowerCase();
+    return name.includes(q) || email.includes(q) || service.includes(q);
 }
 
 export default function Dashboard({
@@ -76,15 +104,27 @@ export default function Dashboard({
     daily_revenue = 0,
     date_from: dateFromProp,
     date_to: dateToProp,
-    /** Only the employee dashboard controller sets this; admin appointment lists stay table-only on mobile. */
     employee_compact_mobile_appointments = false,
 }) {
-    const { auth } = usePage().props;
+    const { auth, flash } = usePage().props;
     const business = auth.business;
     const permissions = auth.permissions ?? [];
     const canAppointments = permissions.includes('employee.appointments');
     const currencySymbol = business?.currency_symbol ?? '€';
     const todayStr = new Date().toISOString().split('T')[0];
+
+    const [reschedulingApt, setReschedulingApt] = useState(null);
+    const [cancellingApt, setCancellingApt] = useState(null);
+    const [toast, setToast] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const lastNonce = useRef(null);
+    useEffect(() => {
+        if (flash?.nonce && flash.nonce !== lastNonce.current && flash?.success) {
+            lastNonce.current = flash.nonce;
+            setToast(flash.success);
+        }
+    }, [flash?.nonce, flash?.success]);
 
     const dateFrom = dateFromProp ?? todayStr;
     const dateTo = dateToProp ?? todayStr;
@@ -100,6 +140,13 @@ export default function Dashboard({
         }
         return `${fmt(d1, { day: 'numeric', month: 'short', year: 'numeric' })} – ${fmt(d2, { day: 'numeric', month: 'short', year: 'numeric' })}`;
     }, [dateFrom, dateTo, isRange]);
+
+    const filteredAppointments = useMemo(
+        () => appointments.filter((apt) => matchesAppointmentSearch(apt, searchQuery)),
+        [appointments, searchQuery]
+    );
+
+    const appointmentsTableColCount = 8 + (isRange ? 1 : 0);
 
     const goToRange = (from, to) => {
         router.get(route('employee.dashboard'), { date_from: from, date_to: to }, { preserveState: false });
@@ -120,8 +167,57 @@ export default function Dashboard({
         }
     };
 
-    const updateStatus = (apt, status) => {
-        router.patch(route('employee.appointments.update', apt.id), { status }, { preserveScroll: true });
+    const handleConfirm = (apt) => {
+        router.patch(route('employee.appointments.update', apt.id), { status: 'confirmed' }, { preserveScroll: true });
+    };
+
+    const openCancelModal = (apt) => setCancellingApt(apt);
+    const closeCancelModal = () => setCancellingApt(null);
+
+    const confirmCancel = () => {
+        if (!cancellingApt) return;
+        const apt = cancellingApt;
+        setCancellingApt(null);
+        router.patch(route('employee.appointments.update', apt.id), { status: 'cancelled' }, { preserveScroll: true });
+    };
+
+    const renderMobileActions = (apt) => {
+        const isCancelled = apt.status === 'cancelled';
+        const isPending = apt.status === 'pending';
+        const isConfirmed = apt.status === 'confirmed';
+
+        return (
+            <div className="mt-3 flex flex-wrap items-center gap-2 pt-3 border-t border-outline-variant/25">
+                {isPending && (
+                    <button
+                        type="button"
+                        onClick={() => handleConfirm(apt)}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-950 ring-1 ring-emerald-200/90"
+                    >
+                        <Icon name="check_circle" size="text-sm" /> Confirm
+                    </button>
+                )}
+                {(isPending || isConfirmed) && (
+                    <button
+                        type="button"
+                        onClick={() => openCancelModal(apt)}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-950 ring-1 ring-red-200/90"
+                    >
+                        <Icon name="cancel" size="text-sm" /> Cancel
+                    </button>
+                )}
+                {!isCancelled && (
+                    <button
+                        type="button"
+                        onClick={() => setReschedulingApt(apt)}
+                        className="inline-flex items-center justify-center rounded-xl bg-surface-container-high p-2 text-on-surface"
+                        title="Reschedule"
+                    >
+                        <Icon name="edit_calendar" size="text-base" />
+                    </button>
+                )}
+            </div>
+        );
     };
 
     return (
@@ -134,19 +230,23 @@ export default function Dashboard({
             </div>
 
             <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
-                <div className="flex min-w-0 flex-wrap items-end gap-4">
-                    <DatePicker
-                        label="From"
-                        value={dateFrom}
-                        onChange={handleFromChange}
-                        placeholder="Start date"
-                    />
-                    <DatePicker
-                        label="To"
-                        value={dateTo}
-                        onChange={handleToChange}
-                        placeholder="End date"
-                    />
+                <div className="flex min-w-0 flex-1 flex-wrap items-end gap-4">
+                    <DatePicker label="From" value={dateFrom} onChange={handleFromChange} placeholder="Start date" />
+                    <DatePicker label="To" value={dateTo} onChange={handleToChange} placeholder="End date" />
+                    <div className="w-full min-w-[min(100%,12rem)] max-w-xs sm:w-auto sm:flex-1 sm:max-w-sm">
+                        <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-outline">Search</label>
+                        <div className="flex w-full items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm transition-all hover:border-slate-300 focus-within:border-on-surface/20 focus-within:ring-2 focus-within:ring-on-surface/10">
+                            <Icon name="search" size="text-base" className="shrink-0 text-outline" />
+                            <input
+                                type="search"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="Name, email, service…"
+                                className="min-h-0 min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 text-sm leading-5 text-on-surface shadow-none placeholder:text-outline focus:outline-none focus:ring-0 [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none"
+                                autoComplete="off"
+                            />
+                        </div>
+                    </div>
                 </div>
                 {canAppointments ? (
                     <div className="flex w-full shrink-0 justify-end sm:w-auto">
@@ -161,7 +261,6 @@ export default function Dashboard({
                 ) : null}
             </div>
 
-            {/* Mobile: table first, overview (metrics) after. md+: overview on top, then table. */}
             <div className="flex flex-col">
                 <div className="order-1 min-w-0 md:order-2">
                     {appointments.length === 0 ? (
@@ -181,54 +280,60 @@ export default function Dashboard({
 
                             {employee_compact_mobile_appointments ? (
                                 <div className="md:hidden space-y-3">
-                                    {appointments.map((apt) => (
-                                        <article
-                                            key={apt.id}
-                                            className="rounded-2xl border border-outline-variant/35 bg-surface-container-low/50 p-4 shadow-sm"
-                                        >
-                                            <div className="flex items-start justify-between gap-3">
-                                                <div className="min-w-0 flex-1">
-                                                    {isRange ? (
-                                                        <p className="text-xs font-semibold text-on-surface-variant mb-1">
-                                                            {formatAppointmentDate(apt.date, { day: 'numeric', month: 'short', year: 'numeric' })}
+                                    {filteredAppointments.length === 0 && searchQuery.trim() !== '' ? (
+                                        <p className="py-8 text-center text-sm text-on-surface-variant">No appointments match your search.</p>
+                                    ) : (
+                                        filteredAppointments.map((apt) => {
+                                            const isCancelled = apt.status === 'cancelled';
+                                            return (
+                                                <article
+                                                    key={apt.id}
+                                                    className={`rounded-2xl border border-outline-variant/35 p-4 shadow-sm ${
+                                                        isCancelled ? 'bg-error-container/15' : 'bg-surface-container-low/50'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-start justify-between gap-3">
+                                                        <div className="min-w-0 flex-1">
+                                                            {isRange ? (
+                                                                <p className="text-xs font-semibold text-on-surface-variant mb-1">
+                                                                    {formatAppointmentDate(apt.date, { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                                </p>
+                                                            ) : null}
+                                                            <p className="font-bold text-on-surface leading-snug">
+                                                                {apt.client_first_name} {apt.client_last_name}
+                                                            </p>
+                                                            <p className="text-sm text-on-surface-variant mt-0.5">
+                                                                {apt.service?.name ?? 'Appointment'}
+                                                            </p>
+                                                        </div>
+                                                        <AppointmentStatusBadge status={apt.status} />
+                                                    </div>
+
+                                                    <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                                                        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-on-surface">
+                                                            <Icon name="schedule" size="text-sm" className="text-on-surface-variant" />
+                                                            {formatTimeHm(apt.start_time)} – {formatTimeHm(apt.end_time)}
+                                                        </span>
+                                                        <span className="text-xs text-on-surface-variant">
+                                                            {Number(apt.price).toFixed(2)} {currencySymbol}
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="mt-2 text-sm text-on-surface-variant break-words">
+                                                        {apt.client_email || apt.client_phone || '—'}
+                                                    </div>
+
+                                                    {apt.client_notes ? (
+                                                        <p className="mt-2 text-xs text-on-surface-variant italic line-clamp-2">
+                                                            &ldquo;{apt.client_notes}&rdquo;
                                                         </p>
                                                     ) : null}
-                                                    <p className="font-bold text-on-surface leading-snug">
-                                                        {apt.client_first_name} {apt.client_last_name}
-                                                    </p>
-                                                    <p className="text-sm text-on-surface-variant mt-0.5">
-                                                        {apt.service?.name ?? 'Appointment'}
-                                                    </p>
-                                                </div>
-                                                <AppointmentStatusBadge status={apt.status} />
-                                            </div>
 
-                                            <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                                                <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-on-surface">
-                                                    <Icon name="schedule" size="text-sm" className="text-on-surface-variant" />
-                                                    {formatTimeHm(apt.start_time)} – {formatTimeHm(apt.end_time)}
-                                                </span>
-                                                <span className="text-xs text-on-surface-variant">
-                                                    {Number(apt.price).toFixed(2)} {currencySymbol}
-                                                </span>
-                                            </div>
-
-                                            <div className="mt-2 flex items-start gap-1.5 text-sm text-on-surface-variant">
-                                                <Icon name="call" size="text-sm" className="shrink-0 mt-0.5" />
-                                                <span className="min-w-0 break-words">{apt.client_email || apt.client_phone || '—'}</span>
-                                            </div>
-
-                                            {apt.client_notes ? (
-                                                <p className="mt-2 text-xs text-on-surface-variant italic line-clamp-2">
-                                                    &ldquo;{apt.client_notes}&rdquo;
-                                                </p>
-                                            ) : null}
-
-                                            <div className="mt-3 pt-3 border-t border-outline-variant/25">
-                                                <AppointmentActionButtons appointment={apt} onStatusChange={updateStatus} align="start" />
-                                            </div>
-                                        </article>
-                                    ))}
+                                                    {renderMobileActions(apt)}
+                                                </article>
+                                            );
+                                        })
+                                    )}
                                 </div>
                             ) : null}
 
@@ -241,66 +346,136 @@ export default function Dashboard({
                                                     Date
                                                 </th>
                                             ) : null}
-                                            <th className="pb-5 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">Client Name</th>
-                                            <th className="pb-5 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">Service</th>
-                                            <th className="pb-5 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">Time</th>
-                                            <th className="pb-5 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">Status</th>
-                                            <th className="pb-5 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">Phone</th>
-                                            <th className="pb-5 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant text-right">Actions</th>
+                                            <th className="pb-5 pr-4 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">Client</th>
+                                            <th className="pb-5 pr-4 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">Service</th>
+                                            <th className="pb-5 pr-4 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">Time</th>
+                                            <th className="pb-5 pr-10 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant text-right whitespace-nowrap">
+                                                Price
+                                            </th>
+                                            <th className="pb-5 pr-4 pl-2 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">Status</th>
+                                            <th className="pb-5 pr-4 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">Contact</th>
+                                            <th className="pb-5 pr-4 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant text-center">
+                                                Approval
+                                            </th>
+                                            <th className="pb-5 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant text-center">Edit</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-surface-container-low">
-                                        {appointments.map((apt) => (
-                                            <tr key={apt.id} className="hover:bg-surface-container-low/50 transition-colors align-top">
-                                                {isRange ? (
-                                                    <td className="py-5 pr-4 whitespace-nowrap">
-                                                        <p className="text-sm font-semibold text-on-surface">
-                                                            {formatAppointmentDate(apt.date, { day: 'numeric', month: 'short', year: 'numeric' })}
-                                                        </p>
-                                                    </td>
-                                                ) : null}
-                                                <td className="py-5 pr-4">
-                                                    <div>
+                                        {filteredAppointments.length === 0 && searchQuery.trim() !== '' && (
+                                            <tr>
+                                                <td
+                                                    colSpan={appointmentsTableColCount}
+                                                    className="py-10 text-center text-sm text-on-surface-variant"
+                                                >
+                                                    No appointments match your search.
+                                                </td>
+                                            </tr>
+                                        )}
+                                        {filteredAppointments.map((apt) => {
+                                            const style = STATUS_STYLES[apt.status] || STATUS_STYLES.pending;
+                                            const isCancelled = apt.status === 'cancelled';
+                                            const isPending = apt.status === 'pending';
+                                            const isConfirmed = apt.status === 'confirmed';
+
+                                            return (
+                                                <tr
+                                                    key={apt.id}
+                                                    className={`transition-colors align-middle ${
+                                                        isCancelled
+                                                            ? 'bg-error-container/15'
+                                                            : 'hover:bg-surface-container-low/50'
+                                                    }`}
+                                                >
+                                                    {isRange ? (
+                                                        <td className="py-4 pr-4 whitespace-nowrap">
+                                                            <p className="text-sm font-semibold text-on-surface">
+                                                                {formatAppointmentDate(apt.date, { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                            </p>
+                                                        </td>
+                                                    ) : null}
+                                                    <td className="py-4 pr-4">
                                                         <p className="font-bold text-on-surface">
                                                             {apt.client_first_name} {apt.client_last_name}
                                                         </p>
                                                         {apt.client_notes ? (
-                                                            <p className="mt-1 text-xs text-on-surface-variant italic line-clamp-1">
+                                                            <p className="mt-0.5 text-xs text-on-surface-variant italic line-clamp-1">
                                                                 &ldquo;{apt.client_notes}&rdquo;
                                                             </p>
                                                         ) : null}
-                                                    </div>
-                                                </td>
-                                                <td className="py-5 pr-4">
-                                                    <p className="text-sm text-on-surface-variant">
-                                                        {apt.service?.name ?? 'Appointment'}
-                                                    </p>
-                                                </td>
-                                                <td className="py-5 pr-4">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <Icon name="schedule" size="text-sm" className="text-on-surface-variant" />
-                                                        <p className="text-on-surface text-sm font-semibold">
-                                                            {formatTimeHm(apt.start_time)} - {formatTimeHm(apt.end_time)}
-                                                        </p>
-                                                    </div>
-                                                    <p className="mt-1 text-xs text-on-surface-variant">
-                                                        {Number(apt.price).toFixed(2)} {currencySymbol}
-                                                    </p>
-                                                </td>
-                                                <td className="py-5 pr-4">
-                                                    <AppointmentStatusBadge status={apt.status} />
-                                                </td>
-                                                <td className="py-5 pr-4">
-                                                    <div className="flex items-center gap-1.5 text-sm text-on-surface-variant">
-                                                        <Icon name="call" size="text-sm" />
-                                                        <span>{apt.client_email || apt.client_phone || '—'}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="py-5 text-right">
-                                                    <AppointmentActionButtons appointment={apt} onStatusChange={updateStatus} align="end" />
-                                                </td>
-                                            </tr>
-                                        ))}
+                                                    </td>
+                                                    <td className="py-4 pr-4">
+                                                        <div className="flex items-center gap-1.5 text-sm text-on-surface-variant">
+                                                            <Icon name="content_cut" size="text-sm" />
+                                                            <span>{apt.service?.name ?? 'Appointment'}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-4 pr-4">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <Icon name="schedule" size="text-sm" className="text-on-surface-variant" />
+                                                            <p className="text-on-surface text-sm font-semibold">
+                                                                {formatTimeHm(apt.start_time)} – {formatTimeHm(apt.end_time)}
+                                                            </p>
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-4 pr-10 text-right whitespace-nowrap">
+                                                        <span className="text-sm font-semibold text-on-surface tabular-nums">
+                                                            {Number(apt.price).toFixed(2)} {currencySymbol}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-4 pr-4 pl-2">
+                                                        <span className={`px-3 py-1 text-[10px] font-extrabold uppercase rounded-full ${style.bg}`}>
+                                                            {style.label}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-4 pr-4">
+                                                        <span className="text-sm text-on-surface-variant">
+                                                            {apt.client_email || apt.client_phone || '—'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-4 pr-4 text-center">
+                                                        <div className="flex items-center justify-center gap-2">
+                                                            {isPending && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleConfirm(apt)}
+                                                                    className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-950 ring-1 ring-emerald-200/90 hover:bg-emerald-100/90 transition-colors"
+                                                                >
+                                                                    <Icon name="check_circle" size="text-sm" />
+                                                                    Confirm
+                                                                </button>
+                                                            )}
+                                                            {(isPending || isConfirmed) && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => openCancelModal(apt)}
+                                                                    className="inline-flex items-center gap-1.5 rounded-xl bg-red-50 px-3 py-1.5 text-xs font-bold text-red-950 ring-1 ring-red-200/90 hover:bg-red-100/90 transition-colors"
+                                                                >
+                                                                    <Icon name="cancel" size="text-sm" />
+                                                                    Cancel
+                                                                </button>
+                                                            )}
+                                                            {isCancelled && (
+                                                                <span className="text-xs text-on-surface-variant/60">—</span>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-4 text-center">
+                                                        {!isCancelled ? (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setReschedulingApt(apt)}
+                                                                className="inline-flex items-center justify-center rounded-xl bg-surface-container-high p-2 text-on-surface hover:bg-surface-container-highest transition-colors"
+                                                                title="Reschedule"
+                                                            >
+                                                                <Icon name="edit_calendar" size="text-base" />
+                                                            </button>
+                                                        ) : (
+                                                            <span className="text-xs text-on-surface-variant/60">—</span>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>
@@ -350,6 +525,16 @@ export default function Dashboard({
                     </div>
                 </section>
             </div>
+
+            {reschedulingApt && (
+                <EmployeeRescheduleModal appointment={reschedulingApt} onClose={() => setReschedulingApt(null)} />
+            )}
+
+            {cancellingApt && (
+                <CancelConfirmModal appointment={cancellingApt} onConfirm={confirmCancel} onClose={closeCancelModal} />
+            )}
+
+            {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
         </EmployeeLayout>
     );
 }

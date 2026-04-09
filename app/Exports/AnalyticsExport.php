@@ -4,10 +4,11 @@ namespace App\Exports;
 
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithStrictNullComparison;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class AnalyticsExport implements FromArray, WithHeadings, WithStyles
+class AnalyticsExport implements FromArray, WithHeadings, WithStrictNullComparison, WithStyles
 {
     public function __construct(
         private array $employeeStats,
@@ -56,8 +57,8 @@ class AnalyticsExport implements FromArray, WithHeadings, WithStyles
         $lastRow = count($this->employeeStats) + 2; // +1 header, +1 summary
 
         return [
-            1           => ['font' => ['bold' => true]],
-            $lastRow    => ['font' => ['bold' => true], 'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => 'F1F5F9']]],
+            1 => ['font' => ['bold' => true]],
+            $lastRow => ['font' => ['bold' => true], 'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => 'F1F5F9']]],
         ];
     }
 }

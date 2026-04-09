@@ -81,6 +81,12 @@ Route::middleware(['auth', 'employee_area'])->prefix('employee')->name('employee
         Route::get('/dashboard', [Employee\DashboardController::class, 'index'])->name('dashboard');
     });
 
+    Route::middleware('permission:employee.analytics')->group(function () {
+        Route::get('/analytics', [Employee\AnalyticsController::class, 'index'])->name('analytics.index');
+        Route::get('/analytics/export', [Employee\AnalyticsController::class, 'export'])->name('analytics.export');
+        Route::get('/analytics/export-pdf', [Employee\AnalyticsController::class, 'exportPdf'])->name('analytics.export-pdf');
+    });
+
     Route::middleware('permission:employee.schedule')->group(function () {
         // Date-range / weekly override view
         Route::get('/schedule', [Employee\ScheduleController::class, 'index'])->name('schedule.index');
@@ -94,6 +100,8 @@ Route::middleware(['auth', 'employee_area'])->prefix('employee')->name('employee
     Route::middleware('permission:employee.appointments')->group(function () {
         Route::get('/appointments/calendar', [Employee\AppointmentController::class, 'calendar'])->name('appointments.calendar');
         Route::patch('/appointments/{appointment}', [Employee\AppointmentController::class, 'update'])->name('appointments.update');
+        Route::get('/appointments/{appointment}/slots', [Employee\AppointmentController::class, 'slots'])->name('appointments.slots');
+        Route::put('/appointments/{appointment}/reschedule', [Employee\AppointmentController::class, 'reschedule'])->name('appointments.reschedule');
     });
 });
 

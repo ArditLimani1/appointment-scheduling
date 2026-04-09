@@ -22,6 +22,7 @@ use App\Services\BookingService;
 use App\Services\BusinessRoleService;
 use App\Services\BusinessService;
 use App\Services\DashboardService;
+use App\Services\EmployeeAnalyticsService;
 use App\Services\EmployeeService;
 use App\Services\Interfaces\AnalyticsServiceInterface;
 use App\Services\Interfaces\AppointmentServiceInterface;
@@ -29,6 +30,7 @@ use App\Services\Interfaces\BookingServiceInterface;
 use App\Services\Interfaces\BusinessRoleServiceInterface;
 use App\Services\Interfaces\BusinessServiceInterface;
 use App\Services\Interfaces\DashboardServiceInterface;
+use App\Services\Interfaces\EmployeeAnalyticsServiceInterface;
 use App\Services\Interfaces\EmployeeServiceInterface;
 use App\Services\Interfaces\ScheduleServiceInterface;
 use App\Services\Interfaces\ServiceServiceInterface;
@@ -44,7 +46,7 @@ class RepositoryServiceProvider extends ServiceProvider
         EmployeeRepositoryInterface::class => EmployeeRepository::class,
         ServiceRepositoryInterface::class => ServiceRepository::class,
         AppointmentRepositoryInterface::class => AppointmentRepository::class,
-        ScheduleRepositoryInterface::class         => ScheduleRepository::class,
+        ScheduleRepositoryInterface::class => ScheduleRepository::class,
         ScheduleOverrideRepositoryInterface::class => ScheduleOverrideRepository::class,
 
         BusinessServiceInterface::class => BusinessService::class,
@@ -56,6 +58,7 @@ class RepositoryServiceProvider extends ServiceProvider
         BookingServiceInterface::class => BookingService::class,
         DashboardServiceInterface::class => DashboardService::class,
         AnalyticsServiceInterface::class => AnalyticsService::class,
+        EmployeeAnalyticsServiceInterface::class => EmployeeAnalyticsService::class,
     ];
 
     public function register(): void {}
