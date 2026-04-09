@@ -229,25 +229,12 @@ export default function Dashboard({
                 <p className="text-on-surface-variant text-lg">{rangeLabel}</p>
             </div>
 
-            <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-end lg:justify-between">
-                <div className="flex min-w-0 flex-wrap items-end gap-4">
+            <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
+                <div className="flex min-w-0 flex-1 flex-wrap items-end gap-4">
                     <DatePicker label="From" value={dateFrom} onChange={handleFromChange} placeholder="Start date" />
                     <DatePicker label="To" value={dateTo} onChange={handleToChange} placeholder="End date" />
-                </div>
-                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-end">
-                    {canAppointments ? (
-                        <Link
-                            href={route('employee.appointments.calendar')}
-                            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-on-surface hover:bg-slate-50 sm:shrink-0"
-                        >
-                            <Icon name="calendar_view_week" size="text-lg" />
-                            Calendar
-                        </Link>
-                    ) : null}
-                    <div className="ml-auto w-full max-w-[220px] shrink-0 sm:ml-0">
-                        <label className="mr-1 block text-right text-[10px] font-bold uppercase tracking-widest text-outline">
-                            Search
-                        </label>
+                    <div className="w-full min-w-[min(100%,12rem)] max-w-xs sm:w-auto sm:flex-1 sm:max-w-sm">
+                        <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-outline">Search</label>
                         <div className="flex w-full items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm transition-all hover:border-slate-300 focus-within:border-on-surface/20 focus-within:ring-2 focus-within:ring-on-surface/10">
                             <Icon name="search" size="text-base" className="shrink-0 text-outline" />
                             <input
@@ -261,6 +248,17 @@ export default function Dashboard({
                         </div>
                     </div>
                 </div>
+                {canAppointments ? (
+                    <div className="flex w-full shrink-0 justify-end sm:w-auto">
+                        <Link
+                            href={route('employee.appointments.calendar')}
+                            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-on-surface hover:bg-slate-50"
+                        >
+                            <Icon name="calendar_view_week" size="text-lg" />
+                            Calendar
+                        </Link>
+                    </div>
+                ) : null}
             </div>
 
             <div className="flex flex-col">
