@@ -4,16 +4,32 @@ import Icon from '@/Components/Icon';
 /**
  * Custom listbox for filter bars — native <select> dropdown panels cannot be styled in most browsers.
  */
-export default function FilterListbox({ label, value, onChange, options, minWidthClass = 'min-w-[160px]' }) {
+export default function FilterListbox({
+    label,
+    value,
+    onChange,
+    options,
+    minWidthClass = 'min-w-[160px]',
+    showLabel = true,
+    compact = false,
+}) {
     const selected = options.find((o) => o.value === value);
     const display = selected?.label ?? '—';
+    const btnPad = compact ? 'py-2' : 'py-2.5';
+    const labelMb = compact ? 'mb-0.5' : 'mb-1';
 
     return (
         <div className={`flex-1 ${minWidthClass}`}>
             <Listbox value={value} onChange={onChange}>
-                <Label className="block text-[10px] font-bold uppercase tracking-widest text-outline mb-1">{label}</Label>
+                {showLabel && label ? (
+                    <Label className={`block text-[10px] font-bold uppercase tracking-widest text-outline ${labelMb}`}>
+                        {label}
+                    </Label>
+                ) : null}
                 <div className="relative">
-                    <ListboxButton className="relative flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-slate-100 bg-white px-3 py-2.5 text-left text-sm text-on-surface shadow-sm focus:outline-none focus:ring-2 focus:ring-on-primary-container/20 data-[hover]:border-slate-200">
+                    <ListboxButton
+                        className={`relative flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-slate-100 bg-white px-3 ${btnPad} text-left text-sm text-on-surface shadow-sm focus:outline-none focus:ring-2 focus:ring-on-primary-container/20 data-[hover]:border-slate-200`}
+                    >
                         <span className="block truncate">{display}</span>
                         <Icon name="expand_more" size="text-[20px]" className="shrink-0 text-outline" />
                     </ListboxButton>

@@ -40,10 +40,13 @@ class AppointmentsExport implements FromQuery, WithHeadings, WithMapping
             $query->whereDate('date', '<=', $this->filters['date_to']);
         }
 
-        if (! empty($this->filters['status'])) {
-            $status = AppointmentStatus::tryFrom((string) $this->filters['status']);
-            if ($status !== null) {
-                $query->where('status', $status);
+        if (! empty($this->filters['statuses']) && is_array($this->filters['statuses'])) {
+            $cases = array_values(array_filter(array_map(
+                fn ($s) => AppointmentStatus::tryFrom((string) $s),
+                $this->filters['statuses'],
+            )));
+            if ($cases !== []) {
+                $query->whereIn('status', $cases);
             }
         }
 

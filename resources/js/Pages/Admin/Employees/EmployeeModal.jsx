@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useForm } from '@inertiajs/react';
+import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/react';
 import Modal from '@/Components/Modal';
 import Icon from '@/Components/Icon';
 import InputError from '@/Components/InputError';
@@ -48,13 +49,18 @@ export default function EmployeeModal({ show, onClose, editing, services, busine
         }
     };
 
-    const toggleService = (id) => {
-        setData('service_ids', data.service_ids.includes(id)
-            ? data.service_ids.filter(s => s !== id)
-            : [...data.service_ids, id]);
-    };
-
     const inputClass = "w-full rounded-xl border border-outline-variant bg-surface-container-low px-4 py-2.5 text-sm text-on-surface placeholder-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-on-primary-container/30 transition-all";
+
+    const assignedServicesLabel = useMemo(() => {
+        if (!services?.length || data.service_ids.length === 0) {
+            return 'Select services…';
+        }
+        const selected = services.filter((s) => data.service_ids.some((id) => Number(id) === Number(s.id)));
+        if (selected.length <= 2) {
+            return selected.map((s) => s.name).join(', ');
+        }
+        return `${selected.length} services selected`;
+    }, [services, data.service_ids]);
 
     const editingOwner = editing && businessOwnerId != null && editing.id === businessOwnerId;
 
@@ -134,20 +140,48 @@ export default function EmployeeModal({ show, onClose, editing, services, busine
                 {services?.length > 0 && (
                     <div className="mt-4">
                         <label className="block text-sm font-medium text-on-surface mb-2">Assigned Services</label>
-                        <div className="flex flex-wrap gap-2">
-                            {services.map(s => (
-                                <button key={s.id} type="button" onClick={() => toggleService(s.id)}
-                                    className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all border ${
-                                        data.service_ids.includes(s.id)
-                                            ? 'bg-on-surface text-surface border-on-surface'
-                                            : 'bg-transparent text-on-surface-variant border-outline-variant hover:border-on-surface-variant'
-                                    }`}
+                        <Listbox
+                            value={data.service_ids}
+                            onChange={(ids) => setData('service_ids', ids)}
+                            multiple
+                        >
+                            <div className="relative">
+                                <ListboxButton
+                                    className={`${inputClass} flex cursor-pointer items-center justify-between gap-2 text-left`}
                                 >
-                                    {data.service_ids.includes(s.id) && <Icon name="check" size="text-xs" className="mr-1 inline" />}
-                                    {s.name}
-                                </button>
-                            ))}
-                        </div>
+                                    <span className={`block min-h-[1.25rem] truncate ${data.service_ids.length === 0 ? 'text-on-surface-variant/60' : ''}`}>
+                                        {assignedServicesLabel}
+                                    </span>
+                                    <Icon name="expand_more" size="text-[20px]" className="shrink-0 text-on-surface-variant" />
+                                </ListboxButton>
+                                <ListboxOptions
+                                    portal
+                                    anchor="bottom start"
+                                    transition
+                                    className="z-[100] mt-1 max-h-60 w-[var(--button-width)] overflow-auto rounded-xl border border-outline-variant bg-surface-container-low py-1 shadow-lg ring-1 ring-black/5 outline-none transition duration-100 ease-out data-[closed]:scale-95 data-[closed]:opacity-0"
+                                >
+                                    {services.map((s) => (
+                                        <ListboxOption
+                                            key={s.id}
+                                            value={s.id}
+                                            className="group flex cursor-pointer items-center gap-2 px-3 py-2.5 text-sm text-on-surface data-[focus]:bg-surface-container-high data-[selected]:bg-on-surface/10"
+                                        >
+                                            <span
+                                                className="flex h-4 w-4 shrink-0 items-center justify-center rounded border border-outline-variant group-data-[selected]:border-on-surface group-data-[selected]:bg-on-surface"
+                                                aria-hidden
+                                            >
+                                                <Icon
+                                                    name="check"
+                                                    size="text-[10px]"
+                                                    className="text-surface opacity-0 group-data-[selected]:opacity-100"
+                                                />
+                                            </span>
+                                            <span className="truncate">{s.name}</span>
+                                        </ListboxOption>
+                                    ))}
+                                </ListboxOptions>
+                            </div>
+                        </Listbox>
                     </div>
                 )}
 

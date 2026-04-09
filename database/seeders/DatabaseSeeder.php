@@ -6,6 +6,7 @@ use App\Enums\AppointmentStatus;
 use App\Enums\UserRole;
 use App\Models\Appointment;
 use App\Models\Business;
+use App\Models\BusinessType;
 use App\Models\Schedule;
 use App\Models\ScheduleBreak;
 use App\Models\Service;
@@ -21,6 +22,8 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
+        $this->call(BusinessTypeSeeder::class);
+
         $admin = User::create([
             'name' => 'Admin',
             'email' => 'admin@stratos.com',
@@ -31,6 +34,7 @@ class DatabaseSeeder extends Seeder
 
         $business = Business::create([
             'owner_id' => $admin->id,
+            'business_type_id' => BusinessType::query()->where('name', 'Barbershop')->value('id'),
             'name' => 'Tiki Style',
             'slug' => 'tiki-style',
             'location' => 'Rimanishte, Prishtine',

@@ -12,7 +12,7 @@ function slugify(value) {
         .replace(/-+/g, '-');
 }
 
-export default function Register() {
+export default function Register({ businessTypeCategories = [] }) {
     const [step, setStep] = useState(0);
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
@@ -21,6 +21,7 @@ export default function Register() {
         password_confirmation: '',
         business_name: '',
         slug: '',
+        business_type_id: '',
         location: '',
         phone: '',
         logo: null,
@@ -206,6 +207,29 @@ export default function Register() {
                                     </div>
 
                                     <div>
+                                        <label className="block text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-1.5">Type of business</label>
+                                        <select
+                                            value={data.business_type_id}
+                                            onChange={(e) => setData('business_type_id', e.target.value === '' ? '' : Number(e.target.value))}
+                                            className={`${inputClass} appearance-none bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10`}
+                                            style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E\")" }}
+                                            required
+                                        >
+                                            <option value="">Select your business type</option>
+                                            {businessTypeCategories.map((category) => (
+                                                <optgroup key={category.id} label={category.name}>
+                                                    {category.types.map((type) => (
+                                                        <option key={type.id} value={type.id}>
+                                                            {type.name}
+                                                        </option>
+                                                    ))}
+                                                </optgroup>
+                                            ))}
+                                        </select>
+                                        <InputError message={errors.business_type_id} className="mt-1" />
+                                    </div>
+
+                                    <div>
                                         <label className="block text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-1.5">Booking URL</label>
                                         <div className="flex items-center rounded-2xl bg-surface-container-low overflow-hidden focus-within:ring-2 focus-within:ring-primary/40">
                                             <span className="shrink-0 px-3 py-3 text-xs font-medium text-on-surface-variant border-r border-outline-variant bg-surface-container">
@@ -301,7 +325,7 @@ export default function Register() {
                                     </button>
                                     <button
                                         type="submit"
-                                        disabled={processing || !data.business_name || !data.slug}
+                                        disabled={processing || !data.business_name || !data.slug || !data.business_type_id}
                                         className="primary-gradient flex-1 flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-semibold text-white shadow-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                                     >
                                         {processing ? 'Creating...' : 'Create Business'}

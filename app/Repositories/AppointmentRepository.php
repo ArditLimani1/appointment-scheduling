@@ -28,14 +28,41 @@ class AppointmentRepository implements AppointmentRepositoryInterface
             $query->whereDate('date', '<=', $filters['date_to']);
         }
 
-        if (array_key_exists('status', $filters)) {
-            $status = AppointmentStatus::tryFrom((string) $filters['status']);
-            if ($status !== null) {
-                $query->where('status', $status);
+        if (array_key_exists('statuses', $filters) && is_array($filters['statuses']) && $filters['statuses'] !== []) {
+            $cases = array_values(array_filter(array_map(
+                fn ($s) => AppointmentStatus::tryFrom((string) $s),
+                $filters['statuses'],
+            )));
+            if ($cases !== []) {
+                $query->whereIn('status', $cases);
             }
         }
 
         return $query->latest('date')->latest('start_time')->paginate($perPage)->withQueryString();
+    }
+
+    public function getForBusinessDateRange(int $businessId, string $from, string $to, array $filters = []): Collection
+    {
+        $query = Appointment::with(['employee', 'service'])
+            ->where('business_id', $businessId)
+            ->whereDate('date', '>=', $from)
+            ->whereDate('date', '<=', $to);
+
+        if (array_key_exists('employee_id', $filters) && $filters['employee_id'] !== null && $filters['employee_id'] !== '') {
+            $query->where('employee_id', (int) $filters['employee_id']);
+        }
+
+        if (array_key_exists('statuses', $filters) && is_array($filters['statuses']) && $filters['statuses'] !== []) {
+            $cases = array_values(array_filter(array_map(
+                fn ($s) => AppointmentStatus::tryFrom((string) $s),
+                $filters['statuses'],
+            )));
+            if ($cases !== []) {
+                $query->whereIn('status', $cases);
+            }
+        }
+
+        return $query->orderBy('date')->orderBy('start_time')->get();
     }
 
     public function getUpcomingCount(int $businessId): int

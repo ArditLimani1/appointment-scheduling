@@ -26,23 +26,81 @@ class AppointmentService implements AppointmentServiceInterface
     public function getFiltered(Business $business, array $filters, int $perPage = 10): array
     {
         $appointments = $this->appointmentRepository->getFilteredByBusiness($business->id, $filters, $perPage);
-        $employees    = $this->employeeRepository->getByBusiness($business->id)->load('services');
-        $services     = $this->serviceRepository->getActiveByBusiness($business->id);
+        $employees = $this->employeeRepository->getByBusiness($business->id)->load('services');
+        $services = $this->serviceRepository->getActiveByBusiness($business->id);
 
         return [
             'appointments' => $appointments,
-            'employees'    => $employees->map(fn ($e) => [
-                'id'          => $e->id,
-                'name'        => $e->name,
+            'employees' => $employees->map(fn ($e) => [
+                'id' => $e->id,
+                'name' => $e->name,
                 'service_ids' => $e->services->pluck('id')->values()->toArray(),
             ]),
-            'services'  => $services->map(fn ($s) => [
-                'id'       => $s->id,
-                'name'     => $s->name,
+            'services' => $services->map(fn ($s) => [
+                'id' => $s->id,
+                'name' => $s->name,
                 'duration' => $s->duration,
-                'price'    => $s->price,
+                'price' => $s->price,
             ]),
-            'filters' => $filters,
+            'filters' => [
+                'employee_id' => $filters['employee_id'] ?? null,
+                'date_from' => $filters['date_from'] ?? null,
+                'date_to' => $filters['date_to'] ?? null,
+                'status' => $filters['statuses'] ?? [],
+            ],
+        ];
+    }
+
+    public function getCalendarView(Business $business, string $view, string $anchorDate, array $filters = []): array
+    {
+        $repoFilters = [];
+        if (! empty($filters['employee_id'])) {
+            $repoFilters['employee_id'] = (int) $filters['employee_id'];
+        }
+        if (! empty($filters['statuses']) && is_array($filters['statuses'])) {
+            $repoFilters['statuses'] = $filters['statuses'];
+        }
+
+        $anchor = Carbon::parse($anchorDate)->startOfDay();
+
+        if ($view === 'day') {
+            $rangeStart = $anchor->toDateString();
+            $rangeEnd = $anchor->toDateString();
+            $columnDates = [$rangeStart];
+        } else {
+            $view = 'week';
+            $start = $anchor->copy()->startOfWeek(Carbon::MONDAY);
+            $end = $start->copy()->addDays(6);
+            $rangeStart = $start->toDateString();
+            $rangeEnd = $end->toDateString();
+            $columnDates = [];
+            for ($d = $start->copy(); $d->lte($end); $d->addDay()) {
+                $columnDates[] = $d->toDateString();
+            }
+        }
+
+        $appointments = $this->appointmentRepository->getForBusinessDateRange($business->id, $rangeStart, $rangeEnd, $repoFilters);
+
+        $employees = $this->employeeRepository->getByBusiness($business->id)->load('services');
+        $services = $this->serviceRepository->getActiveByBusiness($business->id);
+
+        return [
+            'appointments' => $appointments,
+            'employees' => $employees->map(fn ($e) => [
+                'id' => $e->id,
+                'name' => $e->name,
+                'service_ids' => $e->services->pluck('id')->values()->toArray(),
+            ]),
+            'services' => $services->map(fn ($s) => [
+                'id' => $s->id,
+                'name' => $s->name,
+                'duration' => $s->duration,
+                'price' => $s->price,
+            ]),
+            'calendar_view' => $view,
+            'range_start' => $rangeStart,
+            'range_end' => $rangeEnd,
+            'column_dates' => $columnDates,
         ];
     }
 
@@ -50,11 +108,11 @@ class AppointmentService implements AppointmentServiceInterface
     {
         abort_if($appointment->business_id !== $business->id, 403);
 
-        $service   = $this->serviceRepository->findById((int) $data['service_id']);
+        $service = $this->serviceRepository->findById((int) $data['service_id']);
         abort_if(! $service, 422, 'Service not found.');
 
         $startTime = Carbon::parse($data['date'].' '.$data['start_time']);
-        $endTime   = $startTime->copy()->addMinutes($service->duration);
+        $endTime = $startTime->copy()->addMinutes($service->duration);
 
         // Check if the new time window overlaps with any other appointment for this employee
         $hasConflict = Appointment::where('employee_id', (int) $data['employee_id'])
@@ -72,8 +130,8 @@ class AppointmentService implements AppointmentServiceInterface
         }
 
         return $this->appointmentRepository->update($appointment, array_merge($data, [
-            'end_time'   => $endTime->format('H:i'),
-            'price'      => $service->price,
+            'end_time' => $endTime->format('H:i'),
+            'price' => $service->price,
             'updated_by' => auth()->id(),
         ]));
     }

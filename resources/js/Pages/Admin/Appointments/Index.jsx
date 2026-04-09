@@ -1,13 +1,19 @@
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import Icon from '@/Components/Icon';
 import PageHeader from '@/Components/PageHeader';
 import FilterListbox from '@/Components/FilterListbox';
+import FilterStatusMulti from '@/Components/FilterStatusMulti';
 import DatePicker from '@/Components/DatePicker';
 import AppointmentStatusMenu from '@/Components/AppointmentStatusMenu';
 import EditAppointmentModal from '@/Components/EditAppointmentModal';
 import { formatAppointmentDate, formatTimeHm } from '@/utils/appointmentDate';
+import {
+    appendAppointmentStatusParams,
+    DEFAULT_APPOINTMENT_STATUS_FILTER,
+    normalizeAppointmentStatusFilter,
+} from '@/utils/appointmentStatusFilter';
 
 function DeleteConfirmModal({ appointment, onConfirm, onCancel }) {
     return (
@@ -70,26 +76,24 @@ function getRoutePathname(routeName) {
     return new URL(route(routeName), window.location.href).pathname;
 }
 
-function buildFilterQueryParams(filters) {
-    const queryParams = {};
+function appointmentsFiltersToSearchParams(filters) {
+    const params = new URLSearchParams();
     if (filters.employee_id !== '' && filters.employee_id != null) {
-        queryParams.employee_id = String(filters.employee_id);
+        params.set('employee_id', String(filters.employee_id));
     }
     if (filters.date_from) {
-        queryParams.date_from = filters.date_from;
+        params.set('date_from', filters.date_from);
     }
     if (filters.date_to) {
-        queryParams.date_to = filters.date_to;
+        params.set('date_to', filters.date_to);
     }
-    if (filters.status) {
-        queryParams.status = filters.status;
-    }
-    return queryParams;
+    appendAppointmentStatusParams(params, filters.status);
+    return params;
 }
 
 function buildAppointmentsUrl(filters) {
-    const queryParams = buildFilterQueryParams(filters);
-    const queryString = new URLSearchParams(queryParams).toString();
+    const params = appointmentsFiltersToSearchParams(filters);
+    const queryString = params.toString();
     const pathname = getRoutePathname('admin.appointments.index');
     return pathname + (queryString ? `?${queryString}` : '');
 }
@@ -152,11 +156,15 @@ export default function Index({ appointments, employees, services = [], filters 
     const { rows, meta } = useMemo(() => normalizeAppointments(appointments), [appointments]);
     const totalCount = meta?.total ?? rows.length;
 
+    const statusFilterKey = Array.isArray(filters.status)
+        ? [...filters.status].sort().join('|')
+        : String(filters.status ?? '');
+
     const [localFilters, setLocalFilters] = useState({
         employee_id: filters.employee_id != null && filters.employee_id !== '' ? String(filters.employee_id) : '',
         date_from: filters.date_from ?? currentMonthStart(),
         date_to: filters.date_to ?? currentMonthEnd(),
-        status: filters.status ?? '',
+        status: normalizeAppointmentStatusFilter(filters.status),
     });
 
     useEffect(() => {
@@ -164,9 +172,9 @@ export default function Index({ appointments, employees, services = [], filters 
             employee_id: filters.employee_id != null && filters.employee_id !== '' ? String(filters.employee_id) : '',
             date_from: filters.date_from ?? currentMonthStart(),
             date_to: filters.date_to ?? currentMonthEnd(),
-            status: filters.status ?? '',
+            status: normalizeAppointmentStatusFilter(filters.status),
         });
-    }, [filters.employee_id, filters.date_from, filters.date_to, filters.status]);
+    }, [filters.employee_id, filters.date_from, filters.date_to, statusFilterKey]);
 
     const visitOpts = useMemo(
         () => ({
@@ -186,7 +194,12 @@ export default function Index({ appointments, employees, services = [], filters 
     }, [visitOpts]);
 
     const clearFilters = () => {
-        const defaultFilters = { employee_id: '', date_from: currentMonthStart(), date_to: currentMonthEnd(), status: '' };
+        const defaultFilters = {
+            employee_id: '',
+            date_from: currentMonthStart(),
+            date_to: currentMonthEnd(),
+            status: [...DEFAULT_APPOINTMENT_STATUS_FILTER],
+        };
         setLocalFilters(defaultFilters);
         router.get(buildAppointmentsUrl(defaultFilters), {}, visitOpts);
     };
@@ -211,8 +224,8 @@ export default function Index({ appointments, employees, services = [], filters 
     };
 
     const buildExportUrl = (routeName) => {
-        const queryParams = buildFilterQueryParams(localFilters);
-        const queryString = new URLSearchParams(queryParams).toString();
+        const params = appointmentsFiltersToSearchParams(localFilters);
+        const queryString = params.toString();
         const pathname = getRoutePathname(routeName);
         return pathname + (queryString ? `?${queryString}` : '');
     };
@@ -237,13 +250,11 @@ export default function Index({ appointments, employees, services = [], filters 
     );
 
     const statusOptions = useMemo(
-        () => [
-            { value: '', label: 'All Statuses' },
-            ...APPOINTMENT_STATUSES.map((status) => ({
+        () =>
+            APPOINTMENT_STATUSES.map((status) => ({
                 value: status,
                 label: status.replace('_', ' '),
             })),
-        ],
         [],
     );
 
@@ -255,6 +266,13 @@ export default function Index({ appointments, employees, services = [], filters 
                 title="Appointments"
                 description="View and manage all customer bookings. Results update when you change staff, dates, or status."
             >
+                <Link
+                    href={route('admin.appointments.calendar')}
+                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-on-surface hover:bg-slate-50"
+                >
+                    <Icon name="calendar_view_week" size="text-lg" />
+                    Calendar
+                </Link>
                 <ExportDropdown
                     excelUrl={buildExportUrl('admin.appointments.export')}
                     pdfUrl={buildExportUrl('admin.appointments.export-pdf')}
@@ -281,12 +299,12 @@ export default function Index({ appointments, employees, services = [], filters 
                         onChange={(value) => patchFilters({ date_to: value })}
                         placeholder="End date"
                     />
-                    <FilterListbox
+                    <FilterStatusMulti
                         label="Status"
                         value={localFilters.status}
                         onChange={(v) => patchFilters({ status: v })}
                         options={statusOptions}
-                        minWidthClass="min-w-[140px]"
+                        minWidthClass="min-w-[200px]"
                     />
                     <div className="flex items-end">
                         <button

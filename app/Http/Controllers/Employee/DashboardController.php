@@ -39,7 +39,9 @@ class DashboardController extends Controller
 
         $data = $this->dashboardService->getEmployeeDashboardData(auth()->user(), $from, $to);
 
-        return Inertia::render('Employee/Dashboard', $data);
+        return Inertia::render('Employee/Dashboard', array_merge($data, [
+            'employee_compact_mobile_appointments' => true,
+        ]));
     }
 
     private function parseDashboardDate(mixed $value): ?string

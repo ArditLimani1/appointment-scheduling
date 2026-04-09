@@ -103,7 +103,7 @@ export default function Index({ employees, services, businessRoles = [], busines
                                             </td>
                                             <td className="px-8 py-5">
                                                 <p className="text-sm text-on-surface-variant">
-                                                    {isOwner ? 'Owner account' : (emp.business_role?.name ?? 'Default')}
+                                                    {isOwner ? 'Owner account' : (emp.business_role?.name ?? 'Employee')}
                                                 </p>
                                             </td>
                                             <td className="px-8 py-5">

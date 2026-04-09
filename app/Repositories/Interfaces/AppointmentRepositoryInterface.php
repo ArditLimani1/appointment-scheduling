@@ -10,6 +10,11 @@ interface AppointmentRepositoryInterface
 {
     public function getFilteredByBusiness(int $businessId, array $filters, int $perPage = 10): LengthAwarePaginator;
 
+    /**
+     * @param  array{employee_id?: int, statuses?: list<string>}  $filters
+     */
+    public function getForBusinessDateRange(int $businessId, string $from, string $to, array $filters = []): Collection;
+
     public function getUpcomingCount(int $businessId): int;
 
     public function getCompletedRevenue(int $businessId): float;
