@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Business extends Model
 {
     protected $fillable = [
-        'owner_id', 'name', 'slug', 'location', 'phone', 'email',
+        'owner_id', 'business_type_id', 'name', 'slug', 'location', 'phone', 'email',
         'description', 'logo', 'timezone', 'currency', 'currency_symbol',
         'slot_duration', 'min_booking_notice', 'max_booking_window',
         'is_active', 'client_identifier_type',
@@ -25,6 +25,11 @@ class Business extends Model
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_id');
+    }
+
+    public function businessType(): BelongsTo
+    {
+        return $this->belongsTo(BusinessType::class);
     }
 
     public function employees(): HasMany

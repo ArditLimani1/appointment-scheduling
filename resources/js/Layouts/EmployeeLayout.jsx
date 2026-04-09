@@ -28,10 +28,16 @@ export default function EmployeeLayout({ children }) {
 
     const isActive = (routeName) => {
         try {
+            // Calendar is opened from Appointments; keep that nav item active on calendar.
+            if (routeName === 'employee.dashboard') {
+                return route().current('employee.dashboard') || route().current('employee.appointments.calendar');
+            }
             // Exact match first, then wildcard children but exclude sibling routes
             if (route().current(routeName)) return true;
             // For schedule.index, don't highlight when on configuration
-            if (routeName === 'employee.schedule.index' && route().current('employee.schedule.configuration')) return false;
+            if (routeName === 'employee.schedule.index' && route().current('employee.schedule.configuration')) {
+                return false;
+            }
             return route().current(routeName + '.*');
         } catch {
             return false;

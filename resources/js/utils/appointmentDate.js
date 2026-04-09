@@ -26,3 +26,27 @@ export function formatTimeHm(raw) {
     }
     return s;
 }
+
+/** Parse "HH:MM" or "HH:MM:SS" to minutes from midnight. */
+export function timeToMinutes(raw) {
+    if (raw == null || raw === '') return 0;
+    const s = String(raw);
+    const parts = s.split(':');
+    const h = parseInt(parts[0], 10) || 0;
+    const m = parseInt(parts[1], 10) || 0;
+    return h * 60 + m;
+}
+
+export function minutesToTimeHm(mins) {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+export function appointmentStatusValue(status) {
+    if (status == null) return 'pending';
+    if (typeof status === 'object' && status !== null && 'value' in status) {
+        return String(status.value);
+    }
+    return String(status);
+}

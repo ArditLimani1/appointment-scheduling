@@ -49,7 +49,8 @@ class DashboardService implements DashboardServiceInterface
     {
         $appointments = $user->appointments()
             ->with('service')
-            ->whereBetween('date', [$dateFrom, $dateTo])
+            ->whereDate('date', '>=', $dateFrom)
+            ->whereDate('date', '<=', $dateTo)
             ->orderBy('date')
             ->orderBy('start_time')
             ->get();

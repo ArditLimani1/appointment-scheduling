@@ -33,6 +33,10 @@ export default function AdminLayout({ children }) {
 
     const isActive = (routeName) => {
         try {
+            // Calendar is only linked from Appointments; highlight Appointments in nav on calendar too.
+            if (routeName === 'admin.appointments.index') {
+                return route().current('admin.appointments.index') || route().current('admin.appointments.calendar');
+            }
             return route().current(routeName) || route().current(routeName + '.*');
         } catch {
             return false;

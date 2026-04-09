@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import Icon from '@/Components/Icon';
 import DatePicker from '@/Components/DatePicker';
 import FilterListbox from '@/Components/FilterListbox';
+import { appointmentStatusValue, formatAppointmentDate, formatTimeHm } from '@/utils/appointmentDate';
 
 function toDateString(d) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -13,7 +14,17 @@ const TABS = [
     { id: 'client',   label: 'Client Details',     icon: 'person'         },
 ];
 
-export default function EditAppointmentModal({ appointment, employees, services, onClose }) {
+const CURRENCY_SYMBOLS = { EUR: '€', USD: '$', GBP: '£', CHF: 'CHF' };
+
+function statusLabel(status) {
+    const v = appointmentStatusValue(status);
+    return v.charAt(0).toUpperCase() + v.slice(1);
+}
+
+export default function EditAppointmentModal({ appointment, employees, services, onClose, readOnly = false }) {
+    const { auth } = usePage().props;
+    const currencySymbol = CURRENCY_SYMBOLS[auth?.business?.currency] ?? auth?.business?.currency_symbol ?? '€';
+
     const identifierType = (appointment.client_email && appointment.client_email.trim()) ? 'email' : 'phone';
     const today    = toDateString(new Date());
 
@@ -54,14 +65,20 @@ export default function EditAppointmentModal({ appointment, employees, services,
 
     // Reset employee if no longer eligible after service change
     useEffect(() => {
+        if (readOnly) {
+            return;
+        }
         const eligible = eligibleEmployees.some((e) => String(e.id) === form.employee_id);
         if (!eligible && eligibleEmployees.length > 0) {
             patch('employee_id', String(eligibleEmployees[0].id));
         }
-    }, [eligibleEmployees]);
+    }, [eligibleEmployees, readOnly]);
 
     // Fetch slots whenever employee + date + service are all set
     useEffect(() => {
+        if (readOnly) {
+            return;
+        }
         const key = `${form.employee_id}|${form.date}|${form.service_id}`;
         if (!form.employee_id || !form.date || !form.service_id) {
             prevKeyRef.current = '';
@@ -88,10 +105,13 @@ export default function EditAppointmentModal({ appointment, employees, services,
             .then((data) => setSlots(data.slots ?? []))
             .catch(() => setSlots([]))
             .finally(() => setLoadingSlots(false));
-    }, [form.employee_id, form.date, form.service_id]);
+    }, [form.employee_id, form.date, form.service_id, readOnly, appointment.id]);
 
     // Keep pre-selected slot if still available; clear only on a key change (not initial load)
     useEffect(() => {
+        if (readOnly) {
+            return;
+        }
         if (slots.length && !slots.includes(form.start_time)) {
             patch('start_time', '');
         }
@@ -99,6 +119,9 @@ export default function EditAppointmentModal({ appointment, employees, services,
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        if (readOnly) {
+            return;
+        }
         if (submitting) return;
         setSubmitting(true);
         router.put(
@@ -130,41 +153,56 @@ export default function EditAppointmentModal({ appointment, employees, services,
         );
     };
 
-    const labelCls = 'block text-[10px] font-bold uppercase tracking-widest text-outline mb-1.5';
-    const inputCls = 'w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-on-surface/10';
+    const labelCls = 'block text-[10px] font-bold uppercase tracking-widest text-outline mb-0.5';
+    const inputCls =
+        'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-on-surface/10';
 
     // Count errors per tab for badge
     const scheduleErrors = ['service_id', 'employee_id', 'date', 'start_time'].filter((f) => errors[f]).length;
     const clientErrors   = ['client_first_name', 'client_last_name', 'client_phone', 'client_email'].filter((f) => errors[f]).length;
 
+    const employeeName =
+        employees.find((e) => String(e.id) === String(appointment.employee_id))?.name ?? '—';
+    const serviceName = appointment.service?.name ?? services.find((s) => String(s.id) === String(appointment.service_id))?.name ?? '—';
+
+    const readOnlyRow = (label, value) => (
+        <div className="sm:col-span-2">
+            <p className="block text-[10px] font-bold uppercase tracking-widest text-outline mb-0.5">{label}</p>
+            <p className="text-sm font-semibold text-on-surface">{value || '—'}</p>
+        </div>
+    );
+
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4">
             {/* Backdrop */}
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
             {/* Panel */}
-            <div className="relative w-full max-w-2xl max-h-[90vh] flex flex-col bg-white rounded-2xl shadow-2xl">
+            <div className="relative flex max-h-[min(92vh,880px)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
 
                 {/* Header */}
-                <div className="shrink-0 bg-white border-b border-slate-100 px-6 py-5 flex items-center justify-between rounded-t-2xl">
-                    <h2 className="text-xl font-extrabold font-headline text-on-surface">Edit Appointment</h2>
+                <div className="flex shrink-0 items-center justify-between rounded-t-2xl border-b border-slate-100 bg-white px-4 py-3 sm:px-5">
+                    <h2 className="font-headline text-lg font-extrabold text-on-surface">
+                        {readOnly ? 'Appointment details' : 'Edit Appointment'}
+                    </h2>
                     <button type="button" onClick={onClose} className="p-2 rounded-xl hover:bg-slate-100 transition-colors">
                         <Icon name="close" size="text-xl" className="text-on-surface-variant" />
                     </button>
                 </div>
 
                 {/* Past-date warning */}
-                {isPast && (
-                    <div className="shrink-0 mx-6 mt-4 flex items-start gap-3 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
-                        <Icon name="warning" size="text-lg" className="text-amber-500 shrink-0 mt-0.5" />
-                        <p className="text-sm text-amber-800">
-                            <span className="font-bold">This appointment is in the past.</span> Are you sure you want to modify it?
+                {!readOnly && isPast && (
+                    <div className="mx-4 mt-2 flex shrink-0 items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 sm:mx-5">
+                        <Icon name="warning" size="text-base" className="mt-0.5 shrink-0 text-amber-500" />
+                        <p className="text-xs text-amber-900 sm:text-sm">
+                            <span className="font-bold">Past date.</span> Continue only if you mean to change it.
                         </p>
                     </div>
                 )}
 
                 {/* Tabs */}
-                <div className="shrink-0 flex border-b border-slate-100 px-6 mt-2">
+                {!readOnly && (
+                <div className="mt-1 flex shrink-0 border-b border-slate-100 px-4 sm:px-5">
                     {TABS.map((tab) => {
                         const errCount = tab.id === 'schedule' ? scheduleErrors : clientErrors;
                         return (
@@ -172,7 +210,7 @@ export default function EditAppointmentModal({ appointment, employees, services,
                                 key={tab.id}
                                 type="button"
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`flex items-center gap-2 px-1 py-3 mr-6 text-sm font-semibold border-b-2 transition-colors ${
+                                className={`mr-4 flex items-center gap-1.5 border-b-2 px-0.5 py-2 text-sm font-semibold transition-colors sm:mr-6 ${
                                     activeTab === tab.id
                                         ? 'border-on-surface text-on-surface'
                                         : 'border-transparent text-on-surface-variant hover:text-on-surface'
@@ -189,116 +227,141 @@ export default function EditAppointmentModal({ appointment, employees, services,
                         );
                     })}
                 </div>
+                )}
 
                 {/* Tab content — scrollable */}
-                <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-                    <div className="flex-1 overflow-y-auto px-6 py-5">
+                <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+                    <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 pb-4 sm:px-5">
+
+                        {readOnly && (
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <p className="sm:col-span-2 text-xs text-on-surface-variant">
+                                    This booking is view-only. Contact your manager to make changes.
+                                </p>
+                                {readOnlyRow('Service', serviceName)}
+                                {readOnlyRow('Status', statusLabel(appointment.status))}
+                                {readOnlyRow('Staff', employeeName)}
+                                {readOnlyRow(
+                                    'Date',
+                                    formatAppointmentDate(appointment.date, {
+                                        weekday: 'long',
+                                        day: 'numeric',
+                                        month: 'long',
+                                        year: 'numeric',
+                                    }),
+                                )}
+                                {readOnlyRow(
+                                    'Time',
+                                    `${formatTimeHm(appointment.start_time)} – ${formatTimeHm(appointment.end_time)}`,
+                                )}
+                                {readOnlyRow(
+                                    'Payment',
+                                    `${Number(appointment.price ?? 0).toFixed(2)} ${currencySymbol}`,
+                                )}
+                                {readOnlyRow('Client', `${appointment.client_first_name ?? ''} ${appointment.client_last_name ?? ''}`.trim())}
+                                {readOnlyRow('Phone', appointment.client_phone || '—')}
+                                {readOnlyRow('Email', appointment.client_email || '—')}
+                                {appointment.client_notes ? readOnlyRow('Notes', appointment.client_notes) : null}
+                            </div>
+                        )}
 
                         {/* ── Tab: Service & Schedule ── */}
-                        {activeTab === 'schedule' && (
-                            <div className="space-y-6">
-
-                                {/* Service */}
-                                <section>
-                                    <h3 className="text-xs font-bold uppercase tracking-widest text-outline mb-4">Service</h3>
+                        {!readOnly && activeTab === 'schedule' && (
+                            <div className="space-y-3">
+                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                     <FilterListbox
                                         label="Service"
+                                        compact
                                         value={form.service_id}
                                         onChange={(v) => { patch('service_id', v); patch('start_time', ''); }}
                                         options={services.map((s) => ({ value: String(s.id), label: `${s.name} (${s.duration} min)` }))}
                                         minWidthClass="w-full"
                                     />
-                                    {errors.service_id && <p className="text-xs text-error mt-1">{errors.service_id}</p>}
-                                </section>
-
-                                {/* Status */}
-                                <section>
-                                    <h3 className="text-xs font-bold uppercase tracking-widest text-outline mb-4">Status</h3>
                                     <FilterListbox
-                                        label="Appointment Status"
+                                        label="Status"
+                                        compact
                                         value={form.status}
                                         onChange={(v) => patch('status', v)}
                                         options={[
-                                            { value: 'pending',   label: 'Pending'   },
+                                            { value: 'pending', label: 'Pending' },
                                             { value: 'confirmed', label: 'Confirmed' },
                                             { value: 'cancelled', label: 'Cancelled' },
                                         ]}
                                         minWidthClass="w-full"
                                     />
-                                    {errors.status && <p className="text-xs text-error mt-1">{errors.status}</p>}
-                                </section>
+                                </div>
+                                {errors.service_id && <p className="text-xs text-error">{errors.service_id}</p>}
+                                {errors.status && <p className="text-xs text-error">{errors.status}</p>}
 
-                                {/* Employee */}
-                                <section>
-                                    <h3 className="text-xs font-bold uppercase tracking-widest text-outline mb-4">Employee</h3>
+                                <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2">
                                     <FilterListbox
-                                        label="Assigned Employee"
+                                        label="Employee"
+                                        compact
                                         value={form.employee_id}
                                         onChange={(v) => { patch('employee_id', v); patch('start_time', ''); }}
                                         options={eligibleEmployees.map((e) => ({ value: String(e.id), label: e.name }))}
                                         minWidthClass="w-full"
                                     />
-                                    {errors.employee_id && <p className="text-xs text-error mt-1">{errors.employee_id}</p>}
-                                    {form.service_id && eligibleEmployees.length === 0 && (
-                                        <p className="text-xs text-amber-600 mt-1">No employee offers this service.</p>
-                                    )}
-                                </section>
-
-                                {/* Date & Time */}
-                                <section>
-                                    <h3 className="text-xs font-bold uppercase tracking-widest text-outline mb-4">Date &amp; Time</h3>
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className={labelCls}>Date</label>
-                                            <DatePicker
-                                                value={form.date}
-                                                onChange={(v) => { patch('date', v || apptDate); patch('start_time', ''); }}
-                                                placeholder="Pick a date"
-                                                portal
-                                            />
-                                            {errors.date && <p className="text-xs text-error mt-1">{errors.date}</p>}
-                                        </div>
-
-                                        <div>
-                                            <label className={labelCls}>Time Slot</label>
-                                            {(!form.employee_id || !form.date || !form.service_id) ? (
-                                                <p className="text-sm text-on-surface-variant py-2">Select service, employee &amp; date first.</p>
-                                            ) : loadingSlots ? (
-                                                <div className="flex items-center gap-2 py-2 text-sm text-on-surface-variant">
-                                                    <Icon name="sync" size="text-base" className="animate-spin" /> Loading slots…
-                                                </div>
-                                            ) : slots.length === 0 ? (
-                                                <p className="text-sm text-on-surface-variant py-2">No available slots on this date.</p>
-                                            ) : (
-                                                <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                                                    {slots.map((slot) => (
-                                                        <button
-                                                            key={slot}
-                                                            type="button"
-                                                            onClick={() => patch('start_time', slot)}
-                                                            className={`h-10 rounded-xl text-xs font-bold transition-all ${
-                                                                form.start_time === slot
-                                                                    ? 'bg-on-surface text-surface'
-                                                                    : 'bg-slate-100 text-on-surface hover:bg-slate-200'
-                                                            }`}
-                                                        >
-                                                            {slot}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            )}
-                                            {errors.start_time && <p className="text-xs text-error mt-1">{errors.start_time}</p>}
+                                    <div>
+                                        <span className={labelCls}>Payment</span>
+                                        <div className="flex h-[42px] items-center rounded-xl border border-slate-100 bg-slate-50 px-3 text-sm font-bold text-on-surface">
+                                            {Number(appointment.price ?? 0).toFixed(2)}
+                                            <span className="ml-1 font-semibold text-on-surface-variant">{currencySymbol}</span>
                                         </div>
                                     </div>
-                                </section>
+                                </div>
+                                {errors.employee_id && <p className="text-xs text-error">{errors.employee_id}</p>}
+                                {form.service_id && eligibleEmployees.length === 0 && (
+                                    <p className="text-xs text-amber-600">No employee offers this service.</p>
+                                )}
+
+                                <div>
+                                    <label className={labelCls}>Date</label>
+                                    <DatePicker
+                                        value={form.date}
+                                        onChange={(v) => { patch('date', v || apptDate); patch('start_time', ''); }}
+                                        placeholder="Pick a date"
+                                        portal
+                                    />
+                                    {errors.date && <p className="text-xs text-error mt-0.5">{errors.date}</p>}
+                                </div>
+
+                                <div>
+                                    <label className={labelCls}>Time</label>
+                                    {(!form.employee_id || !form.date || !form.service_id) ? (
+                                        <p className="py-1 text-xs text-on-surface-variant">Choose service, employee, and date first.</p>
+                                    ) : loadingSlots ? (
+                                        <div className="flex items-center gap-2 py-1 text-xs text-on-surface-variant">
+                                            <Icon name="sync" size="text-sm" className="animate-spin" /> Loading…
+                                        </div>
+                                    ) : slots.length === 0 ? (
+                                        <p className="py-1 text-xs text-on-surface-variant">No slots this day.</p>
+                                    ) : (
+                                        <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-8">
+                                            {slots.map((slot) => (
+                                                <button
+                                                    key={slot}
+                                                    type="button"
+                                                    onClick={() => patch('start_time', slot)}
+                                                    className={`h-8 rounded-lg text-[11px] font-bold transition-all ${
+                                                        form.start_time === slot
+                                                            ? 'bg-on-surface text-surface'
+                                                            : 'bg-slate-100 text-on-surface hover:bg-slate-200'
+                                                    }`}
+                                                >
+                                                    {slot}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {errors.start_time && <p className="text-xs text-error mt-0.5">{errors.start_time}</p>}
+                                </div>
                             </div>
                         )}
 
                         {/* ── Tab: Client Details ── */}
-                        {activeTab === 'client' && (
-                            <div className="space-y-4">
-                                <h3 className="text-xs font-bold uppercase tracking-widest text-outline mb-4">Client Information</h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {!readOnly && activeTab === 'client' && (
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                     <div>
                                         <label className={labelCls}>First Name</label>
                                         <input
@@ -349,39 +412,55 @@ export default function EditAppointmentModal({ appointment, employees, services,
                                         <textarea
                                             value={form.client_notes}
                                             onChange={(e) => patch('client_notes', e.target.value)}
-                                            rows={3}
+                                            rows={2}
                                             className={`${inputCls} resize-none`}
                                         />
                                     </div>
-                                </div>
                             </div>
                         )}
                     </div>
 
                     {/* Footer — always visible */}
-                    <div className="shrink-0 flex items-center justify-between gap-3 px-6 py-4 border-t border-slate-100 rounded-b-2xl bg-white">
-                        <div className="text-xs text-on-surface-variant">
-                            {form.start_time
-                                ? <span className="font-medium text-on-surface">{form.date} · {form.start_time}</span>
-                                : <span className="italic">No time slot selected yet</span>
-                            }
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-on-surface hover:bg-slate-50 transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={submitting || !form.start_time}
-                                className="rounded-xl bg-on-surface px-6 py-2.5 text-sm font-bold text-surface hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-                            >
-                                {submitting ? 'Saving…' : 'Save Changes'}
-                            </button>
-                        </div>
+                    <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-white px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-5">
+                        {readOnly ? (
+                            <div className="flex w-full justify-end">
+                                <button
+                                    type="button"
+                                    onClick={onClose}
+                                    className="rounded-xl bg-on-surface px-5 py-2 text-sm font-bold text-surface transition-opacity hover:opacity-90"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="min-w-0 text-[11px] text-on-surface-variant">
+                                    {form.start_time ? (
+                                        <span className="font-medium text-on-surface">
+                                            {form.date} · {form.start_time}
+                                        </span>
+                                    ) : (
+                                        <span className="italic">No time selected</span>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={onClose}
+                                        className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-slate-50"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={submitting || !form.start_time}
+                                        className="rounded-xl bg-on-surface px-5 py-2 text-sm font-bold text-surface transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                                    >
+                                        {submitting ? 'Saving…' : 'Save'}
+                                    </button>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </form>
             </div>

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\AppointmentStatus;
+use App\Http\Controllers\Concerns\ResolvesAppointmentCalendarQuery;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateAppointmentRequest;
 use App\Http\Requests\Admin\UpdateAppointmentStatusRequest;
@@ -20,6 +22,8 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class AppointmentController extends Controller
 {
+    use ResolvesAppointmentCalendarQuery;
+
     public function __construct(
         private AppointmentServiceInterface $appointmentService,
         private BookingServiceInterface $bookingService,
@@ -29,10 +33,34 @@ class AppointmentController extends Controller
     {
         $business = auth()->user()->panelBusiness();
         abort_unless($business, 403);
-        $filters  = $this->filtersFromRequest($request);
-        $data     = $this->appointmentService->getFiltered($business, $filters);
+        $filters = $this->filtersFromRequest($request);
+        $data = $this->appointmentService->getFiltered($business, $filters);
 
         return Inertia::render('Admin/Appointments/Index', $data);
+    }
+
+    public function calendar(Request $request): Response
+    {
+        $business = auth()->user()->panelBusiness();
+        abort_unless($business, 403);
+
+        $view = $request->query('view', 'week');
+        if (! is_string($view) || ! in_array($view, ['day', 'week'], true)) {
+            $view = 'week';
+        }
+
+        $anchorDate = $this->resolveCalendarAnchorDate($request);
+        $calendarFilters = $this->calendarFiltersFromRequest($request);
+        $data = $this->appointmentService->getCalendarView($business, $view, $anchorDate, $calendarFilters);
+
+        $data['filters'] = [
+            'employee_id' => $calendarFilters['employee_id'] ?? null,
+            'status' => $calendarFilters['statuses'],
+            'view' => $view,
+            'date' => $anchorDate,
+        ];
+
+        return Inertia::render('Admin/Appointments/Calendar', $data);
     }
 
     /** PATCH — status-only update (from the inline status menu) */
@@ -60,14 +88,14 @@ class AppointmentController extends Controller
     {
         $request->validate([
             'employee_id' => ['required', 'integer', 'exists:users,id'],
-            'service_id'  => ['required', 'integer', 'exists:services,id'],
-            'date'        => ['required', 'date_format:Y-m-d'],
-            'exclude_id'  => ['nullable', 'integer'],
+            'service_id' => ['required', 'integer', 'exists:services,id'],
+            'date' => ['required', 'date_format:Y-m-d'],
+            'exclude_id' => ['nullable', 'integer'],
         ]);
 
         $business = auth()->user()->panelBusiness();
         abort_unless($business, 403);
-        $slots    = $this->bookingService->getAdminAvailableSlots($business, $request->only([
+        $slots = $this->bookingService->getAdminAvailableSlots($business, $request->only([
             'employee_id', 'service_id', 'date', 'exclude_id',
         ]));
 
@@ -87,7 +115,7 @@ class AppointmentController extends Controller
     {
         $business = auth()->user()->panelBusiness();
         abort_unless($business, 403);
-        $filters  = $this->filtersFromRequest($request);
+        $filters = $this->filtersFromRequest($request);
 
         return $this->appointmentService->export($business, $filters);
     }
@@ -112,8 +140,14 @@ class AppointmentController extends Controller
         if (! empty($filters['date_to'])) {
             $query->whereDate('date', '<=', $filters['date_to']);
         }
-        if (! empty($filters['status'])) {
-            $query->where('status', $filters['status']);
+        if (! empty($filters['statuses']) && is_array($filters['statuses'])) {
+            $cases = array_values(array_filter(array_map(
+                fn ($s) => AppointmentStatus::tryFrom((string) $s),
+                $filters['statuses'],
+            )));
+            if ($cases !== []) {
+                $query->whereIn('status', $cases);
+            }
         }
 
         $appointments = $query->latest('date')->latest('start_time')->get();
@@ -122,9 +156,9 @@ class AppointmentController extends Controller
 
         $confirmedCount = $appointments->where('status->value', 'confirmed')
             ->count() ?: $appointments->filter(fn ($a) => $a->status->value === 'confirmed')->count();
-        $pendingCount   = $appointments->filter(fn ($a) => $a->status->value === 'pending')->count();
+        $pendingCount = $appointments->filter(fn ($a) => $a->status->value === 'pending')->count();
         $cancelledCount = $appointments->filter(fn ($a) => $a->status->value === 'cancelled')->count();
-        $totalRevenue   = $appointments->filter(fn ($a) => $a->status->value === 'confirmed')
+        $totalRevenue = $appointments->filter(fn ($a) => $a->status->value === 'confirmed')
             ->sum(fn ($a) => (float) $a->price);
 
         $employeeFilter = null;
@@ -133,26 +167,28 @@ class AppointmentController extends Controller
         }
 
         $pdf = Pdf::loadView('exports.appointments-pdf', [
-            'businessName'   => $business->name,
-            'generatedAt'    => Carbon::now()->format('d M Y, H:i'),
-            'dateFrom'       => $filters['date_from'],
-            'dateTo'         => $filters['date_to'],
+            'businessName' => $business->name,
+            'generatedAt' => Carbon::now()->format('d M Y, H:i'),
+            'dateFrom' => $filters['date_from'],
+            'dateTo' => $filters['date_to'],
             'employeeFilter' => $employeeFilter,
-            'statusFilter'   => $filters['status'] ?? null,
-            'appointments'   => $appointments,
-            'totalCount'     => $appointments->count(),
+            'statusFilter' => ! empty($filters['statuses']) && is_array($filters['statuses'])
+                ? implode(', ', array_map(fn ($s) => ucfirst((string) $s), $filters['statuses']))
+                : null,
+            'appointments' => $appointments,
+            'totalCount' => $appointments->count(),
             'confirmedCount' => $confirmedCount,
-            'pendingCount'   => $pendingCount,
+            'pendingCount' => $pendingCount,
             'cancelledCount' => $cancelledCount,
-            'totalRevenue'   => $totalRevenue,
+            'totalRevenue' => $totalRevenue,
             'currencySymbol' => $currencySymbol,
         ])->setPaper('a4', 'landscape');
 
-        return $pdf->download('appointments-' . $filters['date_from'] . '_' . $filters['date_to'] . '.pdf');
+        return $pdf->download('appointments-'.$filters['date_from'].'_'.$filters['date_to'].'.pdf');
     }
 
     /**
-     * @return array{employee_id?: int, date_from?: string, date_to?: string, status?: string}
+     * @return array{employee_id?: int, date_from: string, date_to: string, statuses: list<string>}
      */
     private function filtersFromRequest(Request $request): array
     {
@@ -180,10 +216,7 @@ class AppointmentController extends Controller
             $filters['date_to'] = Carbon::now()->endOfMonth()->toDateString();
         }
 
-        $status = $request->query('status');
-        if (is_string($status) && $status !== '') {
-            $filters['status'] = $status;
-        }
+        $filters['statuses'] = $this->resolveStatusFilterStrings($request);
 
         return $filters;
     }
