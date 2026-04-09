@@ -1,5 +1,5 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import Icon from '@/Components/Icon';
 import PageHeader from '@/Components/PageHeader';
@@ -47,10 +47,11 @@ function ExportDropdown({ filters }) {
     const [open, setOpen] = useState(false);
     const ref = useRef(null);
 
-    // Close on outside click
-    useMemo(() => {
-        if (!open) return;
-        const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    useEffect(() => {
+        if (!open) return undefined;
+        const handler = (e) => {
+            if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+        };
         document.addEventListener('mousedown', handler);
         return () => document.removeEventListener('mousedown', handler);
     }, [open]);
@@ -95,6 +96,7 @@ export default function Index({
     total_appointments,
     total_revenue,
     employee_stats,
+    monthly_performance = [],
     employees,
     filters = {},
     currency_symbol,
@@ -262,6 +264,59 @@ export default function Index({
                         </table>
                     </div>
                 )}
+            </section>
+
+            {/* Monthly overview — same logic as employee analytics */}
+            <section className="bg-surface-container-lowest rounded-2xl overflow-hidden ring-1 ring-slate-100 shadow-sm mt-8">
+                <div className="px-8 py-5 border-b border-slate-50 bg-white">
+                    <h3 className="font-headline font-bold text-base text-on-surface">Monthly overview</h3>
+                    <p className="text-xs text-on-surface-variant mt-0.5">
+                        Each calendar month that falls inside your date range (zeros when no activity). Respects the
+                        employee filter.
+                    </p>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full min-w-[560px] text-left border-collapse">
+                        <thead>
+                            <tr className="bg-slate-50/50">
+                                <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">
+                                    Month
+                                </th>
+                                <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-center">
+                                    Cancelled
+                                </th>
+                                <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-center">
+                                    Pending
+                                </th>
+                                <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-center">
+                                    Confirmed
+                                </th>
+                                <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-center">
+                                    Revenue
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-50">
+                            {monthly_performance.map((m) => (
+                                <tr key={m.month} className="hover:bg-slate-50/50 transition-colors">
+                                    <td className="px-8 py-4 text-sm font-semibold text-on-surface">{m.label}</td>
+                                    <td className="px-8 py-4 text-center text-sm font-semibold text-red-600">
+                                        {m.cancelled}
+                                    </td>
+                                    <td className="px-8 py-4 text-center text-sm font-semibold text-amber-600">
+                                        {m.pending}
+                                    </td>
+                                    <td className="px-8 py-4 text-center text-sm font-semibold text-emerald-600">
+                                        {m.confirmed}
+                                    </td>
+                                    <td className="px-8 py-4 text-center font-bold text-on-surface">
+                                        {fmt(m.revenue)} {symbol}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </section>
         </AdminLayout>
     );

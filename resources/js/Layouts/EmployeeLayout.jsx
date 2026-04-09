@@ -6,12 +6,14 @@ import { useState } from 'react';
 const navItems = [
     { label: 'Appointments', icon: 'dashboard',      route: 'employee.dashboard',              permission: 'employee.dashboard' },
     { label: 'Schedule',     icon: 'calendar_today', route: 'employee.schedule.index',          permission: 'employee.schedule' },
+    { label: 'Analytics',    icon: 'analytics',      route: 'employee.analytics.index',         permission: 'employee.analytics' },
     { label: 'Configuration',icon: 'tune',           route: 'employee.schedule.configuration',  permission: 'employee.schedule' },
 ];
 
 const mobileNavItems = [
     { label: 'Appointments', icon: 'dashboard',      route: 'employee.dashboard',              permission: 'employee.dashboard' },
     { label: 'Schedule',     icon: 'calendar_today', route: 'employee.schedule.index',          permission: 'employee.schedule' },
+    { label: 'Analytics',    icon: 'analytics',      route: 'employee.analytics.index',         permission: 'employee.analytics' },
     { label: 'Config',       icon: 'tune',           route: 'employee.schedule.configuration',  permission: 'employee.schedule' },
 ];
 
@@ -37,6 +39,9 @@ export default function EmployeeLayout({ children }) {
             // For schedule.index, don't highlight when on configuration
             if (routeName === 'employee.schedule.index' && route().current('employee.schedule.configuration')) {
                 return false;
+            }
+            if (routeName === 'employee.analytics.index') {
+                return route().current('employee.analytics.index');
             }
             return route().current(routeName + '.*');
         } catch {

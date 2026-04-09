@@ -48,9 +48,9 @@ class AnalyticsController extends Controller
         $business = auth()->user()->panelBusiness();
         abort_unless($business, 403);
 
-        $filters      = $this->filtersFromRequest($request);
-        $data         = $this->analyticsService->getAnalyticsData($business, $filters);
-        $stats        = $data['employee_stats']->toArray();
+        $filters = $this->filtersFromRequest($request);
+        $data = $this->analyticsService->getAnalyticsData($business, $filters);
+        $stats = $data['employee_stats']->toArray();
         $currencySymbol = $data['currency_symbol'] ?? '€';
 
         // Resolve employee name for the filter label
@@ -60,27 +60,28 @@ class AnalyticsController extends Controller
             $employeeFilter = $employee?->name;
         }
 
-        $totalCancelled  = (int) array_sum(array_column($stats, 'cancelled_count'));
-        $totalPending    = (int) array_sum(array_column($stats, 'pending_count'));
-        $totalConfirmed  = (int) array_sum(array_column($stats, 'confirmed_count'));
-        $totalRevenue    = (float) array_sum(array_column($stats, 'revenue'));
+        $totalCancelled = (int) array_sum(array_column($stats, 'cancelled_count'));
+        $totalPending = (int) array_sum(array_column($stats, 'pending_count'));
+        $totalConfirmed = (int) array_sum(array_column($stats, 'confirmed_count'));
+        $totalRevenue = (float) array_sum(array_column($stats, 'revenue'));
 
         $pdf = Pdf::loadView('exports.analytics-pdf', [
-            'businessName'      => $business->name,
-            'generatedAt'       => Carbon::now()->format('d M Y, H:i'),
-            'dateFrom'          => $filters['date_from'],
-            'dateTo'            => $filters['date_to'],
-            'employeeFilter'    => $employeeFilter,
-            'employeeStats'     => $stats,
-            'currencySymbol'    => $currencySymbol,
+            'businessName' => $business->name,
+            'generatedAt' => Carbon::now()->format('d M Y, H:i'),
+            'dateFrom' => $filters['date_from'],
+            'dateTo' => $filters['date_to'],
+            'employeeFilter' => $employeeFilter,
+            'employeeStats' => $stats,
+            'monthlyPerformance' => $data['monthly_performance'],
+            'currencySymbol' => $currencySymbol,
             'totalAppointments' => $data['total_appointments'],
-            'totalConfirmed'    => $totalConfirmed,
-            'totalCancelled'    => $totalCancelled,
-            'totalPending'      => $totalPending,
-            'totalRevenue'      => $totalRevenue,
+            'totalConfirmed' => $totalConfirmed,
+            'totalCancelled' => $totalCancelled,
+            'totalPending' => $totalPending,
+            'totalRevenue' => $totalRevenue,
         ])->setPaper('a4', 'landscape');
 
-        return $pdf->download('analytics-' . $filters['date_from'] . '_' . $filters['date_to'] . '.pdf');
+        return $pdf->download('analytics-'.$filters['date_from'].'_'.$filters['date_to'].'.pdf');
     }
 
     private function filtersFromRequest(Request $request): array

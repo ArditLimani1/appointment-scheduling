@@ -13,6 +13,7 @@ enum Permission: string
     case AdminRoles = 'admin.roles';
 
     case EmployeeDashboard = 'employee.dashboard';
+    case EmployeeAnalytics = 'employee.analytics';
     case EmployeeSchedule = 'employee.schedule';
     case EmployeeAppointments = 'employee.appointments';
 
@@ -27,6 +28,7 @@ enum Permission: string
             self::AdminSettings => 'Admin: Configuration',
             self::AdminRoles => 'Admin: Roles & permissions',
             self::EmployeeDashboard => 'Employee: Appointments overview',
+            self::EmployeeAnalytics => 'Employee: Analytics',
             self::EmployeeSchedule => 'Employee: Schedule',
             self::EmployeeAppointments => 'Employee: Update appointment status',
         };
