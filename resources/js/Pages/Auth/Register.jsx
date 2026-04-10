@@ -1,5 +1,6 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import FilterListbox from '@/Components/FilterListbox';
 import Icon from '@/Components/Icon';
 import InputError from '@/Components/InputError';
 
@@ -49,6 +50,18 @@ export default function Register({ businessTypeCategories = [] }) {
     };
 
     const inputClass = "w-full rounded-2xl border-0 bg-surface-container-low px-4 py-3 text-sm text-on-surface placeholder-on-surface-variant/50 focus:ring-2 focus:ring-primary/40 transition-all";
+
+    const businessTypeGroups = useMemo(
+        () =>
+            businessTypeCategories.map((category) => ({
+                name: category.name,
+                options: category.types.map((type) => ({
+                    value: type.id,
+                    label: type.name,
+                })),
+            })),
+        [businessTypeCategories],
+    );
 
     return (
         <div className="min-h-screen bg-surface font-body flex">
@@ -208,24 +221,19 @@ export default function Register({ businessTypeCategories = [] }) {
 
                                     <div>
                                         <label className="block text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-1.5">Type of business</label>
-                                        <select
-                                            value={data.business_type_id}
-                                            onChange={(e) => setData('business_type_id', e.target.value === '' ? '' : Number(e.target.value))}
-                                            className={`${inputClass} appearance-none bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10`}
-                                            style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E\")" }}
-                                            required
-                                        >
-                                            <option value="">Select your business type</option>
-                                            {businessTypeCategories.map((category) => (
-                                                <optgroup key={category.id} label={category.name}>
-                                                    {category.types.map((type) => (
-                                                        <option key={type.id} value={type.id}>
-                                                            {type.name}
-                                                        </option>
-                                                    ))}
-                                                </optgroup>
-                                            ))}
-                                        </select>
+                                        <FilterListbox
+                                            value={data.business_type_id === '' ? null : data.business_type_id}
+                                            onChange={(v) =>
+                                                setData('business_type_id', v == null ? '' : Number(v))
+                                            }
+                                            groups={businessTypeGroups}
+                                            placeholder="Select your business type"
+                                            showLabel={false}
+                                            wrapperClassName="w-full"
+                                            buttonClassName={`${inputClass} flex cursor-pointer items-center justify-between gap-2 text-left`}
+                                            panelClassName="z-[100] mt-1 max-h-60 w-[var(--button-width)] overflow-auto rounded-2xl border border-outline-variant/40 bg-surface-container-low py-1 shadow-lg ring-1 ring-black/5 outline-none transition duration-100 ease-out data-[closed]:scale-95 data-[closed]:opacity-0"
+                                            optionClassName="group cursor-pointer px-3 py-2 text-sm text-on-surface data-[focus]:bg-surface-container data-[selected]:font-semibold data-[selected]:text-on-surface"
+                                        />
                                         <InputError message={errors.business_type_id} className="mt-1" />
                                     </div>
 
