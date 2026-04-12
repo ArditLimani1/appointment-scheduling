@@ -8,7 +8,7 @@ use Illuminate\Support\Collection;
 
 interface BookingServiceInterface
 {
-    public function getBookingPageData(string $slug): array;
+    public function getBookingPageData(string $slug, ?string $employeeSlug = null): array;
 
     public function getAvailableSlots(string $slug, array $data): array;
 

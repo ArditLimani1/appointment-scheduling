@@ -34,6 +34,7 @@ Route::middleware('auth')->group(function () {
 Route::get('/book/confirmation/{appointment}', [BookingController::class, 'confirmation'])->name('booking.confirmation');
 Route::get('/book/{slug}', [BookingController::class, 'index'])->name('booking.index');
 Route::get('/book/{slug}/slots', [BookingController::class, 'getAvailableSlots'])->middleware('throttle:60,1')->name('booking.slots');
+Route::get('/book/{slug}/{employeeSlug}', [BookingController::class, 'indexEmployee'])->name('booking.employee');
 Route::post('/book/{slug}', [BookingController::class, 'store'])->middleware('throttle:10,1')->name('booking.store');
 
 Route::middleware(['auth', 'admin_panel', 'has_business'])->prefix('admin')->name('admin.')->group(function () {
@@ -95,6 +96,7 @@ Route::middleware(['auth', 'employee_area'])->prefix('employee')->name('employee
         // Default (base) weekly schedule configuration
         Route::get('/schedule/configuration', [Employee\ScheduleController::class, 'configuration'])->name('schedule.configuration');
         Route::put('/schedule/configuration', [Employee\ScheduleController::class, 'update'])->name('schedule.update');
+        Route::patch('/schedule/configuration/info', [Employee\ScheduleController::class, 'updateInfo'])->name('schedule.configuration.info');
     });
 
     Route::middleware('permission:employee.appointments')->group(function () {

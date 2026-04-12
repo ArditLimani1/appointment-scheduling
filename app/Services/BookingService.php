@@ -28,7 +28,7 @@ class BookingService implements BookingServiceInterface
         private AppointmentRepositoryInterface $appointmentRepository,
     ) {}
 
-    public function getBookingPageData(string $slug): array
+    public function getBookingPageData(string $slug, ?string $employeeSlug = null): array
     {
         $business = $this->businessRepository->findActiveBySlug($slug);
 
@@ -37,13 +37,28 @@ class BookingService implements BookingServiceInterface
             'schedules',
         ]);
 
-        $services = $this->serviceRepository->getActiveByBusiness($business->id);
+        $preselectedEmployeeId = null;
+        if ($employeeSlug) {
+            $match = $employees->first(
+                fn ($e) => ($e->booking_slug ?: Str::slug($e->name)) === $employeeSlug
+            );
+            $preselectedEmployeeId = $match?->id;
+        }
+
+        $services = $employeeSlug && $preselectedEmployeeId
+            ? $this->serviceRepository->getActiveByBusiness($business->id)
+                ->filter(fn ($svc) => $employees
+                    ->firstWhere('id', $preselectedEmployeeId)
+                    ?->services->contains('id', $svc->id)
+                )->values()
+            : $this->serviceRepository->getActiveByBusiness($business->id);
 
         return [
-            'business' => $business,
-            'employees' => $employees,
-            'services' => $services,
-            'slug' => $slug,
+            'business'               => $business,
+            'employees'              => $employees,
+            'services'               => $services,
+            'slug'                   => $slug,
+            'preselected_employee_id' => $preselectedEmployeeId,
         ];
     }
 

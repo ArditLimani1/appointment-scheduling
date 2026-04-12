@@ -112,8 +112,12 @@ function BookingAccordionStep({
     );
 }
 
-export default function Index({ employees, services, business, slug }) {
-    const [selectedEmployee, setSelectedEmployee] = useState(null);
+export default function Index({ employees, services, business, slug, preselected_employee_id = null }) {
+    const preselectedEmployee = preselected_employee_id
+        ? (employees.find((e) => e.id === preselected_employee_id) ?? null)
+        : null;
+
+    const [selectedEmployee, setSelectedEmployee] = useState(preselectedEmployee);
     const [selectedDate, setSelectedDate] = useState(null);
     const [selectedSlot, setSelectedSlot] = useState(null);
     const [selectedServices, setSelectedServices] = useState([]);
@@ -127,6 +131,7 @@ export default function Index({ employees, services, business, slug }) {
     const [email, setEmail] = useState('');
     const [notes, setNotes] = useState('');
     const [expandedSection, setExpandedSection] = useState(1);
+    const isEmployeePreselected = !!preselected_employee_id && !!preselectedEmployee;
 
     const toggleAccordionSection = useCallback((id) => {
         setExpandedSection((current) => (current === id ? null : id));
@@ -215,13 +220,16 @@ export default function Index({ employees, services, business, slug }) {
         if (selectedServices.length > 0) {
             return;
         }
-        setSelectedEmployee(null);
+        // When the employee is preselected via URL, keep them selected even when no services are chosen yet.
+        if (!isEmployeePreselected) {
+            setSelectedEmployee(null);
+        }
         setSelectedDate(null);
         setSelectedSlot(null);
         setSlots([]);
         setSlotsError(null);
         prevEmployeeDateKeyRef.current = '';
-    }, [selectedServices.length]);
+    }, [selectedServices.length, isEmployeePreselected]);
 
     useEffect(() => {
         if (!selectedEmployee || !selectedDate) {
@@ -315,6 +323,7 @@ export default function Index({ employees, services, business, slug }) {
 
     const canSubmit = selectedServices.length > 0 && selectedEmployee && selectedDate && selectedSlot && firstName && identifierValue;
 
+    const totalSteps = isEmployeePreselected ? 3 : 4;
     const progress = [selectedServices.length > 0, selectedEmployee, selectedDate && selectedSlot, firstName && identifierValue].filter(Boolean).length;
 
     const handleSubmit = () => {
@@ -379,7 +388,7 @@ export default function Index({ employees, services, business, slug }) {
             <div className="fixed top-0 left-0 w-full h-1 z-[60] bg-surface-container-highest">
                 <div
                     className="bg-on-surface h-full transition-all duration-500"
-                    style={{ width: `${(progress / 4) * 100}%` }}
+                    style={{ width: `${(progress / totalSteps) * 100}%` }}
                 />
             </div>
 
@@ -413,9 +422,21 @@ export default function Index({ employees, services, business, slug }) {
             <main className="max-w-5xl mx-auto px-6 py-12 pb-32">
                 <section className="mb-16">
                     <h1 className="font-headline text-5xl font-extrabold tracking-tight mb-4 text-on-surface">New Appointment</h1>
-                    <p className="text-on-surface-variant text-lg max-w-xl">
-                        Choose one or more services, pick a professional who offers them all, select a time, and confirm your details.
-                    </p>
+                    {isEmployeePreselected ? (
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-container text-on-primary-container text-base font-bold font-headline shrink-0">
+                                {preselectedEmployee.name.charAt(0).toUpperCase()}
+                            </div>
+                            <p className="text-on-surface-variant text-lg">
+                                Booking with <span className="font-semibold text-on-surface">{preselectedEmployee.name}</span>
+                                {preselectedEmployee.title ? ` · ${preselectedEmployee.title}` : ''}
+                            </p>
+                        </div>
+                    ) : (
+                        <p className="text-on-surface-variant text-lg max-w-xl">
+                            Choose one or more services, pick a professional who offers them all, select a time, and confirm your details.
+                        </p>
+                    )}
                 </section>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
@@ -479,7 +500,7 @@ export default function Index({ employees, services, business, slug }) {
                                 {selectedServices.length > 0 && (
                                     <button
                                         type="button"
-                                        onClick={() => setExpandedSection(2)}
+                                        onClick={() => setExpandedSection(isEmployeePreselected ? 3 : 2)}
                                         className="w-full h-14 rounded-xl bg-on-surface text-surface font-headline font-bold text-sm sm:text-base flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
                                     >
                                         Continue
@@ -491,6 +512,7 @@ export default function Index({ employees, services, business, slug }) {
                             </div>
                         </BookingAccordionStep>
 
+                        {!isEmployeePreselected && (
                         <BookingAccordionStep
                             id={2}
                             number={2}
@@ -537,10 +559,11 @@ export default function Index({ employees, services, business, slug }) {
                                 </div>
                             </div>
                         </BookingAccordionStep>
+                        )}
 
                         <BookingAccordionStep
                             id={3}
-                            number={3}
+                            number={isEmployeePreselected ? 2 : 3}
                             title="Date & Time"
                             summary={section3Summary}
                             expanded={expandedSection === 3}
@@ -621,7 +644,7 @@ export default function Index({ employees, services, business, slug }) {
 
                         <BookingAccordionStep
                             id={4}
-                            number={4}
+                            number={isEmployeePreselected ? 3 : 4}
                             title="Your Details"
                             summary={section4Summary}
                             expanded={expandedSection === 4}

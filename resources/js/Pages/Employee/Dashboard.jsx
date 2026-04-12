@@ -1,5 +1,5 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import EmployeeLayout from '@/Layouts/EmployeeLayout';
 import MetricCard from '@/Components/MetricCard';
 import Icon from '@/Components/Icon';
@@ -226,7 +226,7 @@ export default function Dashboard({
 
             <div className="mb-8">
                 <h1 className="text-4xl font-extrabold font-headline tracking-tight text-on-surface mb-2">Appointments</h1>
-                <p className="text-on-surface-variant text-lg">{rangeLabel}</p>
+                <p className="text-on-surface-variant text-lg mb-5">{rangeLabel}</p>
             </div>
 
             <div className="mb-4 flex flex-wrap items-end justify-between gap-4">

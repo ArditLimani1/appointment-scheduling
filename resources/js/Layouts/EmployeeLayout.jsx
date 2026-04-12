@@ -3,6 +3,11 @@ import Icon from '@/Components/Icon';
 import Dropdown from '@/Components/Dropdown';
 import { useState } from 'react';
 
+function toSlug(str) {
+    return (str ?? '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+
 const navItems = [
     { label: 'Appointments', icon: 'dashboard',      route: 'employee.dashboard',              permission: 'employee.dashboard' },
     { label: 'Schedule',     icon: 'calendar_today', route: 'employee.schedule.index',          permission: 'employee.schedule' },
@@ -27,6 +32,11 @@ export default function EmployeeLayout({ children }) {
 
     const visibleNav = navItems.filter((item) => can(item.permission));
     const visibleMobileNav = mobileNavItems.filter((item) => can(item.permission));
+
+    const employeeSlug = user?.booking_slug || toSlug(user?.name);
+    const employeeBookingUrl = business?.slug
+        ? (() => { try { return route('booking.employee', { slug: business.slug, employeeSlug: employeeSlug }); } catch { return `/book/${business.slug}/${employeeSlug}`; } })()
+        : '#';
 
     const isActive = (routeName) => {
         try {
@@ -97,6 +107,18 @@ export default function EmployeeLayout({ children }) {
                     </nav>
 
                     <div className="pt-8 border-t border-outline-variant/40 space-y-5">
+                        {business?.slug && (
+                            <a
+                                href={employeeBookingUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 px-2 text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-colors uppercase tracking-widest"
+                            >
+                                <Icon name="open_in_new" size="text-sm" />
+                                View booking page
+                            </a>
+                        )}
+
                         <div className="flex items-center gap-3 px-2">
                             <div className="w-9 h-9 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container text-xs font-bold shrink-0">
                                 {user?.name?.charAt(0)?.toUpperCase()}
@@ -135,6 +157,17 @@ export default function EmployeeLayout({ children }) {
                     </div>
 
                     <div className="flex items-center gap-3">
+                        {business?.slug && (
+                            <a
+                                href={employeeBookingUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="hidden sm:flex items-center gap-1.5 rounded-xl border border-outline-variant px-3 py-1.5 text-xs font-medium text-on-surface-variant hover:bg-surface-container transition-colors"
+                            >
+                                <Icon name="open_in_new" size="text-sm" />
+                                Booking page
+                            </a>
+                        )}
                         <Dropdown>
                             <Dropdown.Trigger>
                                 <button className="flex items-center rounded-full p-0.5 hover:bg-surface-container transition-colors">

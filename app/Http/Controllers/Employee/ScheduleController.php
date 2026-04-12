@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers\Employee;
 
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Employee\UpdateScheduleOverrideRequest;
 use App\Http\Requests\Employee\UpdateScheduleRequest;
+use App\Models\User;
 use App\Services\Interfaces\ScheduleServiceInterface;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -66,11 +69,80 @@ class ScheduleController extends Controller
      */
     public function configuration(): Response
     {
-        $schedules = $this->scheduleService->getSchedules(auth()->user());
+        $user     = auth()->user();
+        $business = $user->business;
+        $schedules = $this->scheduleService->getSchedules($user);
+
+        $employeeSlug       = $user->booking_slug ?: Str::slug($user->name);
+        $bookingUrl         = $business ? "/book/{$business->slug}" : null;
+        $employeeBookingUrl = $business ? "/book/{$business->slug}/{$employeeSlug}" : null;
 
         return Inertia::render('Employee/Schedule/Configuration', [
-            'schedules' => $schedules,
+            'schedules'            => $schedules,
+            'business_name'        => $business?->name,
+            'employee_email'       => $user->email,
+            'booking_url'          => $bookingUrl,
+            'employee_booking_url' => $employeeBookingUrl,
+            'booking_slug'         => $employeeSlug,
+            'business_slug'        => $business?->slug,
         ]);
+    }
+
+    /**
+     * Save the employee's custom booking slug (Personal Booking URL).
+     */
+    public function updateInfo(Request $request): RedirectResponse
+    {
+        $user = auth()->user();
+
+        $slug = strtolower(trim((string) $request->input('booking_slug', '')));
+        $request->merge(['booking_slug' => $slug]);
+
+        $request->validate([
+            'booking_slug' => [
+                'required',
+                'string',
+                'max:100',
+                'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
+                function (string $attribute, mixed $value, \Closure $fail) use ($user) {
+                    if (! $user->business_id) {
+                        return;
+                    }
+                    if ($this->bookingSlugTakenByOtherStaff((int) $user->business_id, (int) $user->id, (string) $value)) {
+                        $fail('This booking URL is already being used by another team member.');
+                    }
+                },
+            ],
+        ]);
+
+        $user->update(['booking_slug' => $request->validated('booking_slug')]);
+
+        return redirect()->back()->with('success', 'Booking URL updated.');
+    }
+
+    /**
+     * Whether another active bookable staff member in the business already uses this URL slug.
+     */
+    private function bookingSlugTakenByOtherStaff(int $businessId, int $excludeUserId, string $slug): bool
+    {
+        $others = User::query()
+            ->where('business_id', $businessId)
+            ->where('id', '!=', $excludeUserId)
+            ->where('is_active', true)
+            ->where(function ($q) {
+                $q->where('role', UserRole::Employee)
+                    ->orWhere(function ($q2) {
+                        $q2->where('role', UserRole::Admin)
+                            ->where('also_works_as_staff', true);
+                    });
+            })
+            ->get(['id', 'name', 'booking_slug']);
+
+        return $others->contains(function (User $other) use ($slug) {
+            $effective = $other->booking_slug ?: Str::slug($other->name);
+
+            return $effective === $slug;
+        });
     }
 
     /**

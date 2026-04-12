@@ -25,6 +25,13 @@ class BookingController extends Controller
         return Inertia::render('Booking/Index', $data);
     }
 
+    public function indexEmployee(string $slug, string $employeeSlug): Response
+    {
+        $data = $this->bookingService->getBookingPageData($slug, $employeeSlug);
+
+        return Inertia::render('Booking/Index', $data);
+    }
+
     public function getAvailableSlots(GetAvailableSlotsRequest $request, string $slug): JsonResponse
     {
         $slots = $this->bookingService->getAvailableSlots($slug, $request->validated());
