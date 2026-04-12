@@ -3,6 +3,33 @@ import Icon from '@/Components/Icon';
 import Dropdown from '@/Components/Dropdown';
 import { useState } from 'react';
 
+function toSlug(str) {
+    return (str ?? '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+function CopyUrlChip({ path }) {
+    const [copied, setCopied] = useState(false);
+    const handleCopy = () => {
+        navigator.clipboard.writeText(path).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        });
+    };
+    return (
+        <div className="flex items-center gap-1.5 min-w-0">
+            <span className="min-w-0 flex-1 truncate text-[11px] text-on-surface-variant font-mono">{path}</span>
+            <button
+                type="button"
+                onClick={handleCopy}
+                title="Copy"
+                className="shrink-0 rounded-lg p-1 text-outline hover:bg-surface-container-low transition-colors"
+            >
+                <Icon name={copied ? 'check' : 'content_copy'} size="text-sm" />
+            </button>
+        </div>
+    );
+}
+
 const navItems = [
     { label: 'Appointments', icon: 'dashboard',      route: 'employee.dashboard',              permission: 'employee.dashboard' },
     { label: 'Schedule',     icon: 'calendar_today', route: 'employee.schedule.index',          permission: 'employee.schedule' },
@@ -106,6 +133,13 @@ export default function EmployeeLayout({ children }) {
                                 <p className="text-[10px] text-on-surface-variant">Employee User</p>
                             </div>
                         </div>
+
+                        {business?.slug && (
+                            <div className="px-2 space-y-1.5">
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-outline">Your Booking URL</p>
+                                <CopyUrlChip path={`/book/${business.slug}/${toSlug(user?.name)}`} />
+                            </div>
+                        )}
 
                         <Link
                             href={route('logout')}

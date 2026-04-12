@@ -1,5 +1,33 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+
+function toSlug(str) {
+    return (str ?? '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+function BookingUrlChip({ path }) {
+    const [copied, setCopied] = useState(false);
+    const handleCopy = useCallback(() => {
+        navigator.clipboard.writeText(path).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        });
+    }, [path]);
+    return (
+        <div className="inline-flex items-center gap-2 rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-1.5 text-xs">
+            <Icon name="link" size="text-sm" className="shrink-0 text-outline" />
+            <span className="font-mono text-on-surface-variant">{path}</span>
+            <button
+                type="button"
+                onClick={handleCopy}
+                title="Copy booking URL"
+                className="shrink-0 rounded p-0.5 text-outline hover:text-on-surface transition-colors"
+            >
+                <Icon name={copied ? 'check' : 'content_copy'} size="text-sm" />
+            </button>
+        </div>
+    );
+}
 import EmployeeLayout from '@/Layouts/EmployeeLayout';
 import MetricCard from '@/Components/MetricCard';
 import Icon from '@/Components/Icon';
@@ -226,7 +254,10 @@ export default function Dashboard({
 
             <div className="mb-8">
                 <h1 className="text-4xl font-extrabold font-headline tracking-tight text-on-surface mb-2">Appointments</h1>
-                <p className="text-on-surface-variant text-lg">{rangeLabel}</p>
+                <p className="text-on-surface-variant text-lg mb-3">{rangeLabel}</p>
+                {business?.slug && (
+                    <BookingUrlChip path={`/book/${business.slug}/${toSlug(auth.user?.name)}`} />
+                )}
             </div>
 
             <div className="mb-4 flex flex-wrap items-end justify-between gap-4">

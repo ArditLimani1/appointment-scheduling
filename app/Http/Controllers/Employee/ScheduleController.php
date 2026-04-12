@@ -71,11 +71,9 @@ class ScheduleController extends Controller
         $business = $user->business;
         $schedules = $this->scheduleService->getSchedules($user);
 
-        $employeeSlug     = Str::slug($user->name);
-        $bookingUrl       = route('booking.index', ['slug' => $business?->slug ?? '']);
-        $employeeBookingUrl = $business
-            ? route('booking.employee', ['slug' => $business->slug, 'employeeSlug' => $employeeSlug])
-            : null;
+        $employeeSlug       = Str::slug($user->name);
+        $bookingUrl         = $business ? "/book/{$business->slug}" : null;
+        $employeeBookingUrl = $business ? "/book/{$business->slug}/{$employeeSlug}" : null;
 
         return Inertia::render('Employee/Schedule/Configuration', [
             'schedules'            => $schedules,

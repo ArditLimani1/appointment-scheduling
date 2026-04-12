@@ -127,11 +127,14 @@ export default function Index({
         put(route('admin.settings.update'));
     };
 
-    const bookingUrl = (() => {
-        try { return route('booking.index', { slug: settings.slug }); } catch { return `${window.location.origin}/book/${settings.slug}`; }
-    })();
-
-    const copyBookingUrl = () => navigator.clipboard.writeText(bookingUrl);
+    const bookingPath = `/book/${identity.data.slug || settings.slug}`;
+    const [copiedBooking, setCopiedBooking] = useState(false);
+    const copyBookingUrl = () => {
+        navigator.clipboard.writeText(bookingPath).then(() => {
+            setCopiedBooking(true);
+            setTimeout(() => setCopiedBooking(false), 2000);
+        });
+    };
 
     return (
         <AdminLayout>
@@ -240,9 +243,9 @@ export default function Index({
                                         type="button"
                                         onClick={copyBookingUrl}
                                         className="shrink-0 p-2 mr-1 hover:bg-surface-container rounded-md transition-colors"
-                                        title="Copy URL"
+                                        title="Copy booking path"
                                     >
-                                        <Icon name="content_copy" size="text-base" className="text-on-surface-variant" />
+                                        <Icon name={copiedBooking ? 'check' : 'content_copy'} size="text-base" className="text-on-surface-variant" />
                                     </button>
                                 </div>
                                 {identity.errors.slug && <p className="text-xs text-error mt-1">{identity.errors.slug}</p>}
