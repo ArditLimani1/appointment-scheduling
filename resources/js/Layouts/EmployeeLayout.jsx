@@ -7,34 +7,6 @@ function toSlug(str) {
     return (str ?? '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
 
-function SidebarBookingUrl({ prefix, value }) {
-    const [copied, setCopied] = useState(false);
-    const handleCopy = () => {
-        navigator.clipboard.writeText(prefix + value).then(() => {
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        });
-    };
-    return (
-        <div>
-            <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">Your Booking URL</label>
-            <div className="flex items-center bg-surface-container-highest border-0 rounded-lg overflow-hidden">
-                <span className="shrink-0 px-2 py-2.5 text-[10px] text-on-surface-variant border-r border-outline-variant/20 bg-surface-container whitespace-nowrap">
-                    {prefix}
-                </span>
-                <span className="flex-1 px-2 py-2.5 text-xs text-on-surface font-medium truncate">{value}</span>
-                <button
-                    type="button"
-                    onClick={handleCopy}
-                    className="shrink-0 p-1.5 mr-0.5 hover:bg-surface-container rounded-md transition-colors"
-                    title="Copy URL"
-                >
-                    <Icon name={copied ? 'check' : 'content_copy'} size="text-sm" className="text-on-surface-variant" />
-                </button>
-            </div>
-        </div>
-    );
-}
 
 const navItems = [
     { label: 'Appointments', icon: 'dashboard',      route: 'employee.dashboard',              permission: 'employee.dashboard' },
@@ -60,6 +32,11 @@ export default function EmployeeLayout({ children }) {
 
     const visibleNav = navItems.filter((item) => can(item.permission));
     const visibleMobileNav = mobileNavItems.filter((item) => can(item.permission));
+
+    const employeeSlug = user?.booking_slug || toSlug(user?.name);
+    const employeeBookingUrl = business?.slug
+        ? (() => { try { return route('booking.employee', { slug: business.slug, employeeSlug: employeeSlug }); } catch { return `/book/${business.slug}/${employeeSlug}`; } })()
+        : '#';
 
     const isActive = (routeName) => {
         try {
@@ -130,6 +107,18 @@ export default function EmployeeLayout({ children }) {
                     </nav>
 
                     <div className="pt-8 border-t border-outline-variant/40 space-y-5">
+                        {business?.slug && (
+                            <a
+                                href={employeeBookingUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 px-2 text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-colors uppercase tracking-widest"
+                            >
+                                <Icon name="open_in_new" size="text-sm" />
+                                View booking page
+                            </a>
+                        )}
+
                         <div className="flex items-center gap-3 px-2">
                             <div className="w-9 h-9 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container text-xs font-bold shrink-0">
                                 {user?.name?.charAt(0)?.toUpperCase()}
@@ -139,15 +128,6 @@ export default function EmployeeLayout({ children }) {
                                 <p className="text-[10px] text-on-surface-variant">Employee User</p>
                             </div>
                         </div>
-
-                        {business?.slug && (
-                            <div className="px-2">
-                                <SidebarBookingUrl
-                                    prefix="/book/"
-                                    value={`${business.slug}/${toSlug(user?.name)}`}
-                                />
-                            </div>
-                        )}
 
                         <Link
                             href={route('logout')}
@@ -177,6 +157,17 @@ export default function EmployeeLayout({ children }) {
                     </div>
 
                     <div className="flex items-center gap-3">
+                        {business?.slug && (
+                            <a
+                                href={employeeBookingUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="hidden sm:flex items-center gap-1.5 rounded-xl border border-outline-variant px-3 py-1.5 text-xs font-medium text-on-surface-variant hover:bg-surface-container transition-colors"
+                            >
+                                <Icon name="open_in_new" size="text-sm" />
+                                Booking page
+                            </a>
+                        )}
                         <Dropdown>
                             <Dropdown.Trigger>
                                 <button className="flex items-center rounded-full p-0.5 hover:bg-surface-container transition-colors">

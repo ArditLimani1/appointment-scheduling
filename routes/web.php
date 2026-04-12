@@ -96,6 +96,7 @@ Route::middleware(['auth', 'employee_area'])->prefix('employee')->name('employee
         // Default (base) weekly schedule configuration
         Route::get('/schedule/configuration', [Employee\ScheduleController::class, 'configuration'])->name('schedule.configuration');
         Route::put('/schedule/configuration', [Employee\ScheduleController::class, 'update'])->name('schedule.update');
+        Route::patch('/schedule/configuration/info', [Employee\ScheduleController::class, 'updateInfo'])->name('schedule.configuration.info');
     });
 
     Route::middleware('permission:employee.appointments')->group(function () {

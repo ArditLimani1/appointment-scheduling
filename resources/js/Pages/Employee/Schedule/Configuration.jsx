@@ -36,8 +36,8 @@ function ReadOnlyField({ label, value, icon }) {
     );
 }
 
-// ─── Booking URL field (same look as Admin Settings) ─────────────────────────
-function BookingUrlField({ label, prefix, value, hint }) {
+// ─── Read-only booking URL field (copy only) ─────────────────────────────────
+function BookingUrlField({ label, prefix, value }) {
     const [copied, setCopied] = useState(false);
     const fullPath = prefix + (value || '');
     const handleCopy = () => {
@@ -63,7 +63,84 @@ function BookingUrlField({ label, prefix, value, hint }) {
                     <Icon name={copied ? 'check' : 'content_copy'} size="text-base" className="text-on-surface-variant" />
                 </button>
             </div>
-            {hint && <p className="mt-1.5 text-[11px] text-on-surface-variant leading-relaxed">{hint}</p>}
+        </div>
+    );
+}
+
+// ─── Confirm save modal (same as Admin Settings) ─────────────────────────────
+function ConfirmSaveModal({ onConfirm, onCancel }) {
+    return (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onCancel} />
+            <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl p-6">
+                <div className="flex items-start gap-4">
+                    <div className="shrink-0 flex items-center justify-center w-11 h-11 rounded-full bg-amber-100">
+                        <Icon name="save" size="text-xl" className="text-amber-600" />
+                    </div>
+                    <div>
+                        <h2 className="text-base font-extrabold text-on-surface">Save Configuration?</h2>
+                        <p className="mt-1 text-sm text-on-surface-variant">
+                            Are you sure you want to save the changes to{' '}
+                            <span className="font-semibold text-on-surface">Business Information</span>? This will update your configuration immediately.
+                        </p>
+                    </div>
+                </div>
+                <div className="mt-6 flex items-center justify-end gap-3">
+                    <button
+                        type="button"
+                        onClick={onCancel}
+                        className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-on-surface hover:bg-slate-50 transition-colors"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onConfirm}
+                        className="rounded-xl bg-on-surface px-6 py-2.5 text-sm font-bold text-surface hover:opacity-90 transition-opacity"
+                    >
+                        Yes, Save
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ─── Editable personal booking URL field ─────────────────────────────────────
+function PersonalBookingUrlField({ label, businessSlug, value, onChange, error }) {
+    const prefix = `/book/${businessSlug}/`;
+    const [copied, setCopied] = useState(false);
+    const handleCopy = () => {
+        navigator.clipboard.writeText(prefix + value).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        });
+    };
+    return (
+        <div>
+            <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">{label}</label>
+            <div className="flex items-center rounded-lg overflow-hidden ring-1 ring-outline-variant bg-surface-container-lowest focus-within:ring-2 focus-within:ring-on-surface/20 transition-shadow">
+                <span className="shrink-0 px-3 py-3 text-xs text-on-surface-variant border-r border-outline-variant/30 bg-surface-container whitespace-nowrap">
+                    {prefix}
+                </span>
+                <input
+                    type="text"
+                    value={value}
+                    onChange={(e) => onChange(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/--+/g, '-'))}
+                    className="flex-1 px-3 py-3 text-sm text-on-surface font-medium bg-transparent border-0 focus:outline-none focus:ring-0 min-w-0"
+                    placeholder="your-name"
+                    spellCheck={false}
+                />
+                <button
+                    type="button"
+                    onClick={handleCopy}
+                    className="shrink-0 p-2 mr-1 hover:bg-surface-container rounded-md transition-colors"
+                    title="Copy URL"
+                >
+                    <Icon name={copied ? 'check' : 'content_copy'} size="text-base" className="text-on-surface-variant" />
+                </button>
+            </div>
+            {error && <p className="mt-1.5 text-sm font-medium text-error">{error}</p>}
         </div>
     );
 }
@@ -194,8 +271,13 @@ export default function Configuration({
     employee_email,
     booking_url,
     employee_booking_url,
+    booking_slug: initialBookingSlug,
+    business_slug,
 }) {
-    const { flash } = usePage().props;
+    const { flash, errors } = usePage().props;
+    const bookingSlugError = errors?.booking_slug
+        ? (Array.isArray(errors.booking_slug) ? errors.booking_slug[0] : errors.booking_slug)
+        : undefined;
 
     const buildDays = (raw) => {
         return Array.from({ length: 7 }, (_, i) => {
@@ -213,7 +295,11 @@ export default function Configuration({
         });
     };
 
+    const [activeTab, setActiveTab] = useState('info');
     const [days, setDays] = useState(() => buildDays(initialSchedules));
+    const [bookingSlug, setBookingSlug] = useState(initialBookingSlug ?? '');
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [savingInfo, setSavingInfo] = useState(false);
     const [saving, setSaving] = useState(false);
     const [toast, setToast] = useState(null);
 
@@ -226,8 +312,34 @@ export default function Configuration({
         if (flash?.success) showToast(flash.success);
     }, [flash?.success, flash?.nonce]);
 
+    useEffect(() => {
+        if (bookingSlugError) {
+            setActiveTab('info');
+        }
+    }, [bookingSlugError]);
+
     const updateDay = (index, updated) => {
         setDays((prev) => prev.map((d, i) => (i === index ? updated : d)));
+    };
+
+    const handleSaveInfo = (e) => {
+        e.preventDefault();
+        if (!bookingSlug.trim()) return;
+        setConfirmOpen(true);
+    };
+
+    const doSaveInfo = () => {
+        setConfirmOpen(false);
+        setSavingInfo(true);
+        router.patch(
+            route('employee.schedule.configuration.info'),
+            { booking_slug: bookingSlug.trim() },
+            {
+                preserveScroll: true,
+                onFinish: () => setSavingInfo(false),
+                onSuccess: () => showToast('Booking URL updated.'),
+            }
+        );
     };
 
     const handleSave = (e) => {
@@ -244,6 +356,11 @@ export default function Configuration({
         );
     };
 
+    const tabs = [
+        { id: 'info',     label: 'Business Information', icon: 'domain' },
+        { id: 'schedule', label: 'Schedule',              icon: 'calendar_today' },
+    ];
+
     return (
         <EmployeeLayout>
             <Head title="Configuration" />
@@ -253,39 +370,77 @@ export default function Configuration({
                 <p className="text-on-surface-variant text-base">Manage your business information and default weekly availability.</p>
             </div>
 
-            <div className="space-y-8">
+            {/* ── Tabs ──────────────────────────────────────────── */}
+            <div className="flex gap-1 mb-8 border-b border-outline-variant/40">
+                {tabs.map((tab) => (
+                    <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-all border-b-2 -mb-px ${
+                            activeTab === tab.id
+                                ? 'border-on-surface text-on-surface'
+                                : 'border-transparent text-on-surface-variant hover:text-on-surface'
+                        }`}
+                    >
+                        <Icon name={tab.icon} size="text-base" />
+                        {tab.label}
+                    </button>
+                ))}
+            </div>
 
-                {/* ── Business Information ─────────────────────────── */}
-                <section className="rounded-2xl border border-outline-variant/40 bg-surface-container-lowest p-6 sm:p-8">
-                    <div className="mb-6 flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-container/40">
-                            <Icon name="domain" size="text-lg" className="text-on-surface" />
+            {/* ── Business Information tab ───────────────────────── */}
+            {activeTab === 'info' && (
+                <form onSubmit={handleSaveInfo}>
+                    <section className="rounded-2xl border border-outline-variant/40 bg-surface-container-lowest p-6 sm:p-8">
+                        <div className="mb-6 flex items-center gap-3">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-container/40">
+                                <Icon name="domain" size="text-lg" className="text-on-surface" />
+                            </div>
+                            <h2 className="font-headline text-xl font-bold text-on-surface">Business Information</h2>
                         </div>
-                        <h2 className="font-headline text-xl font-bold text-on-surface">Business Information</h2>
-                    </div>
 
-                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                        <ReadOnlyField label="Business Name" value={business_name} icon="storefront" />
-                        <ReadOnlyField label="Your Email" value={employee_email} icon="mail" />
-                        <div className="sm:col-span-2">
-                            <BookingUrlField
-                                label="Business Booking URL"
-                                prefix="/book/"
-                                value={booking_url?.replace('/book/', '')}
-                            />
+                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                            <ReadOnlyField label="Business Name" value={business_name} icon="storefront" />
+                            <ReadOnlyField label="Your Email" value={employee_email} icon="mail" />
+                            <div className="sm:col-span-2">
+                                <BookingUrlField
+                                    label="Business Booking URL"
+                                    prefix="/book/"
+                                    value={booking_url?.replace('/book/', '')}
+                                />
+                            </div>
+                            <div className="sm:col-span-2">
+                                <PersonalBookingUrlField
+                                    label="Your Personal Booking URL"
+                                    businessSlug={business_slug}
+                                    value={bookingSlug}
+                                    onChange={setBookingSlug}
+                                    error={bookingSlugError}
+                                />
+                            </div>
                         </div>
-                        <div className="sm:col-span-2">
-                            <BookingUrlField
-                                label="Your Personal Booking URL"
-                                prefix="/book/"
-                                value={employee_booking_url?.replace('/book/', '')}
-                                hint="Share this link with clients to skip the 'choose a professional' step — it goes directly to your services."
-                            />
-                        </div>
-                    </div>
-                </section>
 
-                {/* ── Default Weekly Schedule ──────────────────────── */}
+                        <div className="mt-6 flex items-center gap-4 border-t border-outline-variant/30 pt-6">
+                            <button
+                                type="submit"
+                                disabled={savingInfo || !bookingSlug.trim()}
+                                className="inline-flex items-center gap-2 rounded-xl bg-on-surface px-6 py-3 text-sm font-bold text-surface hover:opacity-90 active:-translate-y-px transition-all disabled:opacity-50"
+                            >
+                                {savingInfo ? (
+                                    <Icon name="sync" size="text-base" className="animate-spin" />
+                                ) : (
+                                    <Icon name="save" size="text-base" />
+                                )}
+                                {savingInfo ? 'Saving…' : 'Save Configuration'}
+                            </button>
+                        </div>
+                    </section>
+                </form>
+            )}
+
+            {/* ── Schedule tab ───────────────────────────────────── */}
+            {activeTab === 'schedule' && (
                 <form onSubmit={handleSave}>
                     <section className="rounded-2xl border border-outline-variant/40 bg-surface-container-lowest p-6 sm:p-8">
                         <div className="mb-6 flex items-center gap-3">
@@ -322,7 +477,14 @@ export default function Configuration({
                         </div>
                     </section>
                 </form>
-            </div>
+            )}
+
+            {confirmOpen && (
+                <ConfirmSaveModal
+                    onConfirm={doSaveInfo}
+                    onCancel={() => setConfirmOpen(false)}
+                />
+            )}
 
             {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
         </EmployeeLayout>

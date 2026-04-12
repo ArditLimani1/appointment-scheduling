@@ -40,7 +40,7 @@ class BookingService implements BookingServiceInterface
         $preselectedEmployeeId = null;
         if ($employeeSlug) {
             $match = $employees->first(
-                fn ($e) => Str::slug($e->name) === $employeeSlug
+                fn ($e) => ($e->booking_slug ?: Str::slug($e->name)) === $employeeSlug
             );
             $preselectedEmployeeId = $match?->id;
         }

@@ -220,13 +220,16 @@ export default function Index({ employees, services, business, slug, preselected
         if (selectedServices.length > 0) {
             return;
         }
-        setSelectedEmployee(null);
+        // When the employee is preselected via URL, keep them selected even when no services are chosen yet.
+        if (!isEmployeePreselected) {
+            setSelectedEmployee(null);
+        }
         setSelectedDate(null);
         setSelectedSlot(null);
         setSlots([]);
         setSlotsError(null);
         prevEmployeeDateKeyRef.current = '';
-    }, [selectedServices.length]);
+    }, [selectedServices.length, isEmployeePreselected]);
 
     useEffect(() => {
         if (!selectedEmployee || !selectedDate) {
