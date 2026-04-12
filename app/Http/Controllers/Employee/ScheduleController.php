@@ -9,6 +9,7 @@ use App\Services\Interfaces\ScheduleServiceInterface;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -66,10 +67,22 @@ class ScheduleController extends Controller
      */
     public function configuration(): Response
     {
-        $schedules = $this->scheduleService->getSchedules(auth()->user());
+        $user     = auth()->user();
+        $business = $user->business;
+        $schedules = $this->scheduleService->getSchedules($user);
+
+        $employeeSlug     = Str::slug($user->name);
+        $bookingUrl       = route('booking.index', ['slug' => $business?->slug ?? '']);
+        $employeeBookingUrl = $business
+            ? route('booking.employee', ['slug' => $business->slug, 'employeeSlug' => $employeeSlug])
+            : null;
 
         return Inertia::render('Employee/Schedule/Configuration', [
-            'schedules' => $schedules,
+            'schedules'            => $schedules,
+            'business_name'        => $business?->name,
+            'employee_email'       => $user->email,
+            'booking_url'          => $bookingUrl,
+            'employee_booking_url' => $employeeBookingUrl,
         ]);
     }
 
