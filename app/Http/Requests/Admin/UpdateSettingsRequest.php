@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateSettingsRequest extends FormRequest
 {
@@ -15,21 +16,32 @@ class UpdateSettingsRequest extends FormRequest
     {
         $businessId = auth()->user()?->panelBusiness()?->id;
 
+        $slugUnique = Rule::unique('businesses', 'slug');
+        if ($businessId) {
+            $slugUnique = $slugUnique->ignore($businessId);
+        }
+
         return [
             // Identity fields — sent by the Business Identity form
-            'name'     => ['sometimes', 'required', 'string', 'max:255'],
-            'phone'    => ['sometimes', 'nullable', 'string', 'max:50'],
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'phone' => ['sometimes', 'nullable', 'string', 'max:50'],
             'location' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'slug'     => ['sometimes', 'required', 'string', 'max:100', 'alpha_dash',
-                           "unique:businesses,slug,{$businessId}"],
-            'logo'     => ['sometimes', 'nullable', 'image', 'max:2048'],
+            'slug' => ['sometimes', 'required', 'string', 'max:100', 'alpha_dash', $slugUnique],
+            'logo' => ['sometimes', 'nullable', 'image', 'max:2048'],
 
             // Booking rule fields — sent by the Booking Rules form
-            'slot_duration'          => ['sometimes', 'required', 'integer', 'min:5', 'max:120'],
-            'min_booking_notice'     => ['sometimes', 'required', 'integer', 'min:0'],
-            'max_booking_window'     => ['sometimes', 'required', 'integer', 'min:1'],
+            'slot_duration' => ['sometimes', 'required', 'integer', 'min:5', 'max:120'],
+            'min_booking_notice' => ['sometimes', 'required', 'integer', 'min:0'],
+            'max_booking_window' => ['sometimes', 'required', 'integer', 'min:1'],
             'client_identifier_type' => ['sometimes', 'required', 'in:phone,email'],
             'owner_also_works_as_staff' => ['sometimes', 'boolean'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'slug.unique' => 'This booking URL is already used by another registered business.',
         ];
     }
 }

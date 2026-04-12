@@ -3,7 +3,15 @@ import { useEffect, useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import Icon from '@/Components/Icon';
 
-const inputCls = 'flex items-center gap-2 w-full bg-surface-container-highest border-0 rounded-lg py-3 px-4 text-sm text-on-surface font-medium focus:outline-none focus:ring-2 focus:ring-on-surface/10';
+/** Editable fields: clear surface + ring (not gray read-only look). */
+const editableInputCls =
+    'w-full border-0 rounded-lg py-3 px-4 text-sm text-on-surface font-medium bg-surface-container-lowest ring-1 ring-outline-variant focus:outline-none focus:ring-2 focus:ring-on-surface/20 transition-shadow';
+
+const bookingSlugRowCls =
+    'flex items-center rounded-lg overflow-hidden ring-1 ring-outline-variant bg-surface-container-lowest focus-within:ring-2 focus-within:ring-on-surface/20 transition-shadow';
+
+const rulesNumberCls =
+    'w-24 border-0 rounded-lg py-2 px-3 text-sm font-bold text-on-surface text-center bg-surface-container-lowest ring-1 ring-outline-variant focus:outline-none focus:ring-2 focus:ring-on-surface/20 transition-shadow';
 
 function ConfirmSaveModal({ section, onConfirm, onCancel }) {
     return (
@@ -62,6 +70,7 @@ export default function Index({
 }) {
     const { flash } = usePage().props;
     const [successToastMessage, setSuccessToastMessage] = useState(flash?.success || null);
+    const [activeTab, setActiveTab] = useState('identity');
 
     // Which confirm modal is open: null | 'identity' | 'rules'
     const [confirmSection, setConfirmSection] = useState(null);
@@ -95,6 +104,13 @@ export default function Index({
         }
     }, [flash?.success]);
 
+    useEffect(() => {
+        const errs = identity.errors;
+        if (errs && Object.keys(errs).length > 0) {
+            setActiveTab('identity');
+        }
+    }, [identity.errors]);
+
     const handleIdentitySubmit = (e) => {
         e.preventDefault();
         setConfirmSection('identity');
@@ -109,13 +125,26 @@ export default function Index({
     };
 
     // Form 2 — Booking Rules
-    const { data, setData, put, processing, recentlySuccessful } = useForm({
+    const {
+        data,
+        setData,
+        put,
+        processing,
+        recentlySuccessful,
+        errors: rulesErrors,
+    } = useForm({
         slot_duration: settings.slot_duration || 30,
         min_booking_notice: settings.min_booking_notice || 120,
         max_booking_window: settings.max_booking_window || 30,
         client_identifier_type: settings.client_identifier_type || 'phone',
         ...(show_owner_staff_toggle ? { owner_also_works_as_staff: !!owner_also_works_as_staff } : {}),
     });
+
+    useEffect(() => {
+        if (rulesErrors && Object.keys(rulesErrors).length > 0) {
+            setActiveTab('rules');
+        }
+    }, [rulesErrors]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -175,9 +204,37 @@ export default function Index({
                 </div>
             )}
 
-            <div className="space-y-8">
+            {/* Tabs — Business Identity | Booking Rules */}
+            <div className="flex gap-1 mb-8 border-b border-outline-variant/40">
+                <button
+                    type="button"
+                    onClick={() => setActiveTab('identity')}
+                    className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-all border-b-2 -mb-px ${
+                        activeTab === 'identity'
+                            ? 'border-on-surface text-on-surface'
+                            : 'border-transparent text-on-surface-variant hover:text-on-surface'
+                    }`}
+                >
+                    <Icon name="domain" size="text-base" />
+                    Business Identity
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setActiveTab('rules')}
+                    className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-all border-b-2 -mb-px ${
+                        activeTab === 'rules'
+                            ? 'border-on-surface text-on-surface'
+                            : 'border-transparent text-on-surface-variant hover:text-on-surface'
+                    }`}
+                >
+                    <Icon name="rule" size="text-base" />
+                    Booking Rules
+                </button>
+            </div>
 
-                {/* Business Identity — editable */}
+            <div className="space-y-8">
+                {/* Business Identity — editable (except account email) */}
+                {activeTab === 'identity' && (
                 <form onSubmit={handleIdentitySubmit}>
                     <section className="bg-surface-container-low p-8 rounded-xl">
                         <div className="flex items-center gap-3 mb-8">
@@ -194,7 +251,7 @@ export default function Index({
                                     type="text"
                                     value={identity.data.name}
                                     onChange={(e) => identity.setData('name', e.target.value)}
-                                    className={inputCls}
+                                    className={editableInputCls}
                                     required
                                 />
                                 {identity.errors.name && <p className="text-xs text-error mt-1">{identity.errors.name}</p>}
@@ -210,7 +267,7 @@ export default function Index({
                                     type="tel"
                                     value={identity.data.phone}
                                     onChange={(e) => identity.setData('phone', e.target.value)}
-                                    className={inputCls}
+                                    className={editableInputCls}
                                 />
                                 {identity.errors.phone && <p className="text-xs text-error mt-1">{identity.errors.phone}</p>}
                             </div>
@@ -222,7 +279,7 @@ export default function Index({
                                     type="text"
                                     value={identity.data.location}
                                     onChange={(e) => identity.setData('location', e.target.value)}
-                                    className={inputCls}
+                                    className={editableInputCls}
                                 />
                                 {identity.errors.location && <p className="text-xs text-error mt-1">{identity.errors.location}</p>}
                             </div>
@@ -230,13 +287,13 @@ export default function Index({
                             {/* Booking URL (slug editable) */}
                             <div className="sm:col-span-2">
                                 <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">Booking URL</label>
-                                <div className="flex items-center bg-surface-container-highest border-0 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-on-surface/10">
-                                    <span className="shrink-0 px-3 py-3 text-xs text-on-surface-variant border-r border-outline-variant/20 bg-surface-container whitespace-nowrap">/book/</span>
+                                <div className={bookingSlugRowCls}>
+                                    <span className="shrink-0 px-3 py-3 text-xs text-on-surface-variant border-r border-outline-variant/30 bg-surface-container whitespace-nowrap">/book/</span>
                                     <input
                                         type="text"
                                         value={identity.data.slug}
                                         onChange={(e) => identity.setData('slug', e.target.value)}
-                                        className="flex-1 bg-transparent border-0 outline-none px-3 py-3 text-sm text-on-surface font-medium"
+                                        className="flex-1 bg-transparent border-0 outline-none px-3 py-3 text-sm text-on-surface font-medium min-w-0"
                                         required
                                     />
                                     <button
@@ -248,22 +305,22 @@ export default function Index({
                                         <Icon name={copiedBooking ? 'check' : 'content_copy'} size="text-base" className="text-on-surface-variant" />
                                     </button>
                                 </div>
-                                {identity.errors.slug && <p className="text-xs text-error mt-1">{identity.errors.slug}</p>}
+                                {identity.errors.slug && <p className="text-xs text-error mt-1 font-medium">{identity.errors.slug}</p>}
                             </div>
 
                             <div className="sm:col-span-2">
                                 <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">Business Logo</label>
-                                <div className="rounded-2xl border border-dashed border-outline-variant/60 bg-surface px-4 py-4">
+                                <div className="rounded-2xl border border-dashed border-outline-variant/60 bg-surface-container-lowest ring-1 ring-outline-variant/40 px-4 py-4">
                                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                                         <div className="flex items-center gap-4 min-w-0">
                                             {selectedLogoPreview || currentLogoUrl ? (
                                                 <img
                                                     src={selectedLogoPreview || currentLogoUrl}
                                                     alt={`${identity.data.name || 'Business'} logo`}
-                                                    className="h-16 w-16 rounded-2xl object-cover border border-outline-variant/30 bg-surface-container-highest"
+                                                    className="h-16 w-16 rounded-2xl object-cover border border-outline-variant/30 bg-surface-container"
                                                 />
                                             ) : (
-                                                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-surface-container-highest text-on-surface-variant">
+                                                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-surface-container text-on-surface-variant">
                                                     <Icon name="storefront" size="text-2xl" />
                                                 </div>
                                             )}
@@ -278,7 +335,7 @@ export default function Index({
                                             </div>
                                         </div>
 
-                                        <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-surface-container-highest px-4 py-3 text-sm font-semibold text-on-surface hover:bg-surface-container transition-colors">
+                                        <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-surface-container-lowest px-4 py-3 text-sm font-semibold text-on-surface ring-1 ring-outline-variant hover:bg-surface-container transition-colors">
                                             <Icon name="upload" size="text-base" />
                                             Choose logo
                                             <input
@@ -311,8 +368,10 @@ export default function Index({
                         </div>
                     </section>
                 </form>
+                )}
 
                 {/* Booking Rules — editable */}
+                {activeTab === 'rules' && (
                 <form onSubmit={handleSubmit}>
                     <section className="bg-surface-container-low p-8 rounded-xl">
                         <div className="flex items-center gap-3 mb-8">
@@ -332,7 +391,7 @@ export default function Index({
                                         type="number" min="5" max="240"
                                         value={data.slot_duration}
                                         onChange={e => setData('slot_duration', parseInt(e.target.value))}
-                                        className="w-24 bg-surface-container-highest border-0 rounded-lg py-2 px-3 text-sm font-bold text-on-surface shadow-sm focus:ring-2 focus:ring-on-surface/10 text-center"
+                                        className={rulesNumberCls}
                                     />
                                     <span className="text-xs font-bold text-on-surface-variant uppercase">min</span>
                                 </div>
@@ -348,7 +407,7 @@ export default function Index({
                                         type="number" min="0"
                                         value={data.min_booking_notice}
                                         onChange={e => setData('min_booking_notice', parseInt(e.target.value))}
-                                        className="w-24 bg-surface-container-highest border-0 rounded-lg py-2 px-3 text-sm font-bold text-on-surface shadow-sm focus:ring-2 focus:ring-on-surface/10 text-center"
+                                        className={rulesNumberCls}
                                     />
                                     <span className="text-xs font-bold text-on-surface-variant uppercase">min</span>
                                 </div>
@@ -364,7 +423,7 @@ export default function Index({
                                         type="number" min="1" max="365"
                                         value={data.max_booking_window}
                                         onChange={e => setData('max_booking_window', parseInt(e.target.value))}
-                                        className="w-24 bg-surface-container-highest border-0 rounded-lg py-2 px-3 text-sm font-bold text-on-surface shadow-sm focus:ring-2 focus:ring-on-surface/10 text-center"
+                                        className={rulesNumberCls}
                                     />
                                     <span className="text-xs font-bold text-on-surface-variant uppercase">days</span>
                                 </div>
@@ -385,7 +444,7 @@ export default function Index({
                                         className={`flex items-center gap-2 flex-1 justify-center py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${
                                             data.client_identifier_type === 'phone'
                                                 ? 'border-on-surface bg-on-surface text-surface'
-                                                : 'border-outline-variant bg-surface-container-highest text-on-surface-variant hover:border-on-surface/40'
+                                                : 'border-outline-variant bg-surface-container-lowest text-on-surface-variant ring-1 ring-outline-variant/60 hover:border-on-surface/40'
                                         }`}
                                     >
                                         <Icon name="phone" size="text-base" />
@@ -397,7 +456,7 @@ export default function Index({
                                         className={`flex items-center gap-2 flex-1 justify-center py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${
                                             data.client_identifier_type === 'email'
                                                 ? 'border-on-surface bg-on-surface text-surface'
-                                                : 'border-outline-variant bg-surface-container-highest text-on-surface-variant hover:border-on-surface/40'
+                                                : 'border-outline-variant bg-surface-container-lowest text-on-surface-variant ring-1 ring-outline-variant/60 hover:border-on-surface/40'
                                         }`}
                                     >
                                         <Icon name="mail" size="text-base" />
@@ -448,6 +507,7 @@ export default function Index({
                         </div>
                     </section>
                 </form>
+                )}
 
             </div>
 
