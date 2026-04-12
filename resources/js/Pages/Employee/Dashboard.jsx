@@ -5,26 +5,31 @@ function toSlug(str) {
     return (str ?? '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
 
-function BookingUrlChip({ path }) {
+function BookingUrlField({ prefix, value }) {
     const [copied, setCopied] = useState(false);
     const handleCopy = useCallback(() => {
-        navigator.clipboard.writeText(path).then(() => {
+        navigator.clipboard.writeText(prefix + value).then(() => {
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         });
-    }, [path]);
+    }, [prefix, value]);
     return (
-        <div className="inline-flex items-center gap-2 rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-1.5 text-xs">
-            <Icon name="link" size="text-sm" className="shrink-0 text-outline" />
-            <span className="font-mono text-on-surface-variant">{path}</span>
-            <button
-                type="button"
-                onClick={handleCopy}
-                title="Copy booking URL"
-                className="shrink-0 rounded p-0.5 text-outline hover:text-on-surface transition-colors"
-            >
-                <Icon name={copied ? 'check' : 'content_copy'} size="text-sm" />
-            </button>
+        <div>
+            <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">Your Booking URL</label>
+            <div className="flex items-center bg-surface-container-highest border-0 rounded-lg overflow-hidden">
+                <span className="shrink-0 px-3 py-3 text-xs text-on-surface-variant border-r border-outline-variant/20 bg-surface-container whitespace-nowrap">
+                    {prefix}
+                </span>
+                <span className="flex-1 px-3 py-3 text-sm text-on-surface font-medium truncate">{value}</span>
+                <button
+                    type="button"
+                    onClick={handleCopy}
+                    className="shrink-0 p-2 mr-1 hover:bg-surface-container rounded-md transition-colors"
+                    title="Copy URL"
+                >
+                    <Icon name={copied ? 'check' : 'content_copy'} size="text-base" className="text-on-surface-variant" />
+                </button>
+            </div>
         </div>
     );
 }
@@ -254,9 +259,14 @@ export default function Dashboard({
 
             <div className="mb-8">
                 <h1 className="text-4xl font-extrabold font-headline tracking-tight text-on-surface mb-2">Appointments</h1>
-                <p className="text-on-surface-variant text-lg mb-3">{rangeLabel}</p>
+                <p className="text-on-surface-variant text-lg mb-5">{rangeLabel}</p>
                 {business?.slug && (
-                    <BookingUrlChip path={`/book/${business.slug}/${toSlug(auth.user?.name)}`} />
+                    <div className="max-w-md">
+                        <BookingUrlField
+                            prefix="/book/"
+                            value={`${business.slug}/${toSlug(auth.user?.name)}`}
+                        />
+                    </div>
                 )}
             </div>
 

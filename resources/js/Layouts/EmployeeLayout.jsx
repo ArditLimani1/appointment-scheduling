@@ -7,25 +7,31 @@ function toSlug(str) {
     return (str ?? '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
 
-function CopyUrlChip({ path }) {
+function SidebarBookingUrl({ prefix, value }) {
     const [copied, setCopied] = useState(false);
     const handleCopy = () => {
-        navigator.clipboard.writeText(path).then(() => {
+        navigator.clipboard.writeText(prefix + value).then(() => {
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         });
     };
     return (
-        <div className="flex items-center gap-1.5 min-w-0">
-            <span className="min-w-0 flex-1 truncate text-[11px] text-on-surface-variant font-mono">{path}</span>
-            <button
-                type="button"
-                onClick={handleCopy}
-                title="Copy"
-                className="shrink-0 rounded-lg p-1 text-outline hover:bg-surface-container-low transition-colors"
-            >
-                <Icon name={copied ? 'check' : 'content_copy'} size="text-sm" />
-            </button>
+        <div>
+            <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">Your Booking URL</label>
+            <div className="flex items-center bg-surface-container-highest border-0 rounded-lg overflow-hidden">
+                <span className="shrink-0 px-2 py-2.5 text-[10px] text-on-surface-variant border-r border-outline-variant/20 bg-surface-container whitespace-nowrap">
+                    {prefix}
+                </span>
+                <span className="flex-1 px-2 py-2.5 text-xs text-on-surface font-medium truncate">{value}</span>
+                <button
+                    type="button"
+                    onClick={handleCopy}
+                    className="shrink-0 p-1.5 mr-0.5 hover:bg-surface-container rounded-md transition-colors"
+                    title="Copy URL"
+                >
+                    <Icon name={copied ? 'check' : 'content_copy'} size="text-sm" className="text-on-surface-variant" />
+                </button>
+            </div>
         </div>
     );
 }
@@ -135,9 +141,11 @@ export default function EmployeeLayout({ children }) {
                         </div>
 
                         {business?.slug && (
-                            <div className="px-2 space-y-1.5">
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-outline">Your Booking URL</p>
-                                <CopyUrlChip path={`/book/${business.slug}/${toSlug(user?.name)}`} />
+                            <div className="px-2">
+                                <SidebarBookingUrl
+                                    prefix="/book/"
+                                    value={`${business.slug}/${toSlug(user?.name)}`}
+                                />
                             </div>
                         )}
 

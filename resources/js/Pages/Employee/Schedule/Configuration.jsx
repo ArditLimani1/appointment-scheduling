@@ -23,37 +23,47 @@ function Toast({ message, onDismiss }) {
     );
 }
 
-// ─── Read-only info field with copy button ────────────────────────────────────
-function InfoField({ label, value, icon, allowCopy = false }) {
-    const [copied, setCopied] = useState(false);
+// ─── Read-only info field ─────────────────────────────────────────────────────
+function ReadOnlyField({ label, value, icon }) {
+    return (
+        <div>
+            <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">{label}</label>
+            <div className="flex items-center gap-2 w-full bg-surface-container-highest border-0 rounded-lg py-3 px-4 text-sm text-on-surface-variant font-medium opacity-70 cursor-not-allowed select-none">
+                {icon && <Icon name={icon} size="text-base" className="shrink-0 text-on-surface-variant" />}
+                <span className="truncate">{value || '—'}</span>
+            </div>
+        </div>
+    );
+}
 
+// ─── Booking URL field (same look as Admin Settings) ─────────────────────────
+function BookingUrlField({ label, prefix, value, hint }) {
+    const [copied, setCopied] = useState(false);
+    const fullPath = prefix + (value || '');
     const handleCopy = () => {
-        if (!value) return;
-        navigator.clipboard.writeText(value).then(() => {
+        navigator.clipboard.writeText(fullPath).then(() => {
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         });
     };
-
     return (
         <div>
-            <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-outline">
-                {label}
-            </label>
-            <div className="flex items-center gap-2 rounded-xl bg-surface-container-low px-4 py-2.5 text-sm">
-                {icon && <Icon name={icon} size="text-base" className="shrink-0 text-outline" />}
-                <span className="min-w-0 flex-1 truncate text-on-surface-variant">{value || '—'}</span>
-                {allowCopy && value && (
-                    <button
-                        type="button"
-                        onClick={handleCopy}
-                        title="Copy"
-                        className="shrink-0 rounded-lg p-1 text-outline hover:bg-surface-container-highest transition-colors"
-                    >
-                        <Icon name={copied ? 'check' : 'content_copy'} size="text-base" />
-                    </button>
-                )}
+            <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">{label}</label>
+            <div className="flex items-center bg-surface-container-highest border-0 rounded-lg overflow-hidden">
+                <span className="shrink-0 px-3 py-3 text-xs text-on-surface-variant border-r border-outline-variant/20 bg-surface-container whitespace-nowrap">
+                    {prefix}
+                </span>
+                <span className="flex-1 px-3 py-3 text-sm text-on-surface font-medium truncate">{value || '—'}</span>
+                <button
+                    type="button"
+                    onClick={handleCopy}
+                    className="shrink-0 p-2 mr-1 hover:bg-surface-container rounded-md transition-colors"
+                    title="Copy URL"
+                >
+                    <Icon name={copied ? 'check' : 'content_copy'} size="text-base" className="text-on-surface-variant" />
+                </button>
             </div>
+            {hint && <p className="mt-1.5 text-[11px] text-on-surface-variant leading-relaxed">{hint}</p>}
         </div>
     );
 }
@@ -254,25 +264,23 @@ export default function Configuration({
                         <h2 className="font-headline text-xl font-bold text-on-surface">Business Information</h2>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                        <InfoField label="Business Name" value={business_name} icon="storefront" />
-                        <InfoField label="Your Email" value={employee_email} icon="mail" />
-                        <InfoField
-                            label="Business Booking URL"
-                            value={booking_url}
-                            icon="link"
-                            allowCopy
-                        />
-                        <div>
-                            <InfoField
-                                label="Your Personal Booking URL"
-                                value={employee_booking_url}
-                                icon="person_pin"
-                                allowCopy
+                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                        <ReadOnlyField label="Business Name" value={business_name} icon="storefront" />
+                        <ReadOnlyField label="Your Email" value={employee_email} icon="mail" />
+                        <div className="sm:col-span-2">
+                            <BookingUrlField
+                                label="Business Booking URL"
+                                prefix="/book/"
+                                value={booking_url?.replace('/book/', '')}
                             />
-                            <p className="mt-1.5 text-[11px] text-on-surface-variant leading-relaxed">
-                                Share this link with clients to skip the "choose a professional" step — it goes directly to your services.
-                            </p>
+                        </div>
+                        <div className="sm:col-span-2">
+                            <BookingUrlField
+                                label="Your Personal Booking URL"
+                                prefix="/book/"
+                                value={employee_booking_url?.replace('/book/', '')}
+                                hint="Share this link with clients to skip the 'choose a professional' step — it goes directly to your services."
+                            />
                         </div>
                     </div>
                 </section>
