@@ -5,8 +5,25 @@ import Icon from '@/Components/Icon';
 
 const DAY_LABELS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-const inputCls =
-    'w-full rounded-xl border-0 bg-surface-container-low px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-surface-tint';
+/** Next calendar date (including today) that falls on this weekday; `dayOfWeek` 0 = Monday … 6 = Sunday. */
+function representativeDateForWeekday(dayOfWeek) {
+    const mapDwToJs = [1, 2, 3, 4, 5, 6, 0];
+    const wantJs = mapDwToJs[dayOfWeek];
+    const d = new Date();
+    const js = d.getDay();
+    const delta = (wantJs - js + 7) % 7;
+    const x = new Date(d);
+    x.setDate(d.getDate() + delta);
+    const y = x.getFullYear();
+    const m = String(x.getMonth() + 1).padStart(2, '0');
+    const dd = String(x.getDate()).padStart(2, '0');
+    return `${y}-${m}-${dd}`;
+}
+
+function formatDayHeader(dateStr, dayLabel) {
+    const d = new Date(dateStr + 'T00:00:00');
+    return `${dayLabel}, ${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}`;
+}
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 function Toast({ message, onDismiss }) {
@@ -145,53 +162,92 @@ function PersonalBookingUrlField({ label, businessSlug, value, onChange, error }
     );
 }
 
-// ─── Break row ────────────────────────────────────────────────────────────────
-function BreakRow({ brk, onChange, onRemove }) {
+// ─── Add Break Modal (same as Schedule / Availability view) ──────────────────
+function AddBreakModal({ dayLabel, onSave, onClose }) {
+    const [form, setForm] = useState({ start_time: '12:00', end_time: '13:00' });
+    const [error, setError] = useState('');
+
+    const inputClass = 'rounded-xl border-0 bg-surface-container-low px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-surface-tint';
+
+    const handleSave = () => {
+        if (form.start_time >= form.end_time) {
+            setError('End time must be after start time.');
+            return;
+        }
+        onSave(form);
+    };
+
     return (
-        <div className="flex items-center gap-2 flex-wrap">
-            <Icon name="free_breakfast" size="text-sm" className="text-on-surface-variant" />
-            <span className="text-xs text-on-surface-variant">Break</span>
-            <input
-                type="time"
-                value={brk.start_time}
-                onChange={(e) => onChange({ ...brk, start_time: e.target.value })}
-                className="rounded-xl border-0 bg-surface-container-highest px-3 py-2 text-sm focus:ring-2 focus:ring-surface-tint"
-            />
-            <span className="text-on-surface-variant text-xs">–</span>
-            <input
-                type="time"
-                value={brk.end_time}
-                onChange={(e) => onChange({ ...brk, end_time: e.target.value })}
-                className="rounded-xl border-0 bg-surface-container-highest px-3 py-2 text-sm focus:ring-2 focus:ring-surface-tint"
-            />
-            <button
-                type="button"
-                onClick={onRemove}
-                className="rounded-xl bg-error-container p-1.5 text-on-error-container hover:opacity-80 transition-opacity"
-            >
-                <Icon name="close" size="text-sm" />
-            </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+            <div className="w-full max-w-sm rounded-3xl bg-surface p-6 shadow-2xl">
+                <div className="mb-5 flex items-center justify-between">
+                    <div>
+                        <h3 className="font-headline text-lg font-bold text-on-surface">Add Break</h3>
+                        <p className="text-xs text-on-surface-variant mt-0.5">{dayLabel}</p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="rounded-full p-1.5 text-on-surface-variant hover:bg-surface-container transition-colors"
+                    >
+                        <Icon name="close" size="text-xl" />
+                    </button>
+                </div>
+
+                <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                        <div className="flex-1">
+                            <label className="mb-1 block text-xs font-medium text-on-surface-variant">Start time</label>
+                            <input
+                                type="time"
+                                value={form.start_time}
+                                onChange={(e) => { setForm((f) => ({ ...f, start_time: e.target.value })); setError(''); }}
+                                className={`w-full ${inputClass}`}
+                            />
+                        </div>
+                        <span className="mt-5 text-on-surface-variant">–</span>
+                        <div className="flex-1">
+                            <label className="mb-1 block text-xs font-medium text-on-surface-variant">End time</label>
+                            <input
+                                type="time"
+                                value={form.end_time}
+                                onChange={(e) => { setForm((f) => ({ ...f, end_time: e.target.value })); setError(''); }}
+                                className={`w-full ${inputClass}`}
+                            />
+                        </div>
+                    </div>
+
+                    {error && (
+                        <p className="text-xs text-error font-medium">{error}</p>
+                    )}
+                </div>
+
+                <div className="mt-6 flex items-center gap-3 justify-end">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="rounded-xl border border-outline-variant px-4 py-2 text-sm font-medium text-on-surface-variant hover:bg-surface-container transition-colors"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleSave}
+                        className="primary-gradient rounded-xl px-5 py-2 text-sm font-semibold text-white shadow"
+                    >
+                        Save Break
+                    </button>
+                </div>
+            </div>
         </div>
     );
 }
 
-// ─── Day row ──────────────────────────────────────────────────────────────────
-function DayRow({ day, onChange }) {
-    const addBreak = () => {
-        onChange({
-            ...day,
-            breaks: [...(day.breaks ?? []), { start_time: '12:00', end_time: '13:00' }],
-        });
-    };
-
-    const updateBreak = (index, updated) => {
-        const breaks = day.breaks.map((b, i) => (i === index ? updated : b));
-        onChange({ ...day, breaks });
-    };
-
-    const removeBreak = (index) => {
-        onChange({ ...day, breaks: day.breaks.filter((_, i) => i !== index) });
-    };
+// ─── Day card (layout matches Schedule / Availability `DayCard`) ─────────────
+function ConfigurationDayCard({ day, onChange, onOpenBreakModal, onRemoveBreak }) {
+    const inputClass = 'rounded-xl border-0 bg-surface-container-low px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-surface-tint';
+    const dateStr = representativeDateForWeekday(day.day_of_week);
+    const dayLabel = DAY_LABELS[day.day_of_week];
 
     return (
         <div
@@ -201,9 +257,8 @@ function DayRow({ day, onChange }) {
                     : 'bg-surface-container-low border-outline-variant/50 opacity-60'
             }`}
         >
-            <div className="flex flex-wrap items-center gap-4">
-                {/* Toggle + label */}
-                <div className="flex items-center gap-3 w-[200px] shrink-0">
+            <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 w-[210px] shrink-0">
                     <label className="relative inline-flex cursor-pointer items-center">
                         <input
                             type="checkbox"
@@ -213,22 +268,25 @@ function DayRow({ day, onChange }) {
                         />
                         <div className="peer h-6 w-11 rounded-full bg-surface-container-high after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary peer-checked:after:translate-x-full" />
                     </label>
-                    <p className={`text-sm font-bold font-headline ${day.is_active ? 'text-on-surface' : 'text-on-surface-variant'}`}>
-                        {DAY_LABELS[day.day_of_week]}
-                        {!day.is_active && <span className="ml-1 font-normal text-xs text-on-surface-variant">— Day off</span>}
-                    </p>
+                    <div>
+                        <p className={`font-bold font-headline text-sm leading-tight ${day.is_active ? 'text-on-surface' : 'text-on-surface-variant'}`}>
+                            {formatDayHeader(dateStr, dayLabel)}
+                        </p>
+                        {!day.is_active && (
+                            <p className="text-xs text-on-surface-variant mt-0.5">Day off</p>
+                        )}
+                    </div>
                 </div>
 
-                {day.is_active && (
-                    <div className="flex flex-1 flex-col gap-3">
-                        {/* Working hours */}
-                        <div className="flex flex-wrap items-center gap-2">
+                <div className="flex-1 flex flex-col items-center gap-3">
+                    {day.is_active && (
+                        <div className="flex items-center gap-2 flex-wrap justify-center">
                             <label className="text-xs text-on-surface-variant">From</label>
                             <input
                                 type="time"
                                 value={day.start_time}
                                 onChange={(e) => onChange({ ...day, start_time: e.target.value })}
-                                className={inputCls + ' w-auto'}
+                                className={`${inputClass} w-auto`}
                             />
                             <span className="text-on-surface-variant">–</span>
                             <label className="text-xs text-on-surface-variant">To</label>
@@ -236,29 +294,44 @@ function DayRow({ day, onChange }) {
                                 type="time"
                                 value={day.end_time}
                                 onChange={(e) => onChange({ ...day, end_time: e.target.value })}
-                                className={inputCls + ' w-auto'}
+                                className={`${inputClass} w-auto`}
                             />
                         </div>
+                    )}
 
-                        {/* Breaks */}
-                        {(day.breaks ?? []).map((brk, i) => (
-                            <BreakRow
-                                key={i}
-                                brk={brk}
-                                onChange={(updated) => updateBreak(i, updated)}
-                                onRemove={() => removeBreak(i)}
-                            />
-                        ))}
+                    {day.is_active && (day.breaks ?? []).length > 0 && (
+                        <div className="flex flex-col items-center gap-2 w-full">
+                            {(day.breaks ?? []).map((brk, bi) => (
+                                <div key={bi} className="flex items-center gap-2 flex-wrap justify-center">
+                                    <Icon name="free_breakfast" size="text-sm" className="text-on-surface-variant" />
+                                    <span className="text-xs text-on-surface-variant">Break</span>
+                                    <input type="time" value={brk.start_time} readOnly className={inputClass} />
+                                    <span className="text-on-surface-variant text-xs">–</span>
+                                    <input type="time" value={brk.end_time} readOnly className={inputClass} />
+                                    <button
+                                        type="button"
+                                        onClick={() => onRemoveBreak(bi)}
+                                        className="rounded-xl bg-error-container p-1.5 text-on-error-container hover:opacity-80 transition-opacity"
+                                    >
+                                        <Icon name="close" size="text-sm" />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
 
+                <div className="w-[140px] shrink-0 flex justify-end">
+                    {day.is_active && (
                         <button
                             type="button"
-                            onClick={addBreak}
-                            className="self-start flex items-center gap-1 rounded-xl border border-outline-variant px-3 py-1.5 text-xs font-medium text-on-surface-variant hover:bg-surface-container transition-colors"
+                            onClick={onOpenBreakModal}
+                            className="flex items-center gap-1 rounded-xl border border-outline-variant px-3 py-2 text-xs font-medium text-on-surface-variant hover:bg-surface-container transition-colors"
                         >
                             <Icon name="add" size="text-sm" /> Add Break
                         </button>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
         </div>
     );
@@ -297,6 +370,7 @@ export default function Configuration({
 
     const [activeTab, setActiveTab] = useState('info');
     const [days, setDays] = useState(() => buildDays(initialSchedules));
+    const [breakModalDayIndex, setBreakModalDayIndex] = useState(null);
     const [bookingSlug, setBookingSlug] = useState(initialBookingSlug ?? '');
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [savingInfo, setSavingInfo] = useState(false);
@@ -320,6 +394,24 @@ export default function Configuration({
 
     const updateDay = (index, updated) => {
         setDays((prev) => prev.map((d, i) => (i === index ? updated : d)));
+    };
+
+    const handleSaveBreak = (brk) => {
+        if (breakModalDayIndex === null) return;
+        setDays((prev) => prev.map((d, i) => (
+            i === breakModalDayIndex
+                ? { ...d, breaks: [...(d.breaks ?? []), brk] }
+                : d
+        )));
+        setBreakModalDayIndex(null);
+    };
+
+    const handleRemoveBreak = (dayIndex, breakIndex) => {
+        setDays((prev) => prev.map((d, i) => (
+            i === dayIndex
+                ? { ...d, breaks: (d.breaks ?? []).filter((_, j) => j !== breakIndex) }
+                : d
+        )));
     };
 
     const handleSaveInfo = (e) => {
@@ -439,44 +531,54 @@ export default function Configuration({
                 </form>
             )}
 
-            {/* ── Schedule tab ───────────────────────────────────── */}
+            {/* ── Schedule tab (same card layout as Schedule / Availability view) ─ */}
             {activeTab === 'schedule' && (
                 <form onSubmit={handleSave}>
-                    <section className="rounded-2xl border border-outline-variant/40 bg-surface-container-lowest p-6 sm:p-8">
-                        <div className="mb-6 flex items-center gap-3">
-                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-container/40">
-                                <Icon name="calendar_today" size="text-lg" className="text-on-surface" />
-                            </div>
-                            <div>
-                                <h2 className="font-headline text-xl font-bold text-on-surface">Default Weekly Schedule</h2>
-                                <p className="text-xs text-on-surface-variant mt-0.5">
-                                    Your base working hours. Override specific dates in the Schedule tab.
-                                </p>
-                            </div>
-                        </div>
+                    <div className="mb-6">
+                        <h2 className="text-3xl font-black font-headline tracking-tight text-on-surface">Default weekly hours</h2>
+                        <p className="mt-1 text-sm text-on-surface-variant">
+                            Toggle days on or off and manage breaks — same layout as your week view. Save when you are ready; date-specific overrides stay in the Schedule tab.
+                        </p>
+                    </div>
 
-                        <div className="space-y-3">
-                            {days.map((day, i) => (
-                                <DayRow key={i} day={day} onChange={(updated) => updateDay(i, updated)} />
-                            ))}
-                        </div>
+                    <div className="space-y-3">
+                        {days.map((day, i) => (
+                            <ConfigurationDayCard
+                                key={day.day_of_week}
+                                day={day}
+                                onChange={(updated) => updateDay(i, updated)}
+                                onOpenBreakModal={() => setBreakModalDayIndex(i)}
+                                onRemoveBreak={(bi) => handleRemoveBreak(i, bi)}
+                            />
+                        ))}
+                    </div>
 
-                        <div className="mt-6 flex items-center gap-4 border-t border-outline-variant/30 pt-6">
-                            <button
-                                type="submit"
-                                disabled={saving}
-                                className="inline-flex items-center gap-2 rounded-xl bg-on-surface px-6 py-3 text-sm font-bold text-surface hover:opacity-90 active:-translate-y-px transition-all disabled:opacity-50"
-                            >
-                                {saving ? (
-                                    <Icon name="sync" size="text-base" className="animate-spin" />
-                                ) : (
-                                    <Icon name="save" size="text-base" />
-                                )}
-                                {saving ? 'Saving…' : 'Save Schedule'}
-                            </button>
-                        </div>
-                    </section>
+                    <div className="mt-6 flex items-center gap-4 border-t border-outline-variant/30 pt-6">
+                        <button
+                            type="submit"
+                            disabled={saving}
+                            className="inline-flex items-center gap-2 rounded-xl bg-on-surface px-6 py-3 text-sm font-bold text-surface hover:opacity-90 active:-translate-y-px transition-all disabled:opacity-50"
+                        >
+                            {saving ? (
+                                <Icon name="sync" size="text-base" className="animate-spin" />
+                            ) : (
+                                <Icon name="save" size="text-base" />
+                            )}
+                            {saving ? 'Saving…' : 'Save Schedule'}
+                        </button>
+                    </div>
                 </form>
+            )}
+
+            {breakModalDayIndex !== null && days[breakModalDayIndex] && (
+                <AddBreakModal
+                    dayLabel={formatDayHeader(
+                        representativeDateForWeekday(days[breakModalDayIndex].day_of_week),
+                        DAY_LABELS[days[breakModalDayIndex].day_of_week],
+                    )}
+                    onSave={handleSaveBreak}
+                    onClose={() => setBreakModalDayIndex(null)}
+                />
             )}
 
             {confirmOpen && (
