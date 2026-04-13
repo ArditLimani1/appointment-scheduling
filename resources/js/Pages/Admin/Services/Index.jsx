@@ -67,21 +67,31 @@ export default function Index({ services }) {
                     </div>
                 ) : (
                     <>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
+                        <div className="overflow-x-auto px-4 sm:px-6 md:px-8">
+                            <table className="w-full min-w-[640px] text-left border-collapse">
                                 <thead>
                                     <tr className="bg-slate-50/50">
-                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">Service Name</th>
-                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-center">Duration</th>
-                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">Price</th>
-                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-center">Status</th>
-                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-right">Actions</th>
+                                        <th className="px-4 sm:px-5 py-4 text-[11px] font-bold uppercase tracking-widest text-outline min-w-0">
+                                            Service Name
+                                        </th>
+                                        <th className="px-4 sm:px-5 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-center whitespace-nowrap w-28">
+                                            Duration
+                                        </th>
+                                        <th className="px-4 sm:px-5 py-4 text-[11px] font-bold uppercase tracking-widest text-outline whitespace-nowrap w-28">
+                                            Price
+                                        </th>
+                                        <th className="px-4 sm:px-5 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-center w-24">
+                                            Status
+                                        </th>
+                                        <th className="px-4 sm:px-5 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-right w-28">
+                                            Actions
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
                                     {services.map((svc) => (
                                         <tr key={svc.id} className="hover:bg-slate-50/50 transition-colors">
-                                            <td className="px-8 py-5">
+                                            <td className="px-4 sm:px-5 py-5 min-w-0">
                                                 <p className="font-headline font-bold text-on-surface text-sm">
                                                     {svc.name}
                                                     {svc.is_popular && (
@@ -94,18 +104,17 @@ export default function Index({ services }) {
                                                     <p className="text-xs text-on-surface-variant mt-0.5">{svc.description}</p>
                                                 )}
                                             </td>
-                                            <td className="px-8 py-5 text-center">
-                                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container text-on-surface-variant text-xs font-medium">
-                                                    <Icon name="schedule" size="text-sm" />
+                                            <td className="px-4 sm:px-5 py-5 text-center">
+                                                <span className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-surface-container text-on-surface-variant text-xs font-medium tabular-nums">
                                                     {svc.duration} min
                                                 </span>
                                             </td>
-                                            <td className="px-8 py-5">
-                                                <span className="font-headline font-extrabold text-on-surface text-base">
+                                            <td className="px-4 sm:px-5 py-5">
+                                                <span className="font-headline font-extrabold text-on-surface text-base tabular-nums">
                                                     {Number(svc.price).toFixed(2)} {currencySymbol}
                                                 </span>
                                             </td>
-                                            <td className="px-8 py-5">
+                                            <td className="px-4 sm:px-5 py-5">
                                                 <div className="flex justify-center">
                                                     <button
                                                         type="button"
@@ -116,7 +125,7 @@ export default function Index({ services }) {
                                                     </button>
                                                 </div>
                                             </td>
-                                            <td className="px-8 py-5 text-right">
+                                            <td className="px-4 sm:px-5 py-5 text-right">
                                                 <div className="flex items-center justify-end gap-1">
                                                     <button
                                                         onClick={() => openEdit(svc)}

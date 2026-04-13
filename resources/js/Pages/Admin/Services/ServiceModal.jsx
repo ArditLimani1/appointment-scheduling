@@ -12,7 +12,7 @@ export default function ServiceModal({ show, onClose, editing, currencySymbol })
         description: '',
         is_active: true,
         is_popular: false,
-        icon: 'content_cut',
+        icon: '',
     });
 
     useEffect(() => {
@@ -25,7 +25,7 @@ export default function ServiceModal({ show, onClose, editing, currencySymbol })
                     description: editing.description || '',
                     is_active: editing.is_active,
                     is_popular: editing.is_popular,
-                    icon: editing.icon || 'content_cut',
+                    icon: editing.icon ?? '',
                 });
             } else {
                 reset();

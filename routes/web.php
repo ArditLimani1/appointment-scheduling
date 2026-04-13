@@ -80,6 +80,9 @@ Route::middleware(['auth', 'admin_panel', 'has_business'])->prefix('admin')->nam
 Route::middleware(['auth', 'employee_area'])->prefix('employee')->name('employee.')->group(function () {
     Route::middleware('permission:employee.dashboard')->group(function () {
         Route::get('/dashboard', [Employee\DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/appointments', [Employee\AppointmentController::class, 'index'])->name('appointments.index');
+        Route::get('/appointments/export', [Employee\AppointmentController::class, 'export'])->name('appointments.export');
+        Route::get('/appointments/export-pdf', [Employee\AppointmentController::class, 'exportPdf'])->name('appointments.export-pdf');
     });
 
     Route::middleware('permission:employee.analytics')->group(function () {

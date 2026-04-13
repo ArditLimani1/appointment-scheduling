@@ -9,7 +9,10 @@ use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class AppointmentsExport implements FromQuery, WithHeadings, WithMapping
+/**
+ * Employee list export — columns match the employee appointments table (no staff column).
+ */
+class EmployeeAppointmentsExport implements FromQuery, WithHeadings, WithMapping
 {
     use Exportable;
 
@@ -54,14 +57,25 @@ class AppointmentsExport implements FromQuery, WithHeadings, WithMapping
             $query->where('service_id', (int) $this->filters['service_id']);
         }
 
+        if (! empty($this->filters['search']) && is_string($this->filters['search'])) {
+            $term = trim($this->filters['search']);
+            if ($term !== '') {
+                $like = '%'.addcslashes($term, '%_\\').'%';
+                $query->where(function ($q) use ($like) {
+                    $q->where('client_first_name', 'like', $like)
+                        ->orWhere('client_last_name', 'like', $like);
+                });
+            }
+        }
+
         return $query->latest('date')->latest('start_time');
     }
 
     public function headings(): array
     {
         return [
-            'Employee Name',
             'Client Name',
+            'Contact',
             'Service',
             'Date',
             'Time',
@@ -75,9 +89,11 @@ class AppointmentsExport implements FromQuery, WithHeadings, WithMapping
      */
     public function map($appointment): array
     {
+        $contact = $appointment->client_email ?: $appointment->client_phone ?: '—';
+
         return [
-            $appointment->employee?->name ?? 'N/A',
             $appointment->client_first_name.' '.$appointment->client_last_name,
+            $contact,
             $appointment->service?->name ?? 'N/A',
             $appointment->date->format('Y-m-d'),
             $appointment->start_time.' - '.$appointment->end_time,
