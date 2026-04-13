@@ -54,10 +54,10 @@ class BookingService implements BookingServiceInterface
             : $this->serviceRepository->getActiveByBusiness($business->id);
 
         return [
-            'business'               => $business,
-            'employees'              => $employees,
-            'services'               => $services,
-            'slug'                   => $slug,
+            'business' => $business,
+            'employees' => $employees,
+            'services' => $services,
+            'slug' => $slug,
             'preselected_employee_id' => $preselectedEmployeeId,
         ];
     }
@@ -88,6 +88,8 @@ class BookingService implements BookingServiceInterface
         }
 
         $slotDuration = $this->resolveSlotDurationMinutes($business, $data);
+        $businessSlot = (int) ($business->slot_duration ?? 30);
+        $stepMinutes = $this->resolveStepMinutesForSlotBlock($businessSlot, $slotDuration);
 
         $existingAppointments = $this->appointmentRepository->getByEmployeeAndDate(
             $employeeId,
@@ -98,7 +100,7 @@ class BookingService implements BookingServiceInterface
             $date,
             $schedule,
             $slotDuration,
-            $business->slot_duration ?? 30,
+            $stepMinutes,
             $minNoticeTime,
             $existingAppointments,
             $timezone
@@ -177,8 +179,8 @@ class BookingService implements BookingServiceInterface
 
     public function getAdminAvailableSlots(Business $business, array $data): array
     {
-        $timezone   = $business->timezone ?: config('app.timezone');
-        $date       = Carbon::parse($data['date'], $timezone)->startOfDay();
+        $timezone = $business->timezone ?: config('app.timezone');
+        $date = Carbon::parse($data['date'], $timezone)->startOfDay();
         $employeeId = (int) $data['employee_id'];
 
         $schedule = $this->resolveEffectiveSchedule($employeeId, $date);
@@ -186,13 +188,15 @@ class BookingService implements BookingServiceInterface
             return [];
         }
 
-        $slotDuration = $business->slot_duration ?? 30;
+        $businessSlot = (int) ($business->slot_duration ?? 30);
+        $blockMinutes = $businessSlot;
         if (! empty($data['service_id'])) {
             $service = $this->serviceRepository->findById((int) $data['service_id']);
             if ($service && $service->business_id === $business->id) {
-                $slotDuration = $service->duration;
+                $blockMinutes = (int) $service->duration;
             }
         }
+        $stepMinutes = $this->resolveStepMinutesForSlotBlock($businessSlot, $blockMinutes);
 
         $excludeId = isset($data['exclude_id']) ? (int) $data['exclude_id'] : null;
         $existingAppointments = $this->appointmentRepository->getByEmployeeAndDate(
@@ -207,8 +211,8 @@ class BookingService implements BookingServiceInterface
         return $this->calculateSlots(
             $date,
             $schedule,
-            $slotDuration,
-            $business->slot_duration ?? 30,
+            $blockMinutes,
+            $stepMinutes,
             $minNoticeTime,
             $existingAppointments,
             $timezone
@@ -270,7 +274,7 @@ class BookingService implements BookingServiceInterface
         Carbon $blockEnd,
         string $timezone
     ): void {
-        $date     = Carbon::parse($dateYmd, $timezone)->startOfDay();
+        $date = Carbon::parse($dateYmd, $timezone)->startOfDay();
         $schedule = $this->resolveEffectiveSchedule($employeeId, $date);
         abort_if(! $schedule, 422, 'This time is not available.');
 
@@ -321,6 +325,23 @@ class BookingService implements BookingServiceInterface
         return $this->scheduleRepository->findActiveByUserAndDay($employeeId, $dayOfWeek);
     }
 
+    /**
+     * Step between candidate start times for a reservation of {@see $blockMinutes} length.
+     * When the service is longer than the business grid (e.g. 30 min service, 15 min grid), step by the
+     * full block length so starts align to that duration (no :15/:45-only starts for a 30 min booking).
+     */
+    private function resolveStepMinutesForSlotBlock(int $businessSlotMinutes, int $blockMinutes): int
+    {
+        $businessSlotMinutes = max(1, min(120, $businessSlotMinutes));
+        $blockMinutes = max(1, min(120, $blockMinutes));
+
+        if ($blockMinutes > $businessSlotMinutes) {
+            return $blockMinutes;
+        }
+
+        return min($businessSlotMinutes, $blockMinutes);
+    }
+
     private function calculateSlots(
         Carbon $date,
         $schedule,
@@ -335,8 +356,7 @@ class BookingService implements BookingServiceInterface
         $scheduleEnd = Carbon::parse($dateStr.' '.$schedule->end_time, $timezone);
         $stepDuration = max(1, $stepDuration);
         $slotDuration = max(1, $slotDuration);
-        // Admin "slot duration" is the coarse grid; when the requested block is shorter, step by that
-        // block length so every valid start (e.g. 14:15 for a 15‑min service) is considered.
+        // Never step wider than the block being placed (e.g. cap 30 min step for a 15 min service).
         $stepDuration = min($stepDuration, $slotDuration);
 
         $freeIntervals = $this->buildFreeIntervalsWithinSchedule(

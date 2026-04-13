@@ -106,6 +106,7 @@ Route::middleware(['auth', 'employee_area'])->prefix('employee')->name('employee
         Route::patch('/appointments/{appointment}', [Employee\AppointmentController::class, 'update'])->name('appointments.update');
         Route::get('/appointments/{appointment}/slots', [Employee\AppointmentController::class, 'slots'])->name('appointments.slots');
         Route::put('/appointments/{appointment}/reschedule', [Employee\AppointmentController::class, 'reschedule'])->name('appointments.reschedule');
+        Route::put('/appointments/{appointment}', [Employee\AppointmentController::class, 'edit'])->name('appointments.edit');
     });
 });
 

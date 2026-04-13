@@ -12,13 +12,76 @@ import Icon from '@/Components/Icon';
 import { getEmployeeSlotStyles } from '@/utils/employeeCalendarColor';
 import { appointmentStatusValue, minutesToTimeHm, timeToMinutes } from '@/utils/appointmentDate';
 
-const START_HOUR = 8;
-const END_HOUR = 20;
-const SNAP_MINUTES = 15;
-/** Total scrollable grid height; divided across (END_HOUR - START_HOUR) hour rows (~130px/hour so 15min slots stay readable). */
-const GRID_MIN_HEIGHT = 1560;
-/** Rounded up using the taller (sm) day header so the time ruler stays aligned at all breakpoints. */
-const GRID_WITH_HEADER_MIN_HEIGHT = GRID_MIN_HEIGHT + 68;
+/** ~130px per hour — total grid height scales with visible minutes. */
+const PX_PER_HOUR = 130;
+const DEFAULT_CALENDAR_HOURS = { start: '08:00', end: '20:00' };
+const DEFAULT_SLOT_MINUTES = 30;
+
+function clampSlotMinutes(raw) {
+    const n = Number(raw);
+    if (!Number.isFinite(n)) {
+        return DEFAULT_SLOT_MINUTES;
+    }
+    return Math.min(120, Math.max(5, Math.round(n)));
+}
+
+/**
+ * Row lines follow the business default slot step only (e.g. 30 → :00, :30). Drag snap can be finer per appointment.
+ * @returns {{ startMin: number, endMin: number, minutes: number }[]}
+ */
+function buildTimeSegments(rangeStartMin, rangeEndMin, slotMinutes) {
+    const segments = [];
+    let t = rangeStartMin;
+    while (t < rangeEndMin) {
+        const end = Math.min(t + slotMinutes, rangeEndMin);
+        segments.push({
+            startMin: t,
+            endMin: end,
+            minutes: end - t,
+        });
+        t = end;
+    }
+    return segments;
+}
+
+function resolveCalendarRange(calendarHours, gridLineMinutesRaw) {
+    const gridLineMinutes = clampSlotMinutes(gridLineMinutesRaw);
+    const src =
+        calendarHours && calendarHours.start && calendarHours.end ? calendarHours : DEFAULT_CALENDAR_HOURS;
+    let rangeStartMin = timeToMinutes(src.start);
+    let rangeEndMin = timeToMinutes(src.end);
+    if (rangeEndMin <= rangeStartMin) {
+        rangeStartMin = timeToMinutes(DEFAULT_CALENDAR_HOURS.start);
+        rangeEndMin = timeToMinutes(DEFAULT_CALENDAR_HOURS.end);
+    }
+    const minutesInView = rangeEndMin - rangeStartMin;
+    const hourSlotCount = minutesInView / 60;
+    const gridMinHeight = Math.max(PX_PER_HOUR, hourSlotCount * PX_PER_HOUR);
+    const gridWithHeaderMinHeight = gridMinHeight + 68;
+    const segments = buildTimeSegments(rangeStartMin, rangeEndMin, gridLineMinutes);
+    return {
+        rangeStartMin,
+        rangeEndMin,
+        minutesInView,
+        gridMinHeight,
+        gridWithHeaderMinHeight,
+        segments,
+        gridLineMinutes,
+    };
+}
+
+/**
+ * While dragging, snap to the finer of: business grid step vs service length (e.g. 30 vs 15 → 15).
+ */
+function dragSnapMinutes(gridLineMinutes, serviceDurationMinutes) {
+    const g = clampSlotMinutes(gridLineMinutes);
+    const d = Number(serviceDurationMinutes);
+    if (!Number.isFinite(d) || d < 1) {
+        return g;
+    }
+    const svc = Math.min(120, Math.max(5, Math.round(d)));
+    return Math.min(g, svc);
+}
 
 function dayLabel(d) {
     return d.toLocaleDateString('en-GB', { weekday: 'short' });
@@ -78,21 +141,38 @@ function layoutOverlapping(items) {
     return sorted;
 }
 
-function DraggableEvent({ apt, layout, rangeStartMin, minutesInView, dayDateStr, onOpen, disabled, readOnly, employeeColorMap }) {
+function DraggableEvent({
+    apt,
+    layout,
+    rangeStartMin,
+    minutesInView,
+    dayDateStr,
+    onOpen,
+    disabled,
+    readOnly,
+    employeeColorMap,
+    gridLineMinutes,
+}) {
+    const cancelled = appointmentStatusValue(apt.status) === 'cancelled';
     const id = `appt-${apt.id}`;
     const startMin = timeToMinutes(apt.start_time);
     const endMin = timeToMinutes(apt.end_time);
     const topPct = ((startMin - rangeStartMin) / minutesInView) * 100;
     const heightPct = ((endMin - startMin) / minutesInView) * 100;
 
+    const serviceDuration = apt.service?.duration != null ? Number(apt.service.duration) : null;
+    const dragSnapMinutesValue = dragSnapMinutes(gridLineMinutes, serviceDuration);
+
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
         id,
-        disabled: readOnly || disabled,
+        disabled: readOnly || disabled || cancelled,
         data: {
             type: 'appointment',
             appointment: apt,
             startMin,
             dayDateStr,
+            dragSnapMinutes: dragSnapMinutesValue,
+            gridLineMinutes,
         },
     });
 
@@ -118,7 +198,7 @@ function DraggableEvent({ apt, layout, rangeStartMin, minutesInView, dayDateStr,
             ref={setNodeRef}
             style={style}
             className="absolute box-border overflow-hidden rounded-lg text-left shadow-sm"
-            {...(readOnly ? {} : listeners)}
+            {...(readOnly || cancelled ? {} : listeners)}
             {...attributes}
             onClick={(e) => {
                 e.stopPropagation();
@@ -142,16 +222,104 @@ function DraggableEvent({ apt, layout, rangeStartMin, minutesInView, dayDateStr,
     );
 }
 
-function DayColumn({ dateStr, dateObj, isToday, children, setGridBodyRef }) {
+/**
+ * @param {import('@dnd-kit/core').DragMoveEvent | import('@dnd-kit/core').DragEndEvent} event
+ * @returns {{ dateStr: string, startMin: number, endMin: number } | null}
+ */
+function computeDropPreviewFromEvent(event, { gridBodyRefs, gridMinHeight, minutesInView, rangeStartMin, rangeEndMin, gridLineMinutes }) {
+    const { active, over, delta } = event;
+    if (!active?.data?.current?.appointment || !over?.data?.current?.date) {
+        return null;
+    }
+    const apt = active.data.current.appointment;
+    const startMin = active.data.current.startMin;
+    const targetDate = over.data.current.date;
+    if (typeof targetDate !== 'string') {
+        return null;
+    }
+
+    const snapMinutes =
+        active.data.current.dragSnapMinutes ??
+        dragSnapMinutes(gridLineMinutes, apt.service?.duration != null ? Number(apt.service.duration) : null);
+
+    const gridEl = gridBodyRefs.current[targetDate];
+    const h = gridEl?.offsetHeight || gridMinHeight;
+    const pxPerMinute = h / minutesInView;
+
+    let newStartMin = startMin + delta.y / pxPerMinute;
+    newStartMin = Math.round(newStartMin / snapMinutes) * snapMinutes;
+
+    const duration = Math.max(5, timeToMinutes(apt.end_time) - timeToMinutes(apt.start_time));
+    newStartMin = Math.max(rangeStartMin, Math.min(newStartMin, rangeEndMin - duration));
+
+    return {
+        dateStr: targetDate,
+        startMin: newStartMin,
+        endMin: newStartMin + duration,
+    };
+}
+
+/**
+ * Muted bands for scheduled breaks (behind appointments; pointer-events none).
+ */
+function BreakIntervalLayers({ breaks, rangeStartMin, rangeEndMin, minutesInView }) {
+    if (!breaks?.length) {
+        return null;
+    }
+    return breaks.map((br, i) => {
+        const s = timeToMinutes(br.start);
+        const e = timeToMinutes(br.end);
+        const top = Math.max(s, rangeStartMin);
+        const bottom = Math.min(e, rangeEndMin);
+        if (bottom <= top) {
+            return null;
+        }
+        const topPct = ((top - rangeStartMin) / minutesInView) * 100;
+        const heightPct = ((bottom - top) / minutesInView) * 100;
+        return (
+            <div
+                key={`${br.start}-${br.end}-${i}`}
+                className="pointer-events-none absolute right-0 left-0 z-[3] border-y border-dashed border-amber-300/80 bg-amber-100/50"
+                style={{ top: `${topPct}%`, height: `${Math.max(heightPct, 0.25)}%` }}
+                aria-hidden
+            />
+        );
+    });
+}
+
+function DropSlotPreview({ dateStr, dropPreview, rangeStartMin, minutesInView }) {
+    if (!dropPreview || dropPreview.dateStr !== dateStr) {
+        return null;
+    }
+    const topPct = ((dropPreview.startMin - rangeStartMin) / minutesInView) * 100;
+    const heightPct = ((dropPreview.endMin - dropPreview.startMin) / minutesInView) * 100;
+    return (
+        <div
+            className="pointer-events-none absolute right-0.5 left-0.5 z-[18] rounded-lg border-2 border-dashed border-sky-600 bg-sky-400/25 shadow-inner"
+            style={{ top: `${topPct}%`, height: `${Math.max(heightPct, 1.6)}%` }}
+            aria-hidden
+        />
+    );
+}
+
+function DayColumn({
+    dateStr,
+    dateObj,
+    isToday,
+    children,
+    setGridBodyRef,
+    segments,
+    gridMinHeight,
+    breaks,
+    isDayOff,
+    rangeStartMin,
+    rangeEndMin,
+    minutesInView,
+}) {
     const { setNodeRef, isOver } = useDroppable({
         id: `calendar-day-${dateStr}`,
         data: { type: 'day', date: dateStr },
     });
-
-    const hours = [];
-    for (let h = START_HOUR; h < END_HOUR; h++) {
-        hours.push(h);
-    }
 
     const combinedRef = (el) => {
         setNodeRef(el);
@@ -178,14 +346,32 @@ function DayColumn({ dateStr, dateObj, isToday, children, setGridBodyRef }) {
             </div>
             <div
                 ref={combinedRef}
-                className={`relative flex-1 ${isOver ? 'bg-sky-50/20' : 'bg-white'}`}
-                style={{ minHeight: GRID_MIN_HEIGHT }}
+                className={`relative flex-1 transition-colors duration-150 ${
+                    isOver ? 'bg-sky-100/50 ring-2 ring-inset ring-sky-500/40' : 'bg-white'
+                }`}
+                style={{ minHeight: gridMinHeight }}
             >
                 <div className="pointer-events-none absolute inset-0 flex flex-col">
-                    {hours.map((h) => (
-                        <div key={h} className="flex-1 border-b border-slate-100/90" style={{ flex: '1 1 0' }} />
+                    {segments.map((seg) => (
+                        <div
+                            key={`${seg.startMin}-${seg.endMin}`}
+                            className="min-h-0 shrink-0 border-b border-slate-100/90"
+                            style={{ flex: `${seg.minutes} 1 0` }}
+                        />
                     ))}
                 </div>
+                <BreakIntervalLayers
+                    breaks={breaks}
+                    rangeStartMin={rangeStartMin}
+                    rangeEndMin={rangeEndMin}
+                    minutesInView={minutesInView}
+                />
+                {isDayOff && (
+                    <div
+                        className="pointer-events-none absolute inset-0 z-[4] border-y border-dashed border-amber-300/90 bg-amber-100/45"
+                        aria-hidden
+                    />
+                )}
                 {children}
             </div>
         </div>
@@ -200,10 +386,15 @@ export default function CalendarWeekGrid({
     onAppointmentMove,
     dragSavingId,
     readOnly = false,
+    calendarHours = null,
+    slotDurationMinutes = DEFAULT_SLOT_MINUTES,
+    calendarDayBreaks = {},
+    calendarDayOffs = [],
 }) {
-    const rangeStartMin = START_HOUR * 60;
-    const rangeEndMin = END_HOUR * 60;
-    const minutesInView = rangeEndMin - rangeStartMin;
+    const { rangeStartMin, rangeEndMin, minutesInView, gridMinHeight, gridWithHeaderMinHeight, segments, gridLineMinutes } = useMemo(
+        () => resolveCalendarRange(calendarHours, slotDurationMinutes),
+        [calendarHours?.start, calendarHours?.end, slotDurationMinutes],
+    );
 
     const gridBodyRefs = useRef({});
 
@@ -240,39 +431,62 @@ export default function CalendarWeekGrid({
         return map;
     }, [appointments, columnDates]);
 
+    const [dropPreview, setDropPreview] = useState(null);
+
+    const dragLayoutCtx = useMemo(
+        () => ({
+            gridBodyRefs,
+            gridMinHeight,
+            minutesInView,
+            rangeStartMin,
+            rangeEndMin,
+            gridLineMinutes,
+        }),
+        [gridMinHeight, minutesInView, rangeStartMin, rangeEndMin, gridLineMinutes],
+    );
+
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: { distance: 8 },
         }),
     );
 
-    const handleDragEnd = (event) => {
+    const updateDropPreview = (event) => {
         if (readOnly) {
             return;
         }
-        const { active, over, delta } = event;
+        const next = computeDropPreviewFromEvent(event, dragLayoutCtx);
+        setDropPreview(next);
+    };
+
+    const handleDragStart = () => {
+        setDropPreview(null);
+    };
+
+    const handleDragMove = (event) => {
+        updateDropPreview(event);
+    };
+
+    const handleDragEnd = (event) => {
+        setDropPreview(null);
+        if (readOnly) {
+            return;
+        }
+        const { active, over } = event;
         if (!over || !active.data.current?.appointment) {
             return;
         }
-        const apt = active.data.current.appointment;
-        const startMin = active.data.current.startMin;
-        const targetDate = over.data.current?.date;
-        if (!targetDate || typeof targetDate !== 'string') {
+        const preview = computeDropPreviewFromEvent(event, dragLayoutCtx);
+        if (!preview) {
             return;
         }
+        const apt = active.data.current.appointment;
+        const start_time = minutesToTimeHm(preview.startMin);
+        onAppointmentMove(apt, { date: preview.dateStr, start_time });
+    };
 
-        const gridEl = gridBodyRefs.current[targetDate];
-        const h = gridEl?.offsetHeight || GRID_MIN_HEIGHT;
-        const pxPerMinute = h / minutesInView;
-
-        let newStartMin = startMin + delta.y / pxPerMinute;
-        newStartMin = Math.round(newStartMin / SNAP_MINUTES) * SNAP_MINUTES;
-
-        const duration = Math.max(5, timeToMinutes(apt.end_time) - timeToMinutes(apt.start_time));
-        newStartMin = Math.max(rangeStartMin, Math.min(newStartMin, rangeEndMin - duration));
-
-        const start_time = minutesToTimeHm(newStartMin);
-        onAppointmentMove(apt, { date: targetDate, start_time });
+    const handleDragCancel = () => {
+        setDropPreview(null);
     };
 
     const nowLinePct = useMemo(() => {
@@ -281,36 +495,39 @@ export default function CalendarWeekGrid({
         }
         const now = new Date();
         const m = now.getHours() * 60 + now.getMinutes();
-        if (m < rangeStartMin || m > rangeEndMin) {
+        if (m < rangeStartMin || m >= rangeEndMin) {
             return null;
         }
         return ((m - rangeStartMin) / minutesInView) * 100;
     }, [columnDates, todayStr, minutesInView, rangeStartMin, rangeEndMin, nowTick]);
 
-    const hourRows = useMemo(
-        () => Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i),
-        [],
-    );
-
     return (
-        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+        <DndContext
+            sensors={sensors}
+            onDragStart={handleDragStart}
+            onDragMove={handleDragMove}
+            onDragEnd={handleDragEnd}
+            onDragCancel={handleDragCancel}
+        >
             <div className="flex w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm ring-1 ring-slate-100">
                 <div
-                    className="w-9 shrink-0 border-r border-slate-100 bg-slate-50/50 pt-[56px] sm:w-12 sm:pt-[68px]"
-                    style={{ minHeight: GRID_WITH_HEADER_MIN_HEIGHT }}
+                    className="flex w-9 shrink-0 flex-col border-r border-slate-100 bg-slate-50/50 pt-[56px] sm:w-12 sm:pt-[68px]"
+                    style={{ minHeight: gridWithHeaderMinHeight }}
                 >
-                    {hourRows.map((h) => (
-                        <div
-                            key={h}
-                            className="flex items-start justify-end pr-1 text-[9px] font-medium tabular-nums text-slate-400 sm:pr-2 sm:text-[11px]"
-                            style={{ height: GRID_MIN_HEIGHT / hourRows.length }}
-                        >
-                            {String(h).padStart(2, '0')}:00
-                        </div>
-                    ))}
+                    <div className="flex flex-col" style={{ height: gridMinHeight, width: '100%' }}>
+                        {segments.map((seg) => (
+                            <div
+                                key={`${seg.startMin}-${seg.endMin}`}
+                                className="flex min-h-0 shrink-0 items-start justify-end pr-1 text-[9px] font-medium tabular-nums text-slate-400 sm:pr-2 sm:text-[11px]"
+                                style={{ flex: `${seg.minutes} 1 0` }}
+                            >
+                                {minutesToTimeHm(seg.startMin)}
+                            </div>
+                        ))}
+                    </div>
                 </div>
                 <div className="min-w-0 flex-1 overflow-hidden">
-                    <div className="flex w-full min-w-0" style={{ minHeight: GRID_WITH_HEADER_MIN_HEIGHT }}>
+                    <div className="flex w-full min-w-0" style={{ minHeight: gridWithHeaderMinHeight }}>
                         {columnDates.map((dateStr) => {
                             const [y, mo, da] = dateStr.split('-').map(Number);
                             const dateObj = new Date(y, mo - 1, da);
@@ -332,6 +549,13 @@ export default function CalendarWeekGrid({
                                     dateObj={dateObj}
                                     isToday={isToday}
                                     setGridBodyRef={setGridBodyRef}
+                                    segments={segments}
+                                    gridMinHeight={gridMinHeight}
+                                    breaks={calendarDayBreaks[dateStr] ?? []}
+                                    isDayOff={calendarDayOffs.includes(dateStr)}
+                                    rangeStartMin={rangeStartMin}
+                                    rangeEndMin={rangeEndMin}
+                                    minutesInView={minutesInView}
                                 >
                                     <div className="pointer-events-none absolute inset-0">
                                         {nowLinePct != null && isToday && (
@@ -341,7 +565,13 @@ export default function CalendarWeekGrid({
                                             />
                                         )}
                                     </div>
-                                    <div className="relative h-full w-full" style={{ minHeight: GRID_MIN_HEIGHT }}>
+                                    <div className="relative h-full w-full" style={{ minHeight: gridMinHeight }}>
+                                        <DropSlotPreview
+                                            dateStr={dateStr}
+                                            dropPreview={dropPreview}
+                                            rangeStartMin={rangeStartMin}
+                                            minutesInView={minutesInView}
+                                        />
                                         {laid.map((item) => (
                                             <DraggableEvent
                                                 key={item.id}
@@ -354,6 +584,7 @@ export default function CalendarWeekGrid({
                                                 onOpen={onEventClick}
                                                 readOnly={readOnly}
                                                 disabled={dragSavingId === item.apt.id}
+                                                gridLineMinutes={gridLineMinutes}
                                             />
                                         ))}
                                     </div>

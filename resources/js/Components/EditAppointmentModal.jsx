@@ -21,7 +21,14 @@ function statusLabel(status) {
     return v.charAt(0).toUpperCase() + v.slice(1);
 }
 
-export default function EditAppointmentModal({ appointment, employees, services, onClose, readOnly = false }) {
+export default function EditAppointmentModal({
+    appointment,
+    employees,
+    services,
+    onClose,
+    readOnly = false,
+    employeeMode = false,
+}) {
     const { auth } = usePage().props;
     const currencySymbol = CURRENCY_SYMBOLS[auth?.business?.currency] ?? auth?.business?.currency_symbol ?? '€';
 
@@ -32,6 +39,9 @@ export default function EditAppointmentModal({ appointment, employees, services,
     // (e.g. "2026-04-07T00:00:00.000000Z"). Slice to plain YYYY-MM-DD.
     const apptDate = appointment.date ? String(appointment.date).slice(0, 10) : today;
     const isPast   = apptDate < today;
+    const statusVal = appointmentStatusValue(appointment.status);
+    const employeeCancelledView = employeeMode && statusVal === 'cancelled';
+    const effectiveReadOnly = readOnly || employeeCancelledView;
 
     const [activeTab, setActiveTab] = useState('schedule');
 
@@ -65,20 +75,48 @@ export default function EditAppointmentModal({ appointment, employees, services,
 
     // Reset employee if no longer eligible after service change
     useEffect(() => {
-        if (readOnly) {
+        if (effectiveReadOnly || employeeMode) {
             return;
         }
         const eligible = eligibleEmployees.some((e) => String(e.id) === form.employee_id);
         if (!eligible && eligibleEmployees.length > 0) {
             patch('employee_id', String(eligibleEmployees[0].id));
         }
-    }, [eligibleEmployees, readOnly]);
+    }, [eligibleEmployees, effectiveReadOnly, employeeMode]);
 
-    // Fetch slots whenever employee + date + service are all set
+    // Fetch slots whenever employee + date + service are all set (admin); date + service (employee)
     useEffect(() => {
-        if (readOnly) {
+        if (effectiveReadOnly) {
             return;
         }
+        if (employeeMode) {
+            const key = `e|${appointment.id}|${form.date}|${form.service_id}`;
+            if (!form.date || !form.service_id) {
+                prevKeyRef.current = '';
+                setSlots([]);
+                return;
+            }
+            if (prevKeyRef.current === key) return;
+            prevKeyRef.current = key;
+
+            setLoadingSlots(true);
+            setSlots([]);
+
+            const params = new URLSearchParams({
+                date: form.date,
+                service_id: form.service_id,
+            });
+
+            fetch(route('employee.appointments.slots', appointment.id) + '?' + params.toString(), {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            })
+                .then((r) => r.json())
+                .then((data) => setSlots(data.slots ?? []))
+                .catch(() => setSlots([]))
+                .finally(() => setLoadingSlots(false));
+            return;
+        }
+
         const key = `${form.employee_id}|${form.date}|${form.service_id}`;
         if (!form.employee_id || !form.date || !form.service_id) {
             prevKeyRef.current = '';
@@ -105,25 +143,82 @@ export default function EditAppointmentModal({ appointment, employees, services,
             .then((data) => setSlots(data.slots ?? []))
             .catch(() => setSlots([]))
             .finally(() => setLoadingSlots(false));
-    }, [form.employee_id, form.date, form.service_id, readOnly, appointment.id]);
+    }, [form.employee_id, form.date, form.service_id, effectiveReadOnly, employeeMode, appointment.id]);
 
-    // Keep pre-selected slot if still available; clear only on a key change (not initial load)
+    /** True when the form still reflects the same service as the persisted appointment (not mid-edit service switch). */
+    const sameServiceAsRecord = useMemo(
+        () => String(form.service_id) === String(appointment.service_id ?? ''),
+        [form.service_id, appointment.service_id],
+    );
+
+    /**
+     * HH:MM options from the API for the current service. Optionally include the saved start time when it is missing
+     * from the slot list only for the original service (e.g. legacy time in a break). After a service change, only
+     * slots returned for the new service are shown.
+     */
+    const slotOptions = useMemo(() => {
+        const set = new Set((slots || []).map((s) => formatTimeHm(s)));
+        const cur = formatTimeHm(form.start_time);
+        const saved = formatTimeHm(appointment.start_time);
+        if (sameServiceAsRecord && form.date === apptDate && cur && saved && cur === saved) {
+            set.add(cur);
+        }
+        return [...set].sort();
+    }, [slots, form.start_time, form.date, apptDate, appointment.start_time, sameServiceAsRecord]);
+
+    // Drop invalid time when slots update: keep selection only if it appears in API slots, or (same service only)
+    // if it is the saved time missing from the list (break edge case). Changing service re-validates against new slots.
     useEffect(() => {
-        if (readOnly) {
+        if (effectiveReadOnly) {
             return;
         }
-        if (slots.length && !slots.includes(form.start_time)) {
-            patch('start_time', '');
+        if (!slots.length) {
+            return;
         }
-    }, [slots]);
+        const cur = formatTimeHm(form.start_time);
+        if (!cur) {
+            return;
+        }
+        if (slots.some((s) => formatTimeHm(s) === cur)) {
+            return;
+        }
+        const saved = formatTimeHm(appointment.start_time);
+        if (sameServiceAsRecord && form.date === apptDate && cur === saved) {
+            return;
+        }
+        patch('start_time', '');
+    }, [slots, form.start_time, form.date, effectiveReadOnly, apptDate, appointment.start_time, sameServiceAsRecord]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (readOnly) {
+        if (effectiveReadOnly) {
             return;
         }
         if (submitting) return;
         setSubmitting(true);
+        if (employeeMode) {
+            router.put(
+                route('employee.appointments.edit', appointment.id),
+                {
+                    service_id: Number(form.service_id),
+                    status: form.status,
+                    date: form.date,
+                    start_time: form.start_time,
+                },
+                {
+                    onError: (errs) => {
+                        setErrors(errs);
+                        setSubmitting(false);
+                        setActiveTab('schedule');
+                    },
+                    onSuccess: () => {
+                        setSubmitting(false);
+                        onClose();
+                    },
+                },
+            );
+            return;
+        }
         router.put(
             route('admin.appointments.edit', appointment.id),
             {
@@ -183,7 +278,7 @@ export default function EditAppointmentModal({ appointment, employees, services,
                 {/* Header */}
                 <div className="flex shrink-0 items-center justify-between rounded-t-2xl border-b border-slate-100 bg-white px-4 py-3 sm:px-5">
                     <h2 className="font-headline text-lg font-extrabold text-on-surface">
-                        {readOnly ? 'Appointment details' : 'Edit Appointment'}
+                        {effectiveReadOnly ? 'Appointment details' : employeeMode ? 'Edit your appointment' : 'Edit Appointment'}
                     </h2>
                     <button type="button" onClick={onClose} className="p-2 rounded-xl hover:bg-slate-100 transition-colors">
                         <Icon name="close" size="text-xl" className="text-on-surface-variant" />
@@ -191,7 +286,7 @@ export default function EditAppointmentModal({ appointment, employees, services,
                 </div>
 
                 {/* Past-date warning */}
-                {!readOnly && isPast && (
+                {!effectiveReadOnly && isPast && (
                     <div className="mx-4 mt-2 flex shrink-0 items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 sm:mx-5">
                         <Icon name="warning" size="text-base" className="mt-0.5 shrink-0 text-amber-500" />
                         <p className="text-xs text-amber-900 sm:text-sm">
@@ -201,7 +296,7 @@ export default function EditAppointmentModal({ appointment, employees, services,
                 )}
 
                 {/* Tabs */}
-                {!readOnly && (
+                {!effectiveReadOnly && !employeeMode && (
                 <div className="mt-1 flex shrink-0 border-b border-slate-100 px-4 sm:px-5">
                     {TABS.map((tab) => {
                         const errCount = tab.id === 'schedule' ? scheduleErrors : clientErrors;
@@ -233,10 +328,12 @@ export default function EditAppointmentModal({ appointment, employees, services,
                 <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
                     <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 pb-4 sm:px-5">
 
-                        {readOnly && (
+                        {effectiveReadOnly && (
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <p className="sm:col-span-2 text-xs text-on-surface-variant">
-                                    This booking is view-only. Contact your manager to make changes.
+                                    {employeeCancelledView
+                                        ? 'Cancelled appointments cannot be edited.'
+                                        : 'This booking is view-only. Contact your manager to make changes.'}
                                 </p>
                                 {readOnlyRow('Service', serviceName)}
                                 {readOnlyRow('Status', statusLabel(appointment.status))}
@@ -266,14 +363,14 @@ export default function EditAppointmentModal({ appointment, employees, services,
                         )}
 
                         {/* ── Tab: Service & Schedule ── */}
-                        {!readOnly && activeTab === 'schedule' && (
+                        {!effectiveReadOnly && activeTab === 'schedule' && (
                             <div className="space-y-3">
                                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                     <FilterListbox
                                         label="Service"
                                         compact
                                         value={form.service_id}
-                                        onChange={(v) => { patch('service_id', v); patch('start_time', ''); }}
+                                        onChange={(v) => { patch('service_id', v); }}
                                         options={services.map((s) => ({ value: String(s.id), label: `${s.name} (${s.duration} min)` }))}
                                         minWidthClass="w-full"
                                     />
@@ -293,26 +390,41 @@ export default function EditAppointmentModal({ appointment, employees, services,
                                 {errors.service_id && <p className="text-xs text-error">{errors.service_id}</p>}
                                 {errors.status && <p className="text-xs text-error">{errors.status}</p>}
 
-                                <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2">
-                                    <FilterListbox
-                                        label="Employee"
-                                        compact
-                                        value={form.employee_id}
-                                        onChange={(v) => { patch('employee_id', v); patch('start_time', ''); }}
-                                        options={eligibleEmployees.map((e) => ({ value: String(e.id), label: e.name }))}
-                                        minWidthClass="w-full"
-                                    />
+                                {!employeeMode && (
+                                    <>
+                                        <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2">
+                                            <FilterListbox
+                                                label="Employee"
+                                                compact
+                                                value={form.employee_id}
+                                                onChange={(v) => { patch('employee_id', v); patch('start_time', ''); }}
+                                                options={eligibleEmployees.map((e) => ({ value: String(e.id), label: e.name }))}
+                                                minWidthClass="w-full"
+                                            />
+                                            <div>
+                                                <span className={labelCls}>Payment</span>
+                                                <div className="flex h-[42px] items-center rounded-xl border border-slate-100 bg-slate-50 px-3 text-sm font-bold text-on-surface">
+                                                    {Number(appointment.price ?? 0).toFixed(2)}
+                                                    <span className="ml-1 font-semibold text-on-surface-variant">{currencySymbol}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {errors.employee_id && <p className="text-xs text-error">{errors.employee_id}</p>}
+                                        {form.service_id && eligibleEmployees.length === 0 && (
+                                            <p className="text-xs text-amber-600">No employee offers this service.</p>
+                                        )}
+                                    </>
+                                )}
+
+                                {employeeMode && (
                                     <div>
                                         <span className={labelCls}>Payment</span>
                                         <div className="flex h-[42px] items-center rounded-xl border border-slate-100 bg-slate-50 px-3 text-sm font-bold text-on-surface">
                                             {Number(appointment.price ?? 0).toFixed(2)}
                                             <span className="ml-1 font-semibold text-on-surface-variant">{currencySymbol}</span>
                                         </div>
+                                        <p className="mt-1 text-[11px] text-on-surface-variant">Price updates when you change the service.</p>
                                     </div>
-                                </div>
-                                {errors.employee_id && <p className="text-xs text-error">{errors.employee_id}</p>}
-                                {form.service_id && eligibleEmployees.length === 0 && (
-                                    <p className="text-xs text-amber-600">No employee offers this service.</p>
                                 )}
 
                                 <div>
@@ -328,28 +440,30 @@ export default function EditAppointmentModal({ appointment, employees, services,
 
                                 <div>
                                     <label className={labelCls}>Time</label>
-                                    {(!form.employee_id || !form.date || !form.service_id) ? (
+                                    {(!employeeMode && (!form.employee_id || !form.date || !form.service_id)) ? (
                                         <p className="py-1 text-xs text-on-surface-variant">Choose service, employee, and date first.</p>
+                                    ) : (employeeMode && (!form.date || !form.service_id)) ? (
+                                        <p className="py-1 text-xs text-on-surface-variant">Choose service and date first.</p>
                                     ) : loadingSlots ? (
                                         <div className="flex items-center gap-2 py-1 text-xs text-on-surface-variant">
                                             <Icon name="sync" size="text-sm" className="animate-spin" /> Loading…
                                         </div>
-                                    ) : slots.length === 0 ? (
+                                    ) : slotOptions.length === 0 ? (
                                         <p className="py-1 text-xs text-on-surface-variant">No slots this day.</p>
                                     ) : (
                                         <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-8">
-                                            {slots.map((slot) => (
+                                            {slotOptions.map((slotHm) => (
                                                 <button
-                                                    key={slot}
+                                                    key={slotHm}
                                                     type="button"
-                                                    onClick={() => patch('start_time', slot)}
+                                                    onClick={() => patch('start_time', slotHm)}
                                                     className={`h-8 rounded-lg text-[11px] font-bold transition-all ${
-                                                        form.start_time === slot
+                                                        formatTimeHm(form.start_time) === slotHm
                                                             ? 'bg-on-surface text-surface'
                                                             : 'bg-slate-100 text-on-surface hover:bg-slate-200'
                                                     }`}
                                                 >
-                                                    {slot}
+                                                    {slotHm}
                                                 </button>
                                             ))}
                                         </div>
@@ -360,7 +474,7 @@ export default function EditAppointmentModal({ appointment, employees, services,
                         )}
 
                         {/* ── Tab: Client Details ── */}
-                        {!readOnly && activeTab === 'client' && (
+                        {!effectiveReadOnly && !employeeMode && activeTab === 'client' && (
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                     <div>
                                         <label className={labelCls}>First Name</label>
@@ -422,7 +536,7 @@ export default function EditAppointmentModal({ appointment, employees, services,
 
                     {/* Footer — always visible */}
                     <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-white px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-5">
-                        {readOnly ? (
+                        {effectiveReadOnly ? (
                             <div className="flex w-full justify-end">
                                 <button
                                     type="button"
