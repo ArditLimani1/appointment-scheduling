@@ -13,6 +13,12 @@ const navItems = [
     { label: 'Configuration', icon: 'settings', route: 'admin.settings.index', permission: 'admin.settings' },
 ];
 
+const employeeNavItems = [
+    { label: 'My Appointments', icon: 'calendar_today', route: 'employee.appointments.index', permission: 'employee.dashboard' },
+    { label: 'My Schedule', icon: 'calendar_view_week', route: 'employee.schedule.index', permission: 'employee.schedule' },
+    { label: 'My Analytics', icon: 'analytics', route: 'employee.analytics.index', permission: 'employee.analytics' },
+];
+
 const mobileNavItems = [
     { label: 'Dashboard', icon: 'dashboard', route: 'admin.dashboard', permission: 'admin.dashboard' },
     { label: 'Employees', icon: 'badge', route: 'admin.employees.index', permission: 'admin.employees' },
@@ -30,6 +36,13 @@ export default function AdminLayout({ children }) {
 
     const visibleNav = navItems.filter((item) => can(item.permission));
     const visibleMobileNav = mobileNavItems.filter((item) => can(item.permission));
+
+    const showEmployeeSection = user?.role === 'employee'
+        ? permissions.some(p => p.startsWith('employee.'))
+        : user?.also_works_as_staff === true;
+    const visibleEmployeeNav = showEmployeeSection
+        ? employeeNavItems.filter((item) => can(item.permission))
+        : [];
 
     const isActive = (routeName) => {
         try {
@@ -69,7 +82,7 @@ export default function AdminLayout({ children }) {
                         </p>
                     </div>
 
-                    <nav className="flex-1 space-y-1">
+                    <nav className="flex-1 space-y-1 overflow-y-auto">
                         {visibleNav.map((item) => {
                             const active = isActive(item.route);
                             return (
@@ -92,6 +105,34 @@ export default function AdminLayout({ children }) {
                                 </Link>
                             );
                         })}
+
+                        {visibleEmployeeNav.length > 0 && (
+                            <div className="pt-4">
+                                <p className="px-4 text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Employee Workspace</p>
+                                {visibleEmployeeNav.map((item) => {
+                                    const active = isActive(item.route);
+                                    return (
+                                        <Link
+                                            key={item.route}
+                                            href={(() => { try { return route(item.route); } catch { return '#'; } })()}
+                                            className={`flex items-center gap-4 py-3 pl-4 text-sm transition-all duration-200 ${
+                                                active
+                                                    ? 'bg-surface-container-low text-on-surface font-bold border-l-2 border-on-surface rounded-r-lg'
+                                                    : 'text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface rounded-lg'
+                                            }`}
+                                        >
+                                            <Icon
+                                                name={item.icon}
+                                                filled={active}
+                                                size="text-[20px]"
+                                                className={active ? 'text-on-surface' : 'text-outline'}
+                                            />
+                                            <span className="font-medium">{item.label}</span>
+                                        </Link>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </nav>
 
                     <div className="pt-8 border-t border-outline-variant/40 space-y-5">

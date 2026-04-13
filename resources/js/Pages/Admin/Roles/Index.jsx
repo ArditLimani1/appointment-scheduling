@@ -6,6 +6,11 @@ import PageHeader from '@/Components/PageHeader';
 import DeleteConfirmModal from '@/Components/DeleteConfirmModal';
 import RoleModal from './RoleModal';
 
+function permissionLabel(key, permissionGroups) {
+    const all = [...(permissionGroups?.admin ?? []), ...(permissionGroups?.employee ?? [])];
+    return all.find((p) => p.value === key)?.label ?? key;
+}
+
 export default function Index({ roles, permissionGroups }) {
     const [showModal, setShowModal] = useState(false);
     const [editing, setEditing] = useState(null);
@@ -90,7 +95,7 @@ export default function Index({ roles, permissionGroups }) {
                                             <p className="text-xs text-on-surface-variant leading-relaxed max-w-xl">
                                                 {(role.permissions || []).length === 0
                                                     ? '—'
-                                                    : (role.permissions || []).join(', ')}
+                                                    : (role.permissions || []).map((k) => permissionLabel(k, permissionGroups)).join(', ')}
                                             </p>
                                         </td>
                                         <td className="px-8 py-5 text-right">

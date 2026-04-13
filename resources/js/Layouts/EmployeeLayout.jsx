@@ -16,6 +16,16 @@ const navItems = [
     { label: 'Configuration', icon: 'tune', route: 'employee.schedule.configuration', permission: 'employee.schedule' },
 ];
 
+const adminNavItems = [
+    { label: 'Dashboard', icon: 'dashboard', route: 'admin.dashboard', permission: 'admin.dashboard' },
+    { label: 'Services', icon: 'layers', route: 'admin.services.index', permission: 'admin.services' },
+    { label: 'Employees', icon: 'badge', route: 'admin.employees.index', permission: 'admin.employees' },
+    { label: 'Roles', icon: 'key', route: 'admin.roles.index', permission: 'admin.roles' },
+    { label: 'Appointments', icon: 'calendar_today', route: 'admin.appointments.index', permission: 'admin.appointments' },
+    { label: 'Analytics', icon: 'analytics', route: 'admin.analytics.index', permission: 'admin.analytics' },
+    { label: 'Configuration', icon: 'settings', route: 'admin.settings.index', permission: 'admin.settings' },
+];
+
 const mobileNavItems = [
     { label: 'Dashboard', icon: 'dashboard', route: 'employee.dashboard', permission: 'employee.dashboard' },
     { label: 'Appts', icon: 'calendar_today', route: 'employee.appointments.index', permission: 'employee.dashboard' },
@@ -34,6 +44,7 @@ export default function EmployeeLayout({ children }) {
 
     const visibleNav = navItems.filter((item) => can(item.permission));
     const visibleMobileNav = mobileNavItems.filter((item) => can(item.permission));
+    const visibleAdminNav = adminNavItems.filter((item) => can(item.permission));
 
     const employeeSlug = user?.booking_slug || toSlug(user?.name);
     const employeeBookingUrl = business?.slug
@@ -87,7 +98,7 @@ export default function EmployeeLayout({ children }) {
                         </p>
                     </div>
 
-                    <nav className="flex-1 space-y-1">
+                    <nav className="flex-1 space-y-1 overflow-y-auto">
                         {visibleNav.map((item) => {
                             const active = isActive(item.route);
                             return (
@@ -116,6 +127,34 @@ export default function EmployeeLayout({ children }) {
                                 </Link>
                             );
                         })}
+
+                        {visibleAdminNav.length > 0 && (
+                            <div className="pt-4">
+                                <p className="px-4 text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Admin Panel</p>
+                                {visibleAdminNav.map((item) => {
+                                    const active = (() => { try { return route().current(item.route) || route().current(item.route + '.*'); } catch { return false; } })();
+                                    return (
+                                        <Link
+                                            key={item.route}
+                                            href={(() => { try { return route(item.route); } catch { return '#'; } })()}
+                                            className={`flex items-center gap-4 py-3 pl-4 text-sm transition-all duration-200 ${
+                                                active
+                                                    ? 'bg-surface-container-low text-on-surface font-bold border-l-2 border-on-surface rounded-r-lg'
+                                                    : 'text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface rounded-lg'
+                                            }`}
+                                        >
+                                            <Icon
+                                                name={item.icon}
+                                                filled={active}
+                                                size="text-[20px]"
+                                                className={active ? 'text-on-surface' : 'text-outline'}
+                                            />
+                                            <span className="font-medium">{item.label}</span>
+                                        </Link>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </nav>
 
                     <div className="pt-8 border-t border-outline-variant/40 space-y-5">
