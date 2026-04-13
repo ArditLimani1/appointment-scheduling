@@ -451,8 +451,9 @@ export default function EmployeeAppointmentsIndex({
             </PageHeader>
 
             <div className="mb-6 rounded-2xl bg-surface-container-lowest p-4 ring-1 ring-slate-100 shadow-sm">
-                <div className="flex flex-wrap gap-3 items-end">
+                <div className="flex flex-col gap-4 xl:flex-row xl:flex-nowrap xl:items-end xl:gap-3">
                     <DatePicker
+                        className="w-full min-w-0 xl:w-auto"
                         label="From"
                         value={localFilters.date_from}
                         onChange={(value) => {
@@ -461,8 +462,10 @@ export default function EmployeeAppointmentsIndex({
                             patchFilters({ date_from: value, date_to: nextTo });
                         }}
                         placeholder="Start date"
+                        buttonClassName="max-xl:!min-w-0"
                     />
                     <DatePicker
+                        className="w-full min-w-0 xl:w-auto"
                         label="To"
                         value={localFilters.date_to}
                         onChange={(value) => {
@@ -474,23 +477,27 @@ export default function EmployeeAppointmentsIndex({
                             }
                         }}
                         placeholder="End date"
+                        buttonClassName="max-xl:!min-w-0"
                     />
                     <FilterListbox
                         label="Service"
                         value={localFilters.service_id}
                         onChange={(v) => patchFilters({ service_id: v })}
                         options={serviceOptions}
-                        wrapperClassName="flex w-full shrink-0 flex-col gap-1.5 min-w-[190px] max-w-full sm:w-[220px]"
+                        wrapperClassName="flex w-full min-w-0 shrink-0 flex-col gap-1.5 xl:w-[220px]"
                     />
                     <FilterStatusMulti
                         label="Status"
                         value={localFilters.status}
                         onChange={(v) => patchFilters({ status: v })}
                         options={statusOptions}
-                        minWidthClass="min-w-[200px] max-w-full sm:w-[220px]"
+                        minWidthClass="w-full min-w-0 max-w-full xl:min-w-[200px] xl:w-[220px]"
                     />
-                    <div className="flex w-full min-w-[min(100%,220px)] max-w-md shrink-0 flex-col gap-1.5 sm:flex-1 sm:min-w-[200px]">
-                        <label htmlFor="employee-appointments-client-search" className="ml-1 text-[10px] font-bold uppercase tracking-widest text-outline">
+                    <div className="flex w-full min-w-0 flex-col gap-1.5 xl:max-w-md xl:flex-1 min-[1100px]:max-w-lg">
+                        <label
+                            htmlFor="employee-appointments-client-search"
+                            className="ml-1 text-[10px] font-bold uppercase tracking-widest text-outline"
+                        >
                             Client
                         </label>
                         <div className="relative">
@@ -502,7 +509,7 @@ export default function EmployeeAppointmentsIndex({
                                 type="search"
                                 value={clientSearchDraft}
                                 autoComplete="off"
-                                placeholder="Search by name…"
+                                placeholder="Client name"
                                 onChange={(e) => {
                                     const v = e.target.value;
                                     setClientSearchDraft(v);
@@ -520,15 +527,15 @@ export default function EmployeeAppointmentsIndex({
                                         });
                                     }, 400);
                                 }}
-                                className="min-h-[2.75rem] w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-on-surface placeholder:text-outline shadow-none transition-colors focus:border-on-surface/20 focus:outline-none focus:ring-2 focus:ring-on-surface/10"
+                                className="min-h-[2.75rem] w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-on-surface shadow-none transition-colors placeholder:text-outline focus:border-on-surface/20 focus:outline-none focus:ring-2 focus:ring-on-surface/10"
                             />
                         </div>
                     </div>
-                    <div className="flex items-end">
+                    <div className="flex w-full shrink-0 items-end justify-end xl:w-auto">
                         <button
                             type="button"
                             onClick={clearFilters}
-                            className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-on-surface hover:bg-slate-50 transition-colors"
+                            className="w-full rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-slate-50 max-xl:min-h-[2.75rem] xl:w-auto"
                         >
                             Clear
                         </button>

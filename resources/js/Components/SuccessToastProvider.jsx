@@ -20,21 +20,21 @@ function SuccessToastSurface({ message, onDismiss }) {
             role="status"
             aria-live="polite"
             style={{ top: TOAST_TOP_BELOW_HEADER }}
-            className="fixed right-3 z-[100] flex w-max max-w-[calc(100vw-1.5rem)] flex-row items-center gap-2 rounded-xl border border-white/10 bg-on-surface px-3 py-2 shadow-lg sm:right-6 sm:max-w-md sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3 sm:shadow-2xl"
+            className="fixed right-3 z-[100] flex w-max max-w-[calc(100vw-1.5rem)] flex-row items-center gap-2 rounded-lg border border-white/10 bg-on-surface px-3 py-1.5 shadow-md sm:right-6 sm:max-w-md sm:gap-2 sm:rounded-lg sm:px-3 sm:py-1.5 sm:shadow-lg"
         >
-            <span className="inline-flex shrink-0 items-center justify-center text-surface" aria-hidden>
-                <Icon name="check_circle" size="text-lg sm:text-xl" filled />
+            <span className="inline-flex shrink-0 items-center justify-center leading-none text-surface" aria-hidden>
+                <Icon name="check_circle" size="text-base" filled />
             </span>
-            <p className="m-0 min-w-0 max-w-[calc(100vw-5.5rem)] flex-1 text-xs font-semibold leading-snug text-surface sm:max-w-none sm:text-sm sm:leading-normal">
+            <p className="m-0 min-w-0 max-w-[calc(100vw-5.5rem)] flex-1 text-xs font-medium leading-tight text-surface sm:max-w-none sm:font-semibold">
                 {message}
             </p>
             <button
                 type="button"
                 onClick={onDismiss}
-                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-surface/70 transition-colors hover:bg-white/10 hover:text-surface sm:h-9 sm:w-9 sm:rounded-lg"
+                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-surface/70 transition-colors hover:bg-white/10 hover:text-surface sm:h-7 sm:w-7"
                 aria-label="Dismiss notification"
             >
-                <Icon name="close" size="text-base sm:text-lg" />
+                <Icon name="close" size="text-base" />
             </button>
         </div>
     );
