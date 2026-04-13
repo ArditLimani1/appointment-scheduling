@@ -1,5 +1,5 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import FilterListbox from '@/Components/FilterListbox';
 import Icon from '@/Components/Icon';
 import InputError from '@/Components/InputError';
@@ -15,7 +15,16 @@ function slugify(value) {
 
 export default function Register({ businessTypeCategories = [] }) {
     const [step, setStep] = useState(0);
-    const { data, setData, post, processing, errors, reset } = useForm({
+    const nameRef = useRef(null);
+    const emailRef = useRef(null);
+    const passwordRef = useRef(null);
+    const passwordConfirmationRef = useRef(null);
+    const businessNameRef = useRef(null);
+    const slugRef = useRef(null);
+    const locationRef = useRef(null);
+    const phoneRef = useRef(null);
+    const pendingFocusFieldRef = useRef(null);
+    const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
         name: '',
         email: '',
         password: '',
@@ -35,17 +44,93 @@ export default function Register({ businessTypeCategories = [] }) {
             business_name: value,
             slug: prev.slug === slugify(prev.business_name) ? slugify(value) : prev.slug,
         }));
+        clearErrors('business_name', 'slug');
     };
 
     const canContinue = () => {
         return data.name && data.email && data.password && data.password_confirmation;
     };
 
+    const updateField = (field, value) => {
+        setData(field, value);
+        clearErrors(field);
+    };
+
+    const focusFirstError = (formErrors) => {
+        const errorFields = Object.keys(formErrors);
+
+        if (errorFields.length === 0) {
+            return;
+        }
+
+        const stepFieldMap = {
+            0: ['name', 'email', 'password', 'password_confirmation'],
+            1: ['business_name', 'business_type_id', 'slug', 'location', 'phone', 'logo', 'also_works_as_staff'],
+        };
+
+        const firstStepWithError = [0, 1].find((stepNumber) =>
+            stepFieldMap[stepNumber].some((field) => errorFields.includes(field)),
+        );
+
+        const focusMap = {
+            name: nameRef,
+            email: emailRef,
+            password: passwordRef,
+            password_confirmation: passwordConfirmationRef,
+            business_name: businessNameRef,
+            slug: slugRef,
+            location: locationRef,
+            phone: phoneRef,
+        };
+
+        const firstFocusableError = errorFields.find((field) => focusMap[field]?.current);
+        const targetField = firstFocusableError ?? errorFields[0];
+
+        if (firstStepWithError != null && firstStepWithError !== step) {
+            pendingFocusFieldRef.current = targetField;
+            setStep(firstStepWithError);
+            return;
+        }
+
+        if (targetField && focusMap[targetField]?.current) {
+            requestAnimationFrame(() => {
+                focusMap[targetField].current?.focus();
+            });
+        }
+    };
+
+    useEffect(() => {
+        if (!pendingFocusFieldRef.current) {
+            return;
+        }
+
+        const focusMap = {
+            name: nameRef,
+            email: emailRef,
+            password: passwordRef,
+            password_confirmation: passwordConfirmationRef,
+            business_name: businessNameRef,
+            slug: slugRef,
+            location: locationRef,
+            phone: phoneRef,
+        };
+
+        const field = pendingFocusFieldRef.current;
+
+        requestAnimationFrame(() => {
+            focusMap[field]?.current?.focus();
+            pendingFocusFieldRef.current = null;
+        });
+    }, [step]);
+
     const submit = (e) => {
         e.preventDefault();
         post(route('register'), {
             forceFormData: true,
             onFinish: () => reset('password', 'password_confirmation'),
+            onError: (formErrors) => {
+                focusFirstError(formErrors);
+            },
         });
     };
 
@@ -137,8 +222,9 @@ export default function Register({ businessTypeCategories = [] }) {
                                     <div>
                                         <label className="block text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-1.5">Full Name</label>
                                         <input
+                                            ref={nameRef}
                                             value={data.name}
-                                            onChange={e => setData('name', e.target.value)}
+                                            onChange={e => updateField('name', e.target.value)}
                                             className={inputClass}
                                             placeholder="Jane Smith"
                                             autoFocus
@@ -150,9 +236,10 @@ export default function Register({ businessTypeCategories = [] }) {
                                     <div>
                                         <label className="block text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-1.5">Email Address</label>
                                         <input
+                                            ref={emailRef}
                                             type="email"
                                             value={data.email}
-                                            onChange={e => setData('email', e.target.value)}
+                                            onChange={e => updateField('email', e.target.value)}
                                             className={inputClass}
                                             placeholder="jane@example.com"
                                             required
@@ -163,9 +250,10 @@ export default function Register({ businessTypeCategories = [] }) {
                                     <div>
                                         <label className="block text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-1.5">Password</label>
                                         <input
+                                            ref={passwordRef}
                                             type="password"
                                             value={data.password}
-                                            onChange={e => setData('password', e.target.value)}
+                                            onChange={e => updateField('password', e.target.value)}
                                             className={inputClass}
                                             placeholder="Min. 8 characters"
                                             required
@@ -176,9 +264,10 @@ export default function Register({ businessTypeCategories = [] }) {
                                     <div>
                                         <label className="block text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-1.5">Confirm Password</label>
                                         <input
+                                            ref={passwordConfirmationRef}
                                             type="password"
                                             value={data.password_confirmation}
-                                            onChange={e => setData('password_confirmation', e.target.value)}
+                                            onChange={e => updateField('password_confirmation', e.target.value)}
                                             className={inputClass}
                                             placeholder="Repeat your password"
                                             required
@@ -209,6 +298,7 @@ export default function Register({ businessTypeCategories = [] }) {
                                     <div>
                                         <label className="block text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-1.5">Business Name</label>
                                         <input
+                                            ref={businessNameRef}
                                             value={data.business_name}
                                             onChange={e => handleBusinessName(e.target.value)}
                                             className={inputClass}
@@ -223,9 +313,10 @@ export default function Register({ businessTypeCategories = [] }) {
                                         <label className="block text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-1.5">Type of business</label>
                                         <FilterListbox
                                             value={data.business_type_id === '' ? null : data.business_type_id}
-                                            onChange={(v) =>
-                                                setData('business_type_id', v == null ? '' : Number(v))
-                                            }
+                                            onChange={(v) => {
+                                                setData('business_type_id', v == null ? '' : Number(v));
+                                                clearErrors('business_type_id');
+                                            }}
                                             groups={businessTypeGroups}
                                             placeholder="Select your business type"
                                             showLabel={false}
@@ -244,8 +335,9 @@ export default function Register({ businessTypeCategories = [] }) {
                                                 bookslot.app/
                                             </span>
                                             <input
+                                                ref={slugRef}
                                                 value={data.slug}
-                                                onChange={e => setData('slug', slugify(e.target.value))}
+                                                onChange={e => updateField('slug', slugify(e.target.value))}
                                                 className="flex-1 border-0 bg-transparent px-3 py-3 text-sm text-on-surface focus:ring-0"
                                                 placeholder="bellas-hair-studio"
                                                 required
@@ -258,8 +350,9 @@ export default function Register({ businessTypeCategories = [] }) {
                                     <div>
                                         <label className="block text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-1.5">Location <span className="normal-case font-normal">(optional)</span></label>
                                         <input
+                                            ref={locationRef}
                                             value={data.location}
-                                            onChange={e => setData('location', e.target.value)}
+                                            onChange={e => updateField('location', e.target.value)}
                                             className={inputClass}
                                             placeholder="123 Main St, New York, NY"
                                         />
@@ -269,9 +362,10 @@ export default function Register({ businessTypeCategories = [] }) {
                                     <div>
                                         <label className="block text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-1.5">Business Phone <span className="normal-case font-normal">(optional)</span></label>
                                         <input
+                                            ref={phoneRef}
                                             type="tel"
                                             value={data.phone}
-                                            onChange={e => setData('phone', e.target.value)}
+                                            onChange={e => updateField('phone', e.target.value)}
                                             className={inputClass}
                                             placeholder="+1 555 000 0000"
                                         />
@@ -299,7 +393,10 @@ export default function Register({ businessTypeCategories = [] }) {
                                                     type="file"
                                                     accept="image/png,image/jpeg,image/webp,image/jpg"
                                                     className="hidden"
-                                                    onChange={(e) => setData('logo', e.target.files?.[0] ?? null)}
+                                                    onChange={(e) => {
+                                                        setData('logo', e.target.files?.[0] ?? null);
+                                                        clearErrors('logo');
+                                                    }}
                                                 />
                                             </label>
                                         </div>
@@ -311,7 +408,10 @@ export default function Register({ businessTypeCategories = [] }) {
                                             type="checkbox"
                                             className="mt-0.5 rounded border-outline-variant text-on-surface focus:ring-primary/40"
                                             checked={data.also_works_as_staff}
-                                            onChange={(e) => setData('also_works_as_staff', e.target.checked)}
+                                            onChange={(e) => {
+                                                setData('also_works_as_staff', e.target.checked);
+                                                clearErrors('also_works_as_staff');
+                                            }}
                                         />
                                         <span className="text-sm text-on-surface leading-snug">
                                             <span className="font-semibold">I also provide services</span>

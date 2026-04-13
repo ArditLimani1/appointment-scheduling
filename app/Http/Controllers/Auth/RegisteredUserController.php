@@ -12,7 +12,9 @@ use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
@@ -52,14 +54,22 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'business_name' => 'required|string|max:255',
+            'business_name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('businesses', 'name'),
+            ],
             'slug' => 'required|string|max:255|unique:businesses,slug|regex:/^[a-z0-9-]+$/',
             'location' => 'nullable|string|max:255',
-            'phone' => 'nullable|string|max:50',
+            'phone' => [
+                'nullable',
+                'regex:/^\+?[1-9]\d{7,14}$/',
+            ],
             'logo' => 'nullable|image|max:2048',
             'also_works_as_staff' => ['sometimes', 'boolean'],
             'business_type_id' => [
@@ -69,35 +79,51 @@ class RegisteredUserController extends Controller
             ],
         ]);
 
-        $logoPath = $request->hasFile('logo')
-            ? $request->file('logo')->store('business-logos', 'public')
+        $validated['phone'] = isset($validated['phone'])
+            ? preg_replace('/\s+/', '', $validated['phone'])
             : null;
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => UserRole::Admin,
-        ]);
+        $logoPath = null;
 
-        $business = Business::create([
-            'owner_id' => $user->id,
-            'business_type_id' => (int) $request->business_type_id,
-            'name' => $request->business_name,
-            'slug' => $request->slug,
-            'location' => $request->location,
-            'phone' => $request->phone,
-            'logo' => $logoPath,
-            'timezone' => 'UTC',
-            'currency' => 'EUR',
-            'currency_symbol' => '€',
-        ]);
+        try {
+            DB::transaction(function () use ($request, $validated, &$user, &$logoPath): void {
+                if ($request->hasFile('logo')) {
+                    $logoPath = $request->file('logo')->store('business-logos', 'public');
+                }
 
-        if ($request->boolean('also_works_as_staff')) {
-            $user->update([
-                'also_works_as_staff' => true,
-                'business_id' => $business->id,
-            ]);
+                $user = User::create([
+                    'name' => $validated['name'],
+                    'email' => $validated['email'],
+                    'password' => Hash::make($validated['password']),
+                    'role' => UserRole::Admin,
+                ]);
+
+                $business = Business::create([
+                    'owner_id' => $user->id,
+                    'business_type_id' => (int) $validated['business_type_id'],
+                    'name' => $validated['business_name'],
+                    'slug' => $validated['slug'],
+                    'location' => $validated['location'] ?? null,
+                    'phone' => $validated['phone'],
+                    'logo' => $logoPath,
+                    'timezone' => 'UTC',
+                    'currency' => 'EUR',
+                    'currency_symbol' => '€',
+                ]);
+
+                if (! empty($validated['also_works_as_staff'])) {
+                    $user->update([
+                        'also_works_as_staff' => true,
+                        'business_id' => $business->id,
+                    ]);
+                }
+            });
+        } catch (\Throwable $exception) {
+            if ($logoPath !== null) {
+                Storage::disk('public')->delete($logoPath);
+            }
+
+            throw $exception;
         }
 
         event(new Registered($user));
