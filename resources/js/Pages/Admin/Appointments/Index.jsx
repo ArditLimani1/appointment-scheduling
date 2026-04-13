@@ -280,7 +280,7 @@ export default function Index({ appointments, employees, services = [], filters 
             </PageHeader>
 
             <div className="mb-6 rounded-2xl bg-surface-container-lowest p-4 ring-1 ring-slate-100 shadow-sm">
-                <div className="flex flex-wrap gap-3 items-end">
+                <div className="flex flex-wrap items-end gap-3 xl:flex-nowrap xl:gap-3">
                     <FilterListbox
                         label="Employee"
                         value={localFilters.employee_id}
@@ -306,11 +306,11 @@ export default function Index({ appointments, employees, services = [], filters 
                         options={statusOptions}
                         minWidthClass="min-w-[200px]"
                     />
-                    <div className="flex items-end">
+                    <div className="flex shrink-0 items-end">
                         <button
                             type="button"
                             onClick={clearFilters}
-                            className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-on-surface hover:bg-slate-50 transition-colors"
+                            className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-slate-50"
                         >
                             Clear
                         </button>

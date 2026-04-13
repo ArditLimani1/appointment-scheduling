@@ -52,9 +52,12 @@ class SettingsController extends Controller
         if (! $hadBusiness) {
             return redirect()
                 ->route('admin.dashboard')
-                ->with('success', 'Business setup completed. Welcome to your dashboard.');
+                ->with('success', 'Business setup completed. Welcome to your dashboard.')
+                ->with('flash_nonce', uniqid('', true));
         }
 
-        return redirect()->back()->with('success', 'Settings updated successfully.');
+        return redirect()->back()
+            ->with('success', 'Configuration saved successfully.')
+            ->with('flash_nonce', uniqid('', true));
     }
 }

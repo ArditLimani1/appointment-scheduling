@@ -32,7 +32,15 @@ function normalizeDate(val) {
     return String(val).slice(0, 10);
 }
 
-export default function DatePicker({ value, onChange, placeholder = 'Select date', label, portal = false }) {
+export default function DatePicker({
+    value,
+    onChange,
+    placeholder = 'Select date',
+    label,
+    portal = false,
+    className = '',
+    buttonClassName = '',
+}) {
     const today = new Date();
     const todayString = getTodayString();
 
@@ -210,7 +218,7 @@ export default function DatePicker({ value, onChange, placeholder = 'Select date
     );
 
     return (
-        <div className="flex flex-col gap-1.5" ref={containerRef}>
+        <div className={`flex flex-col gap-1.5 ${className}`.trim()} ref={containerRef}>
             {label && (
                 <label className="text-[10px] font-bold uppercase tracking-widest text-outline ml-1">
                     {label}
@@ -221,11 +229,11 @@ export default function DatePicker({ value, onChange, placeholder = 'Select date
                 <button
                     type="button"
                     onClick={() => setIsOpen((o) => !o)}
-                    className={`flex items-center gap-2 w-full min-w-[190px] rounded-xl border bg-white px-4 py-2.5 text-sm text-left transition-all focus:outline-none ${
+                    className={`flex w-full min-w-[190px] items-center gap-2 rounded-xl border bg-white px-4 py-2.5 text-left text-sm transition-all focus:outline-none ${
                         isOpen
                             ? 'border-on-surface/20 ring-2 ring-on-surface/10'
                             : 'border-slate-200 hover:border-slate-300'
-                    }`}
+                    } ${buttonClassName}`.trim()}
                 >
                     <Icon name="calendar_month" size="text-base" className="text-outline shrink-0" />
                     <span className={`flex-1 truncate ${normalizedValue ? 'text-on-surface font-medium' : 'text-outline'}`}>

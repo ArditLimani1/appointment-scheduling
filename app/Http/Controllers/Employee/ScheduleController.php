@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\Interfaces\ScheduleServiceInterface;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -59,9 +60,21 @@ class ScheduleController extends Controller
      */
     public function saveOverrides(UpdateScheduleOverrideRequest $request): RedirectResponse
     {
-        $this->scheduleService->saveOverrides(auth()->user(), $request->validated());
+        $validated = $request->validated();
+        $context = $validated['success_context'];
 
-        return redirect()->back()->with('success', 'Availability updated successfully.');
+        $this->scheduleService->saveOverrides(auth()->user(), Arr::only($validated, ['days']));
+
+        $message = match ($context) {
+            'day_on' => 'Day set to on successfully.',
+            'day_off' => 'Day set to off successfully.',
+            'break_added' => 'Break added successfully.',
+            'break_removed' => 'Break removed successfully.',
+        };
+
+        return redirect()->back()
+            ->with('success', $message)
+            ->with('flash_nonce', uniqid('', true));
     }
 
     /**
@@ -117,7 +130,9 @@ class ScheduleController extends Controller
 
         $user->update(['booking_slug' => $request->validated('booking_slug')]);
 
-        return redirect()->back()->with('success', 'Booking URL updated.');
+        return redirect()->back()
+            ->with('success', 'Configuration saved successfully.')
+            ->with('flash_nonce', uniqid('', true));
     }
 
     /**
@@ -152,7 +167,9 @@ class ScheduleController extends Controller
     {
         $this->scheduleService->updateSchedules(auth()->user(), $request->validated());
 
-        return redirect()->back()->with('success', 'Default schedule updated successfully.');
+        return redirect()->back()
+            ->with('success', 'Configuration saved successfully.')
+            ->with('flash_nonce', uniqid('', true));
     }
 
     private function resolveWeekStart(?string $dateFrom): string

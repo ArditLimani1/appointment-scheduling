@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Employee;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateScheduleOverrideRequest extends FormRequest
 {
@@ -14,6 +15,7 @@ class UpdateScheduleOverrideRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'success_context'              => ['required', 'string', Rule::in(['day_on', 'day_off', 'break_added', 'break_removed'])],
             'days'                         => ['required', 'array'],
             'days.*.date'                  => ['required', 'date_format:Y-m-d'],
             'days.*.is_active'             => ['required', 'boolean'],

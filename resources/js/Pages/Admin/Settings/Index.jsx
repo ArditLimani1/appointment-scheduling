@@ -69,7 +69,6 @@ export default function Index({
     owner_also_works_as_staff = false,
 }) {
     const { flash } = usePage().props;
-    const [successToastMessage, setSuccessToastMessage] = useState(flash?.success || null);
     const [activeTab, setActiveTab] = useState('identity');
 
     // Which confirm modal is open: null | 'identity' | 'rules'
@@ -97,12 +96,6 @@ export default function Index({
 
         return () => URL.revokeObjectURL(objectUrl);
     }, [identity.data.logo]);
-
-    useEffect(() => {
-        if (flash?.success) {
-            setSuccessToastMessage(flash.success);
-        }
-    }, [flash?.success]);
 
     useEffect(() => {
         const errs = identity.errors;
@@ -186,21 +179,6 @@ export default function Index({
                         <p className="font-bold">Finish business setup to unlock the dashboard.</p>
                         <p className="mt-1 text-on-surface-variant">{flash.info}</p>
                     </div>
-                </div>
-            )}
-
-            {successToastMessage && (
-                <div className="mb-6 flex items-center gap-3 rounded-2xl bg-tertiary-fixed/20 px-5 py-4 text-sm font-medium text-on-tertiary-container">
-                    <Icon name="check_circle" size="text-lg" filled />
-                    <span className="flex-1">{successToastMessage}</span>
-                    <button
-                        type="button"
-                        onClick={() => setSuccessToastMessage(null)}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-on-tertiary-container/70 transition-colors hover:bg-black/5 hover:text-on-tertiary-container"
-                        aria-label="Dismiss success message"
-                    >
-                        <Icon name="close" size="text-base" />
-                    </button>
                 </div>
             )}
 

@@ -70,7 +70,9 @@ class AppointmentController extends Controller
         abort_unless($business, 403);
         $this->appointmentService->updateStatus($business, $appointment, $request->validated());
 
-        return redirect()->back()->with('success', 'Appointment updated successfully.');
+        return redirect()->back()
+            ->with('success', 'Status updated successfully.')
+            ->with('flash_nonce', uniqid('', true));
     }
 
     /** PUT — full appointment edit (from the edit modal) */
@@ -80,7 +82,9 @@ class AppointmentController extends Controller
         abort_unless($business, 403);
         $this->appointmentService->updateAppointment($business, $appointment, $request->validated());
 
-        return redirect()->back()->with('success', 'Appointment updated successfully.');
+        return redirect()->back()
+            ->with('success', 'Appointment updated successfully.')
+            ->with('flash_nonce', uniqid('', true));
     }
 
     /** GET — available time slots for admin edit modal */
@@ -108,7 +112,9 @@ class AppointmentController extends Controller
         abort_unless($business, 403);
         $this->appointmentService->delete($business, $appointment);
 
-        return redirect()->back()->with('success', 'Appointment deleted successfully.');
+        return redirect()->back()
+            ->with('success', 'Appointment deleted successfully.')
+            ->with('flash_nonce', uniqid('', true));
     }
 
     public function export(Request $request): BinaryFileResponse

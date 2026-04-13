@@ -1,6 +1,7 @@
-import { Link, usePage } from '@inertiajs/react';
-import Icon from '@/Components/Icon';
+import { SuccessToastProvider } from '@/Components/SuccessToastProvider';
 import Dropdown from '@/Components/Dropdown';
+import Icon from '@/Components/Icon';
+import { Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 
 function toSlug(str) {
@@ -77,6 +78,7 @@ export default function EmployeeLayout({ children }) {
     };
 
     return (
+        <SuccessToastProvider>
         <div className="min-h-screen bg-surface font-body">
             {sidebarOpen && (
                 <div
@@ -194,7 +196,7 @@ export default function EmployeeLayout({ children }) {
             </aside>
 
             <div className="lg:pl-72">
-                <header className="sticky top-0 z-30 flex items-center justify-between bg-surface/80 backdrop-blur-xl border-b border-outline-variant/20 px-8 py-4">
+                <header className="sticky top-0 z-30 flex min-h-[73px] shrink-0 items-center justify-between border-b border-outline-variant/20 bg-surface/80 px-8 py-4 backdrop-blur-xl">
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => setSidebarOpen(true)}
@@ -266,5 +268,6 @@ export default function EmployeeLayout({ children }) {
                 })}
             </nav>
         </div>
+        </SuccessToastProvider>
     );
 }

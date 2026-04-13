@@ -1,5 +1,5 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import EmployeeLayout from '@/Layouts/EmployeeLayout';
 import MetricCard from '@/Components/MetricCard';
 import Icon from '@/Components/Icon';
@@ -14,20 +14,6 @@ const STATUS_STYLES = {
 
 function fmt(d, opts) {
     return new Intl.DateTimeFormat('en-GB', opts).format(d);
-}
-
-function Toast({ message, onDismiss }) {
-    useEffect(() => {
-        const t = setTimeout(onDismiss, 5000);
-        return () => clearTimeout(t);
-    }, [onDismiss]);
-
-    return (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-2xl bg-on-surface px-5 py-3 text-sm font-semibold text-surface shadow-xl">
-            <Icon name="check_circle" size="text-lg" filled />
-            {message}
-        </div>
-    );
 }
 
 function CancelConfirmModal({ appointment, onConfirm, onClose }) {
@@ -85,23 +71,13 @@ export default function Dashboard({
     date_from: dateFromProp,
     employee_compact_mobile_appointments = false,
 }) {
-    const { auth, flash } = usePage().props;
+    const { auth } = usePage().props;
     const business = auth.business;
     const currencySymbol = business?.currency_symbol ?? '€';
     const todayStr = new Date().toISOString().split('T')[0];
 
     const [reschedulingApt, setReschedulingApt] = useState(null);
     const [cancellingApt, setCancellingApt] = useState(null);
-    const [toast, setToast] = useState(null);
-
-    const lastNonce = useRef(null);
-    useEffect(() => {
-        if (flash?.nonce && flash.nonce !== lastNonce.current && flash?.success) {
-            lastNonce.current = flash.nonce;
-            setToast(flash.success);
-        }
-    }, [flash?.nonce, flash?.success]);
-
     const dateFrom = dateFromProp ?? todayStr;
 
     const dayLabel = useMemo(() => {
@@ -430,8 +406,6 @@ export default function Dashboard({
             {cancellingApt && (
                 <CancelConfirmModal appointment={cancellingApt} onConfirm={confirmCancel} onClose={closeCancelModal} />
             )}
-
-            {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
         </EmployeeLayout>
     );
 }
