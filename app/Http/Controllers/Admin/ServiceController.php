@@ -34,7 +34,9 @@ class ServiceController extends Controller
         abort_unless($business, 403);
         $this->serviceService->store($business, $request->validated());
 
-        return redirect()->back()->with('success', 'Service created successfully.');
+        return redirect()->back()
+            ->with('success', 'Service created successfully.')
+            ->with('flash_nonce', uniqid('', true));
     }
 
     public function update(UpdateServiceRequest $request, Service $service): RedirectResponse
@@ -43,7 +45,9 @@ class ServiceController extends Controller
         abort_unless($business, 403);
         $this->serviceService->update($business, $service, $request->validated());
 
-        return redirect()->back()->with('success', 'Service updated successfully.');
+        return redirect()->back()
+            ->with('success', 'Service updated successfully.')
+            ->with('flash_nonce', uniqid('', true));
     }
 
     public function destroy(Service $service): RedirectResponse
@@ -52,6 +56,8 @@ class ServiceController extends Controller
         abort_unless($business, 403);
         $this->serviceService->delete($business, $service);
 
-        return redirect()->back()->with('success', 'Service deleted successfully.');
+        return redirect()->back()
+            ->with('success', 'Service deleted successfully.')
+            ->with('flash_nonce', uniqid('', true));
     }
 }

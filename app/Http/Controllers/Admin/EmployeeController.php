@@ -34,7 +34,9 @@ class EmployeeController extends Controller
         abort_unless($business, 403);
         $this->employeeService->store($business, $request->validated());
 
-        return redirect()->back()->with('success', 'Employee created successfully.');
+        return redirect()->back()
+            ->with('success', 'Employee created successfully.')
+            ->with('flash_nonce', uniqid('', true));
     }
 
     public function update(UpdateEmployeeRequest $request, User $employee): RedirectResponse
@@ -43,7 +45,9 @@ class EmployeeController extends Controller
         abort_unless($business, 403);
         $this->employeeService->update($business, $employee, $request->validated());
 
-        return redirect()->back()->with('success', 'Employee updated successfully.');
+        return redirect()->back()
+            ->with('success', 'Employee updated successfully.')
+            ->with('flash_nonce', uniqid('', true));
     }
 
     public function destroy(User $employee): RedirectResponse
@@ -52,6 +56,8 @@ class EmployeeController extends Controller
         abort_unless($business, 403);
         $this->employeeService->delete($business, $employee);
 
-        return redirect()->back()->with('success', 'Employee deleted successfully.');
+        return redirect()->back()
+            ->with('success', 'Employee deleted successfully.')
+            ->with('flash_nonce', uniqid('', true));
     }
 }

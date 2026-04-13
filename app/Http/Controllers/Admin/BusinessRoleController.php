@@ -34,7 +34,9 @@ class BusinessRoleController extends Controller
         abort_unless($business, 403);
         $this->businessRoleService->store($business, $request->validated());
 
-        return redirect()->back()->with('success', 'Role created successfully.');
+        return redirect()->back()
+            ->with('success', 'Role created successfully.')
+            ->with('flash_nonce', uniqid('', true));
     }
 
     public function update(UpdateBusinessRoleRequest $request, BusinessRole $role): RedirectResponse
@@ -43,7 +45,9 @@ class BusinessRoleController extends Controller
         abort_unless($business, 403);
         $this->businessRoleService->update($business, $role, $request->validated());
 
-        return redirect()->back()->with('success', 'Role updated successfully.');
+        return redirect()->back()
+            ->with('success', 'Role updated successfully.')
+            ->with('flash_nonce', uniqid('', true));
     }
 
     public function destroy(BusinessRole $role): RedirectResponse
@@ -52,6 +56,8 @@ class BusinessRoleController extends Controller
         abort_unless($business, 403);
         $this->businessRoleService->delete($business, $role);
 
-        return redirect()->back()->with('success', 'Role deleted successfully.');
+        return redirect()->back()
+            ->with('success', 'Role deleted successfully.')
+            ->with('flash_nonce', uniqid('', true));
     }
 }

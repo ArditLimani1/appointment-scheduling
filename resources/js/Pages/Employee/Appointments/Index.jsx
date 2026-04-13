@@ -111,20 +111,6 @@ function normalizeServiceFilterForState(serviceIdFromServer) {
     return String(serviceIdFromServer);
 }
 
-function Toast({ message, onDismiss }) {
-    useEffect(() => {
-        const t = setTimeout(onDismiss, 5000);
-        return () => clearTimeout(t);
-    }, [onDismiss]);
-
-    return (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-2xl bg-on-surface px-5 py-3 text-sm font-semibold text-surface shadow-xl">
-            <Icon name="check_circle" size="text-lg" filled />
-            {message}
-        </div>
-    );
-}
-
 function CancelConfirmModal({ appointment, onConfirm, onClose }) {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
@@ -234,7 +220,7 @@ export default function EmployeeAppointmentsIndex({
     employee_compact_mobile_appointments = false,
 }) {
     const filters = filtersProp ?? {};
-    const { auth, flash } = usePage().props;
+    const { auth } = usePage().props;
     const business = auth?.business;
     const permissions = Array.isArray(auth?.permissions) ? auth.permissions : [];
     const canAppointments = permissions.includes('employee.appointments');
@@ -370,16 +356,6 @@ export default function EmployeeAppointmentsIndex({
 
     const [reschedulingApt, setReschedulingApt] = useState(null);
     const [cancellingApt, setCancellingApt] = useState(null);
-    const [toast, setToast] = useState(null);
-
-    const lastNonce = useRef(null);
-    useEffect(() => {
-        if (flash?.nonce && flash.nonce !== lastNonce.current && flash?.success) {
-            lastNonce.current = flash.nonce;
-            setToast(flash.success);
-        }
-    }, [flash?.nonce, flash?.success]);
-
     const isRange = localFilters.date_from !== localFilters.date_to;
 
     const rangeLabel = useMemo(() => {
@@ -818,8 +794,6 @@ export default function EmployeeAppointmentsIndex({
             {cancellingApt && (
                 <CancelConfirmModal appointment={cancellingApt} onConfirm={confirmCancel} onClose={closeCancelModal} />
             )}
-
-            {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
         </EmployeeLayout>
     );
 }

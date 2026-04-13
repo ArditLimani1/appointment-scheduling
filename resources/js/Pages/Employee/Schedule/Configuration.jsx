@@ -1,5 +1,5 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import EmployeeLayout from '@/Layouts/EmployeeLayout';
 import Icon from '@/Components/Icon';
 
@@ -23,21 +23,6 @@ function representativeDateForWeekday(dayOfWeek) {
 function formatDayHeader(dateStr, dayLabel) {
     const d = new Date(dateStr + 'T00:00:00');
     return `${dayLabel}, ${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}`;
-}
-
-// ─── Toast ────────────────────────────────────────────────────────────────────
-function Toast({ message, onDismiss }) {
-    useEffect(() => {
-        const t = setTimeout(onDismiss, 3000);
-        return () => clearTimeout(t);
-    }, [onDismiss]);
-
-    return (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-2xl bg-on-surface px-5 py-3 text-sm font-semibold text-surface shadow-xl">
-            <Icon name="check_circle" size="text-lg" filled />
-            {message}
-        </div>
-    );
 }
 
 // ─── Read-only info field ─────────────────────────────────────────────────────
@@ -347,7 +332,7 @@ export default function Configuration({
     booking_slug: initialBookingSlug,
     business_slug,
 }) {
-    const { flash, errors } = usePage().props;
+    const { errors } = usePage().props;
     const bookingSlugError = errors?.booking_slug
         ? (Array.isArray(errors.booking_slug) ? errors.booking_slug[0] : errors.booking_slug)
         : undefined;
@@ -375,17 +360,6 @@ export default function Configuration({
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [savingInfo, setSavingInfo] = useState(false);
     const [saving, setSaving] = useState(false);
-    const [toast, setToast] = useState(null);
-
-    const showToast = useCallback((msg) => {
-        setToast(null);
-        setTimeout(() => setToast(msg), 10);
-    }, []);
-
-    useEffect(() => {
-        if (flash?.success) showToast(flash.success);
-    }, [flash?.success, flash?.nonce]);
-
     useEffect(() => {
         if (bookingSlugError) {
             setActiveTab('info');
@@ -429,7 +403,6 @@ export default function Configuration({
             {
                 preserveScroll: true,
                 onFinish: () => setSavingInfo(false),
-                onSuccess: () => showToast('Booking URL updated.'),
             }
         );
     };
@@ -443,7 +416,6 @@ export default function Configuration({
             {
                 preserveScroll: true,
                 onFinish: () => setSaving(false),
-                onSuccess: () => showToast('Default schedule saved.'),
             }
         );
     };
@@ -588,7 +560,6 @@ export default function Configuration({
                 />
             )}
 
-            {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
         </EmployeeLayout>
     );
 }

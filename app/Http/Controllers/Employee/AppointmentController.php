@@ -180,14 +180,8 @@ class AppointmentController extends Controller
             $validated
         );
 
-        $message = match ($validated['status'] ?? '') {
-            'confirmed' => 'Appointment confirmed successfully.',
-            'cancelled' => 'Appointment cancelled successfully.',
-            default => 'Appointment updated successfully.',
-        };
-
         return redirect()->back()
-            ->with('success', $message)
+            ->with('success', 'Status updated successfully.')
             ->with('flash_nonce', uniqid('', true));
     }
 
@@ -239,7 +233,7 @@ class AppointmentController extends Controller
         ]);
 
         return redirect()->back()
-            ->with('success', 'Appointment rescheduled successfully.')
+            ->with('success', 'Appointment updated successfully.')
             ->with('flash_nonce', uniqid('', true));
     }
 

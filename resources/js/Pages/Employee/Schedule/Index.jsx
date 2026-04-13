@@ -1,5 +1,5 @@
 import { Head, router } from '@inertiajs/react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import EmployeeLayout from '@/Layouts/EmployeeLayout';
 import Icon from '@/Components/Icon';
 
@@ -36,22 +36,6 @@ function formatWeekRange(dateFrom, dateTo) {
 function formatDayHeader(dateStr, dayLabel) {
     const d = new Date(dateStr + 'T00:00:00');
     return `${dayLabel}, ${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}`;
-}
-
-// ─── Toast ────────────────────────────────────────────────────────────────────
-
-function Toast({ message, onDismiss }) {
-    useEffect(() => {
-        const t = setTimeout(onDismiss, 3000);
-        return () => clearTimeout(t);
-    }, [onDismiss]);
-
-    return (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-2xl bg-on-surface px-5 py-3 text-sm font-semibold text-surface shadow-xl">
-            <Icon name="check_circle" size="text-lg" filled />
-            {message}
-        </div>
-    );
 }
 
 // ─── Add Break Modal ──────────────────────────────────────────────────────────
@@ -224,7 +208,6 @@ function DayCard({ day, onToggle, onOpenBreakModal, onRemoveBreak }) {
 
 export default function Index({ days: initialDays, dateFrom, dateTo }) {
     const [days, setDays]             = useState(initialDays);
-    const [toast, setToast]           = useState(null);
     const [breakModalDate, setBreakModalDate] = useState(null); // date string of the day being edited
 
     useEffect(() => { setDays(initialDays); }, [dateFrom]);
@@ -245,24 +228,17 @@ export default function Index({ days: initialDays, dateFrom, dateTo }) {
 
     // ── Auto-save ─────────────────────────────────────────────────────────
 
-    const showToast = useCallback((msg) => {
-        setToast(null);
-        // Tiny delay so React re-mounts the Toast (resets its timer)
-        setTimeout(() => setToast(msg), 10);
-    }, []);
-
-    const autoSave = useCallback((updatedDays, msg) => {
+    const autoSave = useCallback((updatedDays, successContext) => {
         setDays(updatedDays);
         router.put(
             route('employee.schedule.overrides.update'),
-            { days: updatedDays },
+            { days: updatedDays, success_context: successContext },
             {
                 preserveScroll: true,
                 preserveState: true,
-                onSuccess: () => showToast(msg),
             }
         );
-    }, [showToast]);
+    }, []);
 
     // ── Toggle day ────────────────────────────────────────────────────────
 
@@ -270,8 +246,7 @@ export default function Index({ days: initialDays, dateFrom, dateTo }) {
         const updated = days.map(d =>
             d.date === date ? { ...d, is_active: isActive, is_overridden: true } : d
         );
-        const msg = isActive ? 'Day marked as working.' : 'Day marked as day off.';
-        autoSave(updated, msg);
+        autoSave(updated, isActive ? 'day_on' : 'day_off');
     }, [days, autoSave]);
 
     // ── Add break (via modal) ─────────────────────────────────────────────
@@ -283,7 +258,7 @@ export default function Index({ days: initialDays, dateFrom, dateTo }) {
                 : d
         );
         setBreakModalDate(null);
-        autoSave(updated, 'Break added successfully.');
+        autoSave(updated, 'break_added');
     }, [days, breakModalDate, autoSave]);
 
     // ── Remove break ──────────────────────────────────────────────────────
@@ -294,7 +269,7 @@ export default function Index({ days: initialDays, dateFrom, dateTo }) {
                 ? { ...d, breaks: d.breaks.filter((_, i) => i !== breakIndex), is_overridden: true }
                 : d
         );
-        autoSave(updated, 'Break removed.');
+        autoSave(updated, 'break_removed');
     }, [days, autoSave]);
 
     // ─────────────────────────────────────────────────────────────────────
@@ -361,10 +336,6 @@ export default function Index({ days: initialDays, dateFrom, dateTo }) {
                 />
             )}
 
-            {/* ── Toast ─────────────────────────────────────────────── */}
-            {toast && (
-                <Toast message={toast} onDismiss={() => setToast(null)} />
-            )}
         </EmployeeLayout>
     );
 }
