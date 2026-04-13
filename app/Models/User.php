@@ -237,4 +237,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Appointment::class, 'employee_id');
     }
+
+    public function appointmentViewPreference(): HasOne
+    {
+        return $this->hasOne(UserAppointmentViewPreference::class);
+    }
 }

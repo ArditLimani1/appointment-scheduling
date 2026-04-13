@@ -10,7 +10,7 @@ import DatePicker from '@/Components/DatePicker';
 import EditAppointmentModal from '@/Components/EditAppointmentModal';
 import CalendarWeekGrid from '@/Components/Calendar/CalendarWeekGrid';
 import { buildEmployeeColorMap, getEmployeeSlotStyles } from '@/utils/employeeCalendarColor';
-import { buildAdminAppointmentPutPayload } from '@/utils/appointmentPutPayload';
+import { buildAdminAppointmentPutPayload, buildEmployeeAppointmentPutPayload } from '@/utils/appointmentPutPayload';
 import { formatAppointmentDate } from '@/utils/appointmentDate';
 import {
     appendAppointmentStatusParams,
@@ -82,6 +82,10 @@ export default function Calendar({
     calendar_view = 'week',
     filters: filtersProp = {},
     employee_calendar: employeeCalendar = false,
+    calendar_hours: calendarHours = null,
+    slot_duration: slotDuration = 30,
+    calendar_day_breaks: calendarDayBreaks = {},
+    calendar_day_offs: calendarDayOffs = [],
 }) {
     const [selected, setSelected] = useState(null);
     const [dragSavingId, setDragSavingId] = useState(null);
@@ -173,21 +177,23 @@ export default function Calendar({
         (apt, { date, start_time }) => {
             setMoveError(null);
             setDragSavingId(apt.id);
-            router.put(
-                route('admin.appointments.edit', apt.id),
-                buildAdminAppointmentPutPayload(apt, { date, start_time }),
-                {
-                    preserveScroll: true,
-                    onError: (errs) => {
-                        setDragSavingId(null);
-                        const first = errs.start_time || errs.date || Object.values(errs)[0];
-                        setMoveError(typeof first === 'string' ? first : 'Could not move appointment.');
-                    },
-                    onFinish: () => setDragSavingId(null),
+            const url = employeeCalendar
+                ? route('employee.appointments.edit', apt.id)
+                : route('admin.appointments.edit', apt.id);
+            const body = employeeCalendar
+                ? buildEmployeeAppointmentPutPayload(apt, { date, start_time })
+                : buildAdminAppointmentPutPayload(apt, { date, start_time });
+            router.put(url, body, {
+                preserveScroll: true,
+                onError: (errs) => {
+                    setDragSavingId(null);
+                    const first = errs.start_time || errs.date || Object.values(errs)[0];
+                    setMoveError(typeof first === 'string' ? first : 'Could not move appointment.');
                 },
-            );
+                onFinish: () => setDragSavingId(null),
+            });
         },
-        [],
+        [employeeCalendar],
     );
 
     const employeeOptions = useMemo(
@@ -227,11 +233,13 @@ export default function Calendar({
                     <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
                         <div className="min-w-0 flex-1">
                             <h1 className="mb-2 font-headline text-4xl font-extrabold tracking-tight text-on-surface">Appointments</h1>
-                            <p className="text-lg text-on-surface-variant">Calendar · view only (contact your manager to reschedule).</p>
+                            <p className="text-lg text-on-surface-variant">
+                                Day or week view. Drag to reschedule, or open an appointment to change service, time, or status.
+                            </p>
                         </div>
                         <div className="flex w-full shrink-0 justify-end sm:w-auto">
                             <Link
-                                href={route('employee.appointments.index', {}, false)}
+                                href={`${route('employee.appointments.index', {}, false)}?list=1`}
                                 className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-on-surface hover:bg-slate-50"
                             >
                                 <Icon name="view_list" size="text-lg" />
@@ -333,24 +341,26 @@ export default function Calendar({
                         </div>
                     </div>
 
-                    <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-slate-100 pt-4">
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-outline">Staff</span>
-                        <div className="flex flex-wrap gap-4">
-                            {employees.map((e) => (
-                                <div key={e.id} className="flex items-center gap-2">
-                                    <span
-                                        className="h-3.5 w-3.5 shrink-0 rounded-full border border-black/15 shadow-sm ring-1 ring-black/5"
-                                        style={{ backgroundColor: getEmployeeSlotStyles(employeeColorMap, e.id).swatch }}
-                                        aria-hidden
-                                    />
-                                    <span className="text-sm font-semibold text-on-surface">{e.name}</span>
-                                </div>
-                            ))}
+                    {!employeeCalendar && (
+                        <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-slate-100 pt-4">
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-outline">Staff</span>
+                            <div className="flex flex-wrap gap-4">
+                                {employees.map((e) => (
+                                    <div key={e.id} className="flex items-center gap-2">
+                                        <span
+                                            className="h-3.5 w-3.5 shrink-0 rounded-full border border-black/15 shadow-sm ring-1 ring-black/5"
+                                            style={{ backgroundColor: getEmployeeSlotStyles(employeeColorMap, e.id).swatch }}
+                                            aria-hidden
+                                        />
+                                        <span className="text-sm font-semibold text-on-surface">{e.name}</span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
 
-                {!employeeCalendar && moveError && (
+                {moveError && (
                     <div className="mb-4 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
                         <Icon name="error" className="shrink-0 text-red-600" />
                         <span>{moveError}</span>
@@ -367,7 +377,11 @@ export default function Calendar({
                     onEventClick={(apt) => setSelected(apt)}
                     onAppointmentMove={onAppointmentMove}
                     dragSavingId={dragSavingId}
-                    readOnly={employeeCalendar}
+                    readOnly={false}
+                    calendarHours={employeeCalendar ? calendarHours : null}
+                    slotDurationMinutes={slotDuration}
+                    calendarDayBreaks={calendarDayBreaks}
+                    calendarDayOffs={calendarDayOffs}
                 />
 
                 {selected && (
@@ -375,7 +389,8 @@ export default function Calendar({
                         appointment={selected}
                         employees={employees}
                         services={services}
-                        readOnly={employeeCalendar}
+                        readOnly={false}
+                        employeeMode={employeeCalendar}
                         onClose={() => setSelected(null)}
                     />
                 )}

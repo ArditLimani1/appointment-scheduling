@@ -6,6 +6,7 @@ use App\Enums\AppointmentStatus;
 use App\Exports\AppointmentsExport;
 use App\Models\Appointment;
 use App\Models\Business;
+use App\Models\User;
 use App\Repositories\Interfaces\AppointmentRepositoryInterface;
 use App\Repositories\Interfaces\EmployeeRepositoryInterface;
 use App\Repositories\Interfaces\ServiceRepositoryInterface;
@@ -88,6 +89,14 @@ class AppointmentService implements AppointmentServiceInterface
         $employees = $this->employeeRepository->getByBusiness($business->id)->load('services');
         $services = $this->serviceRepository->getActiveByBusiness($business->id);
 
+        $slotDuration = (int) ($business->slot_duration ?? 30);
+        if ($slotDuration < 5) {
+            $slotDuration = 5;
+        }
+        if ($slotDuration > 120) {
+            $slotDuration = 120;
+        }
+
         return [
             'appointments' => $appointments,
             'employees' => $employees->map(fn ($e) => [
@@ -105,6 +114,7 @@ class AppointmentService implements AppointmentServiceInterface
             'range_start' => $rangeStart,
             'range_end' => $rangeEnd,
             'column_dates' => $columnDates,
+            'slot_duration' => $slotDuration,
         ];
     }
 
@@ -118,16 +128,13 @@ class AppointmentService implements AppointmentServiceInterface
         $startTime = Carbon::parse($data['date'].' '.$data['start_time']);
         $endTime = $startTime->copy()->addMinutes($service->duration);
 
-        // Check if the new time window overlaps with any other appointment for this employee
-        $hasConflict = Appointment::where('employee_id', (int) $data['employee_id'])
-            ->whereDate('date', $data['date'])
-            ->where('id', '!=', $appointment->id)
-            ->where('status', '!=', AppointmentStatus::Cancelled->value)
-            ->where('start_time', '<', $endTime->format('H:i:s'))
-            ->where('end_time', '>', $startTime->format('H:i:s'))
-            ->exists();
-
-        if ($hasConflict) {
+        if ($this->hasOverlappingAppointmentForEmployee(
+            (int) $data['employee_id'],
+            $data['date'],
+            $startTime,
+            $endTime,
+            $appointment->id,
+        )) {
             throw ValidationException::withMessages([
                 'start_time' => 'This time slot conflicts with another appointment for this employee. Please choose a different time or date where the employee is available.',
             ]);
@@ -152,6 +159,77 @@ class AppointmentService implements AppointmentServiceInterface
         abort_if($appointment->employee_id !== $employeeId, 403);
 
         return $this->appointmentRepository->update($appointment, $data);
+    }
+
+    public function updateEmployeeOwnAppointment(int $employeeId, Appointment $appointment, array $data): Appointment
+    {
+        abort_if($appointment->employee_id !== $employeeId, 403);
+        abort_if($appointment->status === AppointmentStatus::Cancelled, 422, 'Cannot edit a cancelled appointment.');
+
+        $business = $appointment->business;
+        abort_unless($business, 404);
+        abort_if((int) $appointment->business_id !== (int) $business->id, 403);
+
+        $service = $this->serviceRepository->findById((int) $data['service_id']);
+        abort_if(! $service || (int) $service->business_id !== (int) $business->id, 422, 'Service not found.');
+
+        $employee = User::query()->whereKey($employeeId)->with('services')->first();
+        abort_unless($employee && $employee->services->contains('id', (int) $data['service_id']), 422, 'You do not offer this service.');
+
+        $startTime = Carbon::parse($data['date'].' '.$data['start_time']);
+        $endTime = $startTime->copy()->addMinutes($service->duration);
+
+        if ($this->hasOverlappingAppointmentForEmployee(
+            $employeeId,
+            $data['date'],
+            $startTime,
+            $endTime,
+            $appointment->id,
+        )) {
+            throw ValidationException::withMessages([
+                'start_time' => 'This time slot conflicts with another appointment. Please choose a different time or date.',
+            ]);
+        }
+
+        return $this->appointmentRepository->update($appointment, [
+            'service_id' => (int) $data['service_id'],
+            'status' => $data['status'],
+            'date' => $data['date'],
+            'start_time' => $startTime->format('H:i'),
+            'end_time' => $endTime->format('H:i'),
+            'price' => $service->price,
+            'updated_by' => auth()->id(),
+        ]);
+    }
+
+    /**
+     * True when another appointment on the same day overlaps the proposed window with positive duration.
+     * Back-to-back (one ends exactly when the other starts) is not a conflict.
+     * Uses Carbon instead of raw SQL time comparisons so SQLite TIME string ordering cannot mis-order adjacent times.
+     */
+    private function hasOverlappingAppointmentForEmployee(
+        int $employeeId,
+        string $dateYmd,
+        Carbon $windowStart,
+        Carbon $windowEnd,
+        ?int $ignoreAppointmentId,
+    ): bool {
+        $query = Appointment::query()
+            ->where('employee_id', $employeeId)
+            ->whereDate('date', $dateYmd)
+            ->where('status', '!=', AppointmentStatus::Cancelled->value);
+
+        if ($ignoreAppointmentId !== null) {
+            $query->where('id', '!=', $ignoreAppointmentId);
+        }
+
+        return $query->get(['id', 'start_time', 'end_time'])
+            ->contains(function (Appointment $other) use ($dateYmd, $windowStart, $windowEnd) {
+                $otherStart = Carbon::parse($dateYmd.' '.$other->start_time);
+                $otherEnd = Carbon::parse($dateYmd.' '.$other->end_time);
+
+                return $otherStart->lt($windowEnd) && $otherEnd->gt($windowStart);
+            });
     }
 
     public function delete(Business $business, Appointment $appointment): void

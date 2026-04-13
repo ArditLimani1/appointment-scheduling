@@ -16,7 +16,7 @@ interface AppointmentServiceInterface
      *
      * @param  'day'|'week'  $view
      * @param  array{employee_id?: int|string|null, statuses?: list<string>}  $filters
-     * @return array{appointments: \Illuminate\Database\Eloquent\Collection, employees: Collection, services: Collection, calendar_view: string, range_start: string, range_end: string, column_dates: array<int, string>}
+     * @return array{appointments: \Illuminate\Database\Eloquent\Collection, employees: Collection, services: Collection, calendar_view: string, range_start: string, range_end: string, column_dates: array<int, string>, slot_duration: int}
      */
     public function getCalendarView(Business $business, string $view, string $anchorDate, array $filters = []): array;
 
@@ -25,6 +25,11 @@ interface AppointmentServiceInterface
     public function updateStatus(Business $business, Appointment $appointment, array $data): Appointment;
 
     public function updateEmployeeAppointmentStatus(int $employeeId, Appointment $appointment, array $data): Appointment;
+
+    /**
+     * Full update for the staff member who owns the appointment (service, status, date, time). Employee cannot be reassigned.
+     */
+    public function updateEmployeeOwnAppointment(int $employeeId, Appointment $appointment, array $data): Appointment;
 
     public function delete(Business $business, Appointment $appointment): void;
 

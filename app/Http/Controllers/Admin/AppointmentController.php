@@ -8,8 +8,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateAppointmentRequest;
 use App\Http\Requests\Admin\UpdateAppointmentStatusRequest;
 use App\Models\Appointment;
+use App\Models\User;
 use App\Services\Interfaces\AppointmentServiceInterface;
 use App\Services\Interfaces\BookingServiceInterface;
+use App\Services\Interfaces\ScheduleServiceInterface;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -27,6 +29,7 @@ class AppointmentController extends Controller
     public function __construct(
         private AppointmentServiceInterface $appointmentService,
         private BookingServiceInterface $bookingService,
+        private ScheduleServiceInterface $scheduleService,
     ) {}
 
     public function index(Request $request): Response
@@ -52,6 +55,27 @@ class AppointmentController extends Controller
         $anchorDate = $this->resolveCalendarAnchorDate($request);
         $calendarFilters = $this->calendarFiltersFromRequest($request);
         $data = $this->appointmentService->getCalendarView($business, $view, $anchorDate, $calendarFilters);
+
+        $data['calendar_day_breaks'] = [];
+        $data['calendar_day_offs'] = [];
+        if (! empty($calendarFilters['employee_id'])) {
+            $employee = User::query()
+                ->where('business_id', $business->id)
+                ->whereKey((int) $calendarFilters['employee_id'])
+                ->first();
+            if ($employee) {
+                $data['calendar_day_breaks'] = $this->scheduleService->getBreakIntervalsKeyedByDate(
+                    $employee,
+                    $data['range_start'],
+                    $data['range_end'],
+                );
+                $data['calendar_day_offs'] = $this->scheduleService->getDayOffDatesForRange(
+                    $employee,
+                    $data['range_start'],
+                    $data['range_end'],
+                );
+            }
+        }
 
         $data['filters'] = [
             'employee_id' => $calendarFilters['employee_id'] ?? null,

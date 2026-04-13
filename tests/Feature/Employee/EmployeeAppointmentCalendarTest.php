@@ -15,7 +15,7 @@ class EmployeeAppointmentCalendarTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_employee_can_view_read_only_calendar(): void
+    public function test_employee_can_view_calendar_with_hours_and_edit_support(): void
     {
         $this->seed(BusinessTypeSeeder::class);
 
@@ -45,6 +45,11 @@ class EmployeeAppointmentCalendarTest extends TestCase
         $response->assertInertia(fn (Assert $page) => $page
             ->component('Admin/Appointments/Calendar')
             ->where('employee_calendar', true)
-            ->has('appointments'));
+            ->has('appointments')
+            ->has('calendar_hours')
+            ->has('calendar_day_breaks')
+            ->has('calendar_day_offs')
+            ->where('calendar_hours.start', fn ($v) => is_string($v) && strlen($v) >= 4)
+            ->where('calendar_hours.end', fn ($v) => is_string($v) && strlen($v) >= 4));
     }
 }

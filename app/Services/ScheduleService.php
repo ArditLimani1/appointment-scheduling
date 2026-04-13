@@ -26,13 +26,13 @@ class ScheduleService implements ScheduleServiceInterface
         foreach ($data['schedules'] as $scheduleData) {
             $schedule = $this->scheduleRepository->updateOrCreate(
                 [
-                    'user_id'     => $user->id,
+                    'user_id' => $user->id,
                     'day_of_week' => $scheduleData['day_of_week'],
                 ],
                 [
                     'start_time' => $scheduleData['start_time'] ?? '09:00',
-                    'end_time'   => $scheduleData['end_time'] ?? '17:00',
-                    'is_active'  => $scheduleData['is_active'],
+                    'end_time' => $scheduleData['end_time'] ?? '17:00',
+                    'is_active' => $scheduleData['is_active'],
                 ]
             );
 
@@ -42,7 +42,7 @@ class ScheduleService implements ScheduleServiceInterface
                 foreach ($scheduleData['breaks'] as $breakData) {
                     $this->scheduleRepository->createBreak($schedule, [
                         'start_time' => $breakData['start_time'],
-                        'end_time'   => $breakData['end_time'],
+                        'end_time' => $breakData['end_time'],
                     ]);
                 }
             }
@@ -63,53 +63,53 @@ class ScheduleService implements ScheduleServiceInterface
             ->getByUserAndDateRange($user->id, $dateFrom, $dateTo)
             ->keyBy(fn ($o) => $o->date->format('Y-m-d'));
 
-        $days   = [];
+        $days = [];
         $cursor = Carbon::parse($dateFrom)->startOfDay();
-        $end    = Carbon::parse($dateTo)->startOfDay();
+        $end = Carbon::parse($dateTo)->startOfDay();
 
         while ($cursor->lte($end)) {
-            $dateStr   = $cursor->toDateString();
+            $dateStr = $cursor->toDateString();
             $dayOfWeek = $cursor->dayOfWeekIso - 1; // 0=Mon … 6=Sun
 
             if (isset($overrides[$dateStr])) {
-                $o      = $overrides[$dateStr];
+                $o = $overrides[$dateStr];
                 $days[] = [
-                    'date'         => $dateStr,
-                    'day_of_week'  => $dayOfWeek,
-                    'day_label'    => $cursor->format('l'),
-                    'is_active'    => $o->is_active,
-                    'start_time'   => $normalize($o->start_time),
-                    'end_time'     => $normalize($o->end_time),
-                    'breaks'       => $o->breaks->map(fn ($b) => [
+                    'date' => $dateStr,
+                    'day_of_week' => $dayOfWeek,
+                    'day_label' => $cursor->format('l'),
+                    'is_active' => $o->is_active,
+                    'start_time' => $normalize($o->start_time),
+                    'end_time' => $normalize($o->end_time),
+                    'breaks' => $o->breaks->map(fn ($b) => [
                         'start_time' => $normalize($b->start_time),
-                        'end_time'   => $normalize($b->end_time),
+                        'end_time' => $normalize($b->end_time),
                     ])->values()->all(),
                     'is_overridden' => true,
                 ];
             } elseif (isset($baseSchedules[$dayOfWeek])) {
-                $base   = $baseSchedules[$dayOfWeek];
+                $base = $baseSchedules[$dayOfWeek];
                 $days[] = [
-                    'date'         => $dateStr,
-                    'day_of_week'  => $dayOfWeek,
-                    'day_label'    => $cursor->format('l'),
-                    'is_active'    => $base->is_active,
-                    'start_time'   => $normalize($base->start_time),
-                    'end_time'     => $normalize($base->end_time),
-                    'breaks'       => $base->breaks->map(fn ($b) => [
+                    'date' => $dateStr,
+                    'day_of_week' => $dayOfWeek,
+                    'day_label' => $cursor->format('l'),
+                    'is_active' => $base->is_active,
+                    'start_time' => $normalize($base->start_time),
+                    'end_time' => $normalize($base->end_time),
+                    'breaks' => $base->breaks->map(fn ($b) => [
                         'start_time' => $normalize($b->start_time),
-                        'end_time'   => $normalize($b->end_time),
+                        'end_time' => $normalize($b->end_time),
                     ])->values()->all(),
                     'is_overridden' => false,
                 ];
             } else {
                 $days[] = [
-                    'date'         => $dateStr,
-                    'day_of_week'  => $dayOfWeek,
-                    'day_label'    => $cursor->format('l'),
-                    'is_active'    => false,
-                    'start_time'   => '09:00',
-                    'end_time'     => '17:00',
-                    'breaks'       => [],
+                    'date' => $dateStr,
+                    'day_of_week' => $dayOfWeek,
+                    'day_label' => $cursor->format('l'),
+                    'is_active' => false,
+                    'start_time' => '09:00',
+                    'end_time' => '17:00',
+                    'breaks' => [],
                     'is_overridden' => false,
                 ];
             }
@@ -118,6 +118,40 @@ class ScheduleService implements ScheduleServiceInterface
         }
 
         return $days;
+    }
+
+    public function getBreakIntervalsKeyedByDate(User $user, string $dateFrom, string $dateTo): array
+    {
+        $days = $this->getDaysForRange($user, $dateFrom, $dateTo);
+        $out = [];
+        foreach ($days as $day) {
+            $dateKey = $day['date'];
+            if (! ($day['is_active'] ?? false)) {
+                $out[$dateKey] = [];
+
+                continue;
+            }
+            $intervals = [];
+            foreach ($day['breaks'] ?? [] as $b) {
+                $intervals[] = [
+                    'start' => $b['start_time'],
+                    'end' => $b['end_time'],
+                ];
+            }
+            $out[$dateKey] = $intervals;
+        }
+
+        return $out;
+    }
+
+    public function getDayOffDatesForRange(User $user, string $dateFrom, string $dateTo): array
+    {
+        $days = $this->getDaysForRange($user, $dateFrom, $dateTo);
+
+        return array_values(array_map(
+            fn (array $day) => $day['date'],
+            array_values(array_filter($days, fn (array $day) => ! ($day['is_active'] ?? false)))
+        ));
     }
 
     /**
@@ -131,6 +165,7 @@ class ScheduleService implements ScheduleServiceInterface
             if (! ($dayData['is_overridden'] ?? false)) {
                 // Remove any existing override → revert to base schedule
                 $this->scheduleOverrideRepository->deleteForDate($user->id, $dayData['date']);
+
                 continue;
             }
 
@@ -138,9 +173,9 @@ class ScheduleService implements ScheduleServiceInterface
                 $user->id,
                 $dayData['date'],
                 [
-                    'is_active'  => $dayData['is_active'],
+                    'is_active' => $dayData['is_active'],
                     'start_time' => $dayData['start_time'] ?? '09:00',
-                    'end_time'   => $dayData['end_time']   ?? '17:00',
+                    'end_time' => $dayData['end_time'] ?? '17:00',
                 ]
             );
 
@@ -149,7 +184,7 @@ class ScheduleService implements ScheduleServiceInterface
             foreach ($dayData['breaks'] ?? [] as $breakData) {
                 $this->scheduleOverrideRepository->createBreak($override, [
                     'start_time' => $breakData['start_time'],
-                    'end_time'   => $breakData['end_time'],
+                    'end_time' => $breakData['end_time'],
                 ]);
             }
         }

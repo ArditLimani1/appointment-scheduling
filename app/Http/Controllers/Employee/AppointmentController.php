@@ -3,16 +3,20 @@
 namespace App\Http\Controllers\Employee;
 
 use App\Enums\AppointmentStatus;
+use App\Enums\Permission;
 use App\Exports\EmployeeAppointmentsExport;
 use App\Http\Controllers\Concerns\ResolvesAppointmentCalendarQuery;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Employee\UpdateAppointmentRescheduleRequest;
 use App\Http\Requests\Employee\UpdateAppointmentStatusRequest;
+use App\Http\Requests\Employee\UpdateEmployeeAppointmentRequest;
 use App\Models\Appointment;
 use App\Models\Service;
 use App\Models\User;
+use App\Models\UserAppointmentViewPreference;
 use App\Services\Interfaces\AppointmentServiceInterface;
 use App\Services\Interfaces\BookingServiceInterface;
+use App\Services\Interfaces\ScheduleServiceInterface;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -31,13 +35,30 @@ class AppointmentController extends Controller
     public function __construct(
         private AppointmentServiceInterface $appointmentService,
         private BookingServiceInterface $bookingService,
+        private ScheduleServiceInterface $scheduleService,
     ) {}
 
-    public function index(Request $request): Response
+    public function index(Request $request): Response|RedirectResponse
     {
         $user = $request->user();
         $business = $user->panelBusiness();
         abort_unless($business, 403);
+
+        $preference = UserAppointmentViewPreference::firstOrCreate(
+            ['user_id' => $user->id],
+            ['is_calendar_default' => false],
+        );
+
+        $forceTable = $request->boolean('list');
+        if (
+            $preference->is_calendar_default
+            && ! $forceTable
+            && $user->hasPermission(Permission::EmployeeAppointments->value)
+        ) {
+            return redirect()->route('employee.appointments.calendar');
+        }
+
+        $preference->update(['is_calendar_default' => false]);
 
         $filters = $this->employeeAppointmentsFiltersFromRequest($request, $user);
         $data = $this->appointmentService->getFiltered($business, $filters);
@@ -156,6 +177,17 @@ class AppointmentController extends Controller
 
         $data = $this->appointmentService->getCalendarView($business, $view, $anchorDate, $calendarFilters);
 
+        $data['calendar_day_breaks'] = $this->scheduleService->getBreakIntervalsKeyedByDate(
+            $user,
+            $data['range_start'],
+            $data['range_end'],
+        );
+        $data['calendar_day_offs'] = $this->scheduleService->getDayOffDatesForRange(
+            $user,
+            $data['range_start'],
+            $data['range_end'],
+        );
+
         $data['employees'] = $data['employees']->filter(fn ($e) => (int) $e['id'] === (int) $user->id)->values();
 
         $data['filters'] = [
@@ -166,8 +198,69 @@ class AppointmentController extends Controller
         ];
 
         $data['employee_calendar'] = true;
+        $data['calendar_hours'] = $this->resolveCalendarHoursForEmployee($user, $data['range_start'], $data['range_end']);
+
+        UserAppointmentViewPreference::updateOrCreate(
+            ['user_id' => $user->id],
+            ['is_calendar_default' => true],
+        );
 
         return Inertia::render('Admin/Appointments/Calendar', $data);
+    }
+
+    /**
+     * Full edit (service, status, date, time) for the authenticated employee's own appointment.
+     */
+    public function edit(UpdateEmployeeAppointmentRequest $request, Appointment $appointment): RedirectResponse
+    {
+        abort_unless($appointment->employee_id === auth()->id(), 403);
+
+        $this->appointmentService->updateEmployeeOwnAppointment(
+            (int) auth()->id(),
+            $appointment,
+            $request->validated(),
+        );
+
+        return redirect()->back()
+            ->with('success', 'Appointment updated successfully.')
+            ->with('flash_nonce', uniqid('', true));
+    }
+
+    /**
+     * Visible time span for the calendar grid: earliest start to latest end among active days in range.
+     * Falls back to 08:00–20:00 when the employee has no active days in this period.
+     */
+    private function resolveCalendarHoursForEmployee(User $user, string $rangeStart, string $rangeEnd): array
+    {
+        $days = $this->scheduleService->getDaysForRange($user, $rangeStart, $rangeEnd);
+        $active = array_values(array_filter($days, fn (array $d) => $d['is_active']));
+
+        if ($active === []) {
+            return ['start' => '08:00', 'end' => '20:00'];
+        }
+
+        $minStart = null;
+        $maxEnd = null;
+
+        foreach ($active as $d) {
+            $s = Carbon::createFromFormat('H:i', $d['start_time'])->startOfMinute();
+            $e = Carbon::createFromFormat('H:i', $d['end_time'])->startOfMinute();
+            if ($minStart === null || $s->lt($minStart)) {
+                $minStart = $s->copy();
+            }
+            if ($maxEnd === null || $e->gt($maxEnd)) {
+                $maxEnd = $e->copy();
+            }
+        }
+
+        if ($minStart === null || $maxEnd === null || ! $maxEnd->gt($minStart)) {
+            return ['start' => '08:00', 'end' => '20:00'];
+        }
+
+        return [
+            'start' => $minStart->format('H:i'),
+            'end' => $maxEnd->format('H:i'),
+        ];
     }
 
     public function update(UpdateAppointmentStatusRequest $request, Appointment $appointment): RedirectResponse
@@ -201,9 +294,18 @@ class AppointmentController extends Controller
         $business = $appointment->business;
         abort_unless($business, 404);
 
+        $serviceId = $appointment->service_id;
+        $rawServiceId = $request->query('service_id');
+        if ($rawServiceId !== null && $rawServiceId !== '' && is_numeric($rawServiceId)) {
+            $candidate = (int) $rawServiceId;
+            $offers = auth()->user()->services()->whereKey($candidate)->exists();
+            abort_unless($offers, 422, 'Invalid service.');
+            $serviceId = $candidate;
+        }
+
         $slots = $this->bookingService->getAdminAvailableSlots($business, [
             'employee_id' => auth()->id(),
-            'service_id' => $appointment->service_id,
+            'service_id' => $serviceId,
             'date' => $date,
             'exclude_id' => $appointment->id,
         ]);
