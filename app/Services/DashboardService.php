@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\AppointmentStatus;
 use App\Models\Business;
+use App\Models\Service;
 use App\Models\User;
 use App\Repositories\Interfaces\AppointmentRepositoryInterface;
 use App\Repositories\Interfaces\EmployeeRepositoryInterface;
@@ -45,15 +46,38 @@ class DashboardService implements DashboardServiceInterface
         ];
     }
 
-    public function getEmployeeDashboardData(User $user, string $dateFrom, string $dateTo): array
+    public function getEmployeeDashboardData(User $user, string $dateFrom, string $dateTo, ?int $serviceId = null): array
     {
-        $appointments = $user->appointments()
+        $businessId = $user->business_id ? (int) $user->business_id : null;
+
+        $resolvedServiceId = null;
+        if ($serviceId !== null && $serviceId > 0 && $businessId) {
+            $belongs = Service::query()
+                ->whereKey($serviceId)
+                ->where('business_id', $businessId)
+                ->exists();
+            if ($belongs) {
+                $resolvedServiceId = $serviceId;
+            }
+        }
+
+        $query = $user->appointments()
             ->with('service')
             ->whereDate('date', '>=', $dateFrom)
-            ->whereDate('date', '<=', $dateTo)
-            ->orderBy('date')
-            ->orderBy('start_time')
-            ->get();
+            ->whereDate('date', '<=', $dateTo);
+
+        if ($resolvedServiceId !== null) {
+            $query->where('service_id', $resolvedServiceId);
+        }
+
+        $appointments = $query->orderBy('date')->orderBy('start_time')->get();
+
+        $services = $businessId
+            ? $this->serviceRepository->getActiveByBusiness($businessId)
+                ->map(fn ($s) => ['id' => $s->id, 'name' => $s->name])
+                ->values()
+                ->all()
+            : [];
 
         return [
             'appointments' => $appointments,
@@ -64,6 +88,8 @@ class DashboardService implements DashboardServiceInterface
             'daily_revenue' => $appointments->where('status', AppointmentStatus::Confirmed)->sum('price'),
             'date_from' => $dateFrom,
             'date_to' => $dateTo,
+            'service_id' => $resolvedServiceId,
+            'services' => $services,
         ];
     }
 }

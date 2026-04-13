@@ -231,7 +231,7 @@ export default function Calendar({
                         </div>
                         <div className="flex w-full shrink-0 justify-end sm:w-auto">
                             <Link
-                                href={route('employee.dashboard')}
+                                href={route('employee.appointments.index', {}, false)}
                                 className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-on-surface hover:bg-slate-50"
                             >
                                 <Icon name="view_list" size="text-lg" />

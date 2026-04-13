@@ -1,8 +1,16 @@
 <?php
 
+use App\Http\Middleware\DisableHtmlCachingInLocal;
+use App\Http\Middleware\EnsureAdminPanelAccess;
+use App\Http\Middleware\EnsureBusinessExists;
+use App\Http\Middleware\EnsureEmployeeOrAdmin;
+use App\Http\Middleware\EnsurePermission;
+use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\RoleMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -13,16 +21,17 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
-            \App\Http\Middleware\HandleInertiaRequests::class,
-            \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
+            HandleInertiaRequests::class,
+            AddLinkHeadersForPreloadedAssets::class,
+            DisableHtmlCachingInLocal::class,
         ]);
 
         $middleware->alias([
-            'role' => \App\Http\Middleware\RoleMiddleware::class,
-            'has_business' => \App\Http\Middleware\EnsureBusinessExists::class,
-            'admin_panel' => \App\Http\Middleware\EnsureAdminPanelAccess::class,
-            'employee_area' => \App\Http\Middleware\EnsureEmployeeOrAdmin::class,
-            'permission' => \App\Http\Middleware\EnsurePermission::class,
+            'role' => RoleMiddleware::class,
+            'has_business' => EnsureBusinessExists::class,
+            'admin_panel' => EnsureAdminPanelAccess::class,
+            'employee_area' => EnsureEmployeeOrAdmin::class,
+            'permission' => EnsurePermission::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

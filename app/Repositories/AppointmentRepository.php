@@ -38,6 +38,21 @@ class AppointmentRepository implements AppointmentRepositoryInterface
             }
         }
 
+        if (array_key_exists('service_id', $filters) && $filters['service_id'] !== null && $filters['service_id'] !== '') {
+            $query->where('service_id', (int) $filters['service_id']);
+        }
+
+        if (! empty($filters['search']) && is_string($filters['search'])) {
+            $term = trim($filters['search']);
+            if ($term !== '') {
+                $like = '%'.addcslashes($term, '%_\\').'%';
+                $query->where(function ($q) use ($like) {
+                    $q->where('client_first_name', 'like', $like)
+                        ->orWhere('client_last_name', 'like', $like);
+                });
+            }
+        }
+
         return $query->latest('date')->latest('start_time')->paginate($perPage)->withQueryString();
     }
 

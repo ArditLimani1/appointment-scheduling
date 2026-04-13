@@ -9,17 +9,19 @@ function toSlug(str) {
 
 
 const navItems = [
-    { label: 'Appointments', icon: 'dashboard',      route: 'employee.dashboard',              permission: 'employee.dashboard' },
-    { label: 'Schedule',     icon: 'calendar_today', route: 'employee.schedule.index',          permission: 'employee.schedule' },
-    { label: 'Analytics',    icon: 'analytics',      route: 'employee.analytics.index',         permission: 'employee.analytics' },
-    { label: 'Configuration',icon: 'tune',           route: 'employee.schedule.configuration',  permission: 'employee.schedule' },
+    { label: 'Dashboard', icon: 'dashboard', route: 'employee.dashboard', permission: 'employee.dashboard' },
+    { label: 'Appointments', icon: 'calendar_today', route: 'employee.appointments.index', permission: 'employee.dashboard' },
+    { label: 'Schedule', icon: 'calendar_view_week', route: 'employee.schedule.index', permission: 'employee.schedule' },
+    { label: 'Analytics', icon: 'analytics', route: 'employee.analytics.index', permission: 'employee.analytics' },
+    { label: 'Configuration', icon: 'tune', route: 'employee.schedule.configuration', permission: 'employee.schedule' },
 ];
 
 const mobileNavItems = [
-    { label: 'Appointments', icon: 'dashboard',      route: 'employee.dashboard',              permission: 'employee.dashboard' },
-    { label: 'Schedule',     icon: 'calendar_today', route: 'employee.schedule.index',          permission: 'employee.schedule' },
-    { label: 'Analytics',    icon: 'analytics',      route: 'employee.analytics.index',         permission: 'employee.analytics' },
-    { label: 'Config',       icon: 'tune',           route: 'employee.schedule.configuration',  permission: 'employee.schedule' },
+    { label: 'Dashboard', icon: 'dashboard', route: 'employee.dashboard', permission: 'employee.dashboard' },
+    { label: 'Appts', icon: 'calendar_today', route: 'employee.appointments.index', permission: 'employee.dashboard' },
+    { label: 'Schedule', icon: 'calendar_view_week', route: 'employee.schedule.index', permission: 'employee.schedule' },
+    { label: 'Analytics', icon: 'analytics', route: 'employee.analytics.index', permission: 'employee.analytics' },
+    { label: 'Config', icon: 'tune', route: 'employee.schedule.configuration', permission: 'employee.schedule' },
 ];
 
 export default function EmployeeLayout({ children }) {
@@ -40,9 +42,13 @@ export default function EmployeeLayout({ children }) {
 
     const isActive = (routeName) => {
         try {
-            // Calendar is opened from Appointments; keep that nav item active on calendar.
             if (routeName === 'employee.dashboard') {
-                return route().current('employee.dashboard') || route().current('employee.appointments.calendar');
+                return route().current('employee.dashboard');
+            }
+            if (routeName === 'employee.appointments.index') {
+                return (
+                    route().current('employee.appointments.index') || route().current('employee.appointments.calendar')
+                );
             }
             // Exact match first, then wildcard children but exclude sibling routes
             if (route().current(routeName)) return true;
@@ -87,7 +93,13 @@ export default function EmployeeLayout({ children }) {
                             return (
                                 <Link
                                     key={item.route}
-                                    href={(() => { try { return route(item.route); } catch { return '#'; } })()}
+                                    href={(() => {
+                                        try {
+                                            return route(item.route, {}, false);
+                                        } catch {
+                                            return '#';
+                                        }
+                                    })()}
                                     className={`flex items-center gap-4 py-3 pl-4 text-sm transition-all duration-200 ${
                                         active
                                             ? 'bg-surface-container-low text-on-surface font-bold border-l-2 border-on-surface rounded-r-lg'
@@ -195,7 +207,13 @@ export default function EmployeeLayout({ children }) {
                     return (
                         <Link
                             key={item.route}
-                            href={(() => { try { return route(item.route); } catch { return '#'; } })()}
+                            href={(() => {
+                                try {
+                                    return route(item.route, {}, false);
+                                } catch {
+                                    return '#';
+                                }
+                            })()}
                             className={`flex flex-col items-center gap-0.5 rounded-xl px-3 py-1.5 text-[10px] font-medium transition-all ${
                                 active ? 'text-on-surface' : 'text-outline'
                             }`}

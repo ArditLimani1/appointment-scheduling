@@ -47,6 +47,10 @@ class AppointmentService implements AppointmentServiceInterface
                 'date_from' => $filters['date_from'] ?? null,
                 'date_to' => $filters['date_to'] ?? null,
                 'status' => $filters['statuses'] ?? [],
+                'service_id' => $filters['service_id'] ?? null,
+                'search' => isset($filters['search']) && is_string($filters['search']) && trim($filters['search']) !== ''
+                    ? trim($filters['search'])
+                    : null,
             ],
         ];
     }

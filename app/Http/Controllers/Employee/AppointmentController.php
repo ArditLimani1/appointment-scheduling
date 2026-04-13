@@ -2,19 +2,27 @@
 
 namespace App\Http\Controllers\Employee;
 
+use App\Enums\AppointmentStatus;
+use App\Exports\EmployeeAppointmentsExport;
 use App\Http\Controllers\Concerns\ResolvesAppointmentCalendarQuery;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Employee\UpdateAppointmentRescheduleRequest;
 use App\Http\Requests\Employee\UpdateAppointmentStatusRequest;
 use App\Models\Appointment;
+use App\Models\Service;
+use App\Models\User;
 use App\Services\Interfaces\AppointmentServiceInterface;
 use App\Services\Interfaces\BookingServiceInterface;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
 use Inertia\Inertia;
 use Inertia\Response;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class AppointmentController extends Controller
 {
@@ -24,6 +32,111 @@ class AppointmentController extends Controller
         private AppointmentServiceInterface $appointmentService,
         private BookingServiceInterface $bookingService,
     ) {}
+
+    public function index(Request $request): Response
+    {
+        $user = $request->user();
+        $business = $user->panelBusiness();
+        abort_unless($business, 403);
+
+        $filters = $this->employeeAppointmentsFiltersFromRequest($request, $user);
+        $data = $this->appointmentService->getFiltered($business, $filters);
+
+        return Inertia::render('Employee/Appointments/Index', array_merge($data, [
+            'employee_compact_mobile_appointments' => true,
+        ]));
+    }
+
+    public function export(Request $request): BinaryFileResponse
+    {
+        $user = $request->user();
+        $business = $user->panelBusiness();
+        abort_unless($business, 403);
+        $filters = $this->employeeAppointmentsFiltersFromRequest($request, $user);
+        $exportFilters = array_merge($filters, ['business_id' => $business->id]);
+
+        return Excel::download(new EmployeeAppointmentsExport($exportFilters), 'my-appointments.xlsx');
+    }
+
+    public function exportPdf(Request $request): HttpResponse
+    {
+        $user = $request->user();
+        $business = $user->panelBusiness();
+        abort_unless($business, 403);
+
+        $filters = $this->employeeAppointmentsFiltersFromRequest($request, $user);
+
+        $query = Appointment::query()
+            ->with(['employee', 'service'])
+            ->where('business_id', $business->id)
+            ->where('employee_id', (int) $user->id);
+
+        if (! empty($filters['date_from'])) {
+            $query->whereDate('date', '>=', $filters['date_from']);
+        }
+        if (! empty($filters['date_to'])) {
+            $query->whereDate('date', '<=', $filters['date_to']);
+        }
+        if (! empty($filters['statuses']) && is_array($filters['statuses'])) {
+            $cases = array_values(array_filter(array_map(
+                fn ($s) => AppointmentStatus::tryFrom((string) $s),
+                $filters['statuses'],
+            )));
+            if ($cases !== []) {
+                $query->whereIn('status', $cases);
+            }
+        }
+        if (! empty($filters['service_id'])) {
+            $query->where('service_id', (int) $filters['service_id']);
+        }
+
+        if (! empty($filters['search']) && is_string($filters['search'])) {
+            $term = trim($filters['search']);
+            if ($term !== '') {
+                $like = '%'.addcslashes($term, '%_\\').'%';
+                $query->where(function ($q) use ($like) {
+                    $q->where('client_first_name', 'like', $like)
+                        ->orWhere('client_last_name', 'like', $like);
+                });
+            }
+        }
+
+        $appointments = $query->latest('date')->latest('start_time')->get();
+
+        $currencySymbol = $business->currency_symbol ?? '€';
+
+        $confirmedCount = $appointments->filter(fn ($a) => $a->status->value === 'confirmed')->count();
+        $pendingCount = $appointments->filter(fn ($a) => $a->status->value === 'pending')->count();
+        $cancelledCount = $appointments->filter(fn ($a) => $a->status->value === 'cancelled')->count();
+        $totalRevenue = $appointments->filter(fn ($a) => $a->status->value === 'confirmed')
+            ->sum(fn ($a) => (float) $a->price);
+
+        $serviceFilter = null;
+        if (! empty($filters['service_id'])) {
+            $serviceFilter = Service::query()->whereKey($filters['service_id'])->value('name');
+        }
+
+        $pdf = Pdf::loadView('exports.employee-appointments-pdf', [
+            'businessName' => $business->name,
+            'employeeName' => $user->name,
+            'generatedAt' => Carbon::now()->format('d M Y, H:i'),
+            'dateFrom' => $filters['date_from'],
+            'dateTo' => $filters['date_to'],
+            'serviceFilter' => $serviceFilter,
+            'statusFilter' => ! empty($filters['statuses']) && is_array($filters['statuses'])
+                ? implode(', ', array_map(fn ($s) => ucfirst((string) $s), $filters['statuses']))
+                : null,
+            'appointments' => $appointments,
+            'totalCount' => $appointments->count(),
+            'confirmedCount' => $confirmedCount,
+            'pendingCount' => $pendingCount,
+            'cancelledCount' => $cancelledCount,
+            'totalRevenue' => $totalRevenue,
+            'currencySymbol' => $currencySymbol,
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download('my-appointments-'.$filters['date_from'].'_'.$filters['date_to'].'.pdf');
+    }
 
     public function calendar(Request $request): Response
     {
@@ -128,5 +241,82 @@ class AppointmentController extends Controller
         return redirect()->back()
             ->with('success', 'Appointment rescheduled successfully.')
             ->with('flash_nonce', uniqid('', true));
+    }
+
+    /**
+     * @return array{employee_id: int, date_from: string, date_to: string, statuses: list<string>, service_id: int|null, search: string|null}
+     */
+    private function employeeAppointmentsFiltersFromRequest(Request $request, User $user): array
+    {
+        $business = $user->panelBusiness();
+        abort_unless($business, 403);
+
+        $monthStart = Carbon::now()->startOfMonth()->toDateString();
+        $monthEnd = Carbon::now()->endOfMonth()->toDateString();
+
+        $from = $this->parseAppointmentsListDate($request->input('date_from'));
+        $to = $this->parseAppointmentsListDate($request->input('date_to'));
+
+        if ($request->filled('date') && $from === null && $to === null) {
+            $legacy = $this->parseAppointmentsListDate($request->input('date'));
+            if ($legacy !== null) {
+                $from = $legacy;
+                $to = $legacy;
+            }
+        }
+
+        $from ??= $monthStart;
+        $to ??= $monthEnd;
+        if ($from > $to) {
+            $to = $from;
+        }
+
+        $resolvedServiceId = null;
+        $rawServiceId = $request->query('service_id');
+        if ($rawServiceId !== null && $rawServiceId !== '') {
+            $parsed = filter_var($rawServiceId, FILTER_VALIDATE_INT);
+            if ($parsed !== false && $parsed > 0) {
+                $belongs = Service::query()
+                    ->whereKey($parsed)
+                    ->where('business_id', $business->id)
+                    ->exists();
+                if ($belongs) {
+                    $resolvedServiceId = (int) $parsed;
+                }
+            }
+        }
+
+        $search = $request->query('search');
+        $search = is_string($search) ? trim($search) : '';
+        if ($search !== '' && strlen($search) > 120) {
+            $search = substr($search, 0, 120);
+        }
+
+        return [
+            'employee_id' => (int) $user->id,
+            'date_from' => $from,
+            'date_to' => $to,
+            'statuses' => $this->resolveStatusFilterStrings($request),
+            'service_id' => $resolvedServiceId,
+            'search' => $search !== '' ? $search : null,
+        ];
+    }
+
+    private function parseAppointmentsListDate(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $value = (string) $value;
+
+        foreach (['Y-m-d', 'd.m.Y'] as $format) {
+            try {
+                return Carbon::createFromFormat($format, $value)->toDateString();
+            } catch (\Throwable) {
+            }
+        }
+
+        return null;
     }
 }
