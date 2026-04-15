@@ -130,6 +130,7 @@ export default function Index({
         min_booking_notice: settings.min_booking_notice || 120,
         max_booking_window: settings.max_booking_window || 30,
         client_identifier_type: settings.client_identifier_type || 'phone',
+        allow_employee_service_edit: settings.allow_employee_service_edit ?? true,
         ...(show_owner_staff_toggle ? { owner_also_works_as_staff: !!owner_also_works_as_staff } : {}),
     });
 
@@ -443,7 +444,28 @@ export default function Index({
                                 </div>
                             </div>
 
-                            {/* I also work as staff — sits in the second column of the same row */}
+                            <div className="bg-surface rounded-xl p-6 flex items-center justify-between gap-4">
+                                <div>
+                                    <p className="text-sm font-bold text-on-surface">Allow staff service changes</p>
+                                    <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">
+                                        If off, employees can only edit appointment date and time.
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setData('allow_employee_service_edit', !data.allow_employee_service_edit)}
+                                    className={`relative shrink-0 w-12 h-6 rounded-full transition-colors duration-200 ${
+                                        data.allow_employee_service_edit ? 'bg-on-surface' : 'bg-surface-container-highest'
+                                    }`}
+                                    aria-pressed={data.allow_employee_service_edit}
+                                >
+                                    <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all duration-200 ${
+                                        data.allow_employee_service_edit ? 'right-1' : 'left-1'
+                                    }`} />
+                                </button>
+                            </div>
+
+                            {/* I also work as staff — optional second-row card */}
                             {show_owner_staff_toggle && (
                                 <div className="bg-surface rounded-xl p-6 flex items-center justify-between gap-4">
                                     <div>

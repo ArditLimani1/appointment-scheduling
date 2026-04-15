@@ -296,7 +296,8 @@ class AppointmentController extends Controller
 
         $serviceId = $appointment->service_id;
         $rawServiceId = $request->query('service_id');
-        if ($rawServiceId !== null && $rawServiceId !== '' && is_numeric($rawServiceId)) {
+        $canEditService = (bool) ($request->user()?->panelBusiness()?->allow_employee_service_edit ?? true);
+        if ($canEditService && $rawServiceId !== null && $rawServiceId !== '' && is_numeric($rawServiceId)) {
             $candidate = (int) $rawServiceId;
             $offers = auth()->user()->services()->whereKey($candidate)->exists();
             abort_unless($offers, 422, 'Invalid service.');

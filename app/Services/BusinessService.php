@@ -25,6 +25,7 @@ class BusinessService implements BusinessServiceInterface
             'min_booking_notice' => 120,
             'max_booking_window' => 30,
             'client_identifier_type' => 'phone',
+            'allow_employee_service_edit' => true,
         ]);
 
         $showOwnerStaffToggle = $user->isAdmin()
