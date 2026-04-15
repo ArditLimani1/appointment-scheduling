@@ -16,8 +16,12 @@ class UpdateEmployeeAppointmentRequest extends FormRequest
 
     public function rules(): array
     {
+        $canEditService = (bool) $this->user()?->panelBusiness()?->allow_employee_service_edit;
+
         return [
-            'service_id' => ['required', 'integer', 'exists:services,id'],
+            'service_id' => $canEditService
+                ? ['required', 'integer', 'exists:services,id']
+                : ['nullable', 'integer', 'exists:services,id'],
             'status' => ['required', Rule::in(['pending', 'confirmed', 'cancelled'])],
             'date' => ['required', 'date_format:Y-m-d'],
             'start_time' => ['required', 'date_format:H:i'],
@@ -29,6 +33,16 @@ class UpdateEmployeeAppointmentRequest extends FormRequest
         $validator->after(function ($validator): void {
             $user = $this->user();
             if (! $user || ! $user->isEmployee() || ! $user->business_id) {
+                return;
+            }
+
+            $canEditService = (bool) $user->panelBusiness()?->allow_employee_service_edit;
+            $appointment = $this->route('appointment');
+            if (! $canEditService) {
+                if ($this->filled('service_id') && $appointment && (int) $this->input('service_id') !== (int) $appointment->service_id) {
+                    $validator->errors()->add('service_id', 'Service changes are disabled by your administrator.');
+                }
+
                 return;
             }
 

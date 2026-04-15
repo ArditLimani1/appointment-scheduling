@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import EmployeeLayout from '@/Layouts/EmployeeLayout';
 import MetricCard from '@/Components/MetricCard';
 import Icon from '@/Components/Icon';
-import EmployeeRescheduleModal from '@/Components/EmployeeRescheduleModal';
+import EditAppointmentModal from '@/Components/EditAppointmentModal';
 import { formatTimeHm } from '@/utils/appointmentDate';
 
 const STATUS_STYLES = {
@@ -64,6 +64,8 @@ function CancelConfirmModal({ appointment, onConfirm, onClose }) {
 
 export default function Dashboard({
     appointments = [],
+    employees = [],
+    services = [],
     appointments_count = 0,
     confirmed_appointments = 0,
     cancelled_appointments = 0,
@@ -76,7 +78,7 @@ export default function Dashboard({
     const currencySymbol = business?.currency_symbol ?? '€';
     const todayStr = new Date().toISOString().split('T')[0];
 
-    const [reschedulingApt, setReschedulingApt] = useState(null);
+    const [editingApt, setEditingApt] = useState(null);
     const [cancellingApt, setCancellingApt] = useState(null);
     const dateFrom = dateFromProp ?? todayStr;
 
@@ -127,7 +129,7 @@ export default function Dashboard({
                 {!isCancelled && (
                     <button
                         type="button"
-                        onClick={() => setReschedulingApt(apt)}
+                        onClick={() => setEditingApt(apt)}
                         className="inline-flex items-center justify-center rounded-xl bg-surface-container-high p-2 text-on-surface"
                         title="Reschedule"
                     >
@@ -379,7 +381,7 @@ export default function Dashboard({
                                                     {!isCancelled ? (
                                                         <button
                                                             type="button"
-                                                            onClick={() => setReschedulingApt(apt)}
+                                                            onClick={() => setEditingApt(apt)}
                                                             className="inline-flex items-center justify-center rounded-xl bg-surface-container-high p-2 text-on-surface hover:bg-surface-container-highest transition-colors"
                                                             title="Reschedule"
                                                         >
@@ -399,8 +401,14 @@ export default function Dashboard({
                 )}
             </div>
 
-            {reschedulingApt && (
-                <EmployeeRescheduleModal appointment={reschedulingApt} onClose={() => setReschedulingApt(null)} />
+            {editingApt && (
+                <EditAppointmentModal
+                    appointment={editingApt}
+                    employees={employees}
+                    services={services}
+                    employeeMode
+                    onClose={() => setEditingApt(null)}
+                />
             )}
 
             {cancellingApt && (

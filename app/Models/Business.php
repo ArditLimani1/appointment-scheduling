@@ -12,13 +12,14 @@ class Business extends Model
         'owner_id', 'business_type_id', 'name', 'slug', 'location', 'phone', 'email',
         'description', 'logo', 'timezone', 'currency', 'currency_symbol',
         'slot_duration', 'min_booking_notice', 'max_booking_window',
-        'is_active', 'client_identifier_type',
+        'is_active', 'client_identifier_type', 'allow_employee_service_edit',
     ];
 
     protected function casts(): array
     {
         return [
             'is_active' => 'boolean',
+            'allow_employee_service_edit' => 'boolean',
         ];
     }
 

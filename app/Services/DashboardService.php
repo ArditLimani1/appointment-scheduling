@@ -74,7 +74,12 @@ class DashboardService implements DashboardServiceInterface
 
         $services = $businessId
             ? $this->serviceRepository->getActiveByBusiness($businessId)
-                ->map(fn ($s) => ['id' => $s->id, 'name' => $s->name])
+                ->map(fn ($s) => [
+                    'id' => $s->id,
+                    'name' => $s->name,
+                    'duration' => $s->duration,
+                    'price' => $s->price,
+                ])
                 ->values()
                 ->all()
             : [];

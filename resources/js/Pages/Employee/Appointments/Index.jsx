@@ -6,7 +6,7 @@ import DatePicker from '@/Components/DatePicker';
 import FilterListbox from '@/Components/FilterListbox';
 import FilterStatusMulti from '@/Components/FilterStatusMulti';
 import PageHeader from '@/Components/PageHeader';
-import EmployeeRescheduleModal from '@/Components/EmployeeRescheduleModal';
+import EditAppointmentModal from '@/Components/EditAppointmentModal';
 import { appointmentStatusValue, formatAppointmentDate, formatTimeHm } from '@/utils/appointmentDate';
 import {
     appendAppointmentStatusParams,
@@ -216,6 +216,7 @@ function ExportDropdown({ excelUrl, pdfUrl }) {
 export default function EmployeeAppointmentsIndex({
     appointments,
     services = [],
+    employees = [],
     filters: filtersProp,
     employee_compact_mobile_appointments = false,
 }) {
@@ -354,7 +355,7 @@ export default function EmployeeAppointmentsIndex({
         [],
     );
 
-    const [reschedulingApt, setReschedulingApt] = useState(null);
+    const [editingApt, setEditingApt] = useState(null);
     const [cancellingApt, setCancellingApt] = useState(null);
     const isRange = localFilters.date_from !== localFilters.date_to;
 
@@ -416,7 +417,7 @@ export default function EmployeeAppointmentsIndex({
                 {!isCancelled && (
                     <button
                         type="button"
-                        onClick={() => setReschedulingApt(apt)}
+                        onClick={() => setEditingApt(apt)}
                         className="inline-flex items-center justify-center rounded-xl bg-surface-container-high p-2 text-on-surface"
                         title="Reschedule"
                     >
@@ -733,7 +734,7 @@ export default function EmployeeAppointmentsIndex({
                                                     {!rowCancelled ? (
                                                         <button
                                                             type="button"
-                                                            onClick={() => setReschedulingApt(apt)}
+                                                            onClick={() => setEditingApt(apt)}
                                                             className="inline-flex items-center justify-center rounded-xl bg-surface-container-high p-2 text-on-surface hover:bg-surface-container-highest transition-colors"
                                                             title="Reschedule"
                                                         >
@@ -794,8 +795,14 @@ export default function EmployeeAppointmentsIndex({
                 )}
             </div>
 
-            {reschedulingApt && (
-                <EmployeeRescheduleModal appointment={reschedulingApt} onClose={() => setReschedulingApt(null)} />
+            {editingApt && (
+                <EditAppointmentModal
+                    appointment={editingApt}
+                    employees={employees}
+                    services={services}
+                    employeeMode
+                    onClose={() => setEditingApt(null)}
+                />
             )}
 
             {cancellingApt && (

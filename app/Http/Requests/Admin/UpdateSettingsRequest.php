@@ -35,6 +35,7 @@ class UpdateSettingsRequest extends FormRequest
             'max_booking_window' => ['sometimes', 'required', 'integer', 'min:1'],
             'client_identifier_type' => ['sometimes', 'required', 'in:phone,email'],
             'owner_also_works_as_staff' => ['sometimes', 'boolean'],
+            'allow_employee_service_edit' => ['sometimes', 'boolean'],
         ];
     }
 

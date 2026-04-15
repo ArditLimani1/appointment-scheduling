@@ -31,6 +31,10 @@ export default function EditAppointmentModal({
 }) {
     const { auth } = usePage().props;
     const currencySymbol = CURRENCY_SYMBOLS[auth?.business?.currency] ?? auth?.business?.currency_symbol ?? '€';
+    const employeeCanEditService = (auth?.business?.allow_employee_service_edit ?? true) === true;
+    const lockServiceForEmployee = employeeMode && !employeeCanEditService;
+    /** Employee modal: when service editing is disabled, do not show service or price anywhere. */
+    const hideServiceAndPriceForEmployee = lockServiceForEmployee;
 
     const identifierType = (appointment.client_email && appointment.client_email.trim()) ? 'email' : 'phone';
     const today    = toDateString(new Date());
@@ -335,7 +339,7 @@ export default function EditAppointmentModal({
                                         ? 'Cancelled appointments cannot be edited.'
                                         : 'This booking is view-only. Contact your manager to make changes.'}
                                 </p>
-                                {readOnlyRow('Service', serviceName)}
+                                {!hideServiceAndPriceForEmployee && readOnlyRow('Service', serviceName)}
                                 {readOnlyRow('Status', statusLabel(appointment.status))}
                                 {readOnlyRow('Staff', employeeName)}
                                 {readOnlyRow(
@@ -351,7 +355,7 @@ export default function EditAppointmentModal({
                                     'Time',
                                     `${formatTimeHm(appointment.start_time)} – ${formatTimeHm(appointment.end_time)}`,
                                 )}
-                                {readOnlyRow(
+                                {!hideServiceAndPriceForEmployee && readOnlyRow(
                                     'Payment',
                                     `${Number(appointment.price ?? 0).toFixed(2)} ${currencySymbol}`,
                                 )}
@@ -366,14 +370,16 @@ export default function EditAppointmentModal({
                         {!effectiveReadOnly && activeTab === 'schedule' && (
                             <div className="space-y-3">
                                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                    <FilterListbox
-                                        label="Service"
-                                        compact
-                                        value={form.service_id}
-                                        onChange={(v) => { patch('service_id', v); }}
-                                        options={services.map((s) => ({ value: String(s.id), label: `${s.name} (${s.duration} min)` }))}
-                                        minWidthClass="w-full"
-                                    />
+                                    {!lockServiceForEmployee && (
+                                        <FilterListbox
+                                            label="Service"
+                                            compact
+                                            value={form.service_id}
+                                            onChange={(v) => { patch('service_id', v); }}
+                                            options={services.map((s) => ({ value: String(s.id), label: `${s.name} (${s.duration} min)` }))}
+                                            minWidthClass="w-full"
+                                        />
+                                    )}
                                     <FilterListbox
                                         label="Status"
                                         compact
@@ -384,7 +390,7 @@ export default function EditAppointmentModal({
                                             { value: 'confirmed', label: 'Confirmed' },
                                             { value: 'cancelled', label: 'Cancelled' },
                                         ]}
-                                        minWidthClass="w-full"
+                                        minWidthClass={lockServiceForEmployee ? 'w-full sm:max-w-md' : 'w-full'}
                                     />
                                 </div>
                                 {errors.service_id && <p className="text-xs text-error">{errors.service_id}</p>}
@@ -416,14 +422,16 @@ export default function EditAppointmentModal({
                                     </>
                                 )}
 
-                                {employeeMode && (
+                                {employeeMode && !lockServiceForEmployee && (
                                     <div>
                                         <span className={labelCls}>Payment</span>
                                         <div className="flex h-[42px] items-center rounded-xl border border-slate-100 bg-slate-50 px-3 text-sm font-bold text-on-surface">
                                             {Number(appointment.price ?? 0).toFixed(2)}
                                             <span className="ml-1 font-semibold text-on-surface-variant">{currencySymbol}</span>
                                         </div>
-                                        <p className="mt-1 text-[11px] text-on-surface-variant">Price updates when you change the service.</p>
+                                        <p className="mt-1 text-[11px] text-on-surface-variant">
+                                            Price updates when you change the service.
+                                        </p>
                                     </div>
                                 )}
 
@@ -443,7 +451,9 @@ export default function EditAppointmentModal({
                                     {(!employeeMode && (!form.employee_id || !form.date || !form.service_id)) ? (
                                         <p className="py-1 text-xs text-on-surface-variant">Choose service, employee, and date first.</p>
                                     ) : (employeeMode && (!form.date || !form.service_id)) ? (
-                                        <p className="py-1 text-xs text-on-surface-variant">Choose service and date first.</p>
+                                        <p className="py-1 text-xs text-on-surface-variant">
+                                            {lockServiceForEmployee ? 'Choose a date first.' : 'Choose service and date first.'}
+                                        </p>
                                     ) : loadingSlots ? (
                                         <div className="flex items-center gap-2 py-1 text-xs text-on-surface-variant">
                                             <Icon name="sync" size="text-sm" className="animate-spin" /> Loading…

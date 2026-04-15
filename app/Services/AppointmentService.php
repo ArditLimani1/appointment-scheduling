@@ -170,11 +170,16 @@ class AppointmentService implements AppointmentServiceInterface
         abort_unless($business, 404);
         abort_if((int) $appointment->business_id !== (int) $business->id, 403);
 
-        $service = $this->serviceRepository->findById((int) $data['service_id']);
+        $canEditService = (bool) ($business->allow_employee_service_edit ?? true);
+        $serviceId = $canEditService
+            ? (int) ($data['service_id'] ?? 0)
+            : (int) $appointment->service_id;
+
+        $service = $this->serviceRepository->findById($serviceId);
         abort_if(! $service || (int) $service->business_id !== (int) $business->id, 422, 'Service not found.');
 
         $employee = User::query()->whereKey($employeeId)->with('services')->first();
-        abort_unless($employee && $employee->services->contains('id', (int) $data['service_id']), 422, 'You do not offer this service.');
+        abort_unless($employee && $employee->services->contains('id', $serviceId), 422, 'You do not offer this service.');
 
         $startTime = Carbon::parse($data['date'].' '.$data['start_time']);
         $endTime = $startTime->copy()->addMinutes($service->duration);
@@ -192,7 +197,7 @@ class AppointmentService implements AppointmentServiceInterface
         }
 
         return $this->appointmentRepository->update($appointment, [
-            'service_id' => (int) $data['service_id'],
+            'service_id' => $serviceId,
             'status' => $data['status'],
             'date' => $data['date'],
             'start_time' => $startTime->format('H:i'),
