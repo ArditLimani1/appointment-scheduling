@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\AppointmentStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Appointment extends Model
 {
@@ -36,6 +37,13 @@ class Appointment extends Model
     public function business(): BelongsTo
     {
         return $this->belongsTo(Business::class);
+    }
+
+    public function sharedResources(): BelongsToMany
+    {
+        return $this->belongsToMany(SharedResource::class, 'appointment_shared_resources', 'appointment_id', 'shared_resource_id')
+            ->withPivot('quantity')
+            ->withTimestamps();
     }
 
     public function getClientFullNameAttribute(): string

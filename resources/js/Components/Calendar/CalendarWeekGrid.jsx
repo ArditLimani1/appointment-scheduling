@@ -10,7 +10,31 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import Icon from '@/Components/Icon';
 import { getEmployeeSlotStyles } from '@/utils/employeeCalendarColor';
-import { appointmentStatusValue, minutesToTimeHm, timeToMinutes } from '@/utils/appointmentDate';
+import { appointmentStatusValue, formatTimeHm, minutesToTimeHm, timeToMinutes } from '@/utils/appointmentDate';
+
+/** Busy / invalid slot while dragging — same for column bands and drop preview (matches hover feedback). */
+const BUSY_CONFLICT_OVERLAY_CLASS =
+    'rounded-lg bg-red-400/25 shadow-inner ring-2 ring-inset ring-red-500/60';
+
+/** Supports API shapes `{ start, end }` and `{ start_time, end_time }`. */
+function breakIntervalToMinutes(br) {
+    const startRaw = br?.start ?? br?.start_time;
+    const endRaw = br?.end ?? br?.end_time;
+    return { bs: timeToMinutes(startRaw), be: timeToMinutes(endRaw) };
+}
+
+function rangeOverlapsAnyBreak(startMin, endMin, breaks) {
+    if (!breaks?.length) {
+        return false;
+    }
+    for (const br of breaks) {
+        const { bs, be } = breakIntervalToMinutes(br);
+        if (startMin < be && endMin > bs) {
+            return true;
+        }
+    }
+    return false;
+}
 
 /** ~130px per hour — total grid height scales with visible minutes. */
 const PX_PER_HOUR = 130;
@@ -260,15 +284,14 @@ function computeDropPreviewFromEvent(event, { gridBodyRefs, gridMinHeight, minut
 }
 
 /**
- * Muted bands for scheduled breaks (behind appointments; pointer-events none).
+ * Scheduled breaks — z above invalid-slot bands so amber stays visible (not covered by red).
  */
 function BreakIntervalLayers({ breaks, rangeStartMin, rangeEndMin, minutesInView }) {
     if (!breaks?.length) {
         return null;
     }
     return breaks.map((br, i) => {
-        const s = timeToMinutes(br.start);
-        const e = timeToMinutes(br.end);
+        const { bs: s, be: e } = breakIntervalToMinutes(br);
         const top = Math.max(s, rangeStartMin);
         const bottom = Math.min(e, rangeEndMin);
         if (bottom <= top) {
@@ -276,10 +299,12 @@ function BreakIntervalLayers({ breaks, rangeStartMin, rangeEndMin, minutesInView
         }
         const topPct = ((top - rangeStartMin) / minutesInView) * 100;
         const heightPct = ((bottom - top) / minutesInView) * 100;
+        const keyStart = br.start ?? br.start_time ?? i;
+        const keyEnd = br.end ?? br.end_time ?? i;
         return (
             <div
-                key={`${br.start}-${br.end}-${i}`}
-                className="pointer-events-none absolute right-0 left-0 z-[3] border-y border-dashed border-amber-300/80 bg-amber-100/50"
+                key={`${keyStart}-${keyEnd}-${i}`}
+                className="pointer-events-none absolute right-0 left-0 z-[14] border-y border-dashed border-amber-300/80 bg-amber-100/50"
                 style={{ top: `${topPct}%`, height: `${Math.max(heightPct, 0.25)}%` }}
                 aria-hidden
             />
@@ -287,15 +312,93 @@ function BreakIntervalLayers({ breaks, rangeStartMin, rangeEndMin, minutesInView
     });
 }
 
-function DropSlotPreview({ dateStr, dropPreview, rangeStartMin, minutesInView }) {
+/**
+ * Full-column markers for API-invalid start times (e.g. resource conflict).
+ * Same look as invalid DropSlotPreview. Skips breaks and is not used on day-off columns.
+ */
+function UnavailableSlotBands({ allowedSet, rangeStartMin, rangeEndMin, minutesInView, durationMin, snapMin, breaks }) {
+    const bands = useMemo(() => {
+        if (!allowedSet || snapMin < 1 || durationMin < 1) {
+            return [];
+        }
+        const out = [];
+        const lastStart = rangeEndMin - durationMin;
+        for (let t = rangeStartMin; t <= lastStart; t += snapMin) {
+            if (!allowedSet.has(minutesToTimeHm(t))) {
+                const blockEnd = t + durationMin;
+                if (rangeOverlapsAnyBreak(t, blockEnd, breaks)) {
+                    continue;
+                }
+                out.push(t);
+            }
+        }
+        return out;
+    }, [allowedSet, rangeStartMin, rangeEndMin, durationMin, snapMin, breaks]);
+
+    if (!bands.length) {
+        return null;
+    }
+
+    return (
+        <>
+            {bands.map((t) => {
+                const topPct = ((t - rangeStartMin) / minutesInView) * 100;
+                const heightPct = (durationMin / minutesInView) * 100;
+                return (
+                    <div
+                        key={t}
+                        className={`pointer-events-none absolute right-0.5 left-0.5 z-[5] ${BUSY_CONFLICT_OVERLAY_CLASS}`}
+                        style={{ top: `${topPct}%`, height: `${Math.max(heightPct, 0.2)}%` }}
+                        aria-hidden
+                    />
+                );
+            })}
+        </>
+    );
+}
+
+/** Inset ring + tinted fill at the pre-drag slot, using the same employee palette as the appointment card. */
+function DragOriginGhost({ apt, layout, rangeStartMin, minutesInView, startMin, endMin, employeeColorMap }) {
+    const colors = getEmployeeSlotStyles(employeeColorMap, apt.employee_id);
+    const topPct = ((startMin - rangeStartMin) / minutesInView) * 100;
+    const heightPct = ((endMin - startMin) / minutesInView) * 100;
+    return (
+        <div
+            className="pointer-events-none absolute z-[15] box-border rounded-lg"
+            style={{
+                top: `${topPct}%`,
+                height: `${Math.max(heightPct, 1.6)}%`,
+                width: `${layout.widthPct}%`,
+                left: `${layout.leftPct}%`,
+                backgroundColor: colors.bg,
+                opacity: 0.42,
+                boxShadow: `inset 0 0 0 2px ${colors.border}`,
+            }}
+            aria-hidden
+        />
+    );
+}
+
+function DropSlotPreview({ dateStr, dropPreview, rangeStartMin, minutesInView, variant }) {
     if (!dropPreview || dropPreview.dateStr !== dateStr) {
         return null;
     }
     const topPct = ((dropPreview.startMin - rangeStartMin) / minutesInView) * 100;
     const heightPct = ((dropPreview.endMin - dropPreview.startMin) / minutesInView) * 100;
+    if (variant === 'invalid') {
+        return (
+            <div
+                className={`pointer-events-none absolute right-0.5 left-0.5 z-[18] ${BUSY_CONFLICT_OVERLAY_CLASS}`}
+                style={{ top: `${topPct}%`, height: `${Math.max(heightPct, 1.6)}%` }}
+                aria-hidden
+            />
+        );
+    }
+    const cls =
+        variant === 'loading' ? 'border-slate-500 bg-slate-300/30' : 'border-sky-600 bg-sky-400/25';
     return (
         <div
-            className="pointer-events-none absolute right-0.5 left-0.5 z-[18] rounded-lg border-2 border-dashed border-sky-600 bg-sky-400/25 shadow-inner"
+            className={`pointer-events-none absolute right-0.5 left-0.5 z-[18] rounded-lg border-2 border-dashed shadow-inner ${cls}`}
             style={{ top: `${topPct}%`, height: `${Math.max(heightPct, 1.6)}%` }}
             aria-hidden
         />
@@ -315,6 +418,11 @@ function DayColumn({
     rangeStartMin,
     rangeEndMin,
     minutesInView,
+    /**
+     * When showing API conflict bands during drag, avoid `bg-sky-100/50` on hover — it washes out
+     * semi-transparent red markers; use ring-only drop feedback instead.
+     */
+    droppableHoverOutlineOnly = false,
 }) {
     const { setNodeRef, isOver } = useDroppable({
         id: `calendar-day-${dateStr}`,
@@ -325,6 +433,13 @@ function DayColumn({
         setNodeRef(el);
         setGridBodyRef(dateStr, el);
     };
+
+    const droppableBodyClass =
+        isOver && droppableHoverOutlineOnly
+            ? 'bg-white ring-2 ring-inset ring-sky-500/50'
+            : isOver
+              ? 'bg-sky-100/50 ring-2 ring-inset ring-sky-500/40'
+              : 'bg-white';
 
     return (
         <div className="relative flex min-w-0 flex-1 flex-col border-l border-slate-100 first:border-l-0">
@@ -346,9 +461,7 @@ function DayColumn({
             </div>
             <div
                 ref={combinedRef}
-                className={`relative flex-1 transition-colors duration-150 ${
-                    isOver ? 'bg-sky-100/50 ring-2 ring-inset ring-sky-500/40' : 'bg-white'
-                }`}
+                className={`relative flex-1 transition-colors duration-150 ${droppableBodyClass}`}
                 style={{ minHeight: gridMinHeight }}
             >
                 <div className="pointer-events-none absolute inset-0 flex flex-col">
@@ -368,7 +481,7 @@ function DayColumn({
                 />
                 {isDayOff && (
                     <div
-                        className="pointer-events-none absolute inset-0 z-[4] border-y border-dashed border-amber-300/90 bg-amber-100/45"
+                        className="pointer-events-none absolute inset-0 z-[16] border-y border-dashed border-amber-300/90 bg-amber-100/45"
                         aria-hidden
                     />
                 )}
@@ -390,6 +503,12 @@ export default function CalendarWeekGrid({
     slotDurationMinutes = DEFAULT_SLOT_MINUTES,
     calendarDayBreaks = {},
     calendarDayOffs = [],
+    /**
+     * `admin`: GET admin.appointments.slots (employee + service + date + exclude).
+     * `employee`: GET employee.appointments.slots/{id} (date + service_id) — same rules as edit modal.
+     * `none`: no client-side slot check on drag.
+     */
+    slotValidationMode = 'none',
 }) {
     const { rangeStartMin, rangeEndMin, minutesInView, gridMinHeight, gridWithHeaderMinHeight, segments, gridLineMinutes } = useMemo(
         () => resolveCalendarRange(calendarHours, slotDurationMinutes),
@@ -432,6 +551,15 @@ export default function CalendarWeekGrid({
     }, [appointments, columnDates]);
 
     const [dropPreview, setDropPreview] = useState(null);
+    const [slotSetsByDate, setSlotSetsByDate] = useState(null);
+    const [slotSetsLoading, setSlotSetsLoading] = useState(false);
+    /** Set on drag start when validating; drives invalid time bands + snap step. */
+    const [dragOverlaySpec, setDragOverlaySpec] = useState(null);
+    /** Original slot while an appointment is being dragged (ghost marker). */
+    const [dragOrigin, setDragOrigin] = useState(null);
+    /** When drag-move runs before React applies drag-start preview state, use this for `next ?? prev`. */
+    const dragPreviewFallbackRef = useRef(null);
+    const dragSlotFetchGen = useRef(0);
 
     const dragLayoutCtx = useMemo(
         () => ({
@@ -455,12 +583,131 @@ export default function CalendarWeekGrid({
         if (readOnly) {
             return;
         }
-        const next = computeDropPreviewFromEvent(event, dragLayoutCtx);
-        setDropPreview(next);
+        // When `over` is briefly null (between columns, first frame of drag), keep the last
+        // preview — otherwise the dashed outline clears until the pointer enters a day again.
+        setDropPreview((prev) => {
+            const next = computeDropPreviewFromEvent(event, dragLayoutCtx);
+            if (next !== null) {
+                return next;
+            }
+            if (prev !== null) {
+                return prev;
+            }
+            return dragPreviewFallbackRef.current;
+        });
     };
 
-    const handleDragStart = () => {
+    const resetDragSlotFetch = () => {
+        dragSlotFetchGen.current += 1;
+        setSlotSetsByDate(null);
+        setSlotSetsLoading(false);
+        setDragOverlaySpec(null);
+    };
+
+    const handleDragStart = (event) => {
+        resetDragSlotFetch();
         setDropPreview(null);
+        setDragOrigin(null);
+        dragPreviewFallbackRef.current = null;
+
+        if (readOnly) {
+            return;
+        }
+
+        const ctx = event.active?.data?.current;
+        const apt = ctx?.appointment;
+        if (apt?.id) {
+            const dayDateStr = ctx?.dayDateStr;
+            const dateStrForOrigin = dayDateStr ?? (apt.date ? String(apt.date).slice(0, 10) : null);
+            const startM = ctx?.startMin != null ? ctx.startMin : timeToMinutes(apt.start_time);
+            const endM = timeToMinutes(apt.end_time);
+            if (dateStrForOrigin != null) {
+                setDragOrigin({ aptId: apt.id, dateStr: dateStrForOrigin, startMin: startM, endMin: endM });
+                dragPreviewFallbackRef.current = {
+                    dateStr: dateStrForOrigin,
+                    startMin: startM,
+                    endMin: endM,
+                };
+            }
+        }
+
+        if (slotValidationMode === 'none') {
+            return;
+        }
+        if (!apt?.service_id) {
+            return;
+        }
+        if (slotValidationMode === 'admin' && !apt?.employee_id) {
+            return;
+        }
+
+        const startMin = event.active?.data?.current?.startMin;
+        const dayDateStr = event.active?.data?.current?.dayDateStr;
+        const durationMin = Math.max(5, timeToMinutes(apt.end_time) - timeToMinutes(apt.start_time));
+        const dragSnap =
+            event.active?.data?.current?.dragSnapMinutes ??
+            dragSnapMinutes(gridLineMinutes, apt.service?.duration != null ? Number(apt.service.duration) : null);
+
+        const dateStrForPreview =
+            dayDateStr ?? (apt.date ? String(apt.date).slice(0, 10) : null);
+        const startMinResolved = startMin != null ? startMin : timeToMinutes(apt.start_time);
+        if (dateStrForPreview != null && startMinResolved != null) {
+            setDropPreview({
+                dateStr: dateStrForPreview,
+                startMin: startMinResolved,
+                endMin: startMinResolved + durationMin,
+            });
+            setDragOverlaySpec({ durationMin, snapMin: dragSnap });
+        }
+
+        const gen = dragSlotFetchGen.current;
+        setSlotSetsLoading(true);
+        setSlotSetsByDate(null);
+
+        const fetchSlotsForDate = (date) => {
+            if (slotValidationMode === 'admin') {
+                const params = new URLSearchParams({
+                    employee_id: String(apt.employee_id),
+                    service_id: String(apt.service_id),
+                    date,
+                    exclude_id: String(apt.id),
+                });
+                return fetch(route('admin.appointments.slots') + '?' + params.toString(), {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                })
+                    .then((r) => r.json())
+                    .then((data) => ({ date, slots: data.slots ?? [] }));
+            }
+            const params = new URLSearchParams({
+                date,
+                service_id: String(apt.service_id),
+            });
+            return fetch(route('employee.appointments.slots', apt.id) + '?' + params.toString(), {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            })
+                .then((r) => r.json())
+                .then((data) => ({ date, slots: data.slots ?? [] }));
+        };
+
+        Promise.all(columnDates.map((date) => fetchSlotsForDate(date)))
+            .then((results) => {
+                if (gen !== dragSlotFetchGen.current) {
+                    return;
+                }
+                const map = {};
+                for (const { date, slots } of results) {
+                    map[date] = new Set((slots || []).map((s) => formatTimeHm(s)));
+                }
+                setSlotSetsByDate(map);
+                setSlotSetsLoading(false);
+            })
+            .catch(() => {
+                if (gen !== dragSlotFetchGen.current) {
+                    return;
+                }
+                setSlotSetsByDate(null);
+                setSlotSetsLoading(false);
+            });
     };
 
     const handleDragMove = (event) => {
@@ -469,6 +716,9 @@ export default function CalendarWeekGrid({
 
     const handleDragEnd = (event) => {
         setDropPreview(null);
+        setDragOrigin(null);
+        dragPreviewFallbackRef.current = null;
+        resetDragSlotFetch();
         if (readOnly) {
             return;
         }
@@ -487,7 +737,34 @@ export default function CalendarWeekGrid({
 
     const handleDragCancel = () => {
         setDropPreview(null);
+        setDragOrigin(null);
+        dragPreviewFallbackRef.current = null;
+        resetDragSlotFetch();
     };
+
+    const dropPreviewVariant = useMemo(() => {
+        if (!dropPreview || slotValidationMode === 'none') {
+            return 'valid';
+        }
+        if (calendarDayOffs.includes(dropPreview.dateStr)) {
+            return 'valid';
+        }
+        if (rangeOverlapsAnyBreak(dropPreview.startMin, dropPreview.endMin, calendarDayBreaks[dropPreview.dateStr] ?? [])) {
+            return 'valid';
+        }
+        if (slotSetsLoading) {
+            return 'loading';
+        }
+        if (!slotSetsByDate) {
+            return 'valid';
+        }
+        const key = minutesToTimeHm(dropPreview.startMin);
+        const allowed = slotSetsByDate[dropPreview.dateStr];
+        if (!allowed) {
+            return 'valid';
+        }
+        return allowed.has(key) ? 'valid' : 'invalid';
+    }, [dropPreview, slotValidationMode, slotSetsLoading, slotSetsByDate, calendarDayOffs, calendarDayBreaks]);
 
     const nowLinePct = useMemo(() => {
         if (!columnDates.includes(todayStr)) {
@@ -500,6 +777,8 @@ export default function CalendarWeekGrid({
         }
         return ((m - rangeStartMin) / minutesInView) * 100;
     }, [columnDates, todayStr, minutesInView, rangeStartMin, rangeEndMin, nowTick]);
+
+    const droppableHoverOutlineOnly = Boolean(dragOverlaySpec && slotSetsByDate);
 
     return (
         <DndContext
@@ -541,6 +820,10 @@ export default function CalendarWeekGrid({
                                 endMin: timeToMinutes(apt.end_time),
                             }));
                             const laid = layoutOverlapping(forLayout);
+                            const originLayoutItem =
+                                dragOrigin && dateStr === dragOrigin.dateStr
+                                    ? laid.find((x) => x.id === dragOrigin.aptId)
+                                    : null;
 
                             return (
                                 <DayColumn
@@ -556,6 +839,7 @@ export default function CalendarWeekGrid({
                                     rangeStartMin={rangeStartMin}
                                     rangeEndMin={rangeEndMin}
                                     minutesInView={minutesInView}
+                                    droppableHoverOutlineOnly={droppableHoverOutlineOnly}
                                 >
                                     <div className="pointer-events-none absolute inset-0">
                                         {nowLinePct != null && isToday && (
@@ -566,11 +850,36 @@ export default function CalendarWeekGrid({
                                         )}
                                     </div>
                                     <div className="relative h-full w-full" style={{ minHeight: gridMinHeight }}>
+                                        {dragOverlaySpec &&
+                                            slotSetsByDate?.[dateStr] &&
+                                            !calendarDayOffs.includes(dateStr) && (
+                                                <UnavailableSlotBands
+                                                    allowedSet={slotSetsByDate[dateStr]}
+                                                    rangeStartMin={rangeStartMin}
+                                                    rangeEndMin={rangeEndMin}
+                                                    minutesInView={minutesInView}
+                                                    durationMin={dragOverlaySpec.durationMin}
+                                                    snapMin={dragOverlaySpec.snapMin}
+                                                    breaks={calendarDayBreaks[dateStr] ?? []}
+                                                />
+                                            )}
+                                        {originLayoutItem && (
+                                            <DragOriginGhost
+                                                apt={originLayoutItem.apt}
+                                                layout={originLayoutItem}
+                                                rangeStartMin={rangeStartMin}
+                                                minutesInView={minutesInView}
+                                                startMin={dragOrigin.startMin}
+                                                endMin={dragOrigin.endMin}
+                                                employeeColorMap={employeeColorMap}
+                                            />
+                                        )}
                                         <DropSlotPreview
                                             dateStr={dateStr}
                                             dropPreview={dropPreview}
                                             rangeStartMin={rangeStartMin}
                                             minutesInView={minutesInView}
+                                            variant={dropPreviewVariant}
                                         />
                                         {laid.map((item) => (
                                             <DraggableEvent

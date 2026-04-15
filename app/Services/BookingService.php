@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
 use App\Models\Business;
+use App\Models\Service;
+use App\Models\SharedResource;
 use App\Repositories\Interfaces\AppointmentRepositoryInterface;
 use App\Repositories\Interfaces\BusinessRepositoryInterface;
 use App\Repositories\Interfaces\EmployeeRepositoryInterface;
@@ -26,6 +28,7 @@ class BookingService implements BookingServiceInterface
         private ScheduleRepositoryInterface $scheduleRepository,
         private ScheduleOverrideRepositoryInterface $scheduleOverrideRepository,
         private AppointmentRepositoryInterface $appointmentRepository,
+        private SharedResourceUsageService $sharedResourceUsageService,
     ) {}
 
     public function getBookingPageData(string $slug, ?string $employeeSlug = null): array
@@ -96,7 +99,7 @@ class BookingService implements BookingServiceInterface
             $date->toDateString()
         );
 
-        return $this->calculateSlots(
+        $slots = $this->calculateSlots(
             $date,
             $schedule,
             $slotDuration,
@@ -104,6 +107,20 @@ class BookingService implements BookingServiceInterface
             $minNoticeTime,
             $existingAppointments,
             $timezone
+        );
+
+        $ids = array_values(array_unique(array_map('intval', $data['service_ids'] ?? [])));
+        if ($ids === []) {
+            return $slots;
+        }
+
+        return $this->filterSlotTimesForSharedResources(
+            $business,
+            $date->toDateString(),
+            $slots,
+            $ids,
+            $timezone,
+            null
         );
     }
 
@@ -129,6 +146,7 @@ class BookingService implements BookingServiceInterface
                 422,
                 'The selected service is not available for this business.'
             );
+            $service->loadMissing('sharedResources');
             $services->push($service);
         }
 
@@ -149,12 +167,41 @@ class BookingService implements BookingServiceInterface
         $bookingReference = Str::uuid()->toString();
 
         return DB::transaction(function () use ($business, $employeeId, $data, $services, $timezone, $bookingReference) {
+            $segments = $this->buildOrderedServiceSegments(
+                $business,
+                $services,
+                $data['date'],
+                $data['start_time'],
+                $timezone
+            );
+
+            $resourceIds = $this->collectResourceIdsFromSegments($segments);
+            if ($resourceIds !== []) {
+                SharedResource::query()
+                    ->whereIn('id', $resourceIds)
+                    ->orderBy('id')
+                    ->lockForUpdate()
+                    ->get();
+            }
+
             $created = collect();
             $cursor = Carbon::parse($data['date'].' '.$data['start_time'], $timezone);
 
             foreach ($services as $service) {
                 $segmentEnd = $cursor->copy()->addMinutes($service->duration);
-                $created->push($this->appointmentRepository->create([
+                $segment = [
+                    'start' => $cursor->copy(),
+                    'end' => $segmentEnd->copy(),
+                    'service' => $service,
+                ];
+                $this->assertSegmentResourcesAvailable(
+                    $business,
+                    $data['date'],
+                    $segment,
+                    null,
+                    $timezone
+                );
+                $appointment = $this->appointmentRepository->create([
                     'booking_reference' => $bookingReference,
                     'business_id' => $business->id,
                     'employee_id' => $employeeId,
@@ -169,7 +216,9 @@ class BookingService implements BookingServiceInterface
                     'end_time' => $segmentEnd->format('H:i'),
                     'price' => $service->price,
                     'status' => AppointmentStatus::Pending,
-                ]));
+                ]);
+                $this->syncAppointmentSharedResources($appointment, $service);
+                $created->push($appointment);
                 $cursor = $segmentEnd;
             }
 
@@ -208,7 +257,7 @@ class BookingService implements BookingServiceInterface
         // Admin bypasses min-notice: use a past timestamp so all slots are eligible
         $minNoticeTime = Carbon::createFromTimestamp(0);
 
-        return $this->calculateSlots(
+        $slots = $this->calculateSlots(
             $date,
             $schedule,
             $blockMinutes,
@@ -216,6 +265,31 @@ class BookingService implements BookingServiceInterface
             $minNoticeTime,
             $existingAppointments,
             $timezone
+        );
+
+        if (empty($data['service_id'])) {
+            return $slots;
+        }
+
+        $service = $this->serviceRepository->findById((int) $data['service_id']);
+        if (! $service || $service->business_id !== $business->id) {
+            return $slots;
+        }
+
+        $service->loadMissing('sharedResources');
+        if ($service->sharedResources->isEmpty()) {
+            return $slots;
+        }
+
+        $excludeId = isset($data['exclude_id']) ? (int) $data['exclude_id'] : null;
+
+        return $this->filterSlotTimesForSharedResources(
+            $business,
+            $date->toDateString(),
+            $slots,
+            [$service->id],
+            $timezone,
+            $excludeId
         );
     }
 
@@ -479,5 +553,148 @@ class BookingService implements BookingServiceInterface
         }
 
         return false;
+    }
+
+    /**
+     * @param  Collection<int, Service>  $servicesOrdered
+     * @return list<array{start: Carbon, end: Carbon, service: Service}>
+     */
+    private function buildOrderedServiceSegments(
+        Business $business,
+        $servicesOrdered,
+        string $dateYmd,
+        string $startTimeStr,
+        string $timezone,
+    ): array {
+        $cursor = Carbon::parse($dateYmd.' '.$startTimeStr, $timezone);
+        $segments = [];
+        foreach ($servicesOrdered as $service) {
+            abort_if($service->business_id !== $business->id, 422, 'The selected service is not available for this business.');
+            $segmentEnd = $cursor->copy()->addMinutes($service->duration);
+            $segments[] = [
+                'start' => $cursor->copy(),
+                'end' => $segmentEnd->copy(),
+                'service' => $service,
+            ];
+            $cursor = $segmentEnd;
+        }
+
+        return $segments;
+    }
+
+    /**
+     * @param  list<array{start: Carbon, end: Carbon, service: Service}>  $segments
+     * @return list<int>
+     */
+    private function collectResourceIdsFromSegments(array $segments): array
+    {
+        $ids = [];
+        foreach ($segments as $segment) {
+            foreach ($segment['service']->sharedResources as $sr) {
+                $ids[] = $sr->id;
+            }
+        }
+
+        return array_values(array_unique($ids));
+    }
+
+    /**
+     * @param  array{start: Carbon, end: Carbon, service: Service}  $segment
+     */
+    private function assertSegmentResourcesAvailable(
+        Business $business,
+        string $dateYmd,
+        array $segment,
+        ?int $excludeAppointmentId,
+        string $timezone,
+    ): void {
+        $service = $segment['service'];
+        $windowStart = $segment['start'];
+        $windowEnd = $segment['end'];
+
+        foreach ($service->sharedResources as $resource) {
+            $qty = (int) $resource->pivot->quantity;
+            if (! $this->sharedResourceUsageService->canAllocate(
+                $resource,
+                $business->id,
+                $dateYmd,
+                $windowStart,
+                $windowEnd,
+                $qty,
+                $excludeAppointmentId,
+                $timezone,
+            )) {
+                abort(422, 'A required shared resource is not available for this time.');
+            }
+        }
+    }
+
+    private function syncAppointmentSharedResources(Appointment $appointment, Service $service): void
+    {
+        $sync = [];
+        foreach ($service->sharedResources as $res) {
+            $sync[$res->id] = ['quantity' => (int) $res->pivot->quantity];
+        }
+        if ($sync === []) {
+            return;
+        }
+        $appointment->sharedResources()->sync($sync);
+    }
+
+    /**
+     * @param  list<string>  $slotTimeStrings
+     * @param  list<int>  $serviceIdsOrdered
+     * @return list<string>
+     */
+    private function filterSlotTimesForSharedResources(
+        Business $business,
+        string $dateYmd,
+        array $slotTimeStrings,
+        array $serviceIdsOrdered,
+        string $timezone,
+        ?int $excludeAppointmentId,
+    ): array {
+        $services = collect();
+        foreach ($serviceIdsOrdered as $sid) {
+            $service = $this->serviceRepository->findById((int) $sid);
+            if (! $service || $service->business_id !== $business->id) {
+                return [];
+            }
+            $service->loadMissing('sharedResources');
+            $services->push($service);
+        }
+
+        if ($services->every(fn (Service $s) => $s->sharedResources->isEmpty())) {
+            return $slotTimeStrings;
+        }
+
+        $out = [];
+        foreach ($slotTimeStrings as $timeStr) {
+            $segments = $this->buildOrderedServiceSegments($business, $services, $dateYmd, $timeStr, $timezone);
+            $ok = true;
+            foreach ($segments as $segment) {
+                foreach ($segment['service']->sharedResources as $resource) {
+                    $qty = (int) $resource->pivot->quantity;
+                    if (! $this->sharedResourceUsageService->canAllocate(
+                        $resource,
+                        $business->id,
+                        $dateYmd,
+                        $segment['start'],
+                        $segment['end'],
+                        $qty,
+                        $excludeAppointmentId,
+                        $timezone,
+                    )) {
+                        $ok = false;
+                        break 2;
+                    }
+                }
+            }
+            if ($ok) {
+                $out[] = $timeStr;
+            }
+        }
+
+        return $out;
     }
 }

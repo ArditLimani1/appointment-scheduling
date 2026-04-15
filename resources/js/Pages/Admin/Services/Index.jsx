@@ -6,7 +6,7 @@ import PageHeader from '@/Components/PageHeader';
 import DeleteConfirmModal from '@/Components/DeleteConfirmModal';
 import ServiceModal from './ServiceModal';
 
-export default function Index({ services }) {
+export default function Index({ services, sharedResources = [] }) {
     const { auth } = usePage().props;
     const currencySymbol = auth.business?.currency_symbol ?? '€';
 
@@ -170,6 +170,7 @@ export default function Index({ services }) {
                 onClose={() => setShowModal(false)}
                 editing={editing}
                 currencySymbol={currencySymbol}
+                sharedResources={sharedResources}
             />
         </AdminLayout>
     );

@@ -2,6 +2,7 @@
 
 namespace App\Services\Interfaces;
 
+use App\Models\Business;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -19,6 +20,13 @@ interface ScheduleServiceInterface
      * @return array<string, list<array{start: string, end: string}>>
      */
     public function getBreakIntervalsKeyedByDate(User $user, string $dateFrom, string $dateTo): array;
+
+    /**
+     * Union of all employees' break intervals per date (admin all-staff calendar — avoid red conflict tint on breaks).
+     *
+     * @return array<string, list<array{start: string, end: string}>>
+     */
+    public function getMergedBreakIntervalsForBusiness(Business $business, string $dateFrom, string $dateTo): array;
 
     /**
      * Calendar dates (Y-m-d) where the employee is not active (day off).

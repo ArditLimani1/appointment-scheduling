@@ -11,6 +11,7 @@ enum Permission: string
     case AdminAnalytics = 'admin.analytics';
     case AdminSettings = 'admin.settings';
     case AdminRoles = 'admin.roles';
+    case AdminSharedResources = 'admin.shared_resources';
 
     case EmployeeDashboard = 'employee.dashboard';
     case EmployeeAnalytics = 'employee.analytics';
@@ -27,6 +28,7 @@ enum Permission: string
             self::AdminAnalytics => 'Admin: Analytics',
             self::AdminSettings => 'Admin: Configuration',
             self::AdminRoles => 'Admin: Roles & permissions',
+            self::AdminSharedResources => 'Admin: Shared resources',
             self::EmployeeDashboard => 'Employee: Appointments overview',
             self::EmployeeAnalytics => 'Employee: Analytics',
             self::EmployeeSchedule => 'Employee: Schedule',

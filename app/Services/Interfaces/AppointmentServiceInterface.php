@@ -31,6 +31,11 @@ interface AppointmentServiceInterface
      */
     public function updateEmployeeOwnAppointment(int $employeeId, Appointment $appointment, array $data): Appointment;
 
+    /**
+     * Reschedule date/time only (same service); validates shared resource availability.
+     */
+    public function rescheduleEmployeeOwnAppointment(Appointment $appointment, string $dateYmd, string $startTimeStr): void;
+
     public function delete(Business $business, Appointment $appointment): void;
 
     public function export(Business $business, array $filters): BinaryFileResponse;

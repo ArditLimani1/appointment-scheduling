@@ -75,6 +75,12 @@ class AppointmentController extends Controller
                     $data['range_end'],
                 );
             }
+        } else {
+            $data['calendar_day_breaks'] = $this->scheduleService->getMergedBreakIntervalsForBusiness(
+                $business,
+                $data['range_start'],
+                $data['range_end'],
+            );
         }
 
         $data['filters'] = [

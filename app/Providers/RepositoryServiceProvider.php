@@ -13,9 +13,11 @@ use App\Repositories\Interfaces\EmployeeRepositoryInterface;
 use App\Repositories\Interfaces\ScheduleOverrideRepositoryInterface;
 use App\Repositories\Interfaces\ScheduleRepositoryInterface;
 use App\Repositories\Interfaces\ServiceRepositoryInterface;
+use App\Repositories\Interfaces\SharedResourceRepositoryInterface;
 use App\Repositories\ScheduleOverrideRepository;
 use App\Repositories\ScheduleRepository;
 use App\Repositories\ServiceRepository;
+use App\Repositories\SharedResourceRepository;
 use App\Services\AnalyticsService;
 use App\Services\AppointmentService;
 use App\Services\BookingService;
@@ -34,8 +36,10 @@ use App\Services\Interfaces\EmployeeAnalyticsServiceInterface;
 use App\Services\Interfaces\EmployeeServiceInterface;
 use App\Services\Interfaces\ScheduleServiceInterface;
 use App\Services\Interfaces\ServiceServiceInterface;
+use App\Services\Interfaces\SharedResourceServiceInterface;
 use App\Services\ScheduleService;
 use App\Services\ServiceService;
+use App\Services\SharedResourceService;
 use Illuminate\Support\ServiceProvider;
 
 class RepositoryServiceProvider extends ServiceProvider
@@ -45,6 +49,7 @@ class RepositoryServiceProvider extends ServiceProvider
         BusinessRoleRepositoryInterface::class => BusinessRoleRepository::class,
         EmployeeRepositoryInterface::class => EmployeeRepository::class,
         ServiceRepositoryInterface::class => ServiceRepository::class,
+        SharedResourceRepositoryInterface::class => SharedResourceRepository::class,
         AppointmentRepositoryInterface::class => AppointmentRepository::class,
         ScheduleRepositoryInterface::class => ScheduleRepository::class,
         ScheduleOverrideRepositoryInterface::class => ScheduleOverrideRepository::class,
@@ -53,6 +58,7 @@ class RepositoryServiceProvider extends ServiceProvider
         BusinessRoleServiceInterface::class => BusinessRoleService::class,
         EmployeeServiceInterface::class => EmployeeService::class,
         ServiceServiceInterface::class => ServiceService::class,
+        SharedResourceServiceInterface::class => SharedResourceService::class,
         AppointmentServiceInterface::class => AppointmentService::class,
         ScheduleServiceInterface::class => ScheduleService::class,
         BookingServiceInterface::class => BookingService::class,

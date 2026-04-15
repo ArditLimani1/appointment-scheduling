@@ -323,17 +323,12 @@ class AppointmentController extends Controller
         abort_unless($appointment->employee_id === auth()->id(), 403);
         abort_if($appointment->status->value === 'cancelled', 422, 'Cannot reschedule a cancelled appointment.');
 
-        $duration = $appointment->service ? (int) $appointment->service->duration : 30;
-        $endTime = Carbon::parse($request->date.' '.$request->start_time)
-            ->addMinutes($duration)
-            ->format('H:i');
-
-        $appointment->update([
-            'date' => $request->date,
-            'start_time' => $request->start_time,
-            'end_time' => $endTime,
-            'updated_by' => auth()->id(),
-        ]);
+        $v = $request->validated();
+        $this->appointmentService->rescheduleEmployeeOwnAppointment(
+            $appointment,
+            $v['date'],
+            $v['start_time'],
+        );
 
         return redirect()->back()
             ->with('success', 'Appointment updated successfully.')

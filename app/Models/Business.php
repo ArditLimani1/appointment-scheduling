@@ -52,4 +52,9 @@ class Business extends Model
     {
         return $this->hasMany(BusinessRole::class);
     }
+
+    public function sharedResources(): HasMany
+    {
+        return $this->hasMany(SharedResource::class);
+    }
 }

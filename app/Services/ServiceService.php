@@ -21,14 +21,35 @@ class ServiceService implements ServiceServiceInterface
 
     public function store(Business $business, array $data): Service
     {
-        return $this->serviceRepository->create(array_merge($data, ['business_id' => $business->id]));
+        $resources = $data['resources'] ?? null;
+        unset($data['resources']);
+
+        $service = $this->serviceRepository->create(array_merge($data, ['business_id' => $business->id]));
+
+        if (is_array($resources)) {
+            $this->syncSharedResources($service, $resources);
+        }
+
+        return $service->load('sharedResources');
     }
 
     public function update(Business $business, Service $service, array $data): Service
     {
         abort_if($service->business_id !== $business->id, 403);
 
-        return $this->serviceRepository->update($service, $data);
+        $resources = null;
+        if (array_key_exists('resources', $data)) {
+            $resources = $data['resources'];
+            unset($data['resources']);
+        }
+
+        $this->serviceRepository->update($service, $data);
+
+        if (is_array($resources)) {
+            $this->syncSharedResources($service, $resources);
+        }
+
+        return $service->fresh()->load('sharedResources');
     }
 
     public function delete(Business $business, Service $service): void
@@ -36,5 +57,18 @@ class ServiceService implements ServiceServiceInterface
         abort_if($service->business_id !== $business->id, 403);
 
         $this->serviceRepository->delete($service);
+    }
+
+    /**
+     * @param  list<array{resource_id: int, quantity: int}>  $rows
+     */
+    private function syncSharedResources(Service $service, array $rows): void
+    {
+        $sync = [];
+        foreach ($rows as $row) {
+            $rid = (int) $row['resource_id'];
+            $sync[$rid] = ['quantity' => (int) $row['quantity']];
+        }
+        $service->sharedResources()->sync($sync);
     }
 }
