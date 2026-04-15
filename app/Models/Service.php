@@ -30,4 +30,11 @@ class Service extends Model
     {
         return $this->hasMany(Appointment::class);
     }
+
+    public function sharedResources(): BelongsToMany
+    {
+        return $this->belongsToMany(SharedResource::class, 'service_resources', 'service_id', 'resource_id')
+            ->withPivot('quantity')
+            ->withTimestamps();
+    }
 }

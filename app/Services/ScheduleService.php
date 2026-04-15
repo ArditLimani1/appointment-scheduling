@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Business;
 use App\Models\User;
 use App\Repositories\Interfaces\ScheduleOverrideRepositoryInterface;
 use App\Repositories\Interfaces\ScheduleRepositoryInterface;
@@ -139,6 +140,24 @@ class ScheduleService implements ScheduleServiceInterface
                 ];
             }
             $out[$dateKey] = $intervals;
+        }
+
+        return $out;
+    }
+
+    public function getMergedBreakIntervalsForBusiness(Business $business, string $dateFrom, string $dateTo): array
+    {
+        $out = [];
+        foreach ($business->employees()->get() as $user) {
+            $per = $this->getBreakIntervalsKeyedByDate($user, $dateFrom, $dateTo);
+            foreach ($per as $date => $intervals) {
+                if (! isset($out[$date])) {
+                    $out[$date] = [];
+                }
+                foreach ($intervals as $iv) {
+                    $out[$date][] = $iv;
+                }
+            }
         }
 
         return $out;

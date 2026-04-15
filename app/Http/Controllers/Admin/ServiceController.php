@@ -25,6 +25,7 @@ class ServiceController extends Controller
 
         return Inertia::render('Admin/Services/Index', [
             'services' => $services,
+            'sharedResources' => $business->sharedResources()->orderBy('name')->get(),
         ]);
     }
 

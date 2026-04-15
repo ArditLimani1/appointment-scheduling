@@ -10,7 +10,7 @@ class ServiceRepository implements ServiceRepositoryInterface
 {
     public function getByBusiness(int $businessId): Collection
     {
-        return Service::where('business_id', $businessId)->get();
+        return Service::where('business_id', $businessId)->with('sharedResources')->get();
     }
 
     public function getActiveByBusiness(int $businessId): Collection
@@ -18,6 +18,7 @@ class ServiceRepository implements ServiceRepositoryInterface
         return Service::where('business_id', $businessId)
             ->where('is_active', true)
             ->orderBy('sort_order')
+            ->with('sharedResources')
             ->get();
     }
 

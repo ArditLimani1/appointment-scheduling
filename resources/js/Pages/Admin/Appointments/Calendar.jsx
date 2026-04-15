@@ -382,6 +382,7 @@ export default function Calendar({
                     slotDurationMinutes={slotDuration}
                     calendarDayBreaks={calendarDayBreaks}
                     calendarDayOffs={calendarDayOffs}
+                    slotValidationMode={employeeCalendar ? 'employee' : 'admin'}
                 />
 
                 {selected && (

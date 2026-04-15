@@ -7,6 +7,7 @@ import { useState } from 'react';
 const navItems = [
     { label: 'Dashboard', icon: 'dashboard', route: 'admin.dashboard', permission: 'admin.dashboard' },
     { label: 'Services', icon: 'layers', route: 'admin.services.index', permission: 'admin.services' },
+    { label: 'Resources', icon: 'meeting_room', route: 'admin.shared-resources.index', permission: 'admin.shared_resources' },
     { label: 'Employees', icon: 'badge', route: 'admin.employees.index', permission: 'admin.employees' },
     { label: 'Roles', icon: 'key', route: 'admin.roles.index', permission: 'admin.roles' },
     { label: 'Appointments', icon: 'calendar_today', route: 'admin.appointments.index', permission: 'admin.appointments' },
@@ -22,6 +23,7 @@ const employeeNavItems = [
 
 const mobileNavItems = [
     { label: 'Dashboard', icon: 'dashboard', route: 'admin.dashboard', permission: 'admin.dashboard' },
+    { label: 'Services', icon: 'layers', route: 'admin.services.index', permission: 'admin.services' },
     { label: 'Employees', icon: 'badge', route: 'admin.employees.index', permission: 'admin.employees' },
     { label: 'Appointments', icon: 'calendar_today', route: 'admin.appointments.index', permission: 'admin.appointments' },
     { label: 'Config', icon: 'settings', route: 'admin.settings.index', permission: 'admin.settings' },

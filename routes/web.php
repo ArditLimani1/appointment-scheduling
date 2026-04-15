@@ -49,6 +49,10 @@ Route::middleware(['auth', 'admin_panel', 'has_business'])->prefix('admin')->nam
         Route::resource('services', Admin\ServiceController::class)->only(['index', 'store', 'update', 'destroy']);
     });
 
+    Route::middleware('permission:admin.shared_resources')->group(function () {
+        Route::resource('shared-resources', Admin\SharedResourceController::class)->only(['index', 'store', 'update', 'destroy']);
+    });
+
     Route::middleware('permission:admin.appointments')->group(function () {
         Route::get('/appointments', [Admin\AppointmentController::class, 'index'])->name('appointments.index');
         Route::get('/appointments/calendar', [Admin\AppointmentController::class, 'calendar'])->name('appointments.calendar');
