@@ -173,6 +173,19 @@ class ScheduleService implements ScheduleServiceInterface
         ));
     }
 
+    public function getCalendarBreakAndDayOffMapsForEmployees(Business $business, string $dateFrom, string $dateTo): array
+    {
+        $breaks = [];
+        $dayOffs = [];
+        foreach ($business->employees()->get() as $user) {
+            $key = (string) $user->id;
+            $breaks[$key] = $this->getBreakIntervalsKeyedByDate($user, $dateFrom, $dateTo);
+            $dayOffs[$key] = $this->getDayOffDatesForRange($user, $dateFrom, $dateTo);
+        }
+
+        return ['breaks' => $breaks, 'day_offs' => $dayOffs];
+    }
+
     /**
      * Persist overrides for a week.
      * - is_overridden = true  → upsert override record + replace breaks

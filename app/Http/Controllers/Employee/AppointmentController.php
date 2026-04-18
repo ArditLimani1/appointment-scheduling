@@ -188,6 +188,10 @@ class AppointmentController extends Controller
             $data['range_end'],
         );
 
+        $uid = (string) $user->id;
+        $data['calendar_employee_day_breaks'] = [$uid => $data['calendar_day_breaks']];
+        $data['calendar_employee_day_offs'] = [$uid => $data['calendar_day_offs']];
+
         $data['employees'] = $data['employees']->filter(fn ($e) => (int) $e['id'] === (int) $user->id)->values();
 
         $data['filters'] = [
@@ -309,6 +313,7 @@ class AppointmentController extends Controller
             'service_id' => $serviceId,
             'date' => $date,
             'exclude_id' => $appointment->id,
+            'ignore_schedule_breaks' => true,
         ]);
 
         return response()->json(['slots' => $slots]);

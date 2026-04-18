@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Service extends Model
 {
     protected $fillable = [
-        'business_id', 'name', 'description', 'duration', 'price', 'icon', 'is_active', 'is_popular', 'sort_order',
+        'business_id', 'name', 'description', 'duration', 'price', 'is_active', 'is_popular', 'sort_order',
     ];
 
     protected function casts(): array
