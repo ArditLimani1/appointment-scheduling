@@ -19,5 +19,8 @@ interface BookingServiceInterface
 
     public function getConfirmation(Appointment $appointment): array;
 
+    /**
+     * @param  array<string, mixed>  $data  `employee_id`, `service_id`, `date`, optional `exclude_id`, optional `ignore_schedule_breaks` (bool: employee self-service may book during own schedule breaks).
+     */
     public function getAdminAvailableSlots(Business $business, array $data): array;
 }

@@ -7,6 +7,8 @@ use App\Enums\UserRole;
 use App\Models\Appointment;
 use App\Models\Business;
 use App\Models\BusinessType;
+use App\Models\Schedule;
+use App\Models\ScheduleBreak;
 use App\Models\Service;
 use App\Models\User;
 use Database\Seeders\BusinessTypeSeeder;
@@ -54,6 +56,14 @@ class EmployeeAppointmentEditTest extends TestCase
         $employee->services()->sync([$service->id]);
 
         $day = '2026-04-10';
+        // Friday — working hours must include rescheduled time (getAdminAvailableSlots / schedule rules).
+        Schedule::create([
+            'user_id' => $employee->id,
+            'day_of_week' => 4,
+            'start_time' => '09:00:00',
+            'end_time' => '18:00:00',
+            'is_active' => true,
+        ]);
 
         $appointment = Appointment::create([
             'business_id' => $business->id,
@@ -134,6 +144,14 @@ class EmployeeAppointmentEditTest extends TestCase
         $employee->services()->sync([$haircut->id, $trim->id]);
 
         $day = '2026-06-02';
+        // Tuesday — full day coverage for slot stepping (45 min service on 30 min business grid).
+        Schedule::create([
+            'user_id' => $employee->id,
+            'day_of_week' => 1,
+            'start_time' => '09:00:00',
+            'end_time' => '18:00:00',
+            'is_active' => true,
+        ]);
 
         $first = Appointment::create([
             'business_id' => $business->id,
@@ -180,5 +198,86 @@ class EmployeeAppointmentEditTest extends TestCase
 
         $this->assertSame('10:30', substr((string) $first->start_time, 0, 5));
         $this->assertSame('11:15', substr((string) $first->end_time, 0, 5));
+    }
+
+    public function test_employee_can_move_appointment_into_own_scheduled_break(): void
+    {
+        $this->seed(BusinessTypeSeeder::class);
+
+        $owner = User::factory()->create([
+            'role' => UserRole::Admin,
+        ]);
+
+        $business = Business::create([
+            'owner_id' => $owner->id,
+            'business_type_id' => BusinessType::query()->value('id'),
+            'name' => 'Lunch Self Biz',
+            'slug' => 'lunch-self-biz',
+            'timezone' => 'UTC',
+            'currency' => 'EUR',
+            'currency_symbol' => '€',
+            'is_active' => true,
+            'slot_duration' => 30,
+        ]);
+
+        $employee = User::factory()->create([
+            'role' => UserRole::Employee,
+            'business_id' => $business->id,
+        ]);
+
+        $service = Service::create([
+            'business_id' => $business->id,
+            'name' => 'Cut',
+            'description' => 'Test',
+            'duration' => 30,
+            'price' => 25,
+            'is_active' => true,
+            'sort_order' => 0,
+        ]);
+
+        $employee->services()->sync([$service->id]);
+
+        $monday = '2026-06-08';
+        $schedule = Schedule::create([
+            'user_id' => $employee->id,
+            'day_of_week' => 0,
+            'start_time' => '09:00:00',
+            'end_time' => '18:00:00',
+            'is_active' => true,
+        ]);
+
+        ScheduleBreak::create([
+            'schedule_id' => $schedule->id,
+            'start_time' => '12:00:00',
+            'end_time' => '13:00:00',
+        ]);
+
+        $appointment = Appointment::create([
+            'business_id' => $business->id,
+            'employee_id' => $employee->id,
+            'service_id' => $service->id,
+            'client_first_name' => 'A',
+            'client_last_name' => 'B',
+            'client_phone' => '000',
+            'client_email' => null,
+            'client_notes' => null,
+            'date' => $monday,
+            'start_time' => '10:00',
+            'end_time' => '10:30',
+            'price' => 25,
+            'status' => AppointmentStatus::Confirmed,
+        ]);
+
+        $response = $this->actingAs($employee)->put(route('employee.appointments.edit', $appointment), [
+            'service_id' => $service->id,
+            'status' => 'confirmed',
+            'date' => $monday,
+            'start_time' => '12:00',
+        ]);
+
+        $response->assertRedirect();
+        $appointment->refresh();
+        $this->assertSame('12:00', substr((string) $appointment->start_time, 0, 5));
+        $this->assertSame('12:30', substr((string) $appointment->end_time, 0, 5));
     }
 }

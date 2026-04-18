@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\AppointmentStatus;
+use App\Enums\Permission;
 use App\Http\Controllers\Concerns\ResolvesAppointmentCalendarQuery;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateAppointmentRequest;
 use App\Http\Requests\Admin\UpdateAppointmentStatusRequest;
 use App\Models\Appointment;
 use App\Models\User;
+use App\Models\UserAppointmentViewPreference;
 use App\Services\Interfaces\AppointmentServiceInterface;
 use App\Services\Interfaces\BookingServiceInterface;
 use App\Services\Interfaces\ScheduleServiceInterface;
@@ -32,10 +34,28 @@ class AppointmentController extends Controller
         private ScheduleServiceInterface $scheduleService,
     ) {}
 
-    public function index(Request $request): Response
+    public function index(Request $request): Response|RedirectResponse
     {
-        $business = auth()->user()->panelBusiness();
+        $user = $request->user();
+        $business = $user->panelBusiness();
         abort_unless($business, 403);
+
+        $preference = UserAppointmentViewPreference::firstOrCreate(
+            ['user_id' => $user->id],
+            ['is_calendar_default' => false],
+        );
+
+        $forceTable = $request->boolean('list');
+        if (
+            $preference->is_calendar_default
+            && ! $forceTable
+            && $user->hasPermission(Permission::AdminAppointments->value)
+        ) {
+            return redirect()->route('admin.appointments.calendar');
+        }
+
+        $preference->update(['is_calendar_default' => false]);
+
         $filters = $this->filtersFromRequest($request);
         $data = $this->appointmentService->getFiltered($business, $filters);
 
@@ -83,12 +103,25 @@ class AppointmentController extends Controller
             );
         }
 
+        $maps = $this->scheduleService->getCalendarBreakAndDayOffMapsForEmployees(
+            $business,
+            $data['range_start'],
+            $data['range_end'],
+        );
+        $data['calendar_employee_day_breaks'] = $maps['breaks'];
+        $data['calendar_employee_day_offs'] = $maps['day_offs'];
+
         $data['filters'] = [
             'employee_id' => $calendarFilters['employee_id'] ?? null,
             'status' => $calendarFilters['statuses'],
             'view' => $view,
             'date' => $anchorDate,
         ];
+
+        UserAppointmentViewPreference::updateOrCreate(
+            ['user_id' => $request->user()->id],
+            ['is_calendar_default' => true],
+        );
 
         return Inertia::render('Admin/Appointments/Calendar', $data);
     }

@@ -49,6 +49,8 @@ class EmployeeAppointmentCalendarTest extends TestCase
             ->has('calendar_hours')
             ->has('calendar_day_breaks')
             ->has('calendar_day_offs')
+            ->has('calendar_employee_day_breaks')
+            ->has('calendar_employee_day_offs')
             ->where('calendar_hours.start', fn ($v) => is_string($v) && strlen($v) >= 4)
             ->where('calendar_hours.end', fn ($v) => is_string($v) && strlen($v) >= 4));
     }

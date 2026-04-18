@@ -13,6 +13,7 @@ use App\Repositories\Interfaces\AppointmentRepositoryInterface;
 use App\Repositories\Interfaces\EmployeeRepositoryInterface;
 use App\Repositories\Interfaces\ServiceRepositoryInterface;
 use App\Services\Interfaces\AppointmentServiceInterface;
+use App\Services\Interfaces\BookingServiceInterface;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -26,6 +27,7 @@ class AppointmentService implements AppointmentServiceInterface
         private EmployeeRepositoryInterface $employeeRepository,
         private ServiceRepositoryInterface $serviceRepository,
         private SharedResourceUsageService $sharedResourceUsageService,
+        private BookingServiceInterface $bookingService,
     ) {}
 
     public function getFiltered(Business $business, array $filters, int $perPage = 10): array
@@ -146,6 +148,16 @@ class AppointmentService implements AppointmentServiceInterface
             ]);
         }
 
+        $this->assertStartTimeMatchesAvailableSlots(
+            $business,
+            (int) $data['employee_id'],
+            (int) $data['service_id'],
+            $data['date'],
+            $startTime,
+            $appointment->id,
+            false,
+        );
+
         return DB::transaction(function () use ($business, $appointment, $data, $service, $startTime, $endTime) {
             $this->validateSharedResourcesForAppointmentWindow(
                 $business,
@@ -220,6 +232,16 @@ class AppointmentService implements AppointmentServiceInterface
             ]);
         }
 
+        $this->assertStartTimeMatchesAvailableSlots(
+            $business,
+            $employeeId,
+            $serviceId,
+            $data['date'],
+            $startTime,
+            $appointment->id,
+            true,
+        );
+
         return DB::transaction(function () use ($business, $appointment, $data, $serviceId, $service, $startTime, $endTime) {
             $this->validateSharedResourcesForAppointmentWindow(
                 $business,
@@ -274,6 +296,16 @@ class AppointmentService implements AppointmentServiceInterface
             ]);
         }
 
+        $this->assertStartTimeMatchesAvailableSlots(
+            $business,
+            (int) $appointment->employee_id,
+            (int) $appointment->service_id,
+            $dateYmd,
+            $startTime,
+            $appointment->id,
+            true,
+        );
+
         DB::transaction(function () use ($appointment, $business, $service, $dateYmd, $startTime, $endTime) {
             $this->validateSharedResourcesForAppointmentWindow(
                 $business,
@@ -291,6 +323,35 @@ class AppointmentService implements AppointmentServiceInterface
                 'updated_by' => auth()->id(),
             ]);
         });
+    }
+
+    /**
+     * Same rules as {@see BookingService::getAdminAvailableSlots} for the given flags (conflicts, shared resources; breaks optional).
+     */
+    private function assertStartTimeMatchesAvailableSlots(
+        Business $business,
+        int $employeeId,
+        int $serviceId,
+        string $dateYmd,
+        Carbon $startTime,
+        ?int $excludeAppointmentId,
+        bool $ignoreScheduleBreaks,
+    ): void {
+        $slots = $this->bookingService->getAdminAvailableSlots($business, [
+            'employee_id' => $employeeId,
+            'service_id' => $serviceId,
+            'date' => $dateYmd,
+            'exclude_id' => $excludeAppointmentId,
+            'ignore_schedule_breaks' => $ignoreScheduleBreaks,
+        ]);
+
+        if (! in_array($startTime->format('H:i'), $slots, true)) {
+            throw ValidationException::withMessages([
+                'start_time' => $ignoreScheduleBreaks
+                    ? 'This time is outside working hours or is not available.'
+                    : 'This time is outside working hours or overlaps a break.',
+            ]);
+        }
     }
 
     private function validateSharedResourcesForAppointmentWindow(

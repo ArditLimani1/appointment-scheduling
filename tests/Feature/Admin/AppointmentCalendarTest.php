@@ -50,6 +50,8 @@ class AppointmentCalendarTest extends TestCase
             ->has('slot_duration')
             ->has('calendar_day_breaks')
             ->has('calendar_day_offs')
+            ->has('calendar_employee_day_breaks')
+            ->has('calendar_employee_day_offs')
             ->where('slot_duration', fn ($v) => is_int($v) && $v >= 5 && $v <= 120)
             ->where('filters.status', ['pending', 'confirmed']));
     }
