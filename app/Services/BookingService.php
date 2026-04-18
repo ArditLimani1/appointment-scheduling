@@ -56,12 +56,20 @@ class BookingService implements BookingServiceInterface
                 )->values()
             : $this->serviceRepository->getActiveByBusiness($business->id);
 
+        $timezone = $business->timezone ?: config('app.timezone');
+        $today = Carbon::now($timezone)->toDateString();
+        $maxBookable = Carbon::now($timezone)->startOfDay()
+            ->addDays((int) ($business->max_booking_window ?? 30))
+            ->toDateString();
+
         return [
             'business' => $business,
             'employees' => $employees,
             'services' => $services,
             'slug' => $slug,
             'preselected_employee_id' => $preselectedEmployeeId,
+            'booking_today' => $today,
+            'booking_max_date' => $maxBookable,
         ];
     }
 

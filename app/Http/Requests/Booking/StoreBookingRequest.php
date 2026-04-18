@@ -7,6 +7,7 @@ use App\Models\Service;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class StoreBookingRequest extends FormRequest
 {
@@ -15,21 +16,46 @@ class StoreBookingRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $merge = [];
+
+        if ($this->has('client_first_name')) {
+            $merge['client_first_name'] = $this->sanitizeBookingPlainText((string) $this->input('client_first_name'), 100);
+        }
+        if ($this->has('client_last_name')) {
+            $merge['client_last_name'] = $this->sanitizeBookingPlainText((string) $this->input('client_last_name'), 100);
+        }
+        if ($this->has('client_notes')) {
+            $merge['client_notes'] = $this->sanitizeBookingNotes((string) $this->input('client_notes'), 2000);
+        }
+        if ($this->has('client_phone')) {
+            $merge['client_phone'] = $this->normalizeBookingPhone((string) $this->input('client_phone'));
+        }
+        if ($this->has('client_email')) {
+            $merge['client_email'] = mb_strtolower(trim((string) $this->input('client_email')), 'UTF-8');
+        }
+
+        $this->merge($merge);
+    }
+
     public function rules(): array
     {
         $business = Business::where('slug', $this->route('slug'))->first();
         $identifierType = $business?->client_identifier_type ?? 'phone';
 
+        $nameRegex = '/^[\p{L}\p{M}0-9\s\'.,-]+$/u';
+
         return [
-            'client_first_name' => ['required', 'string', 'max:100'],
-            'client_last_name' => ['required', 'string', 'max:100'],
+            'client_first_name' => ['required', 'string', 'min:1', 'max:100', 'regex:'.$nameRegex],
+            'client_last_name' => ['required', 'string', 'min:1', 'max:100', 'regex:'.$nameRegex],
             'client_phone' => $identifierType === 'phone'
-                ? ['required', 'string', 'max:50']
+                ? ['required', 'string', 'regex:/^\+?[0-9]{6,20}$/']
                 : ['nullable', 'string', 'max:50'],
             'client_email' => $identifierType === 'email'
-                ? ['required', 'email', 'max:255']
-                : ['nullable', 'email', 'max:255'],
-            'client_notes' => ['nullable', 'string', 'max:2000'],
+                ? ['required', 'string', 'email:rfc', 'max:255', 'regex:/^[^<>"\'`]+$/u']
+                : ['nullable', 'string', 'max:255'],
+            'client_notes' => ['nullable', 'string', 'max:2000', 'regex:/^[^<>]*$/u'],
             'employee_id' => ['required', 'integer', 'exists:users,id'],
             'service_ids' => ['required', 'array', 'min:1'],
             'service_ids.*' => ['integer', 'exists:services,id'],
@@ -38,9 +64,20 @@ class StoreBookingRequest extends FormRequest
         ];
     }
 
-    public function withValidator($validator): void
+    public function messages(): array
     {
-        $validator->after(function ($validator) {
+        return [
+            'client_first_name.regex' => 'The first name may only include letters, numbers, spaces, and simple punctuation.',
+            'client_last_name.regex' => 'The last name may only include letters, numbers, spaces, and simple punctuation.',
+            'client_phone.regex' => 'Enter a valid phone number: optional + followed by 6–20 digits only.',
+            'client_email.email' => 'Please enter a valid email address.',
+            'client_notes.regex' => 'Notes cannot contain angle brackets or HTML.',
+        ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
             $business = Business::where('slug', $this->route('slug'))
                 ->where('is_active', true)
                 ->first();
@@ -56,6 +93,24 @@ class StoreBookingRequest extends FormRequest
                 $todayBusiness = Carbon::now($timezone)->startOfDay();
                 if ($requestDay->lt($todayBusiness)) {
                     $validator->errors()->add('date', 'The date must be today or later.');
+                }
+
+                $maxDay = Carbon::now($timezone)->startOfDay()
+                    ->addDays((int) ($business->max_booking_window ?? 30));
+                if ($requestDay->gt($maxDay)) {
+                    $validator->errors()->add('date', 'The date is outside the allowed booking window.');
+                }
+            }
+
+            $startTimeInput = $this->input('start_time');
+            if ($dateInput && $startTimeInput) {
+                $start = Carbon::parse($dateInput.' '.$startTimeInput, $timezone);
+                $earliest = Carbon::now($timezone)->addMinutes((int) ($business->min_booking_notice ?? 0));
+                if ($start->lt($earliest)) {
+                    $validator->errors()->add(
+                        'start_time',
+                        'That time is no longer available or does not meet the minimum advance booking requirement.'
+                    );
                 }
             }
 
@@ -93,5 +148,31 @@ class StoreBookingRequest extends FormRequest
                 }
             }
         });
+    }
+
+    private function sanitizeBookingPlainText(string $value, int $max): string
+    {
+        $value = strip_tags($value);
+        $value = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $value) ?? '';
+
+        return mb_substr(trim($value), 0, $max, 'UTF-8');
+    }
+
+    private function sanitizeBookingNotes(string $value, int $max): string
+    {
+        $value = str_replace(["\r\n", "\r"], "\n", $value);
+
+        return $this->sanitizeBookingPlainText($value, $max);
+    }
+
+    private function normalizeBookingPhone(string $value): string
+    {
+        $value = trim($value);
+        $digits = preg_replace('/\D+/', '', $value) ?? '';
+        if ($digits === '') {
+            return '';
+        }
+
+        return str_starts_with($value, '+') ? '+'.$digits : $digits;
     }
 }

@@ -52,6 +52,12 @@ class GetAvailableSlotsRequest extends FormRequest
                 if ($requestDay->lt($todayBusiness)) {
                     $validator->errors()->add('date', 'The date must be today or later.');
                 }
+
+                $maxDay = Carbon::now($timezone)->startOfDay()
+                    ->addDays((int) ($business->max_booking_window ?? 30));
+                if ($requestDay->gt($maxDay)) {
+                    $validator->errors()->add('date', 'The date is outside the allowed booking window.');
+                }
             }
 
             $employeeId = (int) $this->input('employee_id');

@@ -2,6 +2,12 @@ import { Head, router } from '@inertiajs/react';
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import Icon from '@/Components/Icon';
 import DatePicker from '@/Components/DatePicker';
+import {
+    coercePhoneInput,
+    sanitizeBookingNotes,
+    sanitizeBookingPlainText,
+    validateBookingDetails,
+} from '@/utils/bookingClientDetails';
 
 const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -10,15 +16,45 @@ function toDateString(d) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-function buildDateRange(maxWindow) {
+function buildDateRangeFromAnchor(firstYmd, maxWindow) {
     const days = [];
-    const today = new Date();
-    for (let i = 0; i <= (maxWindow || 30); i++) {
-        const d = new Date(today);
-        d.setDate(today.getDate() + i);
-        days.push(d);
+    const [y, m, d] = firstYmd.split('-').map(Number);
+    const start = new Date(y, m - 1, d);
+    const cap = maxWindow ?? 30;
+    for (let i = 0; i <= cap; i++) {
+        const dt = new Date(start);
+        dt.setDate(start.getDate() + i);
+        days.push(dt);
     }
     return days;
+}
+
+/** Current HH:mm (24h) in an IANA timezone — for filtering same-day slots on the client. */
+function formatNowHmInTimeZone(timeZone) {
+    if (!timeZone) return null;
+    try {
+        const parts = new Intl.DateTimeFormat('en-GB', {
+            timeZone,
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+        }).formatToParts(new Date());
+        const h = parts.find((p) => p.type === 'hour')?.value;
+        const min = parts.find((p) => p.type === 'minute')?.value;
+        if (h == null || min == null) return null;
+        return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+    } catch {
+        return null;
+    }
+}
+
+function filterSlotsNotInPastForToday(slots, dateYmd, businessTodayYmd, timeZone) {
+    if (!dateYmd || dateYmd !== businessTodayYmd || !slots?.length) {
+        return slots || [];
+    }
+    const hm = formatNowHmInTimeZone(timeZone);
+    if (!hm) return slots;
+    return slots.filter((s) => String(s) >= hm);
 }
 
 /** Monday = 0 … Sunday = 6 (same as employee schedule / server). */
@@ -112,7 +148,15 @@ function BookingAccordionStep({
     );
 }
 
-export default function Index({ employees, services, business, slug, preselected_employee_id = null }) {
+export default function Index({
+    employees,
+    services,
+    business,
+    slug,
+    preselected_employee_id = null,
+    booking_today: bookingTodayProp,
+    booking_max_date: bookingMaxDateProp,
+}) {
     const preselectedEmployee = preselected_employee_id
         ? (employees.find((e) => e.id === preselected_employee_id) ?? null)
         : null;
@@ -126,6 +170,7 @@ export default function Index({ employees, services, business, slug, preselected
     const [loadingSlots, setLoadingSlots] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [errors, setErrors] = useState({});
+    const [clientFieldErrors, setClientFieldErrors] = useState({});
     const [fullName, setFullName] = useState('');
     const [phone, setPhone] = useState('');
     const [email, setEmail] = useState('');
@@ -138,13 +183,34 @@ export default function Index({ employees, services, business, slug, preselected
     }, []);
 
     const identifierType = business?.client_identifier_type ?? 'phone';
-    const identifierValue = identifierType === 'email' ? email : phone;
+
+    const detailsValidation = useMemo(
+        () =>
+            validateBookingDetails({
+                fullName,
+                phone,
+                email,
+                notes,
+                identifierType,
+            }),
+        [fullName, phone, email, notes, identifierType]
+    );
 
     const prevEmployeeDateKeyRef = useRef('');
 
+    const bookingToday = bookingTodayProp || toDateString(new Date());
+    const bookingMaxDate =
+        bookingMaxDateProp ||
+        (() => {
+            const [y, m, d] = bookingToday.split('-').map(Number);
+            const t = new Date(y, m - 1, d);
+            t.setDate(t.getDate() + (business?.max_booking_window || 30));
+            return toDateString(t);
+        })();
+
     const fullDateRange = useMemo(
-        () => buildDateRange(business?.max_booking_window || 30),
-        [business?.max_booking_window]
+        () => buildDateRangeFromAnchor(bookingToday, business?.max_booking_window || 30),
+        [business?.max_booking_window, bookingToday]
     );
 
     const bookableDates = useMemo(() => {
@@ -262,6 +328,8 @@ export default function Index({ employees, services, business, slug, preselected
         setSlots([]);
         setSlotsError(null);
 
+        const slotsRequestKey = `${selectedEmployee.id}|${selectedDate}`;
+
         const params = new URLSearchParams({
             employee_id: String(selectedEmployee.id),
             date: selectedDate,
@@ -282,7 +350,16 @@ export default function Index({ employees, services, business, slug, preselected
                 return response.json();
             })
             .then((responseData) => {
-                const availableSlots = responseData.slots || [];
+                if (prevEmployeeDateKeyRef.current !== slotsRequestKey) {
+                    return;
+                }
+                const raw = responseData.slots || [];
+                const availableSlots = filterSlotsNotInPastForToday(
+                    raw,
+                    selectedDate,
+                    bookingToday,
+                    business?.timezone
+                );
                 setSlots(availableSlots);
                 if (!employeeOrDateChanged) {
                     setSelectedSlot((prev) => (prev && availableSlots.includes(prev) ? prev : null));
@@ -296,7 +373,7 @@ export default function Index({ employees, services, business, slug, preselected
                 }
             })
             .finally(() => setLoadingSlots(false));
-    }, [selectedEmployee?.id, selectedDate, selectedServiceIdsKey, slug, bookableDates]);
+    }, [selectedEmployee?.id, selectedDate, selectedServiceIdsKey, slug, bookableDates, bookingToday, business?.timezone]);
 
     useEffect(() => {
         if (!selectedEmployee) {
@@ -313,35 +390,51 @@ export default function Index({ employees, services, business, slug, preselected
         }
     }, [selectedEmployee?.id, bookableDates, selectedDate]);
 
-    const { firstName, lastName } = useMemo(() => {
-        const parts = fullName.trim().split(' ');
-        return {
-            firstName: parts[0] || '',
-            lastName: parts.slice(1).join(' ') || '-',
-        };
-    }, [fullName]);
-
-    const canSubmit = selectedServices.length > 0 && selectedEmployee && selectedDate && selectedSlot && firstName && identifierValue;
+    const canSubmit =
+        selectedServices.length > 0
+        && selectedEmployee
+        && selectedDate
+        && selectedSlot
+        && detailsValidation.ok;
 
     const totalSteps = isEmployeePreselected ? 3 : 4;
-    const progress = [selectedServices.length > 0, selectedEmployee, selectedDate && selectedSlot, firstName && identifierValue].filter(Boolean).length;
+    const progress = [
+        selectedServices.length > 0,
+        selectedEmployee,
+        selectedDate && selectedSlot,
+        detailsValidation.ok,
+    ].filter(Boolean).length;
 
     const handleSubmit = () => {
         if (!canSubmit || submitting) return;
+        if (!detailsValidation.ok) {
+            setClientFieldErrors(detailsValidation.errors);
+            return;
+        }
+        setClientFieldErrors({});
         setSubmitting(true);
-        router.post(route('booking.store', { slug }), {
-            employee_id: selectedEmployee.id,
-            service_ids: selectedServices.map((s) => s.id),
-            date: selectedDate,
-            start_time: selectedSlot,
-            client_first_name: firstName,
-            client_last_name: lastName,
-            ...(identifierType === 'phone' ? { client_phone: phone } : { client_email: email }),
-            client_notes: notes,
-        }, {
-            onError: (errs) => { setErrors(errs); setSubmitting(false); },
-            onSuccess: () => setSubmitting(false),
-        });
+        const { payload } = detailsValidation;
+        router.post(
+            route('booking.store', { slug }),
+            {
+                employee_id: selectedEmployee.id,
+                service_ids: selectedServices.map((s) => s.id),
+                date: selectedDate,
+                start_time: selectedSlot,
+                client_first_name: payload.first,
+                client_last_name: payload.last,
+                ...(identifierType === 'phone' ? { client_phone: payload.phone } : { client_email: payload.email }),
+                client_notes: payload.notesSanitized,
+            },
+            {
+                onError: (errs) => {
+                    setErrors(errs);
+                    setClientFieldErrors({});
+                    setSubmitting(false);
+                },
+                onSuccess: () => setSubmitting(false),
+            }
+        );
     };
 
     const currencySymbol = business?.currency_symbol ?? '€';
@@ -376,10 +469,13 @@ export default function Index({ employees, services, business, slug, preselected
             ? `${formatDateLabel(selectedDate)} · ${selectedSlot}–${endHm}`
             : `${formatDateLabel(selectedDate)} · ${selectedSlot}`;
     }, [selectedDate, selectedSlot, totalBookingMinutes]);
-    const section4Summary =
-        firstName.trim() && identifierValue.trim()
-            ? `${firstName.trim()} · ${identifierValue.trim()}`
-            : null;
+    const section4Summary = useMemo(() => {
+        if (!detailsValidation.ok) return null;
+        const id = identifierType === 'email' ? email.trim() : phone.trim();
+        const nm = fullName.trim();
+        if (!nm || !id) return null;
+        return `${nm} · ${id}`;
+    }, [detailsValidation.ok, identifierType, email, phone, fullName]);
 
     return (
         <div className="min-h-screen bg-surface font-body">
@@ -393,7 +489,7 @@ export default function Index({ employees, services, business, slug, preselected
             </div>
 
             <header className="sticky top-0 z-50 glass-header border-b border-outline-variant/20">
-                <div className="max-w-5xl mx-auto px-6 py-4 flex justify-between items-center">
+                <div className="max-w-5xl mx-auto px-6 py-4 flex items-center">
                     <div className="flex items-center gap-3 min-w-0">
                         {businessLogoUrl ? (
                             <img
@@ -410,12 +506,6 @@ export default function Index({ employees, services, business, slug, preselected
                             {business?.name || 'Scheduler'}
                         </p>
                     </div>
-                    <a
-                        href="/"
-                        className="rounded-xl border border-outline-variant px-4 py-2 text-sm font-medium text-on-surface-variant hover:bg-surface-container-low transition-colors"
-                    >
-                        Home
-                    </a>
                 </div>
             </header>
 
@@ -582,6 +672,10 @@ export default function Index({ employees, services, business, slug, preselected
                                                     setSelectedSlot(null);
                                                 }}
                                                 placeholder="Select a date"
+                                                minDate={bookingToday}
+                                                maxDate={bookingMaxDate}
+                                                weekStartsOn="monday"
+                                                todayDateString={bookingToday}
                                             />
                                         </div>
                                         {selectedDate && !selectedDateIsBookable ? (
@@ -661,22 +755,41 @@ export default function Index({ employees, services, business, slug, preselected
                                     <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant px-1">Full Name</label>
                                     <input
                                         value={fullName}
-                                        onChange={e => setFullName(e.target.value)}
+                                        onChange={(e) => {
+                                            setFullName(sanitizeBookingPlainText(e.target.value, 201));
+                                            setClientFieldErrors((prev) => ({ ...prev, client_first_name: undefined, client_last_name: undefined }));
+                                        }}
+                                        maxLength={201}
+                                        autoComplete="name"
                                         className="w-full h-14 px-6 rounded-xl border border-slate-100 bg-transparent focus:ring-2 focus:ring-on-surface/20 transition-all text-sm text-on-surface"
                                     />
-                                    {errors.client_first_name && <p className="text-xs text-error mt-1">{errors.client_first_name}</p>}
+                                    {(errors.client_first_name || clientFieldErrors.client_first_name) && (
+                                        <p className="text-xs text-error mt-1">{errors.client_first_name || clientFieldErrors.client_first_name}</p>
+                                    )}
+                                    {(errors.client_last_name || clientFieldErrors.client_last_name) && (
+                                        <p className="text-xs text-error mt-1">{errors.client_last_name || clientFieldErrors.client_last_name}</p>
+                                    )}
                                 </div>
                                 {identifierType === 'phone' ? (
                                     <div className="sm:col-span-2 space-y-2">
                                         <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant px-1">Phone Number</label>
                                         <input
                                             type="tel"
+                                            inputMode="tel"
                                             value={phone}
-                                            onChange={e => setPhone(e.target.value)}
+                                            onChange={(e) => {
+                                                setPhone(coercePhoneInput(e.target.value));
+                                                setClientFieldErrors((prev) => ({ ...prev, client_phone: undefined }));
+                                            }}
+                                            maxLength={24}
+                                            autoComplete="tel"
                                             className="w-full h-14 px-6 rounded-xl border border-slate-100 bg-transparent focus:ring-2 focus:ring-on-surface/20 transition-all placeholder:text-on-surface/40 text-sm text-on-surface"
                                             placeholder="+38349444348"
                                         />
-                                        {errors.client_phone && <p className="text-xs text-error mt-1">{errors.client_phone}</p>}
+                                        <p className="text-xs text-on-surface-variant">Digits only, optional + at the start (6–20 digits).</p>
+                                        {(errors.client_phone || clientFieldErrors.client_phone) && (
+                                            <p className="text-xs text-error mt-1">{errors.client_phone || clientFieldErrors.client_phone}</p>
+                                        )}
                                     </div>
                                 ) : (
                                     <div className="sm:col-span-2 space-y-2">
@@ -684,10 +797,17 @@ export default function Index({ employees, services, business, slug, preselected
                                         <input
                                             type="email"
                                             value={email}
-                                            onChange={e => setEmail(e.target.value)}
+                                            onChange={(e) => {
+                                                setEmail(sanitizeBookingPlainText(e.target.value, 255));
+                                                setClientFieldErrors((prev) => ({ ...prev, client_email: undefined }));
+                                            }}
+                                            maxLength={255}
+                                            autoComplete="email"
                                             className="w-full h-14 px-6 rounded-xl border border-slate-100 bg-transparent focus:ring-2 focus:ring-on-surface/20 transition-all text-sm text-on-surface"
                                         />
-                                        {errors.client_email && <p className="text-xs text-error mt-1">{errors.client_email}</p>}
+                                        {(errors.client_email || clientFieldErrors.client_email) && (
+                                            <p className="text-xs text-error mt-1">{errors.client_email || clientFieldErrors.client_email}</p>
+                                        )}
                                     </div>
                                 )}
                                 <div className="sm:col-span-2 space-y-2">
@@ -696,10 +816,17 @@ export default function Index({ employees, services, business, slug, preselected
                                     </label>
                                     <textarea
                                         value={notes}
-                                        onChange={e => setNotes(e.target.value)}
+                                        onChange={(e) => {
+                                            setNotes(sanitizeBookingNotes(e.target.value, 2000));
+                                            setClientFieldErrors((prev) => ({ ...prev, client_notes: undefined }));
+                                        }}
+                                        maxLength={2000}
                                         rows={3}
                                         className="w-full px-6 py-4 rounded-xl border border-slate-100 bg-transparent focus:ring-2 focus:ring-on-surface/20 transition-all text-sm text-on-surface resize-none"
                                     />
+                                    {(errors.client_notes || clientFieldErrors.client_notes) && (
+                                        <p className="text-xs text-error mt-1">{errors.client_notes || clientFieldErrors.client_notes}</p>
+                                    )}
                                 </div>
                             </div>
                         </BookingAccordionStep>

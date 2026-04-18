@@ -1,26 +1,6 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import Icon from '@/Components/Icon';
-import { appointmentDateOnly, formatAppointmentDate, formatTimeHm } from '@/utils/appointmentDate';
-
-function buildCalendarUrlForBundle(bundle) {
-    const first = bundle[0];
-    const ymd = appointmentDateOnly(first.date);
-    if (!ymd || !first.start_time) return null;
-    const toGcalDate = (dateYmd, timeStr) => {
-        const [y, m, d] = dateYmd.split('-');
-        const hm = formatTimeHm(timeStr);
-        const [h, min] = hm.split(':');
-        return `${y}${m}${d}T${h}${min}00`;
-    };
-    const last = bundle[bundle.length - 1];
-    const start = toGcalDate(ymd, first.start_time);
-    const end = toGcalDate(ymd, last.end_time || last.start_time);
-    const serviceNames = bundle.map((a) => a.service?.name).filter(Boolean);
-    const title = serviceNames.length > 1 ? `${serviceNames.length} services` : (serviceNames[0] || 'Appointment');
-    const details = `Professional: ${first.employee?.name || ''}${serviceNames.length ? `\n${serviceNames.join(', ')}` : ''}`;
-    const location = first.business?.location || '';
-    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${start}/${end}&details=${encodeURIComponent(details)}&location=${encodeURIComponent(location)}`;
-}
+import { formatAppointmentDate, formatTimeHm } from '@/utils/appointmentDate';
 
 export default function Confirmation({ appointment, bookingBundle }) {
     const bundle = bookingBundle?.length ? bookingBundle : [appointment];
@@ -31,12 +11,12 @@ export default function Confirmation({ appointment, bookingBundle }) {
 
     const totalPrice = bundle.reduce((sum, a) => sum + Number(a.price || 0), 0);
     const currencySymbol = apt.business?.currency_symbol ?? '€';
-
-    const calendarUrl = buildCalendarUrlForBundle(bundle);
+    const bookingSlug = apt.business?.slug;
+    const businessName = apt.business?.name || 'the business';
 
     return (
         <div className="min-h-screen bg-surface font-body text-on-surface">
-            <Head title="Booking Confirmed" />
+            <Head title="Booking Submitted" />
 
             <div className="w-full h-1 bg-surface-container-highest">
                 <div className="h-full bg-on-surface w-full transition-all duration-700" />
@@ -55,17 +35,22 @@ export default function Confirmation({ appointment, bookingBundle }) {
                     <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-tertiary-fixed mb-6">
                         <Icon name="check_circle" size="text-4xl" filled className="text-on-tertiary-fixed" />
                     </div>
-                    <h2 className="font-headline text-3xl font-extrabold tracking-tight text-on-surface mb-2">
-                        Your Appointment is Confirmed!
+                    <h2 className="font-headline text-3xl font-extrabold tracking-tight text-on-surface mb-4">
+                        Booking Submitted
                     </h2>
-                    <p className="text-on-surface-variant text-lg">
-                        {dateShort !== '—' ? `See you on ${dateShort}.` : 'Your booking details are below.'}
+                    <p className="text-on-surface text-lg font-medium leading-relaxed">
+                        Thanks for booking at {businessName}.
                     </p>
+                    {dateShort !== '—' && (
+                        <p className="text-on-surface-variant text-sm mt-5">
+                            Requested time: <span className="font-semibold text-on-surface">{dateShort}</span>
+                        </p>
+                    )}
                 </div>
 
                 <div className="bg-surface-container-lowest rounded-xl p-8 mb-10 shadow-[0_4px_24px_rgba(0,0,0,0.06)]">
                     <p className="font-headline text-xs font-bold uppercase tracking-widest text-on-surface-variant mb-8">
-                        Booking Summary
+                        Request summary
                     </p>
 
                     <div className="space-y-8">
@@ -117,21 +102,16 @@ export default function Confirmation({ appointment, bookingBundle }) {
                                     <Icon name="location_on" className="text-on-surface" />
                                 </div>
                                 <div>
-                                    <p className="text-sm text-on-surface-variant mb-1">Business Location</p>
+                                    <p className="text-sm text-on-surface-variant mb-1">Business location</p>
                                     <p className="font-headline font-bold text-on-surface">{apt.business.name}</p>
                                     <p className="text-on-surface-variant text-sm">{apt.business.location}</p>
                                 </div>
                             </div>
                         )}
 
-                        <div className="pt-4 border-t border-outline-variant flex items-center justify-between">
+                        <div className="pt-4 border-t border-outline-variant flex items-center justify-end">
                             <div className="flex items-center gap-2">
-                                <Icon name="tag" size="text-sm" className="text-on-surface-variant" />
-                                <span className="text-xs text-on-surface-variant font-semibold">
-                                    Ref #{String(apt.id).padStart(6, '0')}
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-3">
+                                <span className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Total</span>
                                 <span className="font-headline text-xl font-extrabold text-on-surface">
                                     {currencySymbol}{totalPrice.toFixed(2)}
                                 </span>
@@ -141,28 +121,28 @@ export default function Confirmation({ appointment, bookingBundle }) {
                 </div>
 
                 <div className="flex flex-col gap-4">
-                    {calendarUrl && (
-                        <a
-                            href={calendarUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="primary-gradient text-white font-headline font-bold py-4 rounded-xl flex items-center justify-center gap-2 active:scale-[0.98] transition-transform shadow-lg shadow-black/10"
+                    {bookingSlug ? (
+                        <Link
+                            href={route('booking.index', { slug: bookingSlug })}
+                            className="bg-on-surface text-surface font-headline font-bold py-4 rounded-xl flex items-center justify-center gap-2 active:scale-[0.98] transition-transform hover:opacity-90 text-center"
                         >
-                            <Icon name="event_available" />
-                            Add to Calendar
+                            <Icon name="event_repeat" />
+                            Book another appointment
+                        </Link>
+                    ) : (
+                        <a
+                            href="/"
+                            className="bg-on-surface text-surface font-headline font-bold py-4 rounded-xl flex items-center justify-center gap-2 active:scale-[0.98] transition-transform hover:opacity-90 text-center"
+                        >
+                            <Icon name="event_repeat" />
+                            Book another appointment
                         </a>
                     )}
-                    <a
-                        href="/"
-                        className="bg-surface-container-high text-on-surface font-headline font-bold py-4 rounded-xl flex items-center justify-center gap-2 active:scale-[0.98] transition-transform hover:bg-surface-container-highest"
-                    >
-                        <Icon name="home" />
-                        Return Home
-                    </a>
                 </div>
 
-                <p className="mt-8 text-center text-on-surface-variant text-xs max-w-xs mx-auto">
-                    Need to reschedule? Contact the business at least 24 hours before your appointment time.
+                <p className="mt-8 text-center text-on-surface-variant text-xs max-w-sm mx-auto leading-relaxed">
+                    Need to change this request? Contact the business as soon as possible. Final details will be sent
+                    after they confirm your appointment.
                 </p>
             </main>
         </div>
