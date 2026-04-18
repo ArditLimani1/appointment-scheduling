@@ -35,5 +35,12 @@ interface ScheduleServiceInterface
      */
     public function getDayOffDatesForRange(User $user, string $dateFrom, string $dateTo): array;
 
+    /**
+     * Per-employee break intervals and day-off dates for calendar drag overlays (string keys = user id).
+     *
+     * @return array{breaks: array<string, array<string, list<array{start: string, end: string}>>>, day_offs: array<string, list<string>>}
+     */
+    public function getCalendarBreakAndDayOffMapsForEmployees(Business $business, string $dateFrom, string $dateTo): array;
+
     public function saveOverrides(User $user, array $data): void;
 }

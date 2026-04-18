@@ -23,17 +23,52 @@ function breakIntervalToMinutes(br) {
     return { bs: timeToMinutes(startRaw), be: timeToMinutes(endRaw) };
 }
 
-function rangeOverlapsAnyBreak(startMin, endMin, breaks) {
-    if (!breaks?.length) {
-        return false;
+/**
+ * Drag-drop preview vs admin/employee slot API (`admin.appointments.slots` / employee slots).
+ * Breaks and off-schedule times are invalid because they are excluded from allowed start times.
+ */
+function dragDropValidationState(preview, { slotValidationMode, slotSetsLoading, slotSetsByDate, dayOffDateList }) {
+    if (!preview || slotValidationMode === 'none') {
+        return { variant: 'valid' };
     }
-    for (const br of breaks) {
-        const { bs, be } = breakIntervalToMinutes(br);
-        if (startMin < be && endMin > bs) {
-            return true;
+    if (slotSetsLoading) {
+        return { variant: 'loading' };
+    }
+    if (!slotSetsByDate) {
+        return { variant: 'valid' };
+    }
+    if (dayOffDateList.includes(preview.dateStr)) {
+        return { variant: 'invalid' };
+    }
+    const allowed = slotSetsByDate[preview.dateStr];
+    if (!allowed) {
+        return { variant: 'valid' };
+    }
+    const ok = allowed.has(minutesToTimeHm(preview.startMin));
+    return { variant: ok ? 'valid' : 'invalid' };
+}
+
+/**
+ * Break intervals for a day column. When `overlayEmployeeId` is set, use per-employee map (drag or employee self-view).
+ */
+function breaksForDayColumn(dateStr, overlayEmployeeId, calendarEmployeeDayBreaks, calendarDayBreaks) {
+    if (overlayEmployeeId != null && calendarEmployeeDayBreaks && Object.keys(calendarEmployeeDayBreaks).length > 0) {
+        const m = calendarEmployeeDayBreaks[String(overlayEmployeeId)] ?? calendarEmployeeDayBreaks[overlayEmployeeId];
+        if (m && typeof m === 'object') {
+            return m[dateStr] ?? [];
         }
     }
-    return false;
+    return calendarDayBreaks[dateStr] ?? [];
+}
+
+function dayOffForDayColumn(dateStr, overlayEmployeeId, calendarEmployeeDayOffs, calendarDayOffs) {
+    if (overlayEmployeeId != null && calendarEmployeeDayOffs && Object.keys(calendarEmployeeDayOffs).length > 0) {
+        const list = calendarEmployeeDayOffs[String(overlayEmployeeId)] ?? calendarEmployeeDayOffs[overlayEmployeeId];
+        if (Array.isArray(list)) {
+            return list.includes(dateStr);
+        }
+    }
+    return calendarDayOffs.includes(dateStr);
 }
 
 /** ~130px per hour — total grid height scales with visible minutes. */
@@ -283,9 +318,7 @@ function computeDropPreviewFromEvent(event, { gridBodyRefs, gridMinHeight, minut
     };
 }
 
-/**
- * Scheduled breaks — z above invalid-slot bands so amber stays visible (not covered by red).
- */
+/** Scheduled breaks — amber tint when parent enables schedule highlights. */
 function BreakIntervalLayers({ breaks, rangeStartMin, rangeEndMin, minutesInView }) {
     if (!breaks?.length) {
         return null;
@@ -304,7 +337,7 @@ function BreakIntervalLayers({ breaks, rangeStartMin, rangeEndMin, minutesInView
         return (
             <div
                 key={`${keyStart}-${keyEnd}-${i}`}
-                className="pointer-events-none absolute right-0 left-0 z-[14] border-y border-dashed border-amber-300/80 bg-amber-100/50"
+                className="pointer-events-none absolute right-0 left-0 z-[6] border-y border-dashed border-amber-300/80 bg-amber-100/50"
                 style={{ top: `${topPct}%`, height: `${Math.max(heightPct, 0.25)}%` }}
                 aria-hidden
             />
@@ -313,10 +346,10 @@ function BreakIntervalLayers({ breaks, rangeStartMin, rangeEndMin, minutesInView
 }
 
 /**
- * Full-column markers for API-invalid start times (e.g. resource conflict).
- * Same look as invalid DropSlotPreview. Skips breaks and is not used on day-off columns.
+ * Full-column markers for API-invalid start times (breaks, conflicts, resources).
+ * Same look as invalid DropSlotPreview. Renders above {@link BreakIntervalLayers} so invalid reads clearly on grab.
  */
-function UnavailableSlotBands({ allowedSet, rangeStartMin, rangeEndMin, minutesInView, durationMin, snapMin, breaks }) {
+function UnavailableSlotBands({ allowedSet, rangeStartMin, rangeEndMin, minutesInView, durationMin, snapMin }) {
     const bands = useMemo(() => {
         if (!allowedSet || snapMin < 1 || durationMin < 1) {
             return [];
@@ -325,15 +358,11 @@ function UnavailableSlotBands({ allowedSet, rangeStartMin, rangeEndMin, minutesI
         const lastStart = rangeEndMin - durationMin;
         for (let t = rangeStartMin; t <= lastStart; t += snapMin) {
             if (!allowedSet.has(minutesToTimeHm(t))) {
-                const blockEnd = t + durationMin;
-                if (rangeOverlapsAnyBreak(t, blockEnd, breaks)) {
-                    continue;
-                }
                 out.push(t);
             }
         }
         return out;
-    }, [allowedSet, rangeStartMin, rangeEndMin, durationMin, snapMin, breaks]);
+    }, [allowedSet, rangeStartMin, rangeEndMin, durationMin, snapMin]);
 
     if (!bands.length) {
         return null;
@@ -347,7 +376,7 @@ function UnavailableSlotBands({ allowedSet, rangeStartMin, rangeEndMin, minutesI
                 return (
                     <div
                         key={t}
-                        className={`pointer-events-none absolute right-0.5 left-0.5 z-[5] ${BUSY_CONFLICT_OVERLAY_CLASS}`}
+                        className={`pointer-events-none absolute right-0.5 left-0.5 z-[12] ${BUSY_CONFLICT_OVERLAY_CLASS}`}
                         style={{ top: `${topPct}%`, height: `${Math.max(heightPct, 0.2)}%` }}
                         aria-hidden
                     />
@@ -415,6 +444,8 @@ function DayColumn({
     gridMinHeight,
     breaks,
     isDayOff,
+    /** When true, show break/day-off amber highlights (employee self-view always; admin while dragging). */
+    showScheduleOverlay = false,
     rangeStartMin,
     rangeEndMin,
     minutesInView,
@@ -473,13 +504,15 @@ function DayColumn({
                         />
                     ))}
                 </div>
-                <BreakIntervalLayers
-                    breaks={breaks}
-                    rangeStartMin={rangeStartMin}
-                    rangeEndMin={rangeEndMin}
-                    minutesInView={minutesInView}
-                />
-                {isDayOff && (
+                {showScheduleOverlay && (
+                    <BreakIntervalLayers
+                        breaks={breaks}
+                        rangeStartMin={rangeStartMin}
+                        rangeEndMin={rangeEndMin}
+                        minutesInView={minutesInView}
+                    />
+                )}
+                {showScheduleOverlay && isDayOff && (
                     <div
                         className="pointer-events-none absolute inset-0 z-[16] border-y border-dashed border-amber-300/90 bg-amber-100/45"
                         aria-hidden
@@ -503,12 +536,20 @@ export default function CalendarWeekGrid({
     slotDurationMinutes = DEFAULT_SLOT_MINUTES,
     calendarDayBreaks = {},
     calendarDayOffs = [],
+    /** @type {Record<string, Record<string, Array<{ start?: string, end?: string, start_time?: string, end_time?: string }>>>} */
+    calendarEmployeeDayBreaks = {},
+    /** @type {Record<string, string[]>} */
+    calendarEmployeeDayOffs = {},
     /**
      * `admin`: GET admin.appointments.slots (employee + service + date + exclude).
      * `employee`: GET employee.appointments.slots/{id} (date + service_id) — same rules as edit modal.
      * `none`: no client-side slot check on drag.
      */
     slotValidationMode = 'none',
+    /** Employee calendar: always show amber breaks and day-offs (not only while dragging). */
+    alwaysShowScheduleHighlights = false,
+    /** Logged-in employee id in employee calendar — resolves per-employee break/day-off map when not dragging. */
+    selfViewEmployeeId = null,
 }) {
     const { rangeStartMin, rangeEndMin, minutesInView, gridMinHeight, gridWithHeaderMinHeight, segments, gridLineMinutes } = useMemo(
         () => resolveCalendarRange(calendarHours, slotDurationMinutes),
@@ -555,6 +596,8 @@ export default function CalendarWeekGrid({
     const [slotSetsLoading, setSlotSetsLoading] = useState(false);
     /** Set on drag start when validating; drives invalid time bands + snap step. */
     const [dragOverlaySpec, setDragOverlaySpec] = useState(null);
+    /** Staff member for the dragged appointment — drives break/day-off overlays in all-staff view. */
+    const [dragEmployeeId, setDragEmployeeId] = useState(null);
     /** Original slot while an appointment is being dragged (ghost marker). */
     const [dragOrigin, setDragOrigin] = useState(null);
     /** When drag-move runs before React applies drag-start preview state, use this for `next ?? prev`. */
@@ -602,6 +645,7 @@ export default function CalendarWeekGrid({
         setSlotSetsByDate(null);
         setSlotSetsLoading(false);
         setDragOverlaySpec(null);
+        setDragEmployeeId(null);
     };
 
     const handleDragStart = (event) => {
@@ -616,6 +660,9 @@ export default function CalendarWeekGrid({
 
         const ctx = event.active?.data?.current;
         const apt = ctx?.appointment;
+        if (apt?.employee_id != null && Number.isFinite(Number(apt.employee_id))) {
+            setDragEmployeeId(Number(apt.employee_id));
+        }
         if (apt?.id) {
             const dayDateStr = ctx?.dayDateStr;
             const dateStrForOrigin = dayDateStr ?? (apt.date ? String(apt.date).slice(0, 10) : null);
@@ -714,6 +761,16 @@ export default function CalendarWeekGrid({
         updateDropPreview(event);
     };
 
+    const dayOffDateListForValidation = useMemo(() => {
+        if (dragEmployeeId != null && calendarEmployeeDayOffs && Object.keys(calendarEmployeeDayOffs).length > 0) {
+            const list = calendarEmployeeDayOffs[String(dragEmployeeId)] ?? calendarEmployeeDayOffs[dragEmployeeId];
+            if (Array.isArray(list)) {
+                return list;
+            }
+        }
+        return calendarDayOffs;
+    }, [dragEmployeeId, calendarEmployeeDayOffs, calendarDayOffs]);
+
     const handleDragEnd = (event) => {
         setDropPreview(null);
         setDragOrigin(null);
@@ -730,6 +787,15 @@ export default function CalendarWeekGrid({
         if (!preview) {
             return;
         }
+        const validation = dragDropValidationState(preview, {
+            slotValidationMode,
+            slotSetsLoading,
+            slotSetsByDate,
+            dayOffDateList: dayOffDateListForValidation,
+        });
+        if (validation.variant !== 'valid') {
+            return;
+        }
         const apt = active.data.current.appointment;
         const start_time = minutesToTimeHm(preview.startMin);
         onAppointmentMove(apt, { date: preview.dateStr, start_time });
@@ -742,29 +808,16 @@ export default function CalendarWeekGrid({
         resetDragSlotFetch();
     };
 
-    const dropPreviewVariant = useMemo(() => {
-        if (!dropPreview || slotValidationMode === 'none') {
-            return 'valid';
-        }
-        if (calendarDayOffs.includes(dropPreview.dateStr)) {
-            return 'valid';
-        }
-        if (rangeOverlapsAnyBreak(dropPreview.startMin, dropPreview.endMin, calendarDayBreaks[dropPreview.dateStr] ?? [])) {
-            return 'valid';
-        }
-        if (slotSetsLoading) {
-            return 'loading';
-        }
-        if (!slotSetsByDate) {
-            return 'valid';
-        }
-        const key = minutesToTimeHm(dropPreview.startMin);
-        const allowed = slotSetsByDate[dropPreview.dateStr];
-        if (!allowed) {
-            return 'valid';
-        }
-        return allowed.has(key) ? 'valid' : 'invalid';
-    }, [dropPreview, slotValidationMode, slotSetsLoading, slotSetsByDate, calendarDayOffs, calendarDayBreaks]);
+    const dropPreviewVariant = useMemo(
+        () =>
+            dragDropValidationState(dropPreview, {
+                slotValidationMode,
+                slotSetsLoading,
+                slotSetsByDate,
+                dayOffDateList: dayOffDateListForValidation,
+            }).variant,
+        [dropPreview, slotValidationMode, slotSetsLoading, slotSetsByDate, dayOffDateListForValidation],
+    );
 
     const nowLinePct = useMemo(() => {
         if (!columnDates.includes(todayStr)) {
@@ -779,6 +832,18 @@ export default function CalendarWeekGrid({
     }, [columnDates, todayStr, minutesInView, rangeStartMin, rangeEndMin, nowTick]);
 
     const droppableHoverOutlineOnly = Boolean(dragOverlaySpec && slotSetsByDate);
+
+    const resolvedOverlayEmployeeId = useMemo(() => {
+        if (dragEmployeeId != null) {
+            return dragEmployeeId;
+        }
+        if (alwaysShowScheduleHighlights && selfViewEmployeeId != null && Number.isFinite(Number(selfViewEmployeeId))) {
+            return Number(selfViewEmployeeId);
+        }
+        return null;
+    }, [dragEmployeeId, alwaysShowScheduleHighlights, selfViewEmployeeId]);
+
+    const showScheduleHighlights = Boolean(dragOverlaySpec) || alwaysShowScheduleHighlights;
 
     return (
         <DndContext
@@ -834,8 +899,19 @@ export default function CalendarWeekGrid({
                                     setGridBodyRef={setGridBodyRef}
                                     segments={segments}
                                     gridMinHeight={gridMinHeight}
-                                    breaks={calendarDayBreaks[dateStr] ?? []}
-                                    isDayOff={calendarDayOffs.includes(dateStr)}
+                                    breaks={breaksForDayColumn(
+                                        dateStr,
+                                        resolvedOverlayEmployeeId,
+                                        calendarEmployeeDayBreaks,
+                                        calendarDayBreaks,
+                                    )}
+                                    isDayOff={dayOffForDayColumn(
+                                        dateStr,
+                                        resolvedOverlayEmployeeId,
+                                        calendarEmployeeDayOffs,
+                                        calendarDayOffs,
+                                    )}
+                                    showScheduleOverlay={showScheduleHighlights}
                                     rangeStartMin={rangeStartMin}
                                     rangeEndMin={rangeEndMin}
                                     minutesInView={minutesInView}
@@ -860,7 +936,6 @@ export default function CalendarWeekGrid({
                                                     minutesInView={minutesInView}
                                                     durationMin={dragOverlaySpec.durationMin}
                                                     snapMin={dragOverlaySpec.snapMin}
-                                                    breaks={calendarDayBreaks[dateStr] ?? []}
                                                 />
                                             )}
                                         {originLayoutItem && (

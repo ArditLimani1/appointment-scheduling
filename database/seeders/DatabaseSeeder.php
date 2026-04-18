@@ -215,8 +215,6 @@ class DatabaseSeeder extends Seeder
         Service $ngjyrosje,
         Service $ekspres,
     ): void {
-        $april = Carbon::create(2026, 4, 1, 0, 0, 0, $business->timezone ?: 'Europe/Belgrade');
-
         $rows = [
             ['2026-04-01', '09:00', $john, $prerje, 'Ardian', 'Krasniqi', '+38345111001', 'Kthyer pas dy javësh.', AppointmentStatus::Confirmed],
             ['2026-04-01', '10:30', $sarah, $ngjyrosje, 'Edona', 'Berisha', '+38345222002', null, AppointmentStatus::Pending],

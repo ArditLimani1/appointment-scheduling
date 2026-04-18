@@ -29,7 +29,6 @@ export default function Index({ services, sharedResources = [] }) {
             price: svc.price,
             is_active: !svc.is_active,
             is_popular: svc.is_popular,
-            icon: svc.icon,
         });
     };
 

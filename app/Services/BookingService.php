@@ -114,7 +114,8 @@ class BookingService implements BookingServiceInterface
             $stepMinutes,
             $minNoticeTime,
             $existingAppointments,
-            $timezone
+            $timezone,
+            false,
         );
 
         $ids = array_values(array_unique(array_map('intval', $data['service_ids'] ?? [])));
@@ -265,6 +266,8 @@ class BookingService implements BookingServiceInterface
         // Admin bypasses min-notice: use a past timestamp so all slots are eligible
         $minNoticeTime = Carbon::createFromTimestamp(0);
 
+        $ignoreScheduleBreaks = filter_var($data['ignore_schedule_breaks'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
         $slots = $this->calculateSlots(
             $date,
             $schedule,
@@ -272,7 +275,8 @@ class BookingService implements BookingServiceInterface
             $stepMinutes,
             $minNoticeTime,
             $existingAppointments,
-            $timezone
+            $timezone,
+            $ignoreScheduleBreaks,
         );
 
         if (empty($data['service_id'])) {
@@ -424,6 +428,9 @@ class BookingService implements BookingServiceInterface
         return min($businessSlotMinutes, $blockMinutes);
     }
 
+    /**
+     * @param  bool  $ignoreScheduleBreaks  When true, scheduled lunch/break windows are treated as bookable (employee self-service calendar only).
+     */
     private function calculateSlots(
         Carbon $date,
         $schedule,
@@ -431,7 +438,8 @@ class BookingService implements BookingServiceInterface
         int $stepDuration,
         Carbon $minNoticeTime,
         $existingAppointments,
-        string $timezone
+        string $timezone,
+        bool $ignoreScheduleBreaks = false,
     ): array {
         $dateStr = $date->toDateString();
         $scheduleStart = Carbon::parse($dateStr.' '.$schedule->start_time, $timezone);
@@ -441,11 +449,13 @@ class BookingService implements BookingServiceInterface
         // Never step wider than the block being placed (e.g. cap 30 min step for a 15 min service).
         $stepDuration = min($stepDuration, $slotDuration);
 
+        $breaksForIntervals = $ignoreScheduleBreaks ? collect() : $schedule->breaks;
+
         $freeIntervals = $this->buildFreeIntervalsWithinSchedule(
             $dateStr,
             $scheduleStart,
             $scheduleEnd,
-            $schedule->breaks,
+            $breaksForIntervals,
             $existingAppointments,
             $timezone
         );
@@ -465,8 +475,11 @@ class BookingService implements BookingServiceInterface
                 if ($t->gte($minNoticeTime)) {
                     $slotStart = $t->copy();
                     $slotEnd = $t->copy()->addMinutes($slotDuration);
+                    $overlapsBreak = $ignoreScheduleBreaks
+                        ? false
+                        : $this->overlapsBreak($slotStart, $slotEnd, $dateStr, $schedule->breaks, $timezone);
                     if (
-                        ! $this->overlapsBreak($slotStart, $slotEnd, $dateStr, $schedule->breaks, $timezone)
+                        ! $overlapsBreak
                         && ! $this->overlapsAppointment($slotStart, $slotEnd, $dateStr, $existingAppointments, $timezone)
                     ) {
                         $slots[] = $slotStart->format('H:i');

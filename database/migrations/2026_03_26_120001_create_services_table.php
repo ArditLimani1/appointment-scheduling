@@ -14,7 +14,6 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->integer('duration');
             $table->decimal('price', 8, 2);
-            $table->string('icon')->default('content_cut');
             $table->boolean('is_active')->default(true);
             $table->boolean('is_popular')->default(false);
             $table->integer('sort_order')->default(0);

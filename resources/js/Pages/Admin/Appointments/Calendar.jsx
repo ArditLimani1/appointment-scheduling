@@ -86,6 +86,9 @@ export default function Calendar({
     slot_duration: slotDuration = 30,
     calendar_day_breaks: calendarDayBreaks = {},
     calendar_day_offs: calendarDayOffs = [],
+    /** Per employee id (string keys): breaks per date — used while dragging so overlays match that staff member, not merged lunches. */
+    calendar_employee_day_breaks: calendarEmployeeDayBreaks = {},
+    calendar_employee_day_offs: calendarEmployeeDayOffs = {},
 }) {
     const [selected, setSelected] = useState(null);
     const [dragSavingId, setDragSavingId] = useState(null);
@@ -221,6 +224,20 @@ export default function Calendar({
     );
 
     const employeeColorMap = useMemo(() => buildEmployeeColorMap(employees), [employees]);
+
+    const selfViewEmployeeId = useMemo(() => {
+        if (!employeeCalendar) {
+            return null;
+        }
+        const fromFilter = normalizedFilters.employee_id ? Number(normalizedFilters.employee_id) : null;
+        if (fromFilter && Number.isFinite(fromFilter)) {
+            return fromFilter;
+        }
+        if (employees[0]?.id != null) {
+            return Number(employees[0].id);
+        }
+        return null;
+    }, [employeeCalendar, normalizedFilters.employee_id, employees]);
 
     const Layout = employeeCalendar ? EmployeeLayout : AdminLayout;
 
@@ -382,7 +399,11 @@ export default function Calendar({
                     slotDurationMinutes={slotDuration}
                     calendarDayBreaks={calendarDayBreaks}
                     calendarDayOffs={calendarDayOffs}
+                    calendarEmployeeDayBreaks={calendarEmployeeDayBreaks}
+                    calendarEmployeeDayOffs={calendarEmployeeDayOffs}
                     slotValidationMode={employeeCalendar ? 'employee' : 'admin'}
+                    alwaysShowScheduleHighlights={employeeCalendar}
+                    selfViewEmployeeId={selfViewEmployeeId}
                 />
 
                 {selected && (
