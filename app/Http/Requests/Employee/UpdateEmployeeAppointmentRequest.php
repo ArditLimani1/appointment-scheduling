@@ -40,7 +40,7 @@ class UpdateEmployeeAppointmentRequest extends FormRequest
             $appointment = $this->route('appointment');
             if (! $canEditService) {
                 if ($this->filled('service_id') && $appointment && (int) $this->input('service_id') !== (int) $appointment->service_id) {
-                    $validator->errors()->add('service_id', 'Service changes are disabled by your administrator.');
+                    $validator->errors()->add('service_id', __('request_messages.employee_appointment.service_change_disabled'));
                 }
 
                 return;
@@ -49,7 +49,7 @@ class UpdateEmployeeAppointmentRequest extends FormRequest
             $serviceId = (int) $this->input('service_id');
             $service = Service::query()->whereKey($serviceId)->where('business_id', $user->business_id)->first();
             if (! $service) {
-                $validator->errors()->add('service_id', 'Invalid service for this business.');
+                $validator->errors()->add('service_id', __('request_messages.employee_appointment.service_invalid_business'));
 
                 return;
             }
@@ -57,7 +57,7 @@ class UpdateEmployeeAppointmentRequest extends FormRequest
             /** @var User $employee */
             $employee = User::query()->whereKey($user->id)->with('services')->first();
             if (! $employee || ! $employee->services->contains('id', $serviceId)) {
-                $validator->errors()->add('service_id', 'You do not offer this service.');
+                $validator->errors()->add('service_id', __('request_messages.employee_appointment.service_not_offered'));
             }
         });
     }

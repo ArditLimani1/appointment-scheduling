@@ -1,0 +1,75 @@
+<?php
+
+return [
+
+    'head_title' => 'Book an Appointment',
+
+    'hero' => [
+        'title' => 'New Appointment',
+        'with_professional' => 'Booking with',
+        'subtitle' => 'Choose your services, pick a time, and confirm your details.',
+        'default_business' => 'Scheduler',
+    ],
+
+    'steps' => [
+        'services' => 'Select Services',
+        'services_hint' => 'You can select more than one service. Total duration and price are combined.',
+        'professional' => 'Select Professional',
+        'professional_pre' => 'You are booking with this team member.',
+        'professional_hint' => 'Choose who you would like to perform your appointment.',
+        'datetime' => 'Date & Time',
+        'date_label' => 'Date',
+        'date_placeholder' => 'Select a date',
+        'pick_date_first' => 'Pick a date to see available times.',
+        'no_slots' => 'No available slots on this date.',
+        'details' => 'Your Details',
+        'full_name' => 'Full Name',
+        'phone' => 'Phone Number',
+        'phone_hint' => 'Digits only, optional + at the start (6–20 digits).',
+        'email' => 'Email Address',
+        'notes' => 'Notes (optional)',
+        'notes_placeholder' => 'Anything we should know?',
+        'confirm' => 'Confirm booking',
+        'submitting' => 'Booking…',
+        'continue' => 'Continue',
+        'service_count_one' => ':count service',
+        'service_count_other' => ':count services',
+        'unavailable_weekday' => 'This professional is not available on that weekday. Choose another date.',
+        'no_bookable_days' => 'No bookable days in this period for this professional. They may need to set working days in their schedule.',
+        'load_times_error' => 'Could not load available times.',
+        'professional_empty' => 'No professional offers all selected services together. Change your selection or contact the business.',
+        'pick_time' => 'pick a time',
+        'not_selected' => 'Not selected',
+        'summary_title' => 'Booking Summary',
+        'summary_services' => 'Services',
+        'summary_professional' => 'Professional',
+        'summary_datetime' => 'Date & Time',
+        'summary_total' => 'Total Cost',
+        'terms_note' => 'By confirming, you agree to our Terms of Service.',
+        'optional' => '(optional)',
+    ],
+
+    'specialist_fallback' => 'Specialist',
+
+    'min_suffix' => 'min',
+
+    'confirmation' => [
+        'head_title' => 'Booking confirmed',
+        'submitted_title' => 'Booking Submitted',
+        'thanks' => 'Thanks for booking at :business.',
+        'requested_time' => 'Requested time:',
+        'request_summary' => 'Request summary',
+        'services_professional' => 'Services & professional',
+        'service_fallback' => 'Service',
+        'with_employee' => 'with :name',
+        'date' => 'Date',
+        'time' => 'Time',
+        'business_location' => 'Business location',
+        'total' => 'Total',
+        'book_another' => 'Book another appointment',
+        'change_note' => 'Need to change this request? Contact the business as soon as possible. Final details will be sent after they confirm your appointment.',
+        'default_business' => 'the business',
+        'default_scheduler' => 'Scheduler',
+    ],
+
+];

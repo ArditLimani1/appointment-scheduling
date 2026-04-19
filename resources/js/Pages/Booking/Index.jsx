@@ -1,4 +1,6 @@
-import { Head, router } from '@inertiajs/react';
+import LanguageSwitcher from '@/i18n/LanguageSwitcher';
+import { useT } from '@/i18n/useT';
+import { Head, router, usePage } from '@inertiajs/react';
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import Icon from '@/Components/Icon';
 import DatePicker from '@/Components/DatePicker';
@@ -8,9 +10,6 @@ import {
     sanitizeBookingPlainText,
     validateBookingDetails,
 } from '@/utils/bookingClientDetails';
-
-const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function toDateString(d) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -74,10 +73,18 @@ function employeeWorksOnLocalDate(employee, d) {
     );
 }
 
-function formatDateLabel(ds) {
+function formatDateLabel(ds, locale) {
     if (!ds) return null;
-    const d = new Date(ds + 'T00:00:00');
-    return `${DAY_SHORT[d.getDay()]}, ${MONTH_SHORT[d.getMonth()]} ${d.getDate()}`;
+    try {
+        const d = new Date(ds + 'T00:00:00');
+        return new Intl.DateTimeFormat(locale || 'sq-AL', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+        }).format(d);
+    } catch {
+        return ds;
+    }
 }
 
 function addMinutesToTimeString(hm, addMins) {
@@ -157,6 +164,8 @@ export default function Index({
     booking_today: bookingTodayProp,
     booking_max_date: bookingMaxDateProp,
 }) {
+    const t = useT();
+    const { localeBcp47 } = usePage().props;
     const preselectedEmployee = preselected_employee_id
         ? (employees.find((e) => e.id === preselected_employee_id) ?? null)
         : null;
@@ -344,7 +353,7 @@ export default function Index({
                         || body.errors?.service_ids?.[0]
                         || body.errors?.employee_id?.[0]
                         || body.message
-                        || 'Could not load available times.';
+                        || t('booking_ui.steps.load_times_error');
                     throw new Error(msg);
                 }
                 return response.json();
@@ -367,7 +376,7 @@ export default function Index({
             })
             .catch((err) => {
                 setSlots([]);
-                setSlotsError(err.message || 'Could not load available times.');
+                setSlotsError(err.message || t('booking_ui.steps.load_times_error'));
                 if (!employeeOrDateChanged) {
                     setSelectedSlot(null);
                 }
@@ -456,19 +465,19 @@ export default function Index({
             const s = selectedServices[0];
             return `${s.name} · ${Number(s.price).toFixed(2)} ${currencySymbol}`;
         }
-        return `${selectedServices.length} services · ${servicesTotalPrice.toFixed(2)} ${currencySymbol}`;
+        return `${t('booking_ui.steps.service_count_other', { count: selectedServices.length })} · ${servicesTotalPrice.toFixed(2)} ${currencySymbol}`;
     }, [selectedServices, servicesTotalPrice, currencySymbol]);
     const section2Summary = selectedEmployee?.name ?? null;
     const section3Summary = useMemo(() => {
         if (!selectedDate) return null;
         if (!selectedSlot) {
-            return `${formatDateLabel(selectedDate)} — pick a time`;
+            return `${formatDateLabel(selectedDate, localeBcp47)} — ${t('booking_ui.steps.pick_time')}`;
         }
         const endHm = totalBookingMinutes > 0 ? addMinutesToTimeString(selectedSlot, totalBookingMinutes) : null;
         return endHm
-            ? `${formatDateLabel(selectedDate)} · ${selectedSlot}–${endHm}`
-            : `${formatDateLabel(selectedDate)} · ${selectedSlot}`;
-    }, [selectedDate, selectedSlot, totalBookingMinutes]);
+            ? `${formatDateLabel(selectedDate, localeBcp47)} · ${selectedSlot}–${endHm}`
+            : `${formatDateLabel(selectedDate, localeBcp47)} · ${selectedSlot}`;
+    }, [selectedDate, selectedSlot, totalBookingMinutes, localeBcp47]);
     const section4Summary = useMemo(() => {
         if (!detailsValidation.ok) return null;
         const id = identifierType === 'email' ? email.trim() : phone.trim();
@@ -479,7 +488,7 @@ export default function Index({
 
     return (
         <div className="min-h-screen bg-surface font-body">
-            <Head title="Book an Appointment" />
+            <Head title={t('booking_ui.head_title')} />
 
             <div className="fixed top-0 left-0 w-full h-1 z-[60] bg-surface-container-highest">
                 <div
@@ -489,12 +498,12 @@ export default function Index({
             </div>
 
             <header className="sticky top-0 z-50 glass-header border-b border-outline-variant/20">
-                <div className="max-w-5xl mx-auto px-6 py-4 flex items-center">
+                <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3 min-w-0">
                         {businessLogoUrl ? (
                             <img
                                 src={businessLogoUrl}
-                                alt={`${business?.name || 'Business'} logo`}
+                                alt={`${business?.name || t('booking_ui.hero.default_business')} logo`}
                                 className="h-11 w-11 rounded-2xl object-cover border border-outline-variant/30 bg-surface-container-low"
                             />
                         ) : (
@@ -503,28 +512,30 @@ export default function Index({
                             </div>
                         )}
                         <p className="text-xl font-extrabold tracking-tight text-on-surface font-headline truncate">
-                            {business?.name || 'Scheduler'}
+                            {business?.name || t('booking_ui.hero.default_business')}
                         </p>
                     </div>
+                    <LanguageSwitcher className="shrink-0" />
                 </div>
             </header>
 
             <main className="max-w-5xl mx-auto px-6 py-12 pb-32">
                 <section className="mb-16">
-                    <h1 className="font-headline text-5xl font-extrabold tracking-tight mb-4 text-on-surface">New Appointment</h1>
+                    <h1 className="font-headline text-5xl font-extrabold tracking-tight mb-4 text-on-surface">{t('booking_ui.hero.title')}</h1>
                     {isEmployeePreselected ? (
                         <div className="flex items-center gap-3">
                             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-container text-on-primary-container text-base font-bold font-headline shrink-0">
                                 {preselectedEmployee.name.charAt(0).toUpperCase()}
                             </div>
                             <p className="text-on-surface-variant text-lg">
-                                Booking with <span className="font-semibold text-on-surface">{preselectedEmployee.name}</span>
+                                {t('booking_ui.hero.with_professional')}{' '}
+                                <span className="font-semibold text-on-surface">{preselectedEmployee.name}</span>
                                 {preselectedEmployee.title ? ` · ${preselectedEmployee.title}` : ''}
                             </p>
                         </div>
                     ) : (
                         <p className="text-on-surface-variant text-lg max-w-xl">
-                            Choose one or more services, pick a professional who offers them all, select a time, and confirm your details.
+                            {t('booking_ui.hero.subtitle')}
                         </p>
                     )}
                 </section>
@@ -535,7 +546,7 @@ export default function Index({
                         <BookingAccordionStep
                             id={1}
                             number={1}
-                            title="Select Services"
+                            title={t('booking_ui.steps.services')}
                             summary={section1Summary}
                             expanded={expandedSection === 1}
                             headerDisabled={false}
@@ -543,7 +554,7 @@ export default function Index({
                         >
                             <div className="space-y-4 pt-2">
                                 <p className="text-sm text-on-surface-variant">
-                                    Select every service you want in this visit. Only professionals who offer all of them will appear next.
+                                    {t('booking_ui.steps.services_hint')}
                                 </p>
                                 {services.map((svc) => {
                                     const isSelected = selectedServices.some((s) => s.id === svc.id);
@@ -562,7 +573,7 @@ export default function Index({
                                                 <p className="font-headline font-bold text-xl mb-1 text-on-surface">{svc.name}</p>
                                                 <div className="flex items-center gap-4 text-on-surface-variant text-sm font-medium">
                                                     <span className="flex items-center gap-1">
-                                                        <Icon name="schedule" size="text-sm" /> {svc.duration} min
+                                                        <Icon name="schedule" size="text-sm" /> {svc.duration} {t('booking_ui.min_suffix')}
                                                     </span>
                                                     <span className="flex items-center gap-1 font-bold text-on-surface">
                                                         <Icon name="payments" size="text-sm" /> {Number(svc.price).toFixed(2)} {currencySymbol}
@@ -593,9 +604,11 @@ export default function Index({
                                         onClick={() => setExpandedSection(isEmployeePreselected ? 3 : 2)}
                                         className="w-full h-14 rounded-xl bg-on-surface text-surface font-headline font-bold text-sm sm:text-base flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
                                     >
-                                        Continue
+                                        {t('booking_ui.steps.continue')}
                                         <span className="font-medium opacity-90">
-                                            ({selectedServices.length} service{selectedServices.length > 1 ? 's' : ''})
+                                            ({selectedServices.length > 1
+                                                ? t('booking_ui.steps.service_count_other', { count: selectedServices.length })
+                                                : t('booking_ui.steps.service_count_one', { count: selectedServices.length })})
                                         </span>
                                     </button>
                                 )}
@@ -606,7 +619,7 @@ export default function Index({
                         <BookingAccordionStep
                             id={2}
                             number={2}
-                            title="Select Professional"
+                            title={t('booking_ui.steps.professional')}
                             summary={section2Summary}
                             expanded={expandedSection === 2}
                             headerDisabled={selectedServices.length === 0}
@@ -615,7 +628,7 @@ export default function Index({
                             <div className="pt-2 space-y-4">
                                 {selectedServices.length > 0 && employeesForSelectedServices.length === 0 && (
                                     <p className="text-sm text-on-surface-variant">
-                                        No professional offers all selected services together. Change your selection or contact the business.
+                                        {t('booking_ui.steps.professional_empty')}
                                     </p>
                                 )}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -639,7 +652,7 @@ export default function Index({
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <p className="font-headline font-bold text-lg text-on-surface">{emp.name}</p>
-                                                <p className="text-sm text-on-surface-variant">{emp.title || 'Specialist'}</p>
+                                                <p className="text-sm text-on-surface-variant">{emp.title || t('booking_ui.specialist_fallback')}</p>
                                             </div>
                                             {selectedEmployee?.id === emp.id && (
                                                 <Icon name="check_circle" size="text-xl" filled className="text-on-surface shrink-0" />
@@ -654,7 +667,7 @@ export default function Index({
                         <BookingAccordionStep
                             id={3}
                             number={isEmployeePreselected ? 2 : 3}
-                            title="Date & Time"
+                            title={t('booking_ui.steps.datetime')}
                             summary={section3Summary}
                             expanded={expandedSection === 3}
                             headerDisabled={selectedServices.length === 0 || !selectedEmployee}
@@ -665,13 +678,13 @@ export default function Index({
                                     <div className="rounded-2xl bg-surface-container-lowest p-4 ring-1 ring-slate-100 shadow-sm">
                                         <div className="flex flex-wrap gap-3 items-end">
                                             <DatePicker
-                                                label="Date"
+                                                label={t('booking_ui.steps.date_label')}
                                                 value={selectedDate ?? ''}
                                                 onChange={(value) => {
                                                     setSelectedDate(value || null);
                                                     setSelectedSlot(null);
                                                 }}
-                                                placeholder="Select a date"
+                                                placeholder={t('booking_ui.steps.date_placeholder')}
                                                 minDate={bookingToday}
                                                 maxDate={bookingMaxDate}
                                                 weekStartsOn="monday"
@@ -680,7 +693,7 @@ export default function Index({
                                         </div>
                                         {selectedDate && !selectedDateIsBookable ? (
                                             <p className="mt-3 text-sm text-on-surface-variant">
-                                                This professional is not available on that weekday. Choose another date.
+                                                {t('booking_ui.steps.unavailable_weekday')}
                                             </p>
                                         ) : null}
                                     </div>
@@ -688,7 +701,7 @@ export default function Index({
 
                                 {selectedServices.length > 0 && selectedEmployee && bookableDates.length === 0 && (
                                     <p className="text-sm text-on-surface-variant text-center py-4">
-                                        No bookable days in this period for this professional. They may need to set working days in their schedule.
+                                        {t('booking_ui.steps.no_bookable_days')}
                                     </p>
                                 )}
 
@@ -705,7 +718,7 @@ export default function Index({
                                     ) : slots.length === 0 ? (
                                         <div className="flex flex-col items-center py-8 text-center">
                                             <Icon name="event_busy" size="text-4xl" className="text-outline mb-2" />
-                                            <p className="text-sm text-on-surface-variant">No available slots on this date.</p>
+                                            <p className="text-sm text-on-surface-variant">{t('booking_ui.steps.no_slots')}</p>
                                         </div>
                                     ) : (
                                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
@@ -739,7 +752,7 @@ export default function Index({
                         <BookingAccordionStep
                             id={4}
                             number={isEmployeePreselected ? 3 : 4}
-                            title="Your Details"
+                            title={t('booking_ui.steps.details')}
                             summary={section4Summary}
                             expanded={expandedSection === 4}
                             headerDisabled={
@@ -752,7 +765,7 @@ export default function Index({
                         >
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
                                 <div className="sm:col-span-2 space-y-2">
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant px-1">Full Name</label>
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant px-1">{t('booking_ui.steps.full_name')}</label>
                                     <input
                                         value={fullName}
                                         onChange={(e) => {
@@ -772,7 +785,7 @@ export default function Index({
                                 </div>
                                 {identifierType === 'phone' ? (
                                     <div className="sm:col-span-2 space-y-2">
-                                        <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant px-1">Phone Number</label>
+                                        <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant px-1">{t('booking_ui.steps.phone')}</label>
                                         <input
                                             type="tel"
                                             inputMode="tel"
@@ -786,14 +799,14 @@ export default function Index({
                                             className="w-full h-14 px-6 rounded-xl border border-slate-100 bg-transparent focus:ring-2 focus:ring-on-surface/20 transition-all placeholder:text-on-surface/40 text-sm text-on-surface"
                                             placeholder="+38349444348"
                                         />
-                                        <p className="text-xs text-on-surface-variant">Digits only, optional + at the start (6–20 digits).</p>
+                                        <p className="text-xs text-on-surface-variant">{t('booking_ui.steps.phone_hint')}</p>
                                         {(errors.client_phone || clientFieldErrors.client_phone) && (
                                             <p className="text-xs text-error mt-1">{errors.client_phone || clientFieldErrors.client_phone}</p>
                                         )}
                                     </div>
                                 ) : (
                                     <div className="sm:col-span-2 space-y-2">
-                                        <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant px-1">Email Address</label>
+                                        <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant px-1">{t('booking_ui.steps.email')}</label>
                                         <input
                                             type="email"
                                             value={email}
@@ -812,7 +825,7 @@ export default function Index({
                                 )}
                                 <div className="sm:col-span-2 space-y-2">
                                     <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant px-1">
-                                        Notes <span className="normal-case font-normal">(optional)</span>
+                                        {t('booking_ui.steps.notes')} <span className="normal-case font-normal">{t('booking_ui.steps.optional')}</span>
                                     </label>
                                     <textarea
                                         value={notes}
@@ -835,7 +848,7 @@ export default function Index({
 
                     <aside className="lg:col-span-4">
                         <div className="sticky top-28 bg-surface-container-lowest p-8 rounded-2xl shadow-[0_24px_48px_-12px_rgba(0,0,0,0.08)] space-y-8">
-                            <h3 className="font-headline text-xl font-extrabold tracking-tight text-on-surface">Booking Summary</h3>
+                            <h3 className="font-headline text-xl font-extrabold tracking-tight text-on-surface">{t('booking_ui.steps.summary_title')}</h3>
 
                             <div className="space-y-6">
                                 <div className="flex items-start gap-4">
@@ -843,18 +856,18 @@ export default function Index({
                                         <Icon name="content_cut" className="text-on-surface-variant" />
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-1">Services</p>
+                                        <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-1">{t('booking_ui.steps.summary_services')}</p>
                                         {selectedServices.length > 0 ? (
                                             <ul className="space-y-2">
                                                 {selectedServices.map((s) => (
                                                     <li key={s.id}>
                                                         <p className="font-bold text-on-surface">{s.name}</p>
-                                                        <p className="text-sm text-on-surface-variant">{s.duration} min • {Number(s.price).toFixed(2)} {currencySymbol}</p>
+                                                        <p className="text-sm text-on-surface-variant">{s.duration} {t('booking_ui.min_suffix')} • {Number(s.price).toFixed(2)} {currencySymbol}</p>
                                                     </li>
                                                 ))}
                                             </ul>
                                         ) : (
-                                            <p className="text-outline text-sm">Not selected</p>
+                                            <p className="text-outline text-sm">{t('booking_ui.steps.not_selected')}</p>
                                         )}
                                     </div>
                                 </div>
@@ -864,10 +877,10 @@ export default function Index({
                                         <Icon name="person" className="text-on-surface-variant" />
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-1">Professional</p>
+                                        <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-1">{t('booking_ui.steps.summary_professional')}</p>
                                         {selectedEmployee
                                             ? <p className="font-bold text-on-surface">{selectedEmployee.name}</p>
-                                            : <p className="text-outline text-sm">Not selected</p>
+                                            : <p className="text-outline text-sm">{t('booking_ui.steps.not_selected')}</p>
                                         }
                                     </div>
                                 </div>
@@ -877,11 +890,11 @@ export default function Index({
                                         <Icon name="event" className="text-on-surface-variant" />
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-1">Date & Time</p>
+                                        <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-1">{t('booking_ui.steps.summary_datetime')}</p>
                                         {selectedDate && selectedSlot
                                             ? (
                                                 <p className="font-bold text-on-surface">
-                                                    {formatDateLabel(selectedDate)}
+                                                    {formatDateLabel(selectedDate, localeBcp47)}
                                                     {' · '}
                                                     {(() => {
                                                         const endHm = totalBookingMinutes > 0 ? addMinutesToTimeString(selectedSlot, totalBookingMinutes) : null;
@@ -889,7 +902,7 @@ export default function Index({
                                                     })()}
                                                 </p>
                                             )
-                                            : <p className="text-outline text-sm">Not selected</p>
+                                            : <p className="text-outline text-sm">{t('booking_ui.steps.not_selected')}</p>
                                         }
                                     </div>
                                 </div>
@@ -898,7 +911,7 @@ export default function Index({
                             <div className="pt-6 border-t border-surface-container-high">
                                 {selectedServices.length > 0 && (
                                     <div className="flex justify-between items-center mb-6">
-                                        <span className="font-medium text-on-surface-variant">Total Cost</span>
+                                        <span className="font-medium text-on-surface-variant">{t('booking_ui.steps.summary_total')}</span>
                                         <span className="font-headline text-3xl font-extrabold text-on-surface">
                                             {servicesTotalPrice.toFixed(2)} {currencySymbol}
                                         </span>
@@ -909,11 +922,11 @@ export default function Index({
                                     disabled={!canSubmit || submitting}
                                     className="w-full h-16 rounded-xl primary-gradient text-white font-headline font-bold text-lg flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-xl shadow-black/10"
                                 >
-                                    {submitting ? 'Confirming...' : 'Confirm Booking'}
+                                    {submitting ? t('booking_ui.steps.submitting') : t('booking_ui.steps.confirm')}
                                     {!submitting && <Icon name="arrow_forward" />}
                                 </button>
                                 <p className="text-center mt-4 text-xs text-on-surface-variant">
-                                    By confirming, you agree to our Terms of Service.
+                                    {t('booking_ui.steps.terms_note')}
                                 </p>
                             </div>
                         </div>

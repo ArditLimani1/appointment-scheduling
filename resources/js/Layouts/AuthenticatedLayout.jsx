@@ -1,11 +1,14 @@
 import Dropdown from '@/Components/Dropdown';
 import Icon from '@/Components/Icon';
 import NiterminLogo from '@/Components/NiterminLogo';
+import LanguageSwitcher from '@/i18n/LanguageSwitcher';
+import { useT } from '@/i18n/useT';
 import { Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 
 export default function AuthenticatedLayout({ header, children }) {
     const { auth } = usePage().props;
+    const t = useT();
     const user = auth.user;
     const [mobileOpen, setMobileOpen] = useState(false);
     const onProfilePage = (() => {
@@ -39,6 +42,7 @@ export default function AuthenticatedLayout({ header, children }) {
                     </div>
 
                     <div className="hidden items-center gap-3 lg:flex">
+                        <LanguageSwitcher />
                         <Dropdown>
                             <Dropdown.Trigger>
                                 <button className="flex items-center rounded-full p-0.5 transition-colors hover:bg-surface-container">
@@ -50,11 +54,11 @@ export default function AuthenticatedLayout({ header, children }) {
 
                             <Dropdown.Content>
                                 {!onProfilePage && (
-                                    <Dropdown.Link href={route('profile.edit')}>Profile</Dropdown.Link>
+                                    <Dropdown.Link href={route('profile.edit')}>{t('layout.authenticated.profile')}</Dropdown.Link>
                                 )}
-                                <Dropdown.Link href={route('dashboard')}>Dashboard</Dropdown.Link>
+                                <Dropdown.Link href={route('dashboard')}>{t('layout.authenticated.dashboard')}</Dropdown.Link>
                                 <Dropdown.Link href={route('logout')} method="post" as="button">
-                                    Log Out
+                                    {t('layout.authenticated.log_out')}
                                 </Dropdown.Link>
                             </Dropdown.Content>
                         </Dropdown>
@@ -69,7 +73,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                 className="flex items-center gap-3 rounded-2xl bg-surface-container-low px-4 py-3 text-sm font-medium text-on-surface"
                             >
                                 <Icon name="dashboard" size="text-lg" />
-                                Dashboard
+                                {t('layout.authenticated.dashboard')}
                             </Link>
 
                             {!onProfilePage && (
@@ -78,13 +82,13 @@ export default function AuthenticatedLayout({ header, children }) {
                                     className="flex items-center gap-3 rounded-2xl bg-surface-container-low px-4 py-3 text-sm font-medium text-on-surface"
                                 >
                                     <Icon name="person" size="text-lg" />
-                                    Profile
+                                    {t('layout.authenticated.profile')}
                                 </Link>
                             )}
 
                             <div className="rounded-2xl border border-outline-variant bg-surface-container-lowest px-4 py-4">
                                 <p className="text-sm font-semibold text-on-surface">{user?.name}</p>
-                                <p className="mt-1 text-xs text-on-surface-variant">Account</p>
+                                <p className="mt-1 text-xs text-on-surface-variant">{t('layout.authenticated.account')}</p>
                             </div>
 
                             <Link
@@ -94,7 +98,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                 className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-error"
                             >
                                 <Icon name="logout" size="text-lg" />
-                                Log Out
+                                {t('layout.authenticated.log_out')}
                             </Link>
                         </div>
                     </div>

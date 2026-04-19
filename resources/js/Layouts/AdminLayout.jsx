@@ -1,32 +1,34 @@
 import { SuccessToastProvider } from '@/Components/SuccessToastProvider';
 import Dropdown from '@/Components/Dropdown';
 import Icon from '@/Components/Icon';
+import LanguageSwitcher from '@/i18n/LanguageSwitcher';
+import { useT } from '@/i18n/useT';
 import { Link, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 const navItems = [
-    { label: 'Dashboard', icon: 'dashboard', route: 'admin.dashboard', permission: 'admin.dashboard' },
-    { label: 'Services', icon: 'layers', route: 'admin.services.index', permission: 'admin.services' },
-    { label: 'Resources', icon: 'meeting_room', route: 'admin.shared-resources.index', permission: 'admin.shared_resources' },
-    { label: 'Employees', icon: 'badge', route: 'admin.employees.index', permission: 'admin.employees' },
-    { label: 'Roles', icon: 'key', route: 'admin.roles.index', permission: 'admin.roles' },
-    { label: 'Appointments', icon: 'calendar_today', route: 'admin.appointments.index', permission: 'admin.appointments' },
-    { label: 'Analytics', icon: 'analytics', route: 'admin.analytics.index', permission: 'admin.analytics' },
-    { label: 'Configuration', icon: 'settings', route: 'admin.settings.index', permission: 'admin.settings' },
+    { labelKey: 'layout.admin.nav.dashboard', icon: 'dashboard', route: 'admin.dashboard', permission: 'admin.dashboard' },
+    { labelKey: 'layout.admin.nav.services', icon: 'layers', route: 'admin.services.index', permission: 'admin.services' },
+    { labelKey: 'layout.admin.nav.resources', icon: 'meeting_room', route: 'admin.shared-resources.index', permission: 'admin.shared_resources' },
+    { labelKey: 'layout.admin.nav.employees', icon: 'badge', route: 'admin.employees.index', permission: 'admin.employees' },
+    { labelKey: 'layout.admin.nav.roles', icon: 'key', route: 'admin.roles.index', permission: 'admin.roles' },
+    { labelKey: 'layout.admin.nav.appointments', icon: 'calendar_today', route: 'admin.appointments.index', permission: 'admin.appointments' },
+    { labelKey: 'layout.admin.nav.analytics', icon: 'analytics', route: 'admin.analytics.index', permission: 'admin.analytics' },
+    { labelKey: 'layout.admin.nav.configuration', icon: 'settings', route: 'admin.settings.index', permission: 'admin.settings' },
 ];
 
 const employeeNavItems = [
-    { label: 'My Appointments', icon: 'calendar_today', route: 'employee.appointments.index', permission: 'employee.dashboard' },
-    { label: 'My Schedule', icon: 'calendar_view_week', route: 'employee.schedule.index', permission: 'employee.schedule' },
-    { label: 'My Analytics', icon: 'analytics', route: 'employee.analytics.index', permission: 'employee.analytics' },
+    { labelKey: 'layout.admin.nav.my_appointments', icon: 'calendar_today', route: 'employee.appointments.index', permission: 'employee.dashboard' },
+    { labelKey: 'layout.admin.nav.my_schedule', icon: 'calendar_view_week', route: 'employee.schedule.index', permission: 'employee.schedule' },
+    { labelKey: 'layout.admin.nav.my_analytics', icon: 'analytics', route: 'employee.analytics.index', permission: 'employee.analytics' },
 ];
 
 const mobileNavItems = [
-    { label: 'Dashboard', icon: 'dashboard', route: 'admin.dashboard', permission: 'admin.dashboard' },
-    { label: 'Services', icon: 'layers', route: 'admin.services.index', permission: 'admin.services' },
-    { label: 'Employees', icon: 'badge', route: 'admin.employees.index', permission: 'admin.employees' },
-    { label: 'Appointments', icon: 'calendar_today', route: 'admin.appointments.index', permission: 'admin.appointments' },
-    { label: 'Config', icon: 'settings', route: 'admin.settings.index', permission: 'admin.settings' },
+    { labelKey: 'layout.admin.nav.dashboard', icon: 'dashboard', route: 'admin.dashboard', permission: 'admin.dashboard' },
+    { labelKey: 'layout.admin.nav.services', icon: 'layers', route: 'admin.services.index', permission: 'admin.services' },
+    { labelKey: 'layout.admin.nav.employees', icon: 'badge', route: 'admin.employees.index', permission: 'admin.employees' },
+    { labelKey: 'layout.admin.nav.appointments', icon: 'calendar_today', route: 'admin.appointments.index', permission: 'admin.appointments' },
+    { labelKey: 'layout.admin.mobile.config', icon: 'settings', route: 'admin.settings.index', permission: 'admin.settings' },
 ];
 
 export default function AdminLayout({ children }) {
@@ -36,16 +38,40 @@ export default function AdminLayout({ children }) {
     const permissions = auth.permissions ?? [];
     const can = (key) => permissions.includes(key);
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const t = useT();
 
-    const visibleNav = navItems.filter((item) => can(item.permission));
-    const visibleMobileNav = mobileNavItems.filter((item) => can(item.permission));
+    const visibleNav = useMemo(
+        () =>
+            navItems
+                .filter((item) => {
+                    if (item.permission === 'admin.shared_resources' && business?.uses_shared_resources === false) {
+                        return false;
+                    }
+                    return can(item.permission);
+                })
+                .map((item) => ({ ...item, label: t(item.labelKey) })),
+        [permissions, t, business?.uses_shared_resources],
+    );
+    const visibleMobileNav = useMemo(
+        () =>
+            mobileNavItems
+                .filter((item) => can(item.permission))
+                .map((item) => ({ ...item, label: t(item.labelKey) })),
+        [permissions, t],
+    );
 
     const showEmployeeSection = user?.role === 'employee'
         ? permissions.some(p => p.startsWith('employee.'))
         : user?.also_works_as_staff === true;
-    const visibleEmployeeNav = showEmployeeSection
-        ? employeeNavItems.filter((item) => can(item.permission))
-        : [];
+    const visibleEmployeeNav = useMemo(
+        () =>
+            showEmployeeSection
+                ? employeeNavItems
+                    .filter((item) => can(item.permission))
+                    .map((item) => ({ ...item, label: t(item.labelKey) }))
+                : [],
+        [showEmployeeSection, permissions, t, user?.id, user?.also_works_as_staff, user?.role],
+    );
 
     const isActive = (routeName) => {
         try {
@@ -79,10 +105,10 @@ export default function AdminLayout({ children }) {
                 <div className="flex flex-col h-full py-10 px-8">
                     <div className="mb-10">
                         <p className="text-sm font-extrabold font-headline text-on-surface uppercase tracking-widest leading-none">
-                            {business?.name ?? 'Admin Panel'}
+                            {business?.name ?? t('layout.admin.fallback_business')}
                         </p>
                         <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mt-1">
-                            Admin Panel
+                            {t('layout.admin.panel_subtitle')}
                         </p>
                     </div>
 
@@ -91,7 +117,7 @@ export default function AdminLayout({ children }) {
                             const active = isActive(item.route);
                             return (
                                 <Link
-                                    key={item.label}
+                                    key={item.route}
                                     href={(() => { try { return route(item.route); } catch { return '#'; } })()}
                                     className={`flex items-center gap-4 py-3 pl-4 text-sm transition-all duration-200 ${
                                         active
@@ -112,7 +138,7 @@ export default function AdminLayout({ children }) {
 
                         {visibleEmployeeNav.length > 0 && (
                             <div className="pt-4">
-                                <p className="px-4 text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Employee Workspace</p>
+                                <p className="px-4 text-[10px] font-bold uppercase tracking-widest text-outline mb-2">{t('layout.admin.employee_workspace')}</p>
                                 {visibleEmployeeNav.map((item) => {
                                     const active = isActive(item.route);
                                     return (
@@ -148,7 +174,7 @@ export default function AdminLayout({ children }) {
                                 className="flex items-center gap-2 px-2 text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-colors uppercase tracking-widest"
                             >
                                 <Icon name="open_in_new" size="text-sm" />
-                                View booking page
+                                {t('layout.admin.view_booking_page')}
                             </a>
                         )}
 
@@ -158,7 +184,7 @@ export default function AdminLayout({ children }) {
                             </div>
                             <div className="min-w-0 flex-1">
                                 <p className="text-sm font-bold text-on-surface truncate">{user?.name}</p>
-                                <p className="text-[10px] text-on-surface-variant">Admin User</p>
+                                <p className="text-[10px] text-on-surface-variant">{t('layout.admin.admin_user')}</p>
                             </div>
                         </div>
 
@@ -169,7 +195,7 @@ export default function AdminLayout({ children }) {
                             className="flex items-center gap-2 px-2 text-xs font-bold text-error hover:opacity-70 transition-opacity uppercase tracking-widest"
                         >
                             <Icon name="logout" size="text-sm" />
-                            <span>Logout</span>
+                            <span>{t('layout.admin.logout')}</span>
                         </Link>
                     </div>
                 </div>
@@ -185,7 +211,7 @@ export default function AdminLayout({ children }) {
                             <Icon name="menu" size="text-2xl" />
                         </button>
                         <h1 className="font-headline text-xl font-bold tracking-tight text-on-surface">
-                            {business?.name ?? 'My Business'}
+                            {business?.name ?? t('layout.admin.header_fallback')}
                         </h1>
                     </div>
 
@@ -198,9 +224,10 @@ export default function AdminLayout({ children }) {
                                 className="hidden sm:flex items-center gap-1.5 rounded-xl border border-outline-variant px-3 py-1.5 text-xs font-medium text-on-surface-variant hover:bg-surface-container transition-colors"
                             >
                                 <Icon name="open_in_new" size="text-sm" />
-                                Booking page
+                                {t('layout.admin.booking_page')}
                             </a>
                         )}
+                        <LanguageSwitcher className="hidden sm:block" />
                         <Dropdown>
                             <Dropdown.Trigger>
                                 <button className="flex items-center rounded-full p-0.5 hover:bg-surface-container transition-colors">
@@ -210,11 +237,11 @@ export default function AdminLayout({ children }) {
                                 </button>
                             </Dropdown.Trigger>
                             <Dropdown.Content>
-                                <Dropdown.Link href={route('profile.edit')}>Profile</Dropdown.Link>
+                                <Dropdown.Link href={route('profile.edit')}>{t('layout.admin.profile')}</Dropdown.Link>
                                 {can('admin.settings') && (
-                                    <Dropdown.Link href={route('admin.settings.index')}>Configuration</Dropdown.Link>
+                                    <Dropdown.Link href={route('admin.settings.index')}>{t('layout.admin.configuration')}</Dropdown.Link>
                                 )}
-                                <Dropdown.Link href={route('logout')} method="post" as="button">Log Out</Dropdown.Link>
+                                <Dropdown.Link href={route('logout')} method="post" as="button">{t('layout.admin.log_out')}</Dropdown.Link>
                             </Dropdown.Content>
                         </Dropdown>
                     </div>

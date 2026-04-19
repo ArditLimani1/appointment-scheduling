@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\Permission;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreBusinessRoleRequest;
 use App\Http\Requests\Admin\UpdateBusinessRoleRequest;
@@ -22,9 +23,17 @@ class BusinessRoleController extends Controller
         $business = auth()->user()->panelBusiness();
         abort_unless($business, 403);
 
+        $permissionGroups = $this->businessRoleService->permissionGroupsForUi();
+        if (! $business->uses_shared_resources) {
+            $permissionGroups['admin'] = array_values(array_filter(
+                $permissionGroups['admin'],
+                fn (array $p) => $p['value'] !== Permission::AdminSharedResources->value
+            ));
+        }
+
         return Inertia::render('Admin/Roles/Index', [
             'roles' => $this->businessRoleService->listForBusiness($business),
-            'permissionGroups' => $this->businessRoleService->permissionGroupsForUi(),
+            'permissionGroups' => $permissionGroups,
         ]);
     }
 
@@ -35,7 +44,7 @@ class BusinessRoleController extends Controller
         $this->businessRoleService->store($business, $request->validated());
 
         return redirect()->back()
-            ->with('success', 'Role created successfully.')
+            ->with('success', __('messages.role.created'))
             ->with('flash_nonce', uniqid('', true));
     }
 
@@ -46,7 +55,7 @@ class BusinessRoleController extends Controller
         $this->businessRoleService->update($business, $role, $request->validated());
 
         return redirect()->back()
-            ->with('success', 'Role updated successfully.')
+            ->with('success', __('messages.role.updated'))
             ->with('flash_nonce', uniqid('', true));
     }
 
@@ -57,7 +66,7 @@ class BusinessRoleController extends Controller
         $this->businessRoleService->delete($business, $role);
 
         return redirect()->back()
-            ->with('success', 'Role deleted successfully.')
+            ->with('success', __('messages.role.deleted'))
             ->with('flash_nonce', uniqid('', true));
     }
 }

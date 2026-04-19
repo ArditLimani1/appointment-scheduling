@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import Icon from '@/Components/Icon';
 import NiterminLogo from '@/Components/NiterminLogo';
+import LanguageSwitcher from '@/i18n/LanguageSwitcher';
 
 const highlights = [
     {
@@ -137,6 +138,7 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                     </Link>
 
                     <nav className="flex items-center gap-2">
+                        <LanguageSwitcher />
                         {auth?.user ? (
                             <Link
                                 href={route('dashboard')}

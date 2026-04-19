@@ -14,6 +14,8 @@ class ProfileUpdateRequest extends FormRequest
      */
     public function rules(): array
     {
+        $locales = array_keys(config('locales.supported', []));
+
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => [
@@ -24,6 +26,7 @@ class ProfileUpdateRequest extends FormRequest
                 'max:255',
                 Rule::unique(User::class)->ignore($this->user()->id),
             ],
+            'locale' => ['sometimes', 'string', Rule::in($locales)],
         ];
     }
 }

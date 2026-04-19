@@ -35,7 +35,7 @@ class SharedResourceController extends Controller
         $this->sharedResourceService->store($business, $request->validated());
 
         return redirect()->back()
-            ->with('success', 'Resource created successfully.')
+            ->with('success', __('messages.resource.created'))
             ->with('flash_nonce', uniqid('', true));
     }
 
@@ -46,7 +46,7 @@ class SharedResourceController extends Controller
         $this->sharedResourceService->update($business, $sharedResource, $request->validated());
 
         return redirect()->back()
-            ->with('success', 'Resource updated successfully.')
+            ->with('success', __('messages.resource.updated'))
             ->with('flash_nonce', uniqid('', true));
     }
 
@@ -57,7 +57,7 @@ class SharedResourceController extends Controller
         $this->sharedResourceService->delete($business, $sharedResource);
 
         return redirect()->back()
-            ->with('success', 'Resource deleted successfully.')
+            ->with('success', __('messages.resource.deleted'))
             ->with('flash_nonce', uniqid('', true));
     }
 }

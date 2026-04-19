@@ -15,7 +15,7 @@ interface AppointmentServiceInterface
      * Appointments and lookup data for the admin calendar (day or week columns).
      *
      * @param  'day'|'week'  $view
-     * @param  array{employee_id?: int|string|null, statuses?: list<string>}  $filters
+     * @param  array{employee_id?: int|string|null, statuses?: list<string>, service_id?: int}  $filters
      * @return array{appointments: \Illuminate\Database\Eloquent\Collection, employees: Collection, services: Collection, calendar_view: string, range_start: string, range_end: string, column_dates: array<int, string>, slot_duration: int}
      */
     public function getCalendarView(Business $business, string $view, string $anchorDate, array $filters = []): array;

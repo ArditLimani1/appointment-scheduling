@@ -37,7 +37,7 @@ class SharedResourceService implements SharedResourceServiceInterface
     {
         abort_if($resource->business_id !== $business->id, 403);
         if ($this->sharedResourceRepository->isReferencedByAppointments($resource)) {
-            abort(422, 'This resource cannot be deleted while it is linked to past or upcoming appointments.');
+            abort(422, __('errors.shared_resource.delete_blocked'));
         }
 
         $this->sharedResourceRepository->delete($resource);

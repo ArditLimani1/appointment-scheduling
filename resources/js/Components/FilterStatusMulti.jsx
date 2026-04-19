@@ -1,11 +1,13 @@
 import { Popover, PopoverButton, PopoverPanel } from '@headlessui/react';
 import Icon from '@/Components/Icon';
+import { useT } from '@/i18n/useT';
 
 /**
  * Multi-select status filter (appointments / calendar).
  * @param {{ label: string, value: string[], onChange: (next: string[]) => void, options: { value: string, label: string }[], minWidthClass?: string }} props
  */
 export default function FilterStatusMulti({ label, value, onChange, options, minWidthClass = 'min-w-[160px]' }) {
+    const t = useT();
     const selected = Array.isArray(value) ? value : [];
 
     const toggle = (optValue) => {
@@ -21,11 +23,11 @@ export default function FilterStatusMulti({ label, value, onChange, options, min
 
     const summary =
         selected.length === options.length
-            ? 'All statuses'
+            ? t('common.status.filter_all')
             : selected
                   .map((v) => options.find((o) => o.value === v)?.label)
                   .filter(Boolean)
-                  .join(', ') || 'Select statuses';
+                  .join(', ') || t('common.status.filter_select');
 
     return (
         <div className={`flex shrink-0 flex-col gap-1.5 ${minWidthClass}`}>

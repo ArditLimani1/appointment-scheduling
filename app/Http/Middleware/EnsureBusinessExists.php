@@ -18,7 +18,7 @@ class EnsureBusinessExists
             }
 
             return redirect()->route('admin.settings.index')
-                ->with('info', 'Please complete your business setup before continuing.');
+                ->with('info', __('messages.business.setup_required'));
         }
 
         return $next($request);

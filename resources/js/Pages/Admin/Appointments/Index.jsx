@@ -8,6 +8,7 @@ import FilterStatusMulti from '@/Components/FilterStatusMulti';
 import DatePicker from '@/Components/DatePicker';
 import AppointmentStatusMenu from '@/Components/AppointmentStatusMenu';
 import EditAppointmentModal from '@/Components/EditAppointmentModal';
+import { useT } from '@/i18n/useT';
 import { formatAppointmentDate, formatTimeHm } from '@/utils/appointmentDate';
 import {
     appendAppointmentStatusParams,
@@ -16,6 +17,7 @@ import {
 } from '@/utils/appointmentStatusFilter';
 
 function DeleteConfirmModal({ appointment, onConfirm, onCancel }) {
+    const t = useT();
     return (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onCancel} />
@@ -25,17 +27,13 @@ function DeleteConfirmModal({ appointment, onConfirm, onCancel }) {
                         <Icon name="delete" size="text-xl" className="text-red-600" />
                     </div>
                     <div>
-                        <h2 className="text-base font-extrabold text-on-surface">Delete Appointment</h2>
+                        <h2 className="text-base font-extrabold text-on-surface">{t('admin.appointments.delete_title')}</h2>
                         <p className="mt-1 text-sm text-on-surface-variant">
-                            Are you sure you want to delete the appointment for{' '}
-                            <span className="font-semibold text-on-surface">
-                                {appointment.client_first_name} {appointment.client_last_name}
-                            </span>
-                            {' '}on{' '}
-                            <span className="font-semibold text-on-surface">
-                                {appointment.date ? String(appointment.date).slice(0, 10) : ''} at {appointment.start_time ? appointment.start_time.slice(0, 5) : ''}
-                            </span>
-                            ? This action cannot be undone.
+                            {t('admin.appointments.delete_prompt', {
+                                name: `${appointment.client_first_name} ${appointment.client_last_name}`,
+                                date: appointment.date ? String(appointment.date).slice(0, 10) : '',
+                                time: appointment.start_time ? appointment.start_time.slice(0, 5) : '',
+                            })}
                         </p>
                     </div>
                 </div>
@@ -45,14 +43,14 @@ function DeleteConfirmModal({ appointment, onConfirm, onCancel }) {
                         onClick={onCancel}
                         className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-on-surface hover:bg-slate-50 transition-colors"
                     >
-                        Cancel
+                        {t('common.actions.cancel')}
                     </button>
                     <button
                         type="button"
                         onClick={onConfirm}
                         className="rounded-xl bg-red-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-red-700 transition-colors"
                     >
-                        Yes, Delete
+                        {t('admin.appointments.delete_confirm')}
                     </button>
                 </div>
             </div>
@@ -61,6 +59,9 @@ function DeleteConfirmModal({ appointment, onConfirm, onCancel }) {
 }
 
 const APPOINTMENT_STATUSES = ['pending', 'confirmed', 'cancelled'];
+
+/** Headless UI Listbox can mis-handle empty-string values; use a sentinel for “all services”. */
+const SERVICE_FILTER_ALL = 'all';
 
 function currentMonthStart() {
     const d = new Date();
@@ -88,6 +89,10 @@ function appointmentsFiltersToSearchParams(filters) {
         params.set('date_to', filters.date_to);
     }
     appendAppointmentStatusParams(params, filters.status);
+    const sid = filters.service_id;
+    if (sid != null && sid !== '' && sid !== SERVICE_FILTER_ALL) {
+        params.set('service_id', String(sid));
+    }
     return params;
 }
 
@@ -98,6 +103,13 @@ function buildAppointmentsUrl(filters) {
     return pathname + (queryString ? `?${queryString}` : '');
 }
 
+function normalizeServiceFilterForState(serviceIdFromServer) {
+    if (serviceIdFromServer == null || serviceIdFromServer === '') {
+        return SERVICE_FILTER_ALL;
+    }
+    return String(serviceIdFromServer);
+}
+
 function normalizeAppointments(appointments) {
     if (!appointments) return { rows: [], meta: null };
     if (Array.isArray(appointments)) return { rows: appointments, meta: null };
@@ -106,6 +118,7 @@ function normalizeAppointments(appointments) {
 }
 
 function ExportDropdown({ excelUrl, pdfUrl }) {
+    const t = useT();
     const [open, setOpen] = useState(false);
     const ref = useRef(null);
 
@@ -123,7 +136,7 @@ function ExportDropdown({ excelUrl, pdfUrl }) {
                 className="flex items-center gap-2 rounded-xl bg-on-surface px-6 py-3 text-sm font-bold text-surface hover:opacity-90 transition-opacity"
             >
                 <Icon name="download" size="text-lg" />
-                Export
+                {t('common.actions.export')}
                 <span className="ml-1 text-xs opacity-70">▾</span>
             </button>
             {open && (
@@ -133,14 +146,14 @@ function ExportDropdown({ excelUrl, pdfUrl }) {
                         onClick={() => setOpen(false)}
                         className="flex items-center gap-2 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50"
                     >
-                        <Icon name="table_chart" size="text-base" /> Export Excel
+                        <Icon name="table_chart" size="text-base" /> {t('admin.appointments.export_excel')}
                     </a>
                     <a
                         href={pdfUrl}
                         onClick={() => setOpen(false)}
                         className="flex items-center gap-2 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50"
                     >
-                        <Icon name="picture_as_pdf" size="text-base" /> Export PDF
+                        <Icon name="picture_as_pdf" size="text-base" /> {t('admin.appointments.export_pdf')}
                     </a>
                 </div>
             )}
@@ -149,6 +162,7 @@ function ExportDropdown({ excelUrl, pdfUrl }) {
 }
 
 export default function Index({ appointments, employees, services = [], filters = {} }) {
+    const t = useT();
     const { auth } = usePage().props;
     const CURRENCY_SYMBOLS = { EUR: '€', USD: '$', GBP: '£', CHF: 'CHF' };
     const currencySymbol = CURRENCY_SYMBOLS[auth?.business?.currency] ?? auth?.business?.currency_symbol ?? '€';
@@ -165,6 +179,7 @@ export default function Index({ appointments, employees, services = [], filters 
         date_from: filters.date_from ?? currentMonthStart(),
         date_to: filters.date_to ?? currentMonthEnd(),
         status: normalizeAppointmentStatusFilter(filters.status),
+        service_id: normalizeServiceFilterForState(filters.service_id),
     });
 
     useEffect(() => {
@@ -173,8 +188,9 @@ export default function Index({ appointments, employees, services = [], filters 
             date_from: filters.date_from ?? currentMonthStart(),
             date_to: filters.date_to ?? currentMonthEnd(),
             status: normalizeAppointmentStatusFilter(filters.status),
+            service_id: normalizeServiceFilterForState(filters.service_id),
         });
-    }, [filters.employee_id, filters.date_from, filters.date_to, statusFilterKey]);
+    }, [filters.employee_id, filters.date_from, filters.date_to, filters.service_id, statusFilterKey]);
 
     const visitOpts = useMemo(
         () => ({
@@ -199,6 +215,7 @@ export default function Index({ appointments, employees, services = [], filters 
             date_from: currentMonthStart(),
             date_to: currentMonthEnd(),
             status: [...DEFAULT_APPOINTMENT_STATUS_FILTER],
+            service_id: SERVICE_FILTER_ALL,
         };
         setLocalFilters(defaultFilters);
         router.get(buildAppointmentsUrl(defaultFilters), {}, visitOpts);
@@ -243,35 +260,43 @@ export default function Index({ appointments, employees, services = [], filters 
 
     const employeeOptions = useMemo(
         () => [
-            { value: '', label: 'All Staff' },
+            { value: '', label: t('admin.appointments.all_staff') },
             ...employees.map((e) => ({ value: String(e.id), label: e.name })),
         ],
-        [employees],
+        [employees, t],
     );
 
     const statusOptions = useMemo(
         () =>
             APPOINTMENT_STATUSES.map((status) => ({
                 value: status,
-                label: status.replace('_', ' '),
+                label: t(`common.status.${status}`),
             })),
-        [],
+        [t],
+    );
+
+    const serviceOptions = useMemo(
+        () => [
+            { value: SERVICE_FILTER_ALL, label: t('admin.appointments.all_services') },
+            ...services.map((s) => ({ value: String(s.id), label: s.name })),
+        ],
+        [services, t],
     );
 
     return (
         <AdminLayout>
-            <Head title="Appointments" />
+            <Head title={t('admin.appointments.head_title')} />
 
             <PageHeader
-                title="Appointments"
-                description="View and manage all customer bookings. Results update when you change staff, dates, or status."
+                title={t('admin.appointments.title')}
+                description={t('admin.appointments.description')}
             >
                 <Link
                     href={route('admin.appointments.calendar')}
                     className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-on-surface hover:bg-slate-50"
                 >
                     <Icon name="calendar_view_week" size="text-lg" />
-                    Calendar
+                    {t('admin.appointments.calendar')}
                 </Link>
                 <ExportDropdown
                     excelUrl={buildExportUrl('admin.appointments.export')}
@@ -282,25 +307,31 @@ export default function Index({ appointments, employees, services = [], filters 
             <div className="mb-6 rounded-2xl bg-surface-container-lowest p-4 ring-1 ring-slate-100 shadow-sm">
                 <div className="flex flex-wrap items-end gap-3 xl:flex-nowrap xl:gap-3">
                     <FilterListbox
-                        label="Employee"
+                        label={t('admin.appointments.employee')}
                         value={localFilters.employee_id}
                         onChange={(v) => patchFilters({ employee_id: v })}
                         options={employeeOptions}
                     />
+                    <FilterListbox
+                        label={t('admin.appointments.service')}
+                        value={localFilters.service_id}
+                        onChange={(v) => patchFilters({ service_id: v })}
+                        options={serviceOptions}
+                    />
                     <DatePicker
-                        label="From"
+                        label={t('admin.appointments.from')}
                         value={localFilters.date_from}
                         onChange={(value) => patchFilters({ date_from: value })}
-                        placeholder="Start date"
+                        placeholder={t('admin.appointments.start_date_ph')}
                     />
                     <DatePicker
-                        label="To"
+                        label={t('admin.appointments.to')}
                         value={localFilters.date_to}
                         onChange={(value) => patchFilters({ date_to: value })}
-                        placeholder="End date"
+                        placeholder={t('admin.appointments.end_date_ph')}
                     />
                     <FilterStatusMulti
-                        label="Status"
+                        label={t('admin.appointments.status')}
                         value={localFilters.status}
                         onChange={(v) => patchFilters({ status: v })}
                         options={statusOptions}
@@ -312,7 +343,7 @@ export default function Index({ appointments, employees, services = [], filters 
                             onClick={clearFilters}
                             className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-slate-50"
                         >
-                            Clear
+                            {t('admin.appointments.clear')}
                         </button>
                     </div>
                 </div>
@@ -320,16 +351,18 @@ export default function Index({ appointments, employees, services = [], filters 
 
             <div className="bg-surface-container-lowest rounded-2xl overflow-hidden ring-1 ring-slate-100 shadow-sm">
                 <div className="px-8 py-5 border-b border-slate-50 flex items-center justify-between bg-white">
-                    <h3 className="font-headline font-bold text-base text-on-surface">All bookings</h3>
+                    <h3 className="font-headline font-bold text-base text-on-surface">{t('admin.appointments.all_bookings')}</h3>
                     <p className="text-xs text-on-surface-variant">
-                        {totalCount} appointment{totalCount !== 1 ? 's' : ''} total
+                        {totalCount === 1
+                            ? t('admin.appointments.appointment_total_one', { count: totalCount })
+                            : t('admin.appointments.appointment_total_other', { count: totalCount })}
                     </p>
                 </div>
 
                 {rows.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-24 text-center px-6">
                         <Icon name="event_busy" size="text-5xl" className="text-outline mb-3" />
-                        <p className="text-sm text-on-surface-variant">No appointments match the selected filters.</p>
+                        <p className="text-sm text-on-surface-variant">{t('admin.appointments.empty')}</p>
                     </div>
                 ) : (
                     <>
@@ -337,13 +370,13 @@ export default function Index({ appointments, employees, services = [], filters 
                             <table className="w-full min-w-[760px] text-left border-collapse">
                                 <thead>
                                     <tr className="bg-slate-50/50">
-                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">Client</th>
-                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">Employee</th>
-                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">Service</th>
-                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">Date & Time</th>
-                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">Status</th>
-                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-right">Price</th>
-                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-right">Actions</th>
+                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">{t('admin.appointments.th_client')}</th>
+                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">{t('admin.appointments.th_employee')}</th>
+                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">{t('admin.appointments.th_service')}</th>
+                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">{t('admin.appointments.th_datetime')}</th>
+                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">{t('admin.appointments.th_status')}</th>
+                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-right">{t('admin.appointments.th_price')}</th>
+                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-right">{t('admin.appointments.th_actions')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
@@ -377,7 +410,7 @@ export default function Index({ appointments, employees, services = [], filters 
                                                         type="button"
                                                         onClick={() => setEditingAppointment(apt)}
                                                         className="inline-flex rounded-lg p-2 text-outline hover:text-on-surface hover:bg-surface-container transition-colors"
-                                                        title="Edit"
+                                                        title={t('admin.appointments.edit')}
                                                     >
                                                         <Icon name="edit" size="text-[18px]" />
                                                     </button>
@@ -385,7 +418,7 @@ export default function Index({ appointments, employees, services = [], filters 
                                                         type="button"
                                                         onClick={() => setDeletingAppointment(apt)}
                                                         className="inline-flex rounded-lg p-2 text-outline hover:text-error hover:bg-error-container transition-colors"
-                                                        title="Delete"
+                                                        title={t('admin.appointments.delete')}
                                                     >
                                                         <Icon name="delete" size="text-[18px]" />
                                                     </button>
@@ -401,14 +434,17 @@ export default function Index({ appointments, employees, services = [], filters 
                             <p className="text-sm text-on-surface-variant">
                                 {meta ? (
                                     <>
-                                        Showing <span className="font-bold text-on-surface">{meta.from}</span>–
-                                        <span className="font-bold text-on-surface">{meta.to}</span> of{' '}
-                                        <span className="font-bold text-on-surface">{meta.total}</span>
+                                        {t('admin.appointments.showing_range', {
+                                            from: meta.from,
+                                            to: meta.to,
+                                            total: meta.total,
+                                        })}
                                     </>
                                 ) : (
                                     <>
-                                        Showing <span className="font-bold text-on-surface">{rows.length}</span> appointment
-                                        {rows.length !== 1 ? 's' : ''}
+                                        {rows.length === 1
+                                            ? t('admin.appointments.showing_count_one', { count: rows.length })
+                                            : t('admin.appointments.showing_count_other', { count: rows.length })}
                                     </>
                                 )}
                             </p>
@@ -420,10 +456,10 @@ export default function Index({ appointments, employees, services = [], filters 
                                         onClick={() => navigateToPage(meta.prev_page_url)}
                                         className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-on-surface disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white"
                                     >
-                                        Previous
+                                        {t('admin.appointments.previous')}
                                     </button>
                                     <span className="text-sm text-on-surface-variant px-2">
-                                        Page {meta.current_page} of {meta.last_page}
+                                        {t('admin.appointments.page_of', { current: meta.current_page, last: meta.last_page })}
                                     </span>
                                     <button
                                         type="button"
@@ -431,7 +467,7 @@ export default function Index({ appointments, employees, services = [], filters 
                                         onClick={() => navigateToPage(meta.next_page_url)}
                                         className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-on-surface disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white"
                                     >
-                                        Next
+                                        {t('admin.appointments.next')}
                                     </button>
                                 </div>
                             )}

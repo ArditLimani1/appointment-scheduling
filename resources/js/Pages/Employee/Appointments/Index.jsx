@@ -13,11 +13,12 @@ import {
     DEFAULT_APPOINTMENT_STATUS_FILTER,
     normalizeAppointmentStatusFilter,
 } from '@/utils/appointmentStatusFilter';
+import { useT } from '@/i18n/useT';
 
-const STATUS_STYLES = {
-    pending: { bg: 'bg-surface-container-highest text-on-surface-variant', label: 'Pending' },
-    confirmed: { bg: 'bg-tertiary-fixed text-on-tertiary-fixed-variant', label: 'Confirmed' },
-    cancelled: { bg: 'bg-error-container text-on-error-container', label: 'Cancelled' },
+const STATUS_BADGE_BG = {
+    pending: 'bg-surface-container-highest text-on-surface-variant',
+    confirmed: 'bg-tertiary-fixed text-on-tertiary-fixed-variant',
+    cancelled: 'bg-error-container text-on-error-container',
 };
 
 const APPOINTMENT_STATUSES = ['pending', 'confirmed', 'cancelled'];
@@ -112,6 +113,7 @@ function normalizeServiceFilterForState(serviceIdFromServer) {
 }
 
 function CancelConfirmModal({ appointment, onConfirm, onClose }) {
+    const t = useT();
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
             <div className="w-full max-w-sm rounded-3xl bg-surface p-6 shadow-2xl">
@@ -120,9 +122,9 @@ function CancelConfirmModal({ appointment, onConfirm, onClose }) {
                         <Icon name="warning" size="text-lg" className="text-on-error-container" />
                     </div>
                     <div>
-                        <h3 className="font-headline text-base font-bold text-on-surface">Cancel Appointment</h3>
+                        <h3 className="font-headline text-base font-bold text-on-surface">{t('employee.appointments.cancel_title')}</h3>
                         <p className="mt-1 text-sm text-on-surface-variant">
-                            Are you sure you want to cancel this appointment?
+                            {t('employee.appointments.cancel_prompt')}
                         </p>
                     </div>
                 </div>
@@ -132,7 +134,7 @@ function CancelConfirmModal({ appointment, onConfirm, onClose }) {
                         {appointment.client_first_name} {appointment.client_last_name}
                     </p>
                     <p className="text-on-surface-variant mt-0.5">
-                        {appointment.service?.name ?? 'Appointment'} · {formatTimeHm(appointment.start_time)}
+                        {appointment.service?.name ?? t('employee.appointments.appointment_fallback')} · {formatTimeHm(appointment.start_time)}
                     </p>
                 </div>
 
@@ -142,14 +144,14 @@ function CancelConfirmModal({ appointment, onConfirm, onClose }) {
                         onClick={onClose}
                         className="rounded-xl border border-outline-variant px-4 py-2 text-sm font-medium text-on-surface-variant hover:bg-surface-container transition-colors"
                     >
-                        No, keep it
+                        {t('employee.appointments.no_keep')}
                     </button>
                     <button
                         type="button"
                         onClick={onConfirm}
                         className="rounded-xl bg-error px-5 py-2 text-sm font-semibold text-on-error hover:opacity-90 transition-opacity"
                     >
-                        Yes, cancel
+                        {t('employee.appointments.yes_cancel')}
                     </button>
                 </div>
             </div>
@@ -158,16 +160,18 @@ function CancelConfirmModal({ appointment, onConfirm, onClose }) {
 }
 
 function AppointmentStatusBadge({ status }) {
+    const t = useT();
     const v = appointmentStatusValue(status);
-    const style = STATUS_STYLES[v] || STATUS_STYLES.pending;
+    const bg = STATUS_BADGE_BG[v] || STATUS_BADGE_BG.pending;
     return (
-        <span className={`shrink-0 px-3 py-1 text-[10px] font-extrabold uppercase rounded-full ${style.bg}`}>
-            {style.label}
+        <span className={`shrink-0 px-3 py-1 text-[10px] font-extrabold uppercase rounded-full ${bg}`}>
+            {t(`common.status.${v}`)}
         </span>
     );
 }
 
 function ExportDropdown({ excelUrl, pdfUrl }) {
+    const t = useT();
     const [open, setOpen] = useState(false);
     const ref = useRef(null);
 
@@ -188,7 +192,7 @@ function ExportDropdown({ excelUrl, pdfUrl }) {
                 className="flex items-center gap-2 rounded-xl bg-on-surface px-6 py-3 text-sm font-bold text-surface hover:opacity-90 transition-opacity"
             >
                 <Icon name="download" size="text-lg" />
-                Export
+                {t('employee.appointments.export')}
                 <span className="ml-1 text-xs opacity-70">▾</span>
             </button>
             {open && (
@@ -198,14 +202,14 @@ function ExportDropdown({ excelUrl, pdfUrl }) {
                         onClick={() => setOpen(false)}
                         className="flex items-center gap-2 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50"
                     >
-                        <Icon name="table_chart" size="text-base" /> Export Excel
+                        <Icon name="table_chart" size="text-base" /> {t('employee.appointments.export_excel')}
                     </a>
                     <a
                         href={pdfUrl}
                         onClick={() => setOpen(false)}
                         className="flex items-center gap-2 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50"
                     >
-                        <Icon name="picture_as_pdf" size="text-base" /> Export PDF
+                        <Icon name="picture_as_pdf" size="text-base" /> {t('employee.appointments.export_pdf')}
                     </a>
                 </div>
             )}
@@ -221,6 +225,7 @@ export default function EmployeeAppointmentsIndex({
     employee_compact_mobile_appointments = false,
 }) {
     const filters = filtersProp ?? {};
+    const t = useT();
     const { auth } = usePage().props;
     const business = auth?.business;
     const permissions = Array.isArray(auth?.permissions) ? auth.permissions : [];
@@ -340,19 +345,19 @@ export default function EmployeeAppointmentsIndex({
     const serviceList = Array.isArray(services) ? services : [];
     const serviceOptions = useMemo(
         () => [
-            { value: SERVICE_FILTER_ALL, label: 'All services' },
+            { value: SERVICE_FILTER_ALL, label: t('employee.appointments.all_services') },
             ...serviceList.map((s) => ({ value: String(s.id), label: s.name })),
         ],
-        [serviceList],
+        [serviceList, t],
     );
 
     const statusOptions = useMemo(
         () =>
             APPOINTMENT_STATUSES.map((status) => ({
                 value: status,
-                label: status.replace('_', ' '),
+                label: t(`common.status.${status}`),
             })),
-        [],
+        [t],
     );
 
     const [editingApt, setEditingApt] = useState(null);
@@ -402,7 +407,7 @@ export default function EmployeeAppointmentsIndex({
                         onClick={() => handleConfirm(apt)}
                         className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-950 ring-1 ring-emerald-200/90"
                     >
-                        <Icon name="check_circle" size="text-sm" /> Confirm
+                        <Icon name="check_circle" size="text-sm" /> {t('employee.appointments.confirm')}
                     </button>
                 )}
                 {(isPending || isConfirmed) && (
@@ -411,7 +416,7 @@ export default function EmployeeAppointmentsIndex({
                         onClick={() => openCancelModal(apt)}
                         className="inline-flex items-center gap-1.5 rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-950 ring-1 ring-red-200/90"
                     >
-                        <Icon name="cancel" size="text-sm" /> Cancel
+                        <Icon name="cancel" size="text-sm" /> {t('employee.appointments.cancel')}
                     </button>
                 )}
                 {!isCancelled && (
@@ -419,7 +424,7 @@ export default function EmployeeAppointmentsIndex({
                         type="button"
                         onClick={() => setEditingApt(apt)}
                         className="inline-flex items-center justify-center rounded-xl bg-surface-container-high p-2 text-on-surface"
-                        title="Reschedule"
+                        title={t('employee.appointments.reschedule')}
                     >
                         <Icon name="edit_calendar" size="text-base" />
                     </button>
@@ -430,11 +435,11 @@ export default function EmployeeAppointmentsIndex({
 
     return (
         <EmployeeLayout>
-            <Head title="Appointments" />
+            <Head title={t('employee.appointments.head_title')} />
 
             <PageHeader
-                title="Appointments"
-                description="View and manage your bookings. Filter by date range, service, status, or client name."
+                title={t('employee.appointments.title')}
+                description={t('employee.appointments.description')}
             >
                 {canAppointments ? (
                     <Link
@@ -442,7 +447,7 @@ export default function EmployeeAppointmentsIndex({
                         className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-on-surface hover:bg-slate-50"
                     >
                         <Icon name="calendar_view_week" size="text-lg" />
-                        Calendar
+                        {t('employee.appointments.calendar')}
                     </Link>
                 ) : null}
                 <ExportDropdown
@@ -455,19 +460,19 @@ export default function EmployeeAppointmentsIndex({
                 <div className="flex flex-col gap-4 xl:flex-row xl:flex-nowrap xl:items-end xl:gap-3">
                     <DatePicker
                         className="w-full min-w-0 xl:w-auto"
-                        label="From"
+                        label={t('employee.appointments.from')}
                         value={localFilters.date_from}
                         onChange={(value) => {
                             if (!value) return;
                             const nextTo = localFilters.date_to >= value ? localFilters.date_to : value;
                             patchFilters({ date_from: value, date_to: nextTo });
                         }}
-                        placeholder="Start date"
+                        placeholder={t('employee.appointments.start_date_ph')}
                         buttonClassName="max-xl:!min-w-0"
                     />
                     <DatePicker
                         className="w-full min-w-0 xl:w-auto"
-                        label="To"
+                        label={t('employee.appointments.to')}
                         value={localFilters.date_to}
                         onChange={(value) => {
                             if (!value) return;
@@ -477,18 +482,18 @@ export default function EmployeeAppointmentsIndex({
                                 patchFilters({ date_to: value });
                             }
                         }}
-                        placeholder="End date"
+                        placeholder={t('employee.appointments.end_date_ph')}
                         buttonClassName="max-xl:!min-w-0"
                     />
                     <FilterListbox
-                        label="Service"
+                        label={t('employee.appointments.service')}
                         value={localFilters.service_id}
                         onChange={(v) => patchFilters({ service_id: v })}
                         options={serviceOptions}
                         wrapperClassName="flex w-full min-w-0 shrink-0 flex-col gap-1.5 xl:w-[220px]"
                     />
                     <FilterStatusMulti
-                        label="Status"
+                        label={t('employee.appointments.status')}
                         value={localFilters.status}
                         onChange={(v) => patchFilters({ status: v })}
                         options={statusOptions}
@@ -499,7 +504,7 @@ export default function EmployeeAppointmentsIndex({
                             htmlFor="employee-appointments-client-search"
                             className="ml-1 text-[10px] font-bold uppercase tracking-widest text-outline"
                         >
-                            Client
+                            {t('employee.appointments.client')}
                         </label>
                         <div className="relative">
                             <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-outline">
@@ -510,7 +515,7 @@ export default function EmployeeAppointmentsIndex({
                                 type="search"
                                 value={clientSearchDraft}
                                 autoComplete="off"
-                                placeholder="Client name"
+                                placeholder={t('employee.appointments.client_name_ph')}
                                 onChange={(e) => {
                                     const v = e.target.value;
                                     setClientSearchDraft(v);
@@ -538,7 +543,7 @@ export default function EmployeeAppointmentsIndex({
                             onClick={clearFilters}
                             className="w-full rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-slate-50 max-xl:min-h-[2.75rem] xl:w-auto"
                         >
-                            Clear
+                            {t('employee.appointments.clear')}
                         </button>
                     </div>
                 </div>
@@ -546,16 +551,22 @@ export default function EmployeeAppointmentsIndex({
 
             <div className="bg-surface-container-lowest rounded-2xl overflow-hidden ring-1 ring-slate-100 shadow-sm">
                 <div className="px-8 py-5 border-b border-slate-50 flex items-center justify-between bg-white">
-                    <h3 className="font-headline font-bold text-base text-on-surface">My bookings</h3>
+                    <h3 className="font-headline font-bold text-base text-on-surface">{t('employee.appointments.my_bookings')}</h3>
                     <p className="text-xs text-on-surface-variant">
-                        {totalCount} appointment{totalCount !== 1 ? 's' : ''} · {rangeLabel}
+                        {t(
+                            totalCount === 1
+                                ? 'employee.appointments.appointment_total_one'
+                                : 'employee.appointments.appointment_total_other',
+                            { count: totalCount },
+                        )}{' '}
+                        · {rangeLabel}
                     </p>
                 </div>
 
                 {rows.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-24 text-center px-6">
                         <Icon name="event_busy" size="text-5xl" className="text-outline mb-3" />
-                        <p className="text-sm text-on-surface-variant">No appointments match the selected filters.</p>
+                        <p className="text-sm text-on-surface-variant">{t('employee.appointments.empty')}</p>
                     </div>
                 ) : (
                     <>
@@ -585,7 +596,7 @@ export default function EmployeeAppointmentsIndex({
                                                         {apt.client_first_name} {apt.client_last_name}
                                                     </p>
                                                     <p className="text-sm text-on-surface-variant mt-0.5">
-                                                        {apt.service?.name ?? 'Appointment'}
+                                                        {apt.service?.name ?? t('employee.appointments.appointment_fallback')}
                                                     </p>
                                                 </div>
                                                 <AppointmentStatusBadge status={apt.status} />
@@ -618,31 +629,31 @@ export default function EmployeeAppointmentsIndex({
                                 <thead>
                                     <tr className="border-b border-surface-container-highest">
                                         <th className="pb-5 pr-3 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant min-w-0 w-[14%]">
-                                            Client
+                                            {t('employee.appointments.th_client')}
                                         </th>
                                         <th className="pb-5 pr-3 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant min-w-0 w-[11%]">
-                                            Service
+                                            {t('employee.appointments.th_service')}
                                         </th>
                                         <th className="pb-5 pr-3 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant whitespace-nowrap w-[9%]">
-                                            Date
+                                            {t('employee.appointments.th_date')}
                                         </th>
                                         <th className="pb-5 pr-3 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant whitespace-nowrap w-[9%]">
-                                            Time
+                                            {t('employee.appointments.th_time')}
                                         </th>
                                         <th className="pb-5 pr-3 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant text-right whitespace-nowrap w-[8%]">
-                                            Price
+                                            {t('employee.appointments.th_price')}
                                         </th>
                                         <th className="pb-5 pl-6 pr-3 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant min-w-[7.5rem] w-[10%]">
-                                            Status
+                                            {t('employee.appointments.th_status')}
                                         </th>
                                         <th className="pb-5 pr-3 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant min-w-0 w-[14%]">
-                                            Contact
+                                            {t('employee.appointments.th_contact')}
                                         </th>
                                         <th className="pb-5 pr-3 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant text-center min-w-0 w-[18%]">
-                                            Approval
+                                            {t('employee.appointments.th_approval')}
                                         </th>
                                         <th className="pb-5 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant text-center w-14 min-w-[3.5rem]">
-                                            Edit
+                                            {t('employee.appointments.th_edit')}
                                         </th>
                                     </tr>
                                 </thead>
@@ -673,7 +684,7 @@ export default function EmployeeAppointmentsIndex({
                                                 </td>
                                                 <td className="py-4 pr-3 min-w-0">
                                                     <span className="block truncate text-sm text-on-surface-variant">
-                                                        {apt.service?.name ?? 'Appointment'}
+                                                        {apt.service?.name ?? t('employee.appointments.appointment_fallback')}
                                                     </span>
                                                 </td>
                                                 <td className="py-4 pr-3 whitespace-nowrap">
@@ -712,7 +723,7 @@ export default function EmployeeAppointmentsIndex({
                                                                 className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-950 ring-1 ring-emerald-200/90 hover:bg-emerald-100/90 transition-colors"
                                                             >
                                                                 <Icon name="check_circle" size="text-sm" />
-                                                                Confirm
+                                                                {t('employee.appointments.confirm')}
                                                             </button>
                                                         )}
                                                         {(isPending || isConfirmed) && (
@@ -722,7 +733,7 @@ export default function EmployeeAppointmentsIndex({
                                                                 className="inline-flex items-center gap-1.5 rounded-xl bg-red-50 px-3 py-1.5 text-xs font-bold text-red-950 ring-1 ring-red-200/90 hover:bg-red-100/90 transition-colors"
                                                             >
                                                                 <Icon name="cancel" size="text-sm" />
-                                                                Cancel
+                                                                {t('employee.appointments.cancel')}
                                                             </button>
                                                         )}
                                                         {rowCancelled && (
@@ -736,7 +747,7 @@ export default function EmployeeAppointmentsIndex({
                                                             type="button"
                                                             onClick={() => setEditingApt(apt)}
                                                             className="inline-flex items-center justify-center rounded-xl bg-surface-container-high p-2 text-on-surface hover:bg-surface-container-highest transition-colors"
-                                                            title="Reschedule"
+                                                            title={t('employee.appointments.reschedule')}
                                                         >
                                                             <Icon name="edit_calendar" size="text-base" />
                                                         </button>
@@ -755,15 +766,17 @@ export default function EmployeeAppointmentsIndex({
                             <p className="text-sm text-on-surface-variant">
                                 {meta ? (
                                     <>
-                                        Showing <span className="font-bold text-on-surface">{meta.from}</span>–
-                                        <span className="font-bold text-on-surface">{meta.to}</span> of{' '}
-                                        <span className="font-bold text-on-surface">{meta.total}</span>
+                                        {t('employee.appointments.showing_range', {
+                                            from: meta.from,
+                                            to: meta.to,
+                                            total: meta.total,
+                                        })}
                                     </>
                                 ) : (
                                     <>
-                                        Showing <span className="font-bold text-on-surface">{rows.length}</span>{' '}
-                                        appointment
-                                        {rows.length !== 1 ? 's' : ''}
+                                        {rows.length === 1
+                                            ? t('employee.appointments.showing_count_one', { count: rows.length })
+                                            : t('employee.appointments.showing_count_other', { count: rows.length })}
                                     </>
                                 )}
                             </p>
@@ -775,10 +788,10 @@ export default function EmployeeAppointmentsIndex({
                                         onClick={() => navigateToPage(meta.prev_page_url)}
                                         className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-on-surface disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white"
                                     >
-                                        Previous
+                                        {t('employee.appointments.previous')}
                                     </button>
                                     <span className="text-sm text-on-surface-variant px-2">
-                                        Page {meta.current_page} of {meta.last_page}
+                                        {t('employee.appointments.page_of', { current: meta.current_page, last: meta.last_page })}
                                     </span>
                                     <button
                                         type="button"
@@ -786,7 +799,7 @@ export default function EmployeeAppointmentsIndex({
                                         onClick={() => navigateToPage(meta.next_page_url)}
                                         className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-on-surface disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white"
                                     >
-                                        Next
+                                        {t('employee.appointments.next')}
                                     </button>
                                 </div>
                             )}

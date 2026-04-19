@@ -173,7 +173,7 @@ class AppointmentController extends Controller
         }
 
         $anchorDate = $this->resolveCalendarAnchorDate($request);
-        $calendarFilters = $this->calendarFiltersFromRequest($request, (int) $user->id);
+        $calendarFilters = $this->calendarFiltersFromRequest($request, (int) $user->id, (int) $business->id);
 
         $data = $this->appointmentService->getCalendarView($business, $view, $anchorDate, $calendarFilters);
 
@@ -197,6 +197,7 @@ class AppointmentController extends Controller
         $data['filters'] = [
             'employee_id' => (string) $user->id,
             'status' => $calendarFilters['statuses'],
+            'service_id' => $calendarFilters['service_id'] ?? null,
             'view' => $view,
             'date' => $anchorDate,
         ];
@@ -226,7 +227,7 @@ class AppointmentController extends Controller
         );
 
         return redirect()->back()
-            ->with('success', 'Appointment updated successfully.')
+            ->with('success', __('messages.appointment.updated'))
             ->with('flash_nonce', uniqid('', true));
     }
 
@@ -278,7 +279,7 @@ class AppointmentController extends Controller
         );
 
         return redirect()->back()
-            ->with('success', 'Status updated successfully.')
+            ->with('success', __('messages.status.updated'))
             ->with('flash_nonce', uniqid('', true));
     }
 
@@ -336,7 +337,7 @@ class AppointmentController extends Controller
         );
 
         return redirect()->back()
-            ->with('success', 'Appointment updated successfully.')
+            ->with('success', __('messages.appointment.updated'))
             ->with('flash_nonce', uniqid('', true));
     }
 

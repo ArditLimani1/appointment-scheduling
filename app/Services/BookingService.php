@@ -90,7 +90,7 @@ class BookingService implements BookingServiceInterface
         abort_if(
             ! $this->employeeRepository->getActiveByBusiness($business->id)->contains('id', $employeeId),
             422,
-            'The selected employee is not available for this business.'
+            __('errors.booking_flow.employee_invalid')
         );
 
         $schedule = $this->resolveEffectiveSchedule($employeeId, $date);
@@ -123,6 +123,10 @@ class BookingService implements BookingServiceInterface
             return $slots;
         }
 
+        if (! $business->uses_shared_resources) {
+            return $slots;
+        }
+
         return $this->filterSlotTimesForSharedResources(
             $business,
             $date->toDateString(),
@@ -141,11 +145,11 @@ class BookingService implements BookingServiceInterface
         abort_if(
             ! $this->employeeRepository->getActiveByBusiness($business->id)->contains('id', $employeeId),
             422,
-            'The selected employee is not available for this business.'
+            __('errors.booking_flow.employee_invalid')
         );
 
         $ids = array_values(array_unique(array_map('intval', $data['service_ids'])));
-        abort_if(count($ids) === 0, 422, 'Select at least one service.');
+        abort_if(count($ids) === 0, 422, __('errors.booking_flow.select_service'));
 
         $services = collect();
         foreach ($ids as $serviceId) {
@@ -153,7 +157,7 @@ class BookingService implements BookingServiceInterface
             abort_if(
                 ! $service || $service->business_id !== $business->id,
                 422,
-                'The selected service is not available for this business.'
+                __('errors.booking_flow.service_invalid')
             );
             $service->loadMissing('sharedResources');
             $services->push($service);
@@ -184,13 +188,15 @@ class BookingService implements BookingServiceInterface
                 $timezone
             );
 
-            $resourceIds = $this->collectResourceIdsFromSegments($segments);
-            if ($resourceIds !== []) {
-                SharedResource::query()
-                    ->whereIn('id', $resourceIds)
-                    ->orderBy('id')
-                    ->lockForUpdate()
-                    ->get();
+            if ($business->uses_shared_resources) {
+                $resourceIds = $this->collectResourceIdsFromSegments($segments);
+                if ($resourceIds !== []) {
+                    SharedResource::query()
+                        ->whereIn('id', $resourceIds)
+                        ->orderBy('id')
+                        ->lockForUpdate()
+                        ->get();
+                }
             }
 
             $created = collect();
@@ -203,13 +209,15 @@ class BookingService implements BookingServiceInterface
                     'end' => $segmentEnd->copy(),
                     'service' => $service,
                 ];
-                $this->assertSegmentResourcesAvailable(
-                    $business,
-                    $data['date'],
-                    $segment,
-                    null,
-                    $timezone
-                );
+                if ($business->uses_shared_resources) {
+                    $this->assertSegmentResourcesAvailable(
+                        $business,
+                        $data['date'],
+                        $segment,
+                        null,
+                        $timezone
+                    );
+                }
                 $appointment = $this->appointmentRepository->create([
                     'booking_reference' => $bookingReference,
                     'business_id' => $business->id,
@@ -226,7 +234,7 @@ class BookingService implements BookingServiceInterface
                     'price' => $service->price,
                     'status' => AppointmentStatus::Pending,
                 ]);
-                $this->syncAppointmentSharedResources($appointment, $service);
+                $this->syncAppointmentSharedResources($appointment, $service, $business);
                 $created->push($appointment);
                 $cursor = $segmentEnd;
             }
@@ -289,7 +297,7 @@ class BookingService implements BookingServiceInterface
         }
 
         $service->loadMissing('sharedResources');
-        if ($service->sharedResources->isEmpty()) {
+        if (! $business->uses_shared_resources || $service->sharedResources->isEmpty()) {
             return $slots;
         }
 
@@ -362,24 +370,24 @@ class BookingService implements BookingServiceInterface
     ): void {
         $date = Carbon::parse($dateYmd, $timezone)->startOfDay();
         $schedule = $this->resolveEffectiveSchedule($employeeId, $date);
-        abort_if(! $schedule, 422, 'This time is not available.');
+        abort_if(! $schedule, 422, __('errors.booking.time_not_available'));
 
         $scheduleStart = Carbon::parse($dateYmd.' '.$schedule->start_time, $timezone);
         $scheduleEnd = Carbon::parse($dateYmd.' '.$schedule->end_time, $timezone);
         abort_if(
             $blockStart->lt($scheduleStart) || $blockEnd->gt($scheduleEnd),
             422,
-            'This time is not available.'
+            __('errors.booking.time_not_available')
         );
 
         $minNoticeTime = Carbon::now($timezone)->addMinutes($business->min_booking_notice ?? 60);
-        abort_if($blockStart->lt($minNoticeTime), 422, 'This time is not available.');
+        abort_if($blockStart->lt($minNoticeTime), 422, __('errors.booking.time_not_available'));
 
         foreach ($schedule->breaks as $break) {
             $breakStart = Carbon::parse($dateYmd.' '.$break->start_time, $timezone);
             $breakEnd = Carbon::parse($dateYmd.' '.$break->end_time, $timezone);
             if ($blockStart->lt($breakEnd) && $blockEnd->gt($breakStart)) {
-                abort(422, 'This time is not available.');
+                abort(422, __('errors.booking.time_not_available'));
             }
         }
 
@@ -388,7 +396,7 @@ class BookingService implements BookingServiceInterface
             $apptStart = Carbon::parse($dateYmd.' '.$appt->start_time, $timezone);
             $apptEnd = Carbon::parse($dateYmd.' '.$appt->end_time, $timezone);
             if ($blockStart->lt($apptEnd) && $blockEnd->gt($apptStart)) {
-                abort(422, 'This time is no longer available.');
+                abort(422, __('errors.booking.time_no_longer_available'));
             }
         }
     }
@@ -590,7 +598,7 @@ class BookingService implements BookingServiceInterface
         $cursor = Carbon::parse($dateYmd.' '.$startTimeStr, $timezone);
         $segments = [];
         foreach ($servicesOrdered as $service) {
-            abort_if($service->business_id !== $business->id, 422, 'The selected service is not available for this business.');
+            abort_if($service->business_id !== $business->id, 422, __('errors.booking_flow.service_invalid'));
             $segmentEnd = $cursor->copy()->addMinutes($service->duration);
             $segments[] = [
                 'start' => $cursor->copy(),
@@ -629,6 +637,10 @@ class BookingService implements BookingServiceInterface
         ?int $excludeAppointmentId,
         string $timezone,
     ): void {
+        if (! $business->uses_shared_resources) {
+            return;
+        }
+
         $service = $segment['service'];
         $windowStart = $segment['start'];
         $windowEnd = $segment['end'];
@@ -645,13 +657,19 @@ class BookingService implements BookingServiceInterface
                 $excludeAppointmentId,
                 $timezone,
             )) {
-                abort(422, 'A required shared resource is not available for this time.');
+                abort(422, __('errors.booking.shared_resource_unavailable'));
             }
         }
     }
 
-    private function syncAppointmentSharedResources(Appointment $appointment, Service $service): void
+    private function syncAppointmentSharedResources(Appointment $appointment, Service $service, Business $business): void
     {
+        if (! $business->uses_shared_resources) {
+            $appointment->sharedResources()->sync([]);
+
+            return;
+        }
+
         $sync = [];
         foreach ($service->sharedResources as $res) {
             $sync[$res->id] = ['quantity' => (int) $res->pivot->quantity];
@@ -675,6 +693,10 @@ class BookingService implements BookingServiceInterface
         string $timezone,
         ?int $excludeAppointmentId,
     ): array {
+        if (! $business->uses_shared_resources) {
+            return $slotTimeStrings;
+        }
+
         $services = collect();
         foreach ($serviceIdsOrdered as $sid) {
             $service = $this->serviceRepository->findById((int) $sid);

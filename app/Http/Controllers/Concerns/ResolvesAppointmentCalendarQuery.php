@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Concerns;
 
+use App\Models\Service;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -59,9 +60,9 @@ trait ResolvesAppointmentCalendarQuery
     }
 
     /**
-     * @return array{employee_id?: int, statuses: list<string>}
+     * @return array{employee_id?: int, statuses: list<string>, service_id?: int}
      */
-    private function calendarFiltersFromRequest(Request $request, ?int $lockedEmployeeId = null): array
+    private function calendarFiltersFromRequest(Request $request, ?int $lockedEmployeeId = null, ?int $businessIdForServiceFilter = null): array
     {
         $filters = [
             'statuses' => $this->resolveStatusFilterStrings($request),
@@ -69,18 +70,45 @@ trait ResolvesAppointmentCalendarQuery
 
         if ($lockedEmployeeId !== null) {
             $filters['employee_id'] = $lockedEmployeeId;
-
-            return $filters;
-        }
-
-        $employeeIdRaw = $request->query('employee_id');
-        if ($employeeIdRaw !== null && $employeeIdRaw !== '' && is_numeric($employeeIdRaw)) {
-            $id = (int) $employeeIdRaw;
-            if ($id > 0) {
-                $filters['employee_id'] = $id;
+        } else {
+            $employeeIdRaw = $request->query('employee_id');
+            if ($employeeIdRaw !== null && $employeeIdRaw !== '' && is_numeric($employeeIdRaw)) {
+                $id = (int) $employeeIdRaw;
+                if ($id > 0) {
+                    $filters['employee_id'] = $id;
+                }
             }
         }
 
+        $serviceId = $this->resolveCalendarServiceIdFromRequest($request, $businessIdForServiceFilter);
+        if ($serviceId !== null) {
+            $filters['service_id'] = $serviceId;
+        }
+
         return $filters;
+    }
+
+    private function resolveCalendarServiceIdFromRequest(Request $request, ?int $businessId): ?int
+    {
+        if ($businessId === null || $businessId <= 0) {
+            return null;
+        }
+
+        $rawServiceId = $request->query('service_id');
+        if ($rawServiceId === null || $rawServiceId === '') {
+            return null;
+        }
+
+        $parsed = filter_var($rawServiceId, FILTER_VALIDATE_INT);
+        if ($parsed === false || $parsed <= 0) {
+            return null;
+        }
+
+        $belongs = Service::query()
+            ->whereKey($parsed)
+            ->where('business_id', $businessId)
+            ->exists();
+
+        return $belongs ? (int) $parsed : null;
     }
 }

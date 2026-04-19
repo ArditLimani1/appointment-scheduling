@@ -1,5 +1,6 @@
 import InputError from '@/Components/InputError';
 import Icon from '@/Components/Icon';
+import { useT } from '@/i18n/useT';
 import { Link, useForm, usePage } from '@inertiajs/react';
 
 const inputClass =
@@ -10,7 +11,9 @@ export default function UpdateProfileInformation({
     status,
     className = '',
 }) {
-    const user = usePage().props.auth.user;
+    const { auth, availableLocales, locale: appLocale } = usePage().props;
+    const user = auth.user;
+    const t = useT();
 
     const {
         data,
@@ -23,6 +26,7 @@ export default function UpdateProfileInformation({
     } = useForm({
         name: user.name,
         email: user.email,
+        locale: user.locale ?? appLocale ?? 'sq',
     });
 
     const submit = (e) => {
@@ -39,10 +43,10 @@ export default function UpdateProfileInformation({
                     </div>
                     <div>
                         <h3 className="text-2xl font-black font-headline tracking-tight text-on-surface">
-                            Profile Information
+                            {t('profile.info.card_title')}
                         </h3>
                         <p className="mt-2 max-w-xl text-sm leading-relaxed text-on-surface-variant">
-                            Update the account details that appear across your workspace and keep your contact information current.
+                            {t('profile.info.card_subtitle')}
                         </p>
                     </div>
                 </div>
@@ -55,7 +59,7 @@ export default function UpdateProfileInformation({
                             htmlFor="name"
                             className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.18em] text-on-surface-variant"
                         >
-                            Full Name
+                            {t('profile.info.full_name')}
                         </label>
                         <input
                             id="name"
@@ -76,7 +80,7 @@ export default function UpdateProfileInformation({
                             htmlFor="email"
                             className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.18em] text-on-surface-variant"
                         >
-                            Email Address
+                            {t('profile.info.email_label')}
                         </label>
                         <input
                             id="email"
@@ -92,28 +96,51 @@ export default function UpdateProfileInformation({
                         />
                         <InputError className="mt-2" message={errors.email} />
                     </div>
+
+                    <div className="sm:col-span-2">
+                        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.18em] text-on-surface-variant">
+                            {t('profile.edit.language')}
+                        </label>
+                        <p className="mb-2 text-xs text-on-surface-variant">{t('profile.edit.language_hint')}</p>
+                        <select
+                            id="locale"
+                            value={data.locale || (availableLocales?.[0]?.code ?? 'sq')}
+                            onChange={(e) => {
+                                setData('locale', e.target.value);
+                                clearErrors('locale');
+                            }}
+                            className={`${inputClass} cursor-pointer`}
+                        >
+                            {(availableLocales ?? []).map((item) => (
+                                <option key={item.code} value={item.code}>
+                                    {item.native}
+                                </option>
+                            ))}
+                        </select>
+                        <InputError className="mt-2" message={errors.locale} />
+                    </div>
                 </div>
 
                 {mustVerifyEmail && user.email_verified_at === null && (
                     <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900">
                         <p className="font-medium">
-                            Your email address is not verified yet.
+                            {t('profile.info.unverified_title')}
                         </p>
                         <p className="mt-1 leading-relaxed text-amber-800/90">
-                            To keep your account fully active, confirm your email address.
+                            {t('profile.info.unverified_body')}
                             <Link
                                 href={route('verification.send')}
                                 method="post"
                                 as="button"
                                 className="ml-1 font-semibold text-amber-900 underline decoration-amber-400 underline-offset-4"
                             >
-                                Send a new verification link
+                                {t('profile.info.resend_link')}
                             </Link>
                         </p>
 
                         {status === 'verification-link-sent' && (
                             <p className="mt-3 font-medium text-emerald-700">
-                                A fresh verification link has been sent to your inbox.
+                                {t('profile.info.verification_sent_banner')}
                             </p>
                         )}
                     </div>
@@ -126,13 +153,13 @@ export default function UpdateProfileInformation({
                         className="primary-gradient inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3 text-sm font-semibold text-white shadow-lg transition-transform hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         <Icon name="save" size="text-base" />
-                        Save Changes
+                        {t('profile.info.save_changes')}
                     </button>
 
                     {recentlySuccessful && (
                         <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">
                             <Icon name="check_circle" size="text-base" />
-                            Saved successfully
+                            {t('profile.info.saved_success')}
                         </span>
                     )}
                 </div>

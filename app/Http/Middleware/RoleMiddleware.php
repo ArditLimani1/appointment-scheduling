@@ -15,11 +15,11 @@ class RoleMiddleware
     {
         $user = $request->user();
         if (! $user) {
-            abort(403, 'Unauthorized.');
+            abort(403, __('errors.unauthorized'));
         }
         $current = $user->role instanceof \BackedEnum ? $user->role->value : (string) $user->role;
         if (! in_array($current, $roles, true)) {
-            abort(403, 'Unauthorized.');
+            abort(403, __('errors.unauthorized'));
         }
 
         return $next($request);

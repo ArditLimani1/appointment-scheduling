@@ -80,7 +80,7 @@ class AnalyticsService implements AnalyticsServiceInterface
             $key = $cursor->format('Y-m');
             $months[$key] = [
                 'month' => $key,
-                'label' => $cursor->copy()->locale('en')->translatedFormat('F Y'),
+                'label' => $cursor->copy()->locale(app()->getLocale())->translatedFormat('F Y'),
                 'confirmed' => 0,
                 'cancelled' => 0,
                 'pending' => 0,

@@ -31,11 +31,11 @@ class RegisteredUserController extends Controller
             ->get()
             ->map(fn (BusinessTypeCategory $category) => [
                 'id' => $category->id,
-                'name' => $category->name,
+                'name' => $category->localizedLabel(),
                 'types' => $category->businessTypes
                     ->map(fn (BusinessType $type) => [
                         'id' => $type->id,
-                        'name' => $type->name,
+                        'name' => $type->localizedLabel(),
                     ])
                     ->values()
                     ->all(),

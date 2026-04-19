@@ -23,10 +23,12 @@ class BusinessRoleService implements BusinessRoleServiceInterface
 
     public function store(Business $business, array $data): BusinessRole
     {
+        $permissions = $this->normalizePermissionsForBusiness($business, $data['permissions']);
+
         return $this->businessRoleRepository->create([
             'business_id' => $business->id,
             'name' => $data['name'],
-            'permissions' => array_values(array_unique($data['permissions'])),
+            'permissions' => $permissions,
         ]);
     }
 
@@ -34,9 +36,11 @@ class BusinessRoleService implements BusinessRoleServiceInterface
     {
         abort_unless($role->business_id === $business->id, 404);
 
+        $permissions = $this->normalizePermissionsForBusiness($business, $data['permissions']);
+
         return $this->businessRoleRepository->update($role, [
             'name' => $data['name'],
-            'permissions' => array_values(array_unique($data['permissions'])),
+            'permissions' => $permissions,
         ]);
     }
 
@@ -57,5 +61,23 @@ class BusinessRoleService implements BusinessRoleServiceInterface
             'admin' => array_map($map, Permission::adminCases()),
             'employee' => array_map($map, Permission::employeeCases()),
         ];
+    }
+
+    /**
+     * @param  list<string>  $permissions
+     * @return list<string>
+     */
+    private function normalizePermissionsForBusiness(Business $business, array $permissions): array
+    {
+        $unique = array_values(array_unique($permissions));
+
+        if (! $business->uses_shared_resources) {
+            $unique = array_values(array_filter(
+                $unique,
+                fn (string $p) => $p !== Permission::AdminSharedResources->value
+            ));
+        }
+
+        return $unique;
     }
 }

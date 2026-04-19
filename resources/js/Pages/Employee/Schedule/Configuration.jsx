@@ -1,9 +1,9 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import EmployeeLayout from '@/Layouts/EmployeeLayout';
 import Icon from '@/Components/Icon';
-
-const DAY_LABELS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+import { useT } from '@/i18n/useT';
+import { formatAppointmentDate } from '@/utils/appointmentDate';
 
 /** Next calendar date (including today) that falls on this weekday; `dayOfWeek` 0 = Monday … 6 = Sunday. */
 function representativeDateForWeekday(dayOfWeek) {
@@ -20,9 +20,9 @@ function representativeDateForWeekday(dayOfWeek) {
     return `${y}-${m}-${dd}`;
 }
 
-function formatDayHeader(dateStr, dayLabel) {
-    const d = new Date(dateStr + 'T00:00:00');
-    return `${dayLabel}, ${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}`;
+function formatDayHeader(dateStr, dayLabel, locale) {
+    const datePart = formatAppointmentDate(dateStr, { day: 'numeric', month: 'long' }, locale);
+    return `${dayLabel}, ${datePart}`;
 }
 
 // ─── Read-only info field ─────────────────────────────────────────────────────
@@ -40,6 +40,7 @@ function ReadOnlyField({ label, value, icon }) {
 
 // ─── Read-only booking URL field (copy only) ─────────────────────────────────
 function BookingUrlField({ label, prefix, value }) {
+    const t = useT();
     const [copied, setCopied] = useState(false);
     const fullPath = prefix + (value || '');
     const handleCopy = () => {
@@ -60,7 +61,7 @@ function BookingUrlField({ label, prefix, value }) {
                     type="button"
                     onClick={handleCopy}
                     className="shrink-0 p-2 mr-1 hover:bg-surface-container rounded-md transition-colors"
-                    title="Copy URL"
+                    title={t('employee.schedule.copy_url')}
                 >
                     <Icon name={copied ? 'check' : 'content_copy'} size="text-base" className="text-on-surface-variant" />
                 </button>
@@ -71,6 +72,7 @@ function BookingUrlField({ label, prefix, value }) {
 
 // ─── Confirm save modal (same as Admin Settings) ─────────────────────────────
 function ConfirmSaveModal({ onConfirm, onCancel }) {
+    const t = useT();
     return (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onCancel} />
@@ -80,10 +82,9 @@ function ConfirmSaveModal({ onConfirm, onCancel }) {
                         <Icon name="save" size="text-xl" className="text-amber-600" />
                     </div>
                     <div>
-                        <h2 className="text-base font-extrabold text-on-surface">Save Configuration?</h2>
+                        <h2 className="text-base font-extrabold text-on-surface">{t('employee.schedule.confirm_save_title')}</h2>
                         <p className="mt-1 text-sm text-on-surface-variant">
-                            Are you sure you want to save the changes to{' '}
-                            <span className="font-semibold text-on-surface">Business Information</span>? This will update your configuration immediately.
+                            {t('employee.schedule.confirm_save_body')}
                         </p>
                     </div>
                 </div>
@@ -93,14 +94,14 @@ function ConfirmSaveModal({ onConfirm, onCancel }) {
                         onClick={onCancel}
                         className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-on-surface hover:bg-slate-50 transition-colors"
                     >
-                        Cancel
+                        {t('employee.schedule.cancel')}
                     </button>
                     <button
                         type="button"
                         onClick={onConfirm}
                         className="rounded-xl bg-on-surface px-6 py-2.5 text-sm font-bold text-surface hover:opacity-90 transition-opacity"
                     >
-                        Yes, Save
+                        {t('employee.schedule.yes_save')}
                     </button>
                 </div>
             </div>
@@ -110,6 +111,7 @@ function ConfirmSaveModal({ onConfirm, onCancel }) {
 
 // ─── Editable personal booking URL field ─────────────────────────────────────
 function PersonalBookingUrlField({ label, businessSlug, value, onChange, error }) {
+    const t = useT();
     const prefix = `/book/${businessSlug}/`;
     const [copied, setCopied] = useState(false);
     const handleCopy = () => {
@@ -130,14 +132,14 @@ function PersonalBookingUrlField({ label, businessSlug, value, onChange, error }
                     value={value}
                     onChange={(e) => onChange(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/--+/g, '-'))}
                     className="flex-1 px-3 py-3 text-sm text-on-surface font-medium bg-transparent border-0 focus:outline-none focus:ring-0 min-w-0"
-                    placeholder="your-name"
+                    placeholder={t('employee.schedule.your_name_ph')}
                     spellCheck={false}
                 />
                 <button
                     type="button"
                     onClick={handleCopy}
                     className="shrink-0 p-2 mr-1 hover:bg-surface-container rounded-md transition-colors"
-                    title="Copy URL"
+                    title={t('employee.schedule.copy_url')}
                 >
                     <Icon name={copied ? 'check' : 'content_copy'} size="text-base" className="text-on-surface-variant" />
                 </button>
@@ -149,6 +151,7 @@ function PersonalBookingUrlField({ label, businessSlug, value, onChange, error }
 
 // ─── Add Break Modal (same as Schedule / Availability view) ──────────────────
 function AddBreakModal({ dayLabel, onSave, onClose }) {
+    const t = useT();
     const [form, setForm] = useState({ start_time: '12:00', end_time: '13:00' });
     const [error, setError] = useState('');
 
@@ -156,7 +159,7 @@ function AddBreakModal({ dayLabel, onSave, onClose }) {
 
     const handleSave = () => {
         if (form.start_time >= form.end_time) {
-            setError('End time must be after start time.');
+            setError(t('employee.schedule.end_after_start'));
             return;
         }
         onSave(form);
@@ -167,7 +170,7 @@ function AddBreakModal({ dayLabel, onSave, onClose }) {
             <div className="w-full max-w-sm rounded-3xl bg-surface p-6 shadow-2xl">
                 <div className="mb-5 flex items-center justify-between">
                     <div>
-                        <h3 className="font-headline text-lg font-bold text-on-surface">Add Break</h3>
+                        <h3 className="font-headline text-lg font-bold text-on-surface">{t('employee.schedule.add_break_title')}</h3>
                         <p className="text-xs text-on-surface-variant mt-0.5">{dayLabel}</p>
                     </div>
                     <button
@@ -182,7 +185,7 @@ function AddBreakModal({ dayLabel, onSave, onClose }) {
                 <div className="space-y-4">
                     <div className="flex items-center gap-3">
                         <div className="flex-1">
-                            <label className="mb-1 block text-xs font-medium text-on-surface-variant">Start time</label>
+                            <label className="mb-1 block text-xs font-medium text-on-surface-variant">{t('employee.schedule.start_time')}</label>
                             <input
                                 type="time"
                                 value={form.start_time}
@@ -192,7 +195,7 @@ function AddBreakModal({ dayLabel, onSave, onClose }) {
                         </div>
                         <span className="mt-5 text-on-surface-variant">–</span>
                         <div className="flex-1">
-                            <label className="mb-1 block text-xs font-medium text-on-surface-variant">End time</label>
+                            <label className="mb-1 block text-xs font-medium text-on-surface-variant">{t('employee.schedule.end_time')}</label>
                             <input
                                 type="time"
                                 value={form.end_time}
@@ -213,14 +216,14 @@ function AddBreakModal({ dayLabel, onSave, onClose }) {
                         onClick={onClose}
                         className="rounded-xl border border-outline-variant px-4 py-2 text-sm font-medium text-on-surface-variant hover:bg-surface-container transition-colors"
                     >
-                        Cancel
+                        {t('employee.schedule.cancel')}
                     </button>
                     <button
                         type="button"
                         onClick={handleSave}
                         className="primary-gradient rounded-xl px-5 py-2 text-sm font-semibold text-white shadow"
                     >
-                        Save Break
+                        {t('employee.schedule.save_break')}
                     </button>
                 </div>
             </div>
@@ -229,10 +232,11 @@ function AddBreakModal({ dayLabel, onSave, onClose }) {
 }
 
 // ─── Day card (layout matches Schedule / Availability `DayCard`) ─────────────
-function ConfigurationDayCard({ day, onChange, onOpenBreakModal, onRemoveBreak }) {
+function ConfigurationDayCard({ day, locale, onChange, onOpenBreakModal, onRemoveBreak }) {
+    const t = useT();
     const inputClass = 'rounded-xl border-0 bg-surface-container-low px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-surface-tint';
     const dateStr = representativeDateForWeekday(day.day_of_week);
-    const dayLabel = DAY_LABELS[day.day_of_week];
+    const dayLabel = t(`employee.schedule.weekday_${day.day_of_week}`);
 
     return (
         <div
@@ -251,14 +255,14 @@ function ConfigurationDayCard({ day, onChange, onOpenBreakModal, onRemoveBreak }
                             onChange={(e) => onChange({ ...day, is_active: e.target.checked })}
                             className="peer sr-only"
                         />
-                        <div className="peer h-6 w-11 rounded-full bg-surface-container-high after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary peer-checked:after:translate-x-full" />
+                        <div className="peer relative h-6 w-11 shrink-0 rounded-full bg-surface-container-high after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow-sm after:transition-all after:content-[''] peer-checked:bg-black peer-checked:after:translate-x-full" />
                     </label>
                     <div>
                         <p className={`font-bold font-headline text-sm leading-tight ${day.is_active ? 'text-on-surface' : 'text-on-surface-variant'}`}>
-                            {formatDayHeader(dateStr, dayLabel)}
+                            {formatDayHeader(dateStr, dayLabel, locale)}
                         </p>
                         {!day.is_active && (
-                            <p className="text-xs text-on-surface-variant mt-0.5">Day off</p>
+                            <p className="text-xs text-on-surface-variant mt-0.5">{t('employee.schedule.day_off')}</p>
                         )}
                     </div>
                 </div>
@@ -266,7 +270,7 @@ function ConfigurationDayCard({ day, onChange, onOpenBreakModal, onRemoveBreak }
                 <div className="flex-1 flex flex-col items-center gap-3">
                     {day.is_active && (
                         <div className="flex items-center gap-2 flex-wrap justify-center">
-                            <label className="text-xs text-on-surface-variant">From</label>
+                            <label className="text-xs text-on-surface-variant">{t('employee.schedule.from')}</label>
                             <input
                                 type="time"
                                 value={day.start_time}
@@ -274,7 +278,7 @@ function ConfigurationDayCard({ day, onChange, onOpenBreakModal, onRemoveBreak }
                                 className={`${inputClass} w-auto`}
                             />
                             <span className="text-on-surface-variant">–</span>
-                            <label className="text-xs text-on-surface-variant">To</label>
+                            <label className="text-xs text-on-surface-variant">{t('employee.schedule.to')}</label>
                             <input
                                 type="time"
                                 value={day.end_time}
@@ -289,7 +293,7 @@ function ConfigurationDayCard({ day, onChange, onOpenBreakModal, onRemoveBreak }
                             {(day.breaks ?? []).map((brk, bi) => (
                                 <div key={bi} className="flex items-center gap-2 flex-wrap justify-center">
                                     <Icon name="free_breakfast" size="text-sm" className="text-on-surface-variant" />
-                                    <span className="text-xs text-on-surface-variant">Break</span>
+                                    <span className="text-xs text-on-surface-variant">{t('employee.schedule.break')}</span>
                                     <input type="time" value={brk.start_time} readOnly className={inputClass} />
                                     <span className="text-on-surface-variant text-xs">–</span>
                                     <input type="time" value={brk.end_time} readOnly className={inputClass} />
@@ -313,7 +317,7 @@ function ConfigurationDayCard({ day, onChange, onOpenBreakModal, onRemoveBreak }
                             onClick={onOpenBreakModal}
                             className="flex items-center gap-1 rounded-xl border border-outline-variant px-3 py-2 text-xs font-medium text-on-surface-variant hover:bg-surface-container transition-colors"
                         >
-                            <Icon name="add" size="text-sm" /> Add Break
+                            <Icon name="add" size="text-sm" /> {t('employee.schedule.add_break')}
                         </button>
                     )}
                 </div>
@@ -332,7 +336,9 @@ export default function Configuration({
     booking_slug: initialBookingSlug,
     business_slug,
 }) {
-    const { errors } = usePage().props;
+    const t = useT();
+    const { errors, localeBcp47 } = usePage().props;
+    const dateLocale = localeBcp47 ?? 'en-GB';
     const bookingSlugError = errors?.booking_slug
         ? (Array.isArray(errors.booking_slug) ? errors.booking_slug[0] : errors.booking_slug)
         : undefined;
@@ -420,18 +426,21 @@ export default function Configuration({
         );
     };
 
-    const tabs = [
-        { id: 'info',     label: 'Business Information', icon: 'domain' },
-        { id: 'schedule', label: 'Schedule',              icon: 'calendar_today' },
-    ];
+    const tabs = useMemo(
+        () => [
+            { id: 'info', label: t('employee.schedule.tab_info'), icon: 'domain' },
+            { id: 'schedule', label: t('employee.schedule.tab_schedule'), icon: 'calendar_today' },
+        ],
+        [t],
+    );
 
     return (
         <EmployeeLayout>
-            <Head title="Configuration" />
+            <Head title={t('employee.schedule.configuration_title')} />
 
             <div className="mb-8">
-                <h1 className="text-4xl font-extrabold font-headline tracking-tight text-on-surface mb-2">Configuration</h1>
-                <p className="text-on-surface-variant text-base">Manage your business information and default weekly availability.</p>
+                <h1 className="text-4xl font-extrabold font-headline tracking-tight text-on-surface mb-2">{t('employee.schedule.configuration_title')}</h1>
+                <p className="text-on-surface-variant text-base">{t('employee.schedule.configuration_sub')}</p>
             </div>
 
             {/* ── Tabs ──────────────────────────────────────────── */}
@@ -461,22 +470,22 @@ export default function Configuration({
                             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-container/40">
                                 <Icon name="domain" size="text-lg" className="text-on-surface" />
                             </div>
-                            <h2 className="font-headline text-xl font-bold text-on-surface">Business Information</h2>
+                            <h2 className="font-headline text-xl font-bold text-on-surface">{t('employee.schedule.tab_info')}</h2>
                         </div>
 
                         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                            <ReadOnlyField label="Business Name" value={business_name} icon="storefront" />
-                            <ReadOnlyField label="Your Email" value={employee_email} icon="mail" />
+                            <ReadOnlyField label={t('employee.schedule.business_name')} value={business_name} icon="storefront" />
+                            <ReadOnlyField label={t('employee.schedule.your_email')} value={employee_email} icon="mail" />
                             <div className="sm:col-span-2">
                                 <BookingUrlField
-                                    label="Business Booking URL"
+                                    label={t('employee.schedule.business_booking_url')}
                                     prefix="/book/"
                                     value={booking_url?.replace('/book/', '')}
                                 />
                             </div>
                             <div className="sm:col-span-2">
                                 <PersonalBookingUrlField
-                                    label="Your Personal Booking URL"
+                                    label={t('employee.schedule.personal_booking_url')}
                                     businessSlug={business_slug}
                                     value={bookingSlug}
                                     onChange={setBookingSlug}
@@ -496,7 +505,7 @@ export default function Configuration({
                                 ) : (
                                     <Icon name="save" size="text-base" />
                                 )}
-                                {savingInfo ? 'Saving…' : 'Save Configuration'}
+                                {savingInfo ? t('employee.schedule.saving') : t('employee.schedule.save_configuration')}
                             </button>
                         </div>
                     </section>
@@ -507,9 +516,9 @@ export default function Configuration({
             {activeTab === 'schedule' && (
                 <form onSubmit={handleSave}>
                     <div className="mb-6">
-                        <h2 className="text-3xl font-black font-headline tracking-tight text-on-surface">Default weekly hours</h2>
+                        <h2 className="text-3xl font-black font-headline tracking-tight text-on-surface">{t('employee.schedule.default_hours')}</h2>
                         <p className="mt-1 text-sm text-on-surface-variant">
-                            Toggle days on or off and manage breaks — same layout as your week view. Save when you are ready; date-specific overrides stay in the Schedule tab.
+                            {t('employee.schedule.default_hours_sub')}
                         </p>
                     </div>
 
@@ -518,6 +527,7 @@ export default function Configuration({
                             <ConfigurationDayCard
                                 key={day.day_of_week}
                                 day={day}
+                                locale={dateLocale}
                                 onChange={(updated) => updateDay(i, updated)}
                                 onOpenBreakModal={() => setBreakModalDayIndex(i)}
                                 onRemoveBreak={(bi) => handleRemoveBreak(i, bi)}
@@ -536,7 +546,7 @@ export default function Configuration({
                             ) : (
                                 <Icon name="save" size="text-base" />
                             )}
-                            {saving ? 'Saving…' : 'Save Schedule'}
+                            {saving ? t('employee.schedule.saving') : t('employee.schedule.save_schedule')}
                         </button>
                     </div>
                 </form>
@@ -546,7 +556,8 @@ export default function Configuration({
                 <AddBreakModal
                     dayLabel={formatDayHeader(
                         representativeDateForWeekday(days[breakModalDayIndex].day_of_week),
-                        DAY_LABELS[days[breakModalDayIndex].day_of_week],
+                        t(`employee.schedule.weekday_${days[breakModalDayIndex].day_of_week}`),
+                        dateLocale,
                     )}
                     onSave={handleSaveBreak}
                     onClose={() => setBreakModalDayIndex(null)}

@@ -3,11 +3,13 @@
 use App\Http\Middleware\DisableHtmlCachingInLocal;
 use App\Http\Middleware\EnsureAdminPanelAccess;
 use App\Http\Middleware\EnsureBusinessExists;
+use App\Http\Middleware\EnsureBusinessUsesSharedResources;
 use App\Http\Middleware\EnsureEmployeeOrAdmin;
 use App\Http\Middleware\EnsurePermission;
 use App\Http\Middleware\EnsureSuperAdmin;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\RoleMiddleware;
+use App\Http\Middleware\SetLocale;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -22,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
+            SetLocale::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
             DisableHtmlCachingInLocal::class,
@@ -34,6 +37,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'employee_area' => EnsureEmployeeOrAdmin::class,
             'permission' => EnsurePermission::class,
             'super_admin' => EnsureSuperAdmin::class,
+            'business_uses_shared_resources' => EnsureBusinessUsesSharedResources::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

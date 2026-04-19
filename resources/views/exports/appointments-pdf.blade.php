@@ -154,6 +154,7 @@
     <div class="filter-bar">
         Period: <strong>{{ $dateFrom }}</strong> &mdash; <strong>{{ $dateTo }}</strong>
         @if($employeeFilter) &nbsp;&bull;&nbsp; Employee: <strong>{{ $employeeFilter }}</strong> @endif
+        @if(!empty($serviceFilter)) &nbsp;&bull;&nbsp; Service: <strong>{{ $serviceFilter }}</strong> @endif
         @if($statusFilter)   &nbsp;&bull;&nbsp; Status: <strong>{{ ucfirst($statusFilter) }}</strong> @endif
     </div>
 

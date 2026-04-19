@@ -17,6 +17,13 @@ class UpdateBusinessRoleRequest extends FormRequest
     {
         $businessId = $this->user()->panelBusiness()?->id;
         $roleId = $this->route('role')?->id;
+        $allowedPermissions = Permission::values();
+        if ($this->user()->panelBusiness() && ! $this->user()->panelBusiness()->uses_shared_resources) {
+            $allowedPermissions = array_values(array_filter(
+                $allowedPermissions,
+                fn (string $p) => $p !== Permission::AdminSharedResources->value
+            ));
+        }
 
         return [
             'name' => [
@@ -26,7 +33,7 @@ class UpdateBusinessRoleRequest extends FormRequest
                     ->ignore($roleId),
             ],
             'permissions' => ['required', 'array', 'min:1'],
-            'permissions.*' => ['string', Rule::in(Permission::values())],
+            'permissions.*' => ['string', Rule::in($allowedPermissions)],
         ];
     }
 }

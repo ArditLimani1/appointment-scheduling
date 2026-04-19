@@ -4,10 +4,13 @@ use App\Http\Controllers\Admin;
 use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Booking\BookingController;
 use App\Http\Controllers\Employee;
+use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SuperAdmin;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+
+Route::post('/locale', [LocaleController::class, 'update'])->name('locale.update');
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -33,6 +36,7 @@ Route::get('/dashboard', function () {
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
 Route::get('/book/confirmation/{appointment}', [BookingController::class, 'confirmation'])->name('booking.confirmation');
@@ -54,7 +58,7 @@ Route::middleware(['auth', 'admin_panel', 'has_business'])->prefix('admin')->nam
         Route::resource('services', Admin\ServiceController::class)->only(['index', 'store', 'update', 'destroy']);
     });
 
-    Route::middleware('permission:admin.shared_resources')->group(function () {
+    Route::middleware(['permission:admin.shared_resources', 'business_uses_shared_resources'])->group(function () {
         Route::resource('shared-resources', Admin\SharedResourceController::class)->only(['index', 'store', 'update', 'destroy']);
     });
 

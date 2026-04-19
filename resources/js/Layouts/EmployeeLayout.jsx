@@ -1,38 +1,39 @@
 import { SuccessToastProvider } from '@/Components/SuccessToastProvider';
 import Dropdown from '@/Components/Dropdown';
 import Icon from '@/Components/Icon';
+import LanguageSwitcher from '@/i18n/LanguageSwitcher';
+import { useT } from '@/i18n/useT';
 import { Link, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 function toSlug(str) {
     return (str ?? '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
 
-
 const navItems = [
-    { label: 'Dashboard', icon: 'dashboard', route: 'employee.dashboard', permission: 'employee.dashboard' },
-    { label: 'Appointments', icon: 'calendar_today', route: 'employee.appointments.index', permission: 'employee.dashboard' },
-    { label: 'Schedule', icon: 'calendar_view_week', route: 'employee.schedule.index', permission: 'employee.schedule' },
-    { label: 'Analytics', icon: 'analytics', route: 'employee.analytics.index', permission: 'employee.analytics' },
-    { label: 'Configuration', icon: 'tune', route: 'employee.schedule.configuration', permission: 'employee.schedule' },
+    { labelKey: 'layout.employee.nav.dashboard', icon: 'dashboard', route: 'employee.dashboard', permission: 'employee.dashboard' },
+    { labelKey: 'layout.employee.nav.appointments', icon: 'calendar_today', route: 'employee.appointments.index', permission: 'employee.dashboard' },
+    { labelKey: 'layout.employee.nav.schedule', icon: 'calendar_view_week', route: 'employee.schedule.index', permission: 'employee.schedule' },
+    { labelKey: 'layout.employee.nav.analytics', icon: 'analytics', route: 'employee.analytics.index', permission: 'employee.analytics' },
+    { labelKey: 'layout.employee.nav.configuration', icon: 'tune', route: 'employee.schedule.configuration', permission: 'employee.schedule' },
 ];
 
 const adminNavItems = [
-    { label: 'Dashboard', icon: 'dashboard', route: 'admin.dashboard', permission: 'admin.dashboard' },
-    { label: 'Services', icon: 'layers', route: 'admin.services.index', permission: 'admin.services' },
-    { label: 'Employees', icon: 'badge', route: 'admin.employees.index', permission: 'admin.employees' },
-    { label: 'Roles', icon: 'key', route: 'admin.roles.index', permission: 'admin.roles' },
-    { label: 'Appointments', icon: 'calendar_today', route: 'admin.appointments.index', permission: 'admin.appointments' },
-    { label: 'Analytics', icon: 'analytics', route: 'admin.analytics.index', permission: 'admin.analytics' },
-    { label: 'Configuration', icon: 'settings', route: 'admin.settings.index', permission: 'admin.settings' },
+    { labelKey: 'layout.admin.nav.dashboard', icon: 'dashboard', route: 'admin.dashboard', permission: 'admin.dashboard' },
+    { labelKey: 'layout.admin.nav.services', icon: 'layers', route: 'admin.services.index', permission: 'admin.services' },
+    { labelKey: 'layout.admin.nav.employees', icon: 'badge', route: 'admin.employees.index', permission: 'admin.employees' },
+    { labelKey: 'layout.admin.nav.roles', icon: 'key', route: 'admin.roles.index', permission: 'admin.roles' },
+    { labelKey: 'layout.admin.nav.appointments', icon: 'calendar_today', route: 'admin.appointments.index', permission: 'admin.appointments' },
+    { labelKey: 'layout.admin.nav.analytics', icon: 'analytics', route: 'admin.analytics.index', permission: 'admin.analytics' },
+    { labelKey: 'layout.admin.nav.configuration', icon: 'settings', route: 'admin.settings.index', permission: 'admin.settings' },
 ];
 
 const mobileNavItems = [
-    { label: 'Dashboard', icon: 'dashboard', route: 'employee.dashboard', permission: 'employee.dashboard' },
-    { label: 'Appts', icon: 'calendar_today', route: 'employee.appointments.index', permission: 'employee.dashboard' },
-    { label: 'Schedule', icon: 'calendar_view_week', route: 'employee.schedule.index', permission: 'employee.schedule' },
-    { label: 'Analytics', icon: 'analytics', route: 'employee.analytics.index', permission: 'employee.analytics' },
-    { label: 'Config', icon: 'tune', route: 'employee.schedule.configuration', permission: 'employee.schedule' },
+    { labelKey: 'layout.employee.nav.dashboard', icon: 'dashboard', route: 'employee.dashboard', permission: 'employee.dashboard' },
+    { labelKey: 'layout.employee.mobile.appts', icon: 'calendar_today', route: 'employee.appointments.index', permission: 'employee.dashboard' },
+    { labelKey: 'layout.employee.nav.schedule', icon: 'calendar_view_week', route: 'employee.schedule.index', permission: 'employee.schedule' },
+    { labelKey: 'layout.employee.nav.analytics', icon: 'analytics', route: 'employee.analytics.index', permission: 'employee.analytics' },
+    { labelKey: 'layout.employee.mobile.config', icon: 'tune', route: 'employee.schedule.configuration', permission: 'employee.schedule' },
 ];
 
 export default function EmployeeLayout({ children }) {
@@ -42,10 +43,29 @@ export default function EmployeeLayout({ children }) {
     const permissions = auth.permissions ?? [];
     const can = (key) => permissions.includes(key);
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const t = useT();
 
-    const visibleNav = navItems.filter((item) => can(item.permission));
-    const visibleMobileNav = mobileNavItems.filter((item) => can(item.permission));
-    const visibleAdminNav = adminNavItems.filter((item) => can(item.permission));
+    const visibleNav = useMemo(
+        () =>
+            navItems
+                .filter((item) => can(item.permission))
+                .map((item) => ({ ...item, label: t(item.labelKey) })),
+        [permissions, t],
+    );
+    const visibleMobileNav = useMemo(
+        () =>
+            mobileNavItems
+                .filter((item) => can(item.permission))
+                .map((item) => ({ ...item, label: t(item.labelKey) })),
+        [permissions, t],
+    );
+    const visibleAdminNav = useMemo(
+        () =>
+            adminNavItems
+                .filter((item) => can(item.permission))
+                .map((item) => ({ ...item, label: t(item.labelKey) })),
+        [permissions, t],
+    );
 
     const employeeSlug = user?.booking_slug || toSlug(user?.name);
     const employeeBookingUrl = business?.slug
@@ -62,9 +82,7 @@ export default function EmployeeLayout({ children }) {
                     route().current('employee.appointments.index') || route().current('employee.appointments.calendar')
                 );
             }
-            // Exact match first, then wildcard children but exclude sibling routes
             if (route().current(routeName)) return true;
-            // For schedule.index, don't highlight when on configuration
             if (routeName === 'employee.schedule.index' && route().current('employee.schedule.configuration')) {
                 return false;
             }
@@ -93,10 +111,10 @@ export default function EmployeeLayout({ children }) {
                 <div className="flex flex-col h-full py-10 px-8">
                     <div className="mb-10">
                         <p className="text-sm font-extrabold font-headline text-on-surface uppercase tracking-widest leading-none">
-                            {business?.name ?? 'Employee Portal'}
+                            {business?.name ?? t('layout.employee.fallback_business')}
                         </p>
                         <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mt-1">
-                            Employee Workspace
+                            {t('layout.employee.portal_subtitle')}
                         </p>
                     </div>
 
@@ -132,7 +150,7 @@ export default function EmployeeLayout({ children }) {
 
                         {visibleAdminNav.length > 0 && (
                             <div className="pt-4">
-                                <p className="px-4 text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Admin Panel</p>
+                                <p className="px-4 text-[10px] font-bold uppercase tracking-widest text-outline mb-2">{t('layout.admin.nav.admin_panel')}</p>
                                 {visibleAdminNav.map((item) => {
                                     const active = (() => { try { return route().current(item.route) || route().current(item.route + '.*'); } catch { return false; } })();
                                     return (
@@ -168,7 +186,7 @@ export default function EmployeeLayout({ children }) {
                                 className="flex items-center gap-2 px-2 text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-colors uppercase tracking-widest"
                             >
                                 <Icon name="open_in_new" size="text-sm" />
-                                View booking page
+                                {t('layout.employee.view_booking_page')}
                             </a>
                         )}
 
@@ -178,7 +196,7 @@ export default function EmployeeLayout({ children }) {
                             </div>
                             <div className="min-w-0 flex-1">
                                 <p className="text-sm font-bold text-on-surface truncate">{user?.name}</p>
-                                <p className="text-[10px] text-on-surface-variant">Employee User</p>
+                                <p className="text-[10px] text-on-surface-variant">{t('layout.employee.employee_user')}</p>
                             </div>
                         </div>
 
@@ -189,7 +207,7 @@ export default function EmployeeLayout({ children }) {
                             className="flex items-center gap-2 px-2 text-xs font-bold text-error hover:opacity-70 transition-opacity uppercase tracking-widest"
                         >
                             <Icon name="logout" size="text-sm" />
-                            <span>Logout</span>
+                            <span>{t('layout.employee.logout')}</span>
                         </Link>
                     </div>
                 </div>
@@ -205,7 +223,7 @@ export default function EmployeeLayout({ children }) {
                             <Icon name="menu" size="text-2xl" />
                         </button>
                         <h1 className="font-headline text-xl font-bold tracking-tight text-on-surface">
-                            {business?.name ?? 'My Workspace'}
+                            {business?.name ?? t('layout.employee.header_fallback')}
                         </h1>
                     </div>
 
@@ -218,9 +236,10 @@ export default function EmployeeLayout({ children }) {
                                 className="hidden sm:flex items-center gap-1.5 rounded-xl border border-outline-variant px-3 py-1.5 text-xs font-medium text-on-surface-variant hover:bg-surface-container transition-colors"
                             >
                                 <Icon name="open_in_new" size="text-sm" />
-                                Booking page
+                                {t('layout.employee.booking_page')}
                             </a>
                         )}
+                        <LanguageSwitcher className="hidden sm:block" />
                         <Dropdown>
                             <Dropdown.Trigger>
                                 <button className="flex items-center rounded-full p-0.5 hover:bg-surface-container transition-colors">
@@ -230,8 +249,8 @@ export default function EmployeeLayout({ children }) {
                                 </button>
                             </Dropdown.Trigger>
                             <Dropdown.Content>
-                                <Dropdown.Link href={route('profile.edit')}>Profile</Dropdown.Link>
-                                <Dropdown.Link href={route('logout')} method="post" as="button">Log Out</Dropdown.Link>
+                                <Dropdown.Link href={route('profile.edit')}>{t('layout.employee.profile')}</Dropdown.Link>
+                                <Dropdown.Link href={route('logout')} method="post" as="button">{t('layout.employee.log_out')}</Dropdown.Link>
                             </Dropdown.Content>
                         </Dropdown>
                     </div>

@@ -77,6 +77,10 @@ class AppointmentRepository implements AppointmentRepositoryInterface
             }
         }
 
+        if (array_key_exists('service_id', $filters) && $filters['service_id'] !== null && $filters['service_id'] !== '') {
+            $query->where('service_id', (int) $filters['service_id']);
+        }
+
         return $query->orderBy('date')->orderBy('start_time')->get();
     }
 
