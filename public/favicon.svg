@@ -1,16 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <circle cx="50" cy="50" r="50" fill="white"/>
-  <polygon points="8,66 50,87 50,82 18,66" fill="#061220"/>
-  <polygon points="50,82 50,87 92,66 82,66" fill="#0f3d70"/>
-  <polygon points="18,47 50,63 50,58 28,47" fill="#0a1929"/>
-  <polygon points="50,58 50,63 82,47 72,47" fill="#1a5599"/>
-  <polygon points="28,33 50,44 50,39 38,33" fill="#0f2b52"/>
-  <polygon points="50,39 50,44 72,33 62,33" fill="#2d6eb8"/>
-  <polygon points="38,24 50,30 50,27 44,24" fill="#1a4d8c"/>
-  <polygon points="50,27 50,30 62,24 56,24" fill="#4d90d0"/>
-  <line x1="50" y1="82" x2="50" y2="87" stroke="white" stroke-width="1.5"/>
-  <line x1="50" y1="58" x2="50" y2="63" stroke="white" stroke-width="1.5"/>
-  <line x1="50" y1="39" x2="50" y2="44" stroke="white" stroke-width="1.5"/>
-  <line x1="50" y1="27" x2="50" y2="30" stroke="white" stroke-width="1.5"/>
-  <polygon points="50,13 56,15 56,19 50,21 44,19 44,15" fill="#7ab8d8"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <g fill="none" stroke="#0E0E11" stroke-width="5" stroke-linecap="round">
+    <circle cx="32" cy="32" r="27"/>
+    <line x1="20" y1="46" x2="44" y2="18"/>
+    <line x1="32" y1="11" x2="32" y2="14"/>
+    <line x1="32" y1="50" x2="32" y2="53"/>
+  </g>
 </svg>
