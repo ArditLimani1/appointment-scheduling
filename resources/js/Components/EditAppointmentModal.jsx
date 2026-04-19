@@ -35,7 +35,6 @@ export default function EditAppointmentModal({
     /** Employee modal: when service editing is disabled, do not show service or price anywhere. */
     const hideServiceAndPriceForEmployee = lockServiceForEmployee;
 
-    const identifierType = (appointment.client_email && appointment.client_email.trim()) ? 'email' : 'phone';
     const today    = toDateString(new Date());
 
     // Normalize: Eloquent 'date' cast serializes as ISO datetime in JSON
@@ -227,8 +226,8 @@ export default function EditAppointmentModal({
             {
                 client_first_name: form.client_first_name,
                 client_last_name:  form.client_last_name,
-                client_phone:      identifierType === 'phone' ? form.client_phone : (appointment.client_phone ?? null),
-                client_email:      identifierType === 'email' ? form.client_email : (appointment.client_email ?? null),
+                client_phone:      trimToNull(form.client_phone),
+                client_email:      trimToNull(form.client_email),
                 client_notes:      form.client_notes,
                 service_id:        Number(form.service_id),
                 status:            form.status,
@@ -532,29 +531,27 @@ export default function EditAppointmentModal({
                                         {errors.client_last_name && <p className="text-xs text-error mt-1">{errors.client_last_name}</p>}
                                     </div>
                                     <div className="sm:col-span-2">
-                                        {identifierType === 'phone' ? (
-                                            <>
-                                                <label className={labelCls}>{t('components.edit_appointment.phone')}</label>
-                                                <input
-                                                    type="tel"
-                                                    value={form.client_phone}
-                                                    onChange={(e) => patch('client_phone', e.target.value)}
-                                                    className={inputCls}
-                                                />
-                                                {errors.client_phone && <p className="text-xs text-error mt-1">{errors.client_phone}</p>}
-                                            </>
-                                        ) : (
-                                            <>
-                                                <label className={labelCls}>{t('components.edit_appointment.email')}</label>
-                                                <input
-                                                    type="email"
-                                                    value={form.client_email}
-                                                    onChange={(e) => patch('client_email', e.target.value)}
-                                                    className={inputCls}
-                                                />
-                                                {errors.client_email && <p className="text-xs text-error mt-1">{errors.client_email}</p>}
-                                            </>
-                                        )}
+                                        <label className={labelCls}>{t('components.edit_appointment.phone')}</label>
+                                        <input
+                                            type="tel"
+                                            value={form.client_phone}
+                                            onChange={(e) => patch('client_phone', e.target.value)}
+                                            className={inputCls}
+                                        />
+                                        {errors.client_phone && <p className="text-xs text-error mt-1">{errors.client_phone}</p>}
+                                    </div>
+                                    <div className="sm:col-span-2">
+                                        <label className={labelCls}>{t('components.edit_appointment.email')}</label>
+                                        <input
+                                            type="email"
+                                            value={form.client_email}
+                                            onChange={(e) => patch('client_email', e.target.value)}
+                                            className={inputCls}
+                                        />
+                                        {errors.client_email && <p className="text-xs text-error mt-1">{errors.client_email}</p>}
+                                        <p className="mt-1 text-[11px] text-on-surface-variant">
+                                            Appointment update emails are sent only when an email address is saved.
+                                        </p>
                                     </div>
                                     <div className="sm:col-span-2">
                                         <label className={labelCls}>

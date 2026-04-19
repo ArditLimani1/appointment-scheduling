@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\AppointmentStatus;
+use App\Events\AppointmentCustomerNotificationRequested;
 use App\Exports\AppointmentsExport;
 use App\Models\Appointment;
 use App\Models\Business;
@@ -130,6 +131,7 @@ class AppointmentService implements AppointmentServiceInterface
     public function updateAppointment(Business $business, Appointment $appointment, array $data): Appointment
     {
         abort_if($appointment->business_id !== $business->id, 403);
+        $snapshot = $this->snapshotAppointment($appointment);
 
         $service = $this->serviceRepository->findById((int) $data['service_id']);
         abort_if(! $service, 422, __('errors.appointment.service_not_found'));
@@ -161,7 +163,7 @@ class AppointmentService implements AppointmentServiceInterface
             false,
         );
 
-        return DB::transaction(function () use ($business, $appointment, $data, $service, $startTime, $endTime) {
+        $updated = DB::transaction(function () use ($business, $appointment, $data, $service, $startTime, $endTime) {
             if ($business->uses_shared_resources) {
                 $this->validateSharedResourcesForAppointmentWindow(
                     $business,
@@ -183,26 +185,82 @@ class AppointmentService implements AppointmentServiceInterface
 
             return $updated;
         });
+
+        $updatedAppointment = $updated->fresh(['business', 'employee', 'service']);
+        $this->dispatchCustomerUpdateNotificationIfNeeded($snapshot, $updatedAppointment);
+
+        return $updatedAppointment;
     }
 
     public function updateStatus(Business $business, Appointment $appointment, array $data): Appointment
     {
         abort_if($appointment->business_id !== $business->id, 403);
+        $requestedStatus = $data['status'] instanceof AppointmentStatus
+            ? $data['status']->value
+            : (string) $data['status'];
+        $currentStatus = $appointment->status instanceof AppointmentStatus
+            ? $appointment->status->value
+            : (string) $appointment->status;
 
-        return $this->appointmentRepository->update($appointment, $data);
+        if ($requestedStatus === $currentStatus) {
+            return $appointment->loadMissing(['business', 'employee', 'service']);
+        }
+
+        $snapshot = $this->snapshotAppointment($appointment);
+        $updatedRows = Appointment::query()
+            ->whereKey($appointment->id)
+            ->where('business_id', $business->id)
+            ->where('status', '!=', $requestedStatus)
+            ->update($data);
+
+        $updatedAppointment = $appointment->fresh(['business', 'employee', 'service']);
+
+        if ($updatedRows === 0 || ! $updatedAppointment) {
+            return $appointment->loadMissing(['business', 'employee', 'service']);
+        }
+
+        $this->dispatchCustomerUpdateNotificationIfNeeded($snapshot, $updatedAppointment->fresh(['business', 'employee', 'service']));
+
+        return $updatedAppointment;
     }
 
     public function updateEmployeeAppointmentStatus(int $employeeId, Appointment $appointment, array $data): Appointment
     {
         abort_if($appointment->employee_id !== $employeeId, 403);
+        $requestedStatus = $data['status'] instanceof AppointmentStatus
+            ? $data['status']->value
+            : (string) $data['status'];
+        $currentStatus = $appointment->status instanceof AppointmentStatus
+            ? $appointment->status->value
+            : (string) $appointment->status;
 
-        return $this->appointmentRepository->update($appointment, $data);
+        if ($requestedStatus === $currentStatus) {
+            return $appointment->loadMissing(['business', 'employee', 'service']);
+        }
+
+        $snapshot = $this->snapshotAppointment($appointment);
+        $updatedRows = Appointment::query()
+            ->whereKey($appointment->id)
+            ->where('employee_id', $employeeId)
+            ->where('status', '!=', $requestedStatus)
+            ->update($data);
+
+        $updatedAppointment = $appointment->fresh(['business', 'employee', 'service']);
+
+        if ($updatedRows === 0 || ! $updatedAppointment) {
+            return $appointment->loadMissing(['business', 'employee', 'service']);
+        }
+
+        $this->dispatchCustomerUpdateNotificationIfNeeded($snapshot, $updatedAppointment->fresh(['business', 'employee', 'service']));
+
+        return $updatedAppointment;
     }
 
     public function updateEmployeeOwnAppointment(int $employeeId, Appointment $appointment, array $data): Appointment
     {
         abort_if($appointment->employee_id !== $employeeId, 403);
         abort_if($appointment->status === AppointmentStatus::Cancelled, 422, __('errors.appointment.cannot_edit_cancelled'));
+        $snapshot = $this->snapshotAppointment($appointment);
 
         $business = $appointment->business;
         abort_unless($business, 404);
@@ -247,7 +305,7 @@ class AppointmentService implements AppointmentServiceInterface
             true,
         );
 
-        return DB::transaction(function () use ($business, $appointment, $data, $serviceId, $service, $startTime, $endTime) {
+        $updated = DB::transaction(function () use ($business, $appointment, $data, $serviceId, $service, $startTime, $endTime) {
             if ($business->uses_shared_resources) {
                 $this->validateSharedResourcesForAppointmentWindow(
                     $business,
@@ -273,12 +331,18 @@ class AppointmentService implements AppointmentServiceInterface
 
             return $updated;
         });
+
+        $updatedAppointment = $updated->fresh(['business', 'employee', 'service']);
+        $this->dispatchCustomerUpdateNotificationIfNeeded($snapshot, $updatedAppointment);
+
+        return $updatedAppointment;
     }
 
     public function rescheduleEmployeeOwnAppointment(Appointment $appointment, string $dateYmd, string $startTimeStr): void
     {
         abort_if($appointment->employee_id !== auth()->id(), 403);
         abort_if($appointment->status === AppointmentStatus::Cancelled, 422, __('errors.appointment.cannot_reschedule_cancelled'));
+        $snapshot = $this->snapshotAppointment($appointment);
 
         $business = $appointment->business;
         abort_unless($business, 404);
@@ -313,7 +377,7 @@ class AppointmentService implements AppointmentServiceInterface
             true,
         );
 
-        DB::transaction(function () use ($appointment, $business, $service, $dateYmd, $startTime, $endTime) {
+        $updated = DB::transaction(function () use ($appointment, $business, $service, $dateYmd, $startTime, $endTime) {
             if ($business->uses_shared_resources) {
                 $this->validateSharedResourcesForAppointmentWindow(
                     $business,
@@ -331,7 +395,12 @@ class AppointmentService implements AppointmentServiceInterface
                 'end_time' => $endTime->format('H:i'),
                 'updated_by' => auth()->id(),
             ]);
+
+            return $appointment;
         });
+
+        $updatedAppointment = $updated->fresh(['business', 'employee', 'service']);
+        $this->dispatchCustomerUpdateNotificationIfNeeded($snapshot, $updatedAppointment);
     }
 
     /**
@@ -460,5 +529,119 @@ class AppointmentService implements AppointmentServiceInterface
         $exportFilters = array_merge($filters, ['business_id' => $business->id]);
 
         return Excel::download(new AppointmentsExport($exportFilters), 'appointments.xlsx');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function snapshotAppointment(Appointment $appointment): array
+    {
+        $appointment->loadMissing(['business', 'employee', 'service']);
+
+        return [
+            'status' => $appointment->status instanceof AppointmentStatus ? $appointment->status->value : (string) $appointment->status,
+            'date' => optional($appointment->date)->format('Y-m-d'),
+            'start_time' => $appointment->start_time,
+            'end_time' => $appointment->end_time,
+            'service_id' => $appointment->service_id,
+            'service_name' => $appointment->service?->name,
+            'employee_id' => $appointment->employee_id,
+            'employee_name' => $appointment->employee?->name,
+        ];
+    }
+
+    private function dispatchCustomerUpdateNotificationIfNeeded(array $before, Appointment $appointment): void
+    {
+        if (! filled($appointment->client_email)) {
+            return;
+        }
+
+        $notificationType = $this->determineNotificationType($before, $appointment);
+        if ($notificationType === null) {
+            return;
+        }
+
+        event(new AppointmentCustomerNotificationRequested(
+            $appointment,
+            $notificationType,
+            $this->buildChangeSummary($before, $appointment),
+        ));
+    }
+
+    private function determineNotificationType(array $before, Appointment $appointment): ?string
+    {
+        $currentStatus = $appointment->status instanceof AppointmentStatus
+            ? $appointment->status->value
+            : (string) $appointment->status;
+
+        $statusChanged = ($before['status'] ?? null) !== $currentStatus;
+        $scheduleChanged = ($before['date'] ?? null) !== optional($appointment->date)->format('Y-m-d')
+            || ($before['start_time'] ?? null) !== $appointment->start_time
+            || ($before['end_time'] ?? null) !== $appointment->end_time;
+        $serviceChanged = ((int) ($before['service_id'] ?? 0)) !== (int) $appointment->service_id;
+        $employeeChanged = ((int) ($before['employee_id'] ?? 0)) !== (int) $appointment->employee_id;
+
+        if ($statusChanged && $currentStatus === AppointmentStatus::Cancelled->value) {
+            return 'cancelled';
+        }
+
+        if ($statusChanged && $currentStatus === AppointmentStatus::Confirmed->value) {
+            return 'confirmed';
+        }
+
+        if ($scheduleChanged) {
+            return 'rescheduled';
+        }
+
+        if ($serviceChanged || $employeeChanged) {
+            return 'changed';
+        }
+
+        return null;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function buildChangeSummary(array $before, Appointment $appointment): array
+    {
+        $changes = [];
+        $currentDate = optional($appointment->date)->format('Y-m-d');
+
+        if (($before['date'] ?? null) !== $currentDate) {
+            $changes[] = 'Date changed from <strong>'.$this->formatDate($before['date'] ?? null).'</strong> to <strong>'.$this->formatDate($currentDate).'</strong>.';
+        }
+
+        if (($before['start_time'] ?? null) !== $appointment->start_time) {
+            $changes[] = 'Time changed from <strong>'.$this->formatTime($before['start_time'] ?? null).'</strong> to <strong>'.$this->formatTime($appointment->start_time).'</strong>.';
+        }
+
+        if (($before['service_id'] ?? null) !== $appointment->service_id) {
+            $changes[] = 'Service changed from <strong>'.($before['service_name'] ?? '—').'</strong> to <strong>'.($appointment->service?->name ?? '—').'</strong>.';
+        }
+
+        if (($before['employee_id'] ?? null) !== $appointment->employee_id) {
+            $changes[] = 'Staff member changed from <strong>'.($before['employee_name'] ?? '—').'</strong> to <strong>'.($appointment->employee?->name ?? '—').'</strong>.';
+        }
+
+        $beforeStatus = (string) ($before['status'] ?? '');
+        $currentStatus = $appointment->status instanceof AppointmentStatus
+            ? $appointment->status->value
+            : (string) $appointment->status;
+        if ($beforeStatus !== '' && $beforeStatus !== $currentStatus) {
+            $changes[] = 'Status changed from <strong>'.ucfirst($beforeStatus).'</strong> to <strong>'.ucfirst($currentStatus).'</strong>.';
+        }
+
+        return $changes;
+    }
+
+    private function formatDate(?string $date): string
+    {
+        return $date ? Carbon::parse($date)->format('d M Y') : '—';
+    }
+
+    private function formatTime(?string $time): string
+    {
+        return $time ? Carbon::parse($time)->format('H:i') : '—';
     }
 }

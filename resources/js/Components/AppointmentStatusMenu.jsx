@@ -30,6 +30,13 @@ function optionFor(status) {
 export default function AppointmentStatusMenu({ status, onChange }) {
     const t = useT();
     const current = optionFor(status);
+    const handleChange = (nextValue) => {
+        if (nextValue === status) {
+            return;
+        }
+
+        onChange(nextValue);
+    };
 
     return (
         <Menu as="div" className="relative inline-block text-left">
@@ -49,7 +56,7 @@ export default function AppointmentStatusMenu({ status, onChange }) {
                         {({ focus }) => (
                             <button
                                 type="button"
-                                onClick={() => onChange(opt.value)}
+                                onClick={() => handleChange(opt.value)}
                                 className={`mb-0.5 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition-colors last:mb-0 ${focus ? 'bg-slate-50' : ''} ${opt.itemIdle} ${status === opt.value ? 'bg-slate-50 ring-1 ring-inset ring-slate-200' : ''}`}
                             >
                                 <span className={`h-2.5 w-2.5 shrink-0 rounded-full shadow-sm ${opt.dot}`} aria-hidden />
