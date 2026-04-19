@@ -3,8 +3,10 @@ import { useForm } from '@inertiajs/react';
 import Modal from '@/Components/Modal';
 import Icon from '@/Components/Icon';
 import InputError from '@/Components/InputError';
+import { useT } from '@/i18n/useT';
 
 export default function RoleModal({ show, onClose, editing, permissionGroups }) {
+    const t = useT();
     const { data, setData, post, put, processing, errors, reset } = useForm({
         name: '',
         permissions: [],
@@ -62,11 +64,10 @@ export default function RoleModal({ show, onClose, editing, permissionGroups }) 
                 <div className="flex items-start justify-between mb-5">
                     <div>
                         <h2 className="text-lg font-bold text-on-surface">
-                            {editing ? 'Edit role' : 'Create role'}
+                            {editing ? t('admin.roles.modal.edit_title') : t('admin.roles.modal.add_title')}
                         </h2>
                         <p className="text-xs text-on-surface-variant mt-0.5">
-                            Name the role and choose what this person can access. Staff with any admin capability can
-                            open the dashboard; other sections follow the boxes you select.
+                            {t('admin.roles.modal.intro')}
                         </p>
                     </div>
                     <button
@@ -80,13 +81,12 @@ export default function RoleModal({ show, onClose, editing, permissionGroups }) 
 
                 <div>
                     <label className="block text-sm font-medium text-on-surface mb-1.5">
-                        Role name <span className="text-error">*</span>
+                        {t('admin.roles.modal.name_label')} <span className="text-error">*</span>
                     </label>
                     <input
                         value={data.name}
                         onChange={(e) => setData('name', e.target.value)}
                         className={inputClass}
-                        placeholder="e.g. Business manager"
                         autoFocus
                         required
                     />
@@ -94,10 +94,10 @@ export default function RoleModal({ show, onClose, editing, permissionGroups }) 
                 </div>
 
                 <div className="mt-5">
-                    <p className="text-sm font-medium text-on-surface mb-2">Permissions</p>
+                    <p className="text-sm font-medium text-on-surface mb-2">{t('admin.roles.modal.permissions')}</p>
                     <InputError message={errors.permissions} className="mb-2" />
 
-                    <p className={groupTitleClass}>Admin panel</p>
+                    <p className={groupTitleClass}>{t('admin.roles.modal.group_admin')}</p>
                     <div className="flex flex-col gap-2">
                         {permissionGroups.admin.map((p) => (
                             <label
@@ -115,7 +115,7 @@ export default function RoleModal({ show, onClose, editing, permissionGroups }) 
                         ))}
                     </div>
 
-                    <p className={groupTitleClass}>Employee workspace</p>
+                    <p className={groupTitleClass}>{t('admin.roles.modal.group_employee')}</p>
                     <div className="flex flex-col gap-2">
                         {permissionGroups.employee.map((p) => (
                             <label
@@ -140,14 +140,18 @@ export default function RoleModal({ show, onClose, editing, permissionGroups }) 
                         onClick={onClose}
                         className="rounded-xl border border-outline-variant px-5 py-2.5 text-sm font-medium text-on-surface hover:bg-surface-container-low transition-colors"
                     >
-                        Cancel
+                        {t('admin.roles.modal.cancel')}
                     </button>
                     <button
                         type="submit"
                         disabled={processing}
                         className="rounded-xl bg-on-surface px-5 py-2.5 text-sm font-semibold text-surface hover:opacity-90 transition-opacity disabled:opacity-50"
                     >
-                        {processing ? 'Saving...' : editing ? 'Save changes' : 'Create role'}
+                        {processing
+                            ? t('admin.roles.modal.saving')
+                            : editing
+                              ? t('admin.roles.modal.save_changes')
+                              : t('admin.roles.modal.submit_create')}
                     </button>
                 </div>
             </form>

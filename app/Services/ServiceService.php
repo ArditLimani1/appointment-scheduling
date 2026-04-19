@@ -26,8 +26,10 @@ class ServiceService implements ServiceServiceInterface
 
         $service = $this->serviceRepository->create(array_merge($data, ['business_id' => $business->id]));
 
-        if (is_array($resources)) {
+        if ($business->uses_shared_resources && is_array($resources)) {
             $this->syncSharedResources($service, $resources);
+        } elseif (! $business->uses_shared_resources) {
+            $this->syncSharedResources($service, []);
         }
 
         return $service->load('sharedResources');
@@ -45,8 +47,10 @@ class ServiceService implements ServiceServiceInterface
 
         $this->serviceRepository->update($service, $data);
 
-        if (is_array($resources)) {
+        if ($business->uses_shared_resources && is_array($resources)) {
             $this->syncSharedResources($service, $resources);
+        } elseif (! $business->uses_shared_resources) {
+            $this->syncSharedResources($service, []);
         }
 
         return $service->fresh()->load('sharedResources');

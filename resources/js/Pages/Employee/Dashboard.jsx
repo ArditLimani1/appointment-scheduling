@@ -4,19 +4,17 @@ import EmployeeLayout from '@/Layouts/EmployeeLayout';
 import MetricCard from '@/Components/MetricCard';
 import Icon from '@/Components/Icon';
 import EditAppointmentModal from '@/Components/EditAppointmentModal';
-import { formatTimeHm } from '@/utils/appointmentDate';
+import { appointmentStatusValue, formatAppointmentDate, formatTimeHm } from '@/utils/appointmentDate';
+import { useT } from '@/i18n/useT';
 
-const STATUS_STYLES = {
-    pending: { bg: 'bg-surface-container-highest text-on-surface-variant', label: 'Pending' },
-    confirmed: { bg: 'bg-tertiary-fixed text-on-tertiary-fixed-variant', label: 'Confirmed' },
-    cancelled: { bg: 'bg-error-container text-on-error-container', label: 'Cancelled' },
+const STATUS_BADGE_BG = {
+    pending: 'bg-surface-container-highest text-on-surface-variant',
+    confirmed: 'bg-tertiary-fixed text-on-tertiary-fixed-variant',
+    cancelled: 'bg-error-container text-on-error-container',
 };
 
-function fmt(d, opts) {
-    return new Intl.DateTimeFormat('en-GB', opts).format(d);
-}
-
 function CancelConfirmModal({ appointment, onConfirm, onClose }) {
+    const t = useT();
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
             <div className="w-full max-w-sm rounded-3xl bg-surface p-6 shadow-2xl">
@@ -25,9 +23,9 @@ function CancelConfirmModal({ appointment, onConfirm, onClose }) {
                         <Icon name="warning" size="text-lg" className="text-on-error-container" />
                     </div>
                     <div>
-                        <h3 className="font-headline text-base font-bold text-on-surface">Cancel Appointment</h3>
+                        <h3 className="font-headline text-base font-bold text-on-surface">{t('employee.appointments.cancel_title')}</h3>
                         <p className="mt-1 text-sm text-on-surface-variant">
-                            Are you sure you want to cancel this appointment?
+                            {t('employee.appointments.cancel_prompt')}
                         </p>
                     </div>
                 </div>
@@ -37,7 +35,7 @@ function CancelConfirmModal({ appointment, onConfirm, onClose }) {
                         {appointment.client_first_name} {appointment.client_last_name}
                     </p>
                     <p className="text-on-surface-variant mt-0.5">
-                        {appointment.service?.name ?? 'Appointment'} · {formatTimeHm(appointment.start_time)}
+                        {appointment.service?.name ?? t('employee.appointments.appointment_fallback')} · {formatTimeHm(appointment.start_time)}
                     </p>
                 </div>
 
@@ -47,14 +45,14 @@ function CancelConfirmModal({ appointment, onConfirm, onClose }) {
                         onClick={onClose}
                         className="rounded-xl border border-outline-variant px-4 py-2 text-sm font-medium text-on-surface-variant hover:bg-surface-container transition-colors"
                     >
-                        No, keep it
+                        {t('employee.appointments.no_keep')}
                     </button>
                     <button
                         type="button"
                         onClick={onConfirm}
                         className="rounded-xl bg-error px-5 py-2 text-sm font-semibold text-on-error hover:opacity-90 transition-opacity"
                     >
-                        Yes, cancel
+                        {t('employee.appointments.yes_cancel')}
                     </button>
                 </div>
             </div>
@@ -73,19 +71,26 @@ export default function Dashboard({
     date_from: dateFromProp,
     employee_compact_mobile_appointments = false,
 }) {
-    const { auth } = usePage().props;
+    const t = useT();
+    const { auth, localeBcp47 } = usePage().props;
     const business = auth.business;
     const currencySymbol = business?.currency_symbol ?? '€';
+    const dateLocale = localeBcp47 ?? 'en-GB';
     const todayStr = new Date().toISOString().split('T')[0];
 
     const [editingApt, setEditingApt] = useState(null);
     const [cancellingApt, setCancellingApt] = useState(null);
     const dateFrom = dateFromProp ?? todayStr;
 
-    const dayLabel = useMemo(() => {
-        const d = new Date(`${dateFrom}T00:00:00`);
-        return fmt(d, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-    }, [dateFrom]);
+    const dayLabel = useMemo(
+        () =>
+            formatAppointmentDate(
+                dateFrom,
+                { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' },
+                dateLocale,
+            ),
+        [dateFrom, dateLocale],
+    );
 
     const handleConfirm = (apt) => {
         router.patch(route('employee.appointments.update', apt.id), { status: 'confirmed' }, { preserveScroll: true });
@@ -114,7 +119,7 @@ export default function Dashboard({
                         onClick={() => handleConfirm(apt)}
                         className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-950 ring-1 ring-emerald-200/90"
                     >
-                        <Icon name="check_circle" size="text-sm" /> Confirm
+                        <Icon name="check_circle" size="text-sm" /> {t('employee.appointments.confirm')}
                     </button>
                 )}
                 {(isPending || isConfirmed) && (
@@ -123,7 +128,7 @@ export default function Dashboard({
                         onClick={() => openCancelModal(apt)}
                         className="inline-flex items-center gap-1.5 rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-950 ring-1 ring-red-200/90"
                     >
-                        <Icon name="cancel" size="text-sm" /> Cancel
+                        <Icon name="cancel" size="text-sm" /> {t('employee.appointments.cancel')}
                     </button>
                 )}
                 {!isCancelled && (
@@ -131,7 +136,7 @@ export default function Dashboard({
                         type="button"
                         onClick={() => setEditingApt(apt)}
                         className="inline-flex items-center justify-center rounded-xl bg-surface-container-high p-2 text-on-surface"
-                        title="Reschedule"
+                        title={t('employee.appointments.reschedule')}
                     >
                         <Icon name="edit_calendar" size="text-base" />
                     </button>
@@ -142,11 +147,11 @@ export default function Dashboard({
 
     return (
         <EmployeeLayout>
-            <Head title="Dashboard" />
+            <Head title={t('employee.dashboard.head_title')} />
 
             <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
                 <div>
-                    <h1 className="text-4xl font-extrabold font-headline tracking-tight text-on-surface mb-2">Dashboard</h1>
+                    <h1 className="text-4xl font-extrabold font-headline tracking-tight text-on-surface mb-2">{t('employee.dashboard.title')}</h1>
                     <p className="text-on-surface-variant text-lg">{dayLabel}</p>
                 </div>
                 <Link
@@ -154,14 +159,13 @@ export default function Dashboard({
                     className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-on-surface hover:bg-slate-50"
                 >
                     <Icon name="calendar_today" size="text-lg" />
-                    All appointments
+                    {t('employee.dashboard.all_appointments')}
                 </Link>
             </div>
 
             <section className="mb-6 sm:mb-8">
                 <div className="mb-3 sm:mb-5">
-                    <h2 className="text-xl font-extrabold font-headline text-on-surface sm:text-2xl">Today at a glance</h2>
-                    <p className="mt-0.5 text-xs text-on-surface-variant sm:mt-1 sm:text-sm">Summary for today only.</p>
+                    <h2 className="text-xl font-extrabold font-headline text-on-surface sm:text-2xl">{t('employee.dashboard.glance_title')}</h2>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 sm:gap-6 xl:grid-cols-4">
@@ -169,30 +173,30 @@ export default function Dashboard({
                         icon="event_upcoming"
                         iconBg="bg-primary-fixed"
                         iconClass="text-on-primary-fixed-variant"
-                        label="Appointments"
+                        label={t('employee.dashboard.metric_appointments')}
                         value={appointments_count}
-                        badge="Today"
+                        badge={t('employee.dashboard.badge_today')}
                     />
                     <MetricCard
                         icon="check_circle"
                         iconBg="bg-secondary-container"
                         iconClass="text-on-secondary-container"
-                        label="Confirmed"
+                        label={t('employee.dashboard.metric_confirmed')}
                         value={confirmed_appointments}
-                        badge="Approved"
+                        badge={t('employee.dashboard.badge_approved')}
                     />
                     <MetricCard
                         icon="cancel"
                         iconBg="bg-error-container"
                         iconClass="text-on-error-container"
-                        label="Cancelled"
+                        label={t('employee.dashboard.metric_cancelled')}
                         value={cancelled_appointments}
-                        badge="Lost"
+                        badge={t('employee.dashboard.badge_lost')}
                     />
                     <MetricCard
                         variant="primary"
                         icon="payments"
-                        label="Revenue"
+                        label={t('employee.dashboard.metric_revenue')}
                         value={`${Number(daily_revenue).toFixed(2)} ${currencySymbol}`}
                     />
                 </div>
@@ -203,21 +207,22 @@ export default function Dashboard({
                     <section className="bg-surface-container-lowest rounded-xl p-10 sm:p-12">
                         <div className="flex flex-col items-center justify-center py-12 text-center">
                             <Icon name="event_available" size="text-5xl" className="text-outline mb-4" />
-                            <p className="font-semibold text-on-surface mb-1">No reservations today</p>
-                            <p className="text-sm text-on-surface-variant">You have nothing scheduled for today.</p>
+                            <p className="font-semibold text-on-surface mb-1">{t('employee.dashboard.empty_title')}</p>
+                            <p className="text-sm text-on-surface-variant">{t('employee.dashboard.empty_subtitle')}</p>
                         </div>
                     </section>
                 ) : (
                     <section className="bg-surface-container-lowest rounded-xl p-4 md:p-8">
                         <div className="flex justify-between items-center mb-4 md:mb-8 gap-3">
-                            <h2 className="text-xl md:text-2xl font-extrabold font-headline text-on-surface">Today&rsquo;s reservations</h2>
+                            <h2 className="text-xl md:text-2xl font-extrabold font-headline text-on-surface">{t('employee.dashboard.today_reservations')}</h2>
                         </div>
 
                         {employee_compact_mobile_appointments ? (
                             <div className="md:hidden space-y-3">
                                 {appointments.map((apt) => {
                                     const isCancelled = apt.status === 'cancelled';
-                                    const style = STATUS_STYLES[apt.status] || STATUS_STYLES.pending;
+                                    const st = appointmentStatusValue(apt.status);
+                                    const bg = STATUS_BADGE_BG[st] || STATUS_BADGE_BG.pending;
                                     return (
                                         <article
                                             key={apt.id}
@@ -231,11 +236,11 @@ export default function Dashboard({
                                                         {apt.client_first_name} {apt.client_last_name}
                                                     </p>
                                                     <p className="text-sm text-on-surface-variant mt-0.5">
-                                                        {apt.service?.name ?? 'Appointment'}
+                                                        {apt.service?.name ?? t('employee.appointments.appointment_fallback')}
                                                     </p>
                                                 </div>
-                                                <span className={`shrink-0 px-2.5 py-0.5 text-[10px] font-extrabold uppercase rounded-full ${style.bg}`}>
-                                                    {style.label}
+                                                <span className={`shrink-0 px-2.5 py-0.5 text-[10px] font-extrabold uppercase rounded-full ${bg}`}>
+                                                    {t(`common.status.${st}`)}
                                                 </span>
                                             </div>
 
@@ -275,32 +280,35 @@ export default function Dashboard({
                                 <thead>
                                     <tr className="border-b border-surface-container-highest">
                                         <th className="pb-5 pr-3 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant min-w-0">
-                                            Client
+                                            {t('employee.appointments.th_client')}
                                         </th>
                                         <th className="pb-5 pr-3 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant min-w-0">
-                                            Service
+                                            {t('employee.appointments.th_service')}
                                         </th>
                                         <th className="pb-5 pr-3 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant whitespace-nowrap">
-                                            Time
+                                            {t('employee.appointments.th_time')}
                                         </th>
                                         <th className="pb-5 pr-3 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant text-right whitespace-nowrap">
-                                            Price
+                                            {t('employee.appointments.th_price')}
                                         </th>
-                                        <th className="pb-5 pr-3 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">Status</th>
+                                        <th className="pb-5 pr-3 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant">
+                                            {t('employee.appointments.th_status')}
+                                        </th>
                                         <th className="pb-5 pr-3 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant min-w-0">
-                                            Contact
+                                            {t('employee.appointments.th_contact')}
                                         </th>
                                         <th className="pb-5 pr-3 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant text-center min-w-0">
-                                            Approval
+                                            {t('employee.appointments.th_approval')}
                                         </th>
                                         <th className="pb-5 text-xs font-bold uppercase tracking-[0.15em] text-on-surface-variant text-center w-14 min-w-[3.5rem]">
-                                            Edit
+                                            {t('employee.appointments.th_edit')}
                                         </th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-surface-container-low">
                                     {appointments.map((apt) => {
-                                        const style = STATUS_STYLES[apt.status] || STATUS_STYLES.pending;
+                                        const st = appointmentStatusValue(apt.status);
+                                        const bg = STATUS_BADGE_BG[st] || STATUS_BADGE_BG.pending;
                                         const isCancelled = apt.status === 'cancelled';
                                         const isPending = apt.status === 'pending';
                                         const isConfirmed = apt.status === 'confirmed';
@@ -324,7 +332,7 @@ export default function Dashboard({
                                                 </td>
                                                 <td className="py-4 pr-3 min-w-0">
                                                     <span className="block truncate text-sm text-on-surface-variant">
-                                                        {apt.service?.name ?? 'Appointment'}
+                                                        {apt.service?.name ?? t('employee.appointments.appointment_fallback')}
                                                     </span>
                                                 </td>
                                                 <td className="py-4 pr-3 whitespace-nowrap">
@@ -338,8 +346,8 @@ export default function Dashboard({
                                                     </span>
                                                 </td>
                                                 <td className="py-4 pr-3">
-                                                    <span className={`px-3 py-1 text-[10px] font-extrabold uppercase rounded-full ${style.bg}`}>
-                                                        {style.label}
+                                                    <span className={`px-3 py-1 text-[10px] font-extrabold uppercase rounded-full ${bg}`}>
+                                                        {t(`common.status.${st}`)}
                                                     </span>
                                                 </td>
                                                 <td className="py-4 pr-3 min-w-0">
@@ -359,7 +367,7 @@ export default function Dashboard({
                                                                 className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-950 ring-1 ring-emerald-200/90 hover:bg-emerald-100/90 transition-colors"
                                                             >
                                                                 <Icon name="check_circle" size="text-sm" />
-                                                                Confirm
+                                                                {t('employee.appointments.confirm')}
                                                             </button>
                                                         )}
                                                         {(isPending || isConfirmed) && (
@@ -369,7 +377,7 @@ export default function Dashboard({
                                                                 className="inline-flex items-center gap-1.5 rounded-xl bg-red-50 px-3 py-1.5 text-xs font-bold text-red-950 ring-1 ring-red-200/90 hover:bg-red-100/90 transition-colors"
                                                             >
                                                                 <Icon name="cancel" size="text-sm" />
-                                                                Cancel
+                                                                {t('employee.appointments.cancel')}
                                                             </button>
                                                         )}
                                                         {isCancelled && (
@@ -383,7 +391,7 @@ export default function Dashboard({
                                                             type="button"
                                                             onClick={() => setEditingApt(apt)}
                                                             className="inline-flex items-center justify-center rounded-xl bg-surface-container-high p-2 text-on-surface hover:bg-surface-container-highest transition-colors"
-                                                            title="Reschedule"
+                                                            title={t('employee.appointments.reschedule')}
                                                         >
                                                             <Icon name="edit_calendar" size="text-base" />
                                                         </button>

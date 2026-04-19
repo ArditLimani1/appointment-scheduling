@@ -71,6 +71,9 @@ class AppointmentService implements AppointmentServiceInterface
         if (! empty($filters['statuses']) && is_array($filters['statuses'])) {
             $repoFilters['statuses'] = $filters['statuses'];
         }
+        if (! empty($filters['service_id'])) {
+            $repoFilters['service_id'] = (int) $filters['service_id'];
+        }
 
         $anchor = Carbon::parse($anchorDate)->startOfDay();
 
@@ -129,7 +132,7 @@ class AppointmentService implements AppointmentServiceInterface
         abort_if($appointment->business_id !== $business->id, 403);
 
         $service = $this->serviceRepository->findById((int) $data['service_id']);
-        abort_if(! $service, 422, 'Service not found.');
+        abort_if(! $service, 422, __('errors.appointment.service_not_found'));
         $service->loadMissing('sharedResources');
 
         $timezone = $business->timezone ?: config('app.timezone');
@@ -144,7 +147,7 @@ class AppointmentService implements AppointmentServiceInterface
             $appointment->id,
         )) {
             throw ValidationException::withMessages([
-                'start_time' => 'This time slot conflicts with another appointment for this employee. Please choose a different time or date where the employee is available.',
+                'start_time' => __('errors.appointment.slot_conflict_employee'),
             ]);
         }
 
@@ -159,14 +162,16 @@ class AppointmentService implements AppointmentServiceInterface
         );
 
         return DB::transaction(function () use ($business, $appointment, $data, $service, $startTime, $endTime) {
-            $this->validateSharedResourcesForAppointmentWindow(
-                $business,
-                $service,
-                $data['date'],
-                $startTime,
-                $endTime,
-                $appointment->id,
-            );
+            if ($business->uses_shared_resources) {
+                $this->validateSharedResourcesForAppointmentWindow(
+                    $business,
+                    $service,
+                    $data['date'],
+                    $startTime,
+                    $endTime,
+                    $appointment->id,
+                );
+            }
 
             $updated = $this->appointmentRepository->update($appointment, array_merge($data, [
                 'end_time' => $endTime->format('H:i'),
@@ -174,7 +179,7 @@ class AppointmentService implements AppointmentServiceInterface
                 'updated_by' => auth()->id(),
             ]));
 
-            $this->syncAppointmentSharedResources($updated->fresh(), $service);
+            $this->syncAppointmentSharedResources($updated->fresh(), $service, $business);
 
             return $updated;
         });
@@ -197,7 +202,7 @@ class AppointmentService implements AppointmentServiceInterface
     public function updateEmployeeOwnAppointment(int $employeeId, Appointment $appointment, array $data): Appointment
     {
         abort_if($appointment->employee_id !== $employeeId, 403);
-        abort_if($appointment->status === AppointmentStatus::Cancelled, 422, 'Cannot edit a cancelled appointment.');
+        abort_if($appointment->status === AppointmentStatus::Cancelled, 422, __('errors.appointment.cannot_edit_cancelled'));
 
         $business = $appointment->business;
         abort_unless($business, 404);
@@ -209,10 +214,10 @@ class AppointmentService implements AppointmentServiceInterface
             : (int) $appointment->service_id;
 
         $service = $this->serviceRepository->findById($serviceId);
-        abort_if(! $service || (int) $service->business_id !== (int) $business->id, 422, 'Service not found.');
+        abort_if(! $service || (int) $service->business_id !== (int) $business->id, 422, __('errors.appointment.service_not_found'));
 
         $employee = User::query()->whereKey($employeeId)->with('services')->first();
-        abort_unless($employee && $employee->services->contains('id', $serviceId), 422, 'You do not offer this service.');
+        abort_unless($employee && $employee->services->contains('id', $serviceId), 422, __('errors.appointment.employee_service_not_offered'));
 
         $service->loadMissing('sharedResources');
 
@@ -228,7 +233,7 @@ class AppointmentService implements AppointmentServiceInterface
             $appointment->id,
         )) {
             throw ValidationException::withMessages([
-                'start_time' => 'This time slot conflicts with another appointment. Please choose a different time or date.',
+                'start_time' => __('errors.appointment.slot_conflict'),
             ]);
         }
 
@@ -243,14 +248,16 @@ class AppointmentService implements AppointmentServiceInterface
         );
 
         return DB::transaction(function () use ($business, $appointment, $data, $serviceId, $service, $startTime, $endTime) {
-            $this->validateSharedResourcesForAppointmentWindow(
-                $business,
-                $service,
-                $data['date'],
-                $startTime,
-                $endTime,
-                $appointment->id,
-            );
+            if ($business->uses_shared_resources) {
+                $this->validateSharedResourcesForAppointmentWindow(
+                    $business,
+                    $service,
+                    $data['date'],
+                    $startTime,
+                    $endTime,
+                    $appointment->id,
+                );
+            }
 
             $updated = $this->appointmentRepository->update($appointment, [
                 'service_id' => $serviceId,
@@ -262,7 +269,7 @@ class AppointmentService implements AppointmentServiceInterface
                 'updated_by' => auth()->id(),
             ]);
 
-            $this->syncAppointmentSharedResources($updated->fresh(), $service);
+            $this->syncAppointmentSharedResources($updated->fresh(), $service, $business);
 
             return $updated;
         });
@@ -271,13 +278,13 @@ class AppointmentService implements AppointmentServiceInterface
     public function rescheduleEmployeeOwnAppointment(Appointment $appointment, string $dateYmd, string $startTimeStr): void
     {
         abort_if($appointment->employee_id !== auth()->id(), 403);
-        abort_if($appointment->status === AppointmentStatus::Cancelled, 422, 'Cannot reschedule a cancelled appointment.');
+        abort_if($appointment->status === AppointmentStatus::Cancelled, 422, __('errors.appointment.cannot_reschedule_cancelled'));
 
         $business = $appointment->business;
         abort_unless($business, 404);
 
         $service = $this->serviceRepository->findById((int) $appointment->service_id);
-        abort_if(! $service || (int) $service->business_id !== (int) $business->id, 422, 'Service not found.');
+        abort_if(! $service || (int) $service->business_id !== (int) $business->id, 422, __('errors.appointment.service_not_found'));
         $service->loadMissing('sharedResources');
 
         $timezone = $business->timezone ?: config('app.timezone');
@@ -292,7 +299,7 @@ class AppointmentService implements AppointmentServiceInterface
             $appointment->id,
         )) {
             throw ValidationException::withMessages([
-                'start_time' => 'This time slot conflicts with another appointment. Please choose a different time or date.',
+                'start_time' => __('errors.appointment.slot_conflict'),
             ]);
         }
 
@@ -307,14 +314,16 @@ class AppointmentService implements AppointmentServiceInterface
         );
 
         DB::transaction(function () use ($appointment, $business, $service, $dateYmd, $startTime, $endTime) {
-            $this->validateSharedResourcesForAppointmentWindow(
-                $business,
-                $service,
-                $dateYmd,
-                $startTime,
-                $endTime,
-                $appointment->id,
-            );
+            if ($business->uses_shared_resources) {
+                $this->validateSharedResourcesForAppointmentWindow(
+                    $business,
+                    $service,
+                    $dateYmd,
+                    $startTime,
+                    $endTime,
+                    $appointment->id,
+                );
+            }
 
             $this->appointmentRepository->update($appointment, [
                 'date' => $dateYmd,
@@ -348,8 +357,8 @@ class AppointmentService implements AppointmentServiceInterface
         if (! in_array($startTime->format('H:i'), $slots, true)) {
             throw ValidationException::withMessages([
                 'start_time' => $ignoreScheduleBreaks
-                    ? 'This time is outside working hours or is not available.'
-                    : 'This time is outside working hours or overlaps a break.',
+                    ? __('errors.appointment.outside_hours')
+                    : __('errors.appointment.overlaps_break'),
             ]);
         }
     }
@@ -362,6 +371,10 @@ class AppointmentService implements AppointmentServiceInterface
         Carbon $windowEnd,
         ?int $excludeAppointmentId,
     ): void {
+        if (! $business->uses_shared_resources) {
+            return;
+        }
+
         $ids = $service->sharedResources->pluck('id')->sort()->values()->all();
         if ($ids === []) {
             return;
@@ -390,8 +403,14 @@ class AppointmentService implements AppointmentServiceInterface
         }
     }
 
-    private function syncAppointmentSharedResources(Appointment $appointment, Service $service): void
+    private function syncAppointmentSharedResources(Appointment $appointment, Service $service, Business $business): void
     {
+        if (! $business->uses_shared_resources) {
+            $appointment->sharedResources()->sync([]);
+
+            return;
+        }
+
         $sync = [];
         foreach ($service->sharedResources as $res) {
             $sync[$res->id] = ['quantity' => (int) $res->pivot->quantity];

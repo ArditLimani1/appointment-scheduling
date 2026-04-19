@@ -1,11 +1,14 @@
 import { useEffect, useMemo } from 'react';
 import { useForm } from '@inertiajs/react';
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/react';
+import FilterListbox from '@/Components/FilterListbox';
 import Modal from '@/Components/Modal';
 import Icon from '@/Components/Icon';
 import InputError from '@/Components/InputError';
+import { useT } from '@/i18n/useT';
 
 export default function EmployeeModal({ show, onClose, editing, services, businessRoles = [], businessOwnerId }) {
+    const t = useT();
     const { data, setData, post, put, processing, errors, reset } = useForm({
         name: '',
         email: '',
@@ -34,7 +37,7 @@ export default function EmployeeModal({ show, onClose, editing, services, busine
                 reset();
             }
         }
-    }, [show]);
+    }, [show, editing?.id]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -51,16 +54,31 @@ export default function EmployeeModal({ show, onClose, editing, services, busine
 
     const inputClass = "w-full rounded-xl border border-outline-variant bg-surface-container-low px-4 py-2.5 text-sm text-on-surface placeholder-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-on-primary-container/30 transition-all";
 
+    const roleListboxButtonClass =
+        'relative flex w-full min-h-[2.75rem] cursor-pointer items-center justify-between gap-2 rounded-xl border border-outline-variant bg-surface-container-low px-4 py-2.5 text-left text-sm text-on-surface transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary-container/30 data-[hover]:border-outline';
+    const roleListboxPanelClass =
+        'z-[100] mt-1 max-h-60 w-[var(--button-width)] overflow-auto rounded-xl border border-outline-variant bg-surface-container-low py-1 shadow-lg ring-1 ring-black/5 outline-none transition duration-100 ease-out data-[closed]:scale-95 data-[closed]:opacity-0';
+    const roleListboxOptionClass =
+        'group cursor-pointer px-3 py-2.5 text-sm text-on-surface data-[focus]:bg-surface-container-high data-[selected]:bg-on-surface/10 data-[selected]:font-medium';
+
+    const roleOptions = useMemo(
+        () => [
+            { value: '', label: t('admin.employees.modal.default_role_option') },
+            ...businessRoles.map((r) => ({ value: String(r.id), label: r.name })),
+        ],
+        [businessRoles, t],
+    );
+
     const assignedServicesLabel = useMemo(() => {
         if (!services?.length || data.service_ids.length === 0) {
-            return 'Select services…';
+            return t('admin.employees.modal.select_services');
         }
         const selected = services.filter((s) => data.service_ids.some((id) => Number(id) === Number(s.id)));
         if (selected.length <= 2) {
             return selected.map((s) => s.name).join(', ');
         }
-        return `${selected.length} services selected`;
-    }, [services, data.service_ids]);
+        return t('admin.employees.modal.services_selected', { count: selected.length });
+    }, [services, data.service_ids, t]);
 
     const editingOwner = editing && businessOwnerId != null && editing.id === businessOwnerId;
 
@@ -69,8 +87,8 @@ export default function EmployeeModal({ show, onClose, editing, services, busine
             <form onSubmit={handleSubmit} className="p-6">
                 <div className="flex items-start justify-between mb-5">
                     <div>
-                        <h2 className="text-lg font-bold text-on-surface">{editing ? 'Edit Employee' : 'Add Employee'}</h2>
-                        <p className="text-xs text-on-surface-variant mt-0.5">{editing ? 'Update employee details below.' : 'Add a new team member to your business.'}</p>
+                        <h2 className="text-lg font-bold text-on-surface">{editing ? t('admin.employees.modal.edit_title') : t('admin.employees.modal.add_title')}</h2>
+                        <p className="text-xs text-on-surface-variant mt-0.5">{editing ? t('admin.employees.modal.edit_sub') : t('admin.employees.modal.add_sub')}</p>
                     </div>
                     <button type="button" onClick={onClose} className="rounded-lg p-1 text-on-surface-variant hover:bg-surface-container-high transition-colors">
                         <Icon name="close" size="text-xl" />
@@ -79,59 +97,77 @@ export default function EmployeeModal({ show, onClose, editing, services, busine
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-on-surface mb-1.5">Full Name <span className="text-error">*</span></label>
-                        <input value={data.name} onChange={e => setData('name', e.target.value)} className={inputClass} placeholder="John Doe" autoFocus required />
+                        <label className="block text-sm font-medium text-on-surface mb-1.5">{t('admin.employees.modal.full_name')} <span className="text-error">*</span></label>
+                        <input value={data.name} onChange={e => setData('name', e.target.value)} className={inputClass} autoFocus required />
                         <InputError message={errors.name} className="mt-1" />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-on-surface mb-1.5">Email <span className="text-error">*</span></label>
-                        <input type="email" value={data.email} onChange={e => setData('email', e.target.value)} className={inputClass} placeholder="john@example.com" required />
+                        <label className="block text-sm font-medium text-on-surface mb-1.5">{t('admin.employees.modal.email')} <span className="text-error">*</span></label>
+                        <input type="email" value={data.email} onChange={e => setData('email', e.target.value)} className={inputClass} required />
                         <InputError message={errors.email} className="mt-1" />
                     </div>
-                    <div>
+                    <div className="flex min-h-0 flex-col sm:h-full">
                         <label className="block text-sm font-medium text-on-surface mb-1.5">
-                            Password {editing ? <span className="text-xs text-on-surface-variant font-normal">(leave blank to keep)</span> : <span className="text-error">*</span>}
+                            {t('admin.employees.modal.password')}
+                            {!editing && <span className="text-error"> *</span>}
                         </label>
-                        <input type="password" value={data.password} onChange={e => setData('password', e.target.value)} className={inputClass} placeholder="••••••••" required={!editing} />
-                        <InputError message={errors.password} className="mt-1" />
+                        {editing && (
+                            <p className="text-xs text-on-surface-variant mb-1.5 leading-snug">
+                                {t('admin.employees.modal.password_keep_hint')}
+                            </p>
+                        )}
+                        <div className="mt-auto">
+                            <input type="password" value={data.password} onChange={e => setData('password', e.target.value)} className={inputClass} required={!editing} />
+                            <InputError message={errors.password} className="mt-1" />
+                        </div>
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium text-on-surface mb-1.5">Phone <span className="text-xs text-on-surface-variant font-normal">(optional)</span></label>
-                        <input type="tel" value={data.phone} onChange={e => setData('phone', e.target.value)} className={inputClass} placeholder="+1 555 000 0000" />
+                    <div className="flex min-h-0 flex-col sm:h-full">
+                        <label className="block text-sm font-medium text-on-surface mb-1.5">
+                            {t('admin.employees.modal.phone')}{' '}
+                            <span className="text-xs text-on-surface-variant font-normal">{t('admin.employees.modal.optional')}</span>
+                        </label>
+                        <div className="mt-auto">
+                            <input type="tel" value={data.phone} onChange={e => setData('phone', e.target.value)} className={inputClass} />
+                        </div>
                     </div>
                     <div className="sm:col-span-2">
-                        <label className="block text-sm font-medium text-on-surface mb-1.5">Job Title <span className="text-xs text-on-surface-variant font-normal">(optional)</span></label>
-                        <input value={data.title} onChange={e => setData('title', e.target.value)} className={inputClass} placeholder="e.g., Barber, Nail Technician" />
+                        <label className="block text-sm font-medium text-on-surface mb-1.5">
+                            {t('admin.employees.modal.job_title')}{' '}
+                            <span className="text-xs text-on-surface-variant font-normal">{t('admin.employees.modal.optional')}</span>
+                        </label>
+                        <input value={data.title} onChange={e => setData('title', e.target.value)} className={inputClass} />
                     </div>
                     {!editingOwner && (
                         <div className="sm:col-span-2">
                             <label className="block text-sm font-medium text-on-surface mb-1.5">
-                                Access role <span className="text-xs text-on-surface-variant font-normal">(optional)</span>
+                                {t('admin.employees.modal.access_role')}{' '}
+                                <span className="text-xs text-on-surface-variant font-normal">{t('admin.employees.modal.optional')}</span>
                             </label>
-                            <select
-                                value={data.business_role_id}
-                                onChange={(e) => setData('business_role_id', e.target.value)}
-                                className={inputClass}
-                            >
-                                <option value="">Default — full employee workspace only</option>
-                                {businessRoles.map((r) => (
-                                    <option key={r.id} value={String(r.id)}>
-                                        {r.name}
-                                    </option>
-                                ))}
-                            </select>
+                            <FilterListbox
+                                showLabel={false}
+                                placeholder=""
+                                value={data.business_role_id === '' || data.business_role_id == null ? '' : String(data.business_role_id)}
+                                onChange={(v) =>
+                                    setData('business_role_id', v === '' || v == null ? '' : String(v))
+                                }
+                                options={roleOptions}
+                                minWidthClass="min-w-0 w-full"
+                                wrapperClassName="w-full gap-1"
+                                buttonClassName={roleListboxButtonClass}
+                                panelClassName={roleListboxPanelClass}
+                                optionClassName={roleListboxOptionClass}
+                            />
                             <p className="text-xs text-on-surface-variant mt-1.5">
-                                Create roles under Roles &amp; permissions to give managers access to parts of the admin panel.
+                                {t('admin.employees.modal.roles_help')}
                             </p>
                             <InputError message={errors.business_role_id} className="mt-1" />
                         </div>
                     )}
                     {editingOwner && (
                         <div className="sm:col-span-2 rounded-xl border border-outline-variant/50 bg-surface-container-low/40 px-4 py-3">
-                            <p className="text-sm font-medium text-on-surface">Business owner</p>
+                            <p className="text-sm font-medium text-on-surface">{t('admin.employees.modal.owner_banner_title')}</p>
                             <p className="text-xs text-on-surface-variant mt-1">
-                                Admin access is always available. To appear on the booking page as staff, use{' '}
-                                <strong>Configuration</strong> → <strong>I also work as staff</strong>.
+                                {t('admin.employees.modal.owner_banner_body')}
                             </p>
                         </div>
                     )}
@@ -139,7 +175,7 @@ export default function EmployeeModal({ show, onClose, editing, services, busine
 
                 {services?.length > 0 && (
                     <div className="mt-4">
-                        <label className="block text-sm font-medium text-on-surface mb-2">Assigned Services</label>
+                        <label className="block text-sm font-medium text-on-surface mb-2">{t('admin.employees.modal.assigned_services')}</label>
                         <Listbox
                             value={data.service_ids}
                             onChange={(ids) => setData('service_ids', ids)}
@@ -190,15 +226,15 @@ export default function EmployeeModal({ show, onClose, editing, services, busine
                         <input type="checkbox" checked={data.is_active} onChange={e => setData('is_active', e.target.checked)} className="peer sr-only" />
                         <div className="peer h-5 w-9 rounded-full bg-outline-variant after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-on-surface peer-checked:after:translate-x-full" />
                     </label>
-                    <span className="text-sm text-on-surface">Active account</span>
+                    <span className="text-sm text-on-surface">{t('admin.employees.modal.active_account')}</span>
                 </div>
 
                 <div className="mt-6 flex items-center justify-end gap-3">
                     <button type="button" onClick={onClose} className="rounded-xl border border-outline-variant px-5 py-2.5 text-sm font-medium text-on-surface hover:bg-surface-container-low transition-colors">
-                        Cancel
+                        {t('admin.employees.modal.cancel')}
                     </button>
                     <button type="submit" disabled={processing} className="rounded-xl bg-on-surface px-5 py-2.5 text-sm font-semibold text-surface hover:opacity-90 transition-opacity disabled:opacity-50">
-                        {processing ? 'Saving...' : (editing ? 'Save Changes' : 'Add Employee')}
+                        {processing ? t('admin.employees.modal.saving') : (editing ? t('admin.employees.modal.save_changes') : t('admin.employees.modal.submit_add'))}
                     </button>
                 </div>
             </form>

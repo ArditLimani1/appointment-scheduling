@@ -13,6 +13,14 @@ class UpdateServiceRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $business = $this->user()?->panelBusiness();
+        if ($business && ! $business->uses_shared_resources) {
+            $this->merge(['resources' => []]);
+        }
+    }
+
     public function rules(): array
     {
         $businessId = $this->user()->panelBusiness()?->id;
@@ -54,13 +62,13 @@ class UpdateServiceRequest extends FormRequest
                 if ($resource && $qty > $resource->capacity) {
                     $validator->errors()->add(
                         "resources.$i.quantity",
-                        'Quantity cannot exceed the resource capacity.'
+                        __('request_messages.service.resource_quantity')
                     );
                 }
             }
 
             if (count($ids) !== count(array_unique($ids))) {
-                $validator->errors()->add('resources', 'Each resource can only be added once.');
+                $validator->errors()->add('resources', __('request_messages.service.resource_duplicate'));
             }
         });
     }

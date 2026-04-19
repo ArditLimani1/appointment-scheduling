@@ -13,6 +13,7 @@ class Business extends Model
         'description', 'logo', 'timezone', 'currency', 'currency_symbol',
         'slot_duration', 'min_booking_notice', 'max_booking_window',
         'is_active', 'client_identifier_type', 'allow_employee_service_edit',
+        'uses_shared_resources',
     ];
 
     protected function casts(): array
@@ -20,6 +21,7 @@ class Business extends Model
         return [
             'is_active' => 'boolean',
             'allow_employee_service_edit' => 'boolean',
+            'uses_shared_resources' => 'boolean',
         ];
     }
 

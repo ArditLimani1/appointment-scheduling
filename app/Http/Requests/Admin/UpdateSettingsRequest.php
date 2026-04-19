@@ -36,13 +36,14 @@ class UpdateSettingsRequest extends FormRequest
             'client_identifier_type' => ['sometimes', 'required', 'in:phone,email'],
             'owner_also_works_as_staff' => ['sometimes', 'boolean'],
             'allow_employee_service_edit' => ['sometimes', 'boolean'],
+            'uses_shared_resources' => ['sometimes', 'boolean'],
         ];
     }
 
     public function messages(): array
     {
         return [
-            'slug.unique' => 'This booking URL is already used by another registered business.',
+            'slug.unique' => __('request_messages.settings.slug_unique'),
         ];
     }
 }

@@ -11,7 +11,7 @@ export function parseAppointmentDate(raw) {
     return new Date(`${ymd}T12:00:00`);
 }
 
-export function formatAppointmentDate(raw, options, locale = 'en-GB') {
+export function formatAppointmentDate(raw, options, locale = 'sq-AL') {
     const d = parseAppointmentDate(raw);
     if (!d || Number.isNaN(d.getTime())) return '—';
     return d.toLocaleDateString(locale, options);

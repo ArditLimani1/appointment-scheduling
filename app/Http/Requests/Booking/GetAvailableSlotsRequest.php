@@ -50,13 +50,13 @@ class GetAvailableSlotsRequest extends FormRequest
                 $requestDay = Carbon::parse($dateInput, $timezone)->startOfDay();
                 $todayBusiness = Carbon::now($timezone)->startOfDay();
                 if ($requestDay->lt($todayBusiness)) {
-                    $validator->errors()->add('date', 'The date must be today or later.');
+                    $validator->errors()->add('date', __('request_messages.booking.date_past'));
                 }
 
                 $maxDay = Carbon::now($timezone)->startOfDay()
                     ->addDays((int) ($business->max_booking_window ?? 30));
                 if ($requestDay->gt($maxDay)) {
-                    $validator->errors()->add('date', 'The date is outside the allowed booking window.');
+                    $validator->errors()->add('date', __('request_messages.booking.date_window'));
                 }
             }
 
@@ -68,7 +68,7 @@ class GetAvailableSlotsRequest extends FormRequest
                 ->exists();
 
             if (! $employeeBelongsToBusiness) {
-                $validator->errors()->add('employee_id', 'The selected employee is not available for this business.');
+                $validator->errors()->add('employee_id', __('request_messages.booking.employee_invalid'));
             }
 
             $ids = array_values(array_unique(array_map('intval', $this->input('service_ids', []))));
@@ -82,13 +82,13 @@ class GetAvailableSlotsRequest extends FormRequest
                 ->count();
 
             if ($validCount !== count($ids)) {
-                $validator->errors()->add('service_ids', 'One or more selected services are not available for this business.');
+                $validator->errors()->add('service_ids', __('request_messages.booking.services_invalid'));
             }
 
             $employee = User::with(['services' => fn ($q) => $q->where('is_active', true)])->find($employeeId);
             foreach ($ids as $sid) {
                 if (! $employee || ! $employee->services->contains('id', $sid)) {
-                    $validator->errors()->add('service_ids', 'The selected professional does not offer all of the chosen services.');
+                    $validator->errors()->add('service_ids', __('request_messages.booking.services_mismatch'));
 
                     break;
                 }

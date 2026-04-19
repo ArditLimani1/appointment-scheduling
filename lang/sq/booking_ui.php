@@ -1,0 +1,75 @@
+<?php
+
+return [
+
+    'head_title' => 'Rezervo termin',
+
+    'hero' => [
+        'title' => 'Termin i ri',
+        'with_professional' => 'Rezervim me',
+        'subtitle' => 'Zgjidhni shërbimet, orarin dhe konfirmoni të dhënat tuaja.',
+        'default_business' => 'Planifikuesi',
+    ],
+
+    'steps' => [
+        'services' => 'Zgjidhni shërbimet',
+        'services_hint' => 'Mund të zgjedhni më shumë se një shërbim. Kohëzgjatja dhe çmimi llogariten së bashku.',
+        'professional' => 'Zgjidhni punonjësin',
+        'professional_pre' => 'Rezervimi bëhet me këtë anëtar të ekipit.',
+        'professional_hint' => 'Përzgjidhni punonjësin që do të kryejë shërbimin.',
+        'datetime' => 'Data dhe ora',
+        'date_label' => 'Data',
+        'date_placeholder' => 'Zgjidhni një datë',
+        'pick_date_first' => 'Zgjidhni datën për të parë oraret e lira.',
+        'no_slots' => 'Nuk ka orare të lira në këtë datë.',
+        'details' => 'Të dhënat e tua',
+        'full_name' => 'Emri i plotë',
+        'phone' => 'Numri i telefonit',
+        'phone_hint' => 'Vetëm shifra, opsionalisht + në fillim (6–20 shifra).',
+        'email' => 'E-Mail',
+        'notes' => 'Shënime (opsionale)',
+        'notes_placeholder' => 'Shënime për ekipin (opsionale)',
+        'confirm' => 'Konfirmoni rezervimin',
+        'submitting' => 'Duke rezervuar…',
+        'continue' => 'Vazhdo',
+        'service_count_one' => ':count shërbim',
+        'service_count_other' => ':count shërbime',
+        'unavailable_weekday' => 'Ky punonjës nuk është i disponueshëm në atë ditë të javës. Zgjidhni datë tjetër.',
+        'no_bookable_days' => 'Nuk ka ditë të disponueshme për rezervim në këtë periudhë për këtë punonjës. Mund të jetë e nevojshme të caktohen ditët e punës në orar.',
+        'load_times_error' => 'Nuk u ngarkuan dot oraret e lira.',
+        'professional_empty' => 'Asnjë punonjës nuk i ofron të gjitha shërbimet e përzgjedhura së bashku. Ndryshoni përzgjedhjen ose kontaktoni biznesin.',
+        'pick_time' => 'zgjidhni orën',
+        'not_selected' => 'Nuk është përzgjedhur',
+        'summary_title' => 'Përmbledhja e rezervimit',
+        'summary_services' => 'Shërbimet',
+        'summary_professional' => 'Punonjësi',
+        'summary_datetime' => 'Data dhe ora',
+        'summary_total' => 'Totali',
+        'terms_note' => 'Duke konfirmuar, pajtoheni me Kushtet e Shërbimit.',
+        'optional' => '(opsionale)',
+    ],
+
+    'specialist_fallback' => 'Punonjësi',
+
+    'min_suffix' => 'min',
+
+    'confirmation' => [
+        'head_title' => 'Rezervimi u konfirmua',
+        'submitted_title' => 'Kërkesa u dërgua',
+        'thanks' => 'Faleminderit për rezervimin te :business.',
+        'requested_time' => 'Koha e kërkuar:',
+        'request_summary' => 'Përmbledhje e kërkesës',
+        'services_professional' => 'Shërbimet dhe punonjësi',
+        'service_fallback' => 'Shërbimi',
+        'with_employee' => 'me :name',
+        'date' => 'Data',
+        'time' => 'Ora',
+        'business_location' => 'Adresa e biznesit',
+        'total' => 'Totali',
+        'book_another' => 'Rezervo një termin tjetër',
+        'change_note' => 'Duhet ta ndryshoni këtë kërkesë? Kontaktoni biznesin sa më shpejt të jetë e mundur. Detajet përfundimtare do të dërgohen pasi të konfirmohet termini.',
+        'default_business' => 'biznesi',
+        'default_scheduler' => 'Planifikuesi',
+    ],
+
+];

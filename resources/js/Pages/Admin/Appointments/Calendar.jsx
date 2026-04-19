@@ -18,13 +18,12 @@ import {
     normalizeAppointmentStatusFilter,
 } from '@/utils/appointmentStatusFilter';
 import { shiftCalendarAnchor, todayYmd } from '@/utils/calendarNavigation';
+import { useT } from '@/i18n/useT';
 
 const APPOINTMENT_STATUSES = ['pending', 'confirmed', 'cancelled'];
 
-const VIEW_OPTIONS = [
-    { value: 'day', label: 'Day' },
-    { value: 'week', label: 'Week' },
-];
+/** Headless UI Listbox can mis-handle empty-string values; use a sentinel for “all services”. */
+const SERVICE_FILTER_ALL = 'all';
 
 function parseYmd(ymd) {
     const [y, m, d] = String(ymd).split('-').map(Number);
@@ -35,6 +34,13 @@ function getRoutePathname(routeName) {
     return new URL(route(routeName), window.location.href).pathname;
 }
 
+function normalizeServiceFilterForState(serviceIdFromServer) {
+    if (serviceIdFromServer == null || serviceIdFromServer === '') {
+        return SERVICE_FILTER_ALL;
+    }
+    return String(serviceIdFromServer);
+}
+
 function buildCalendarUrl(employeeCalendar, date, view, filters) {
     const params = new URLSearchParams();
     params.set('date', date);
@@ -43,6 +49,10 @@ function buildCalendarUrl(employeeCalendar, date, view, filters) {
         params.set('employee_id', String(filters.employee_id));
     }
     appendAppointmentStatusParams(params, filters.status);
+    const sid = filters.service_id;
+    if (sid != null && sid !== '' && sid !== SERVICE_FILTER_ALL) {
+        params.set('service_id', String(sid));
+    }
     const qs = params.toString();
     const routeName = employeeCalendar ? 'employee.appointments.calendar' : 'admin.appointments.calendar';
     const path = getRoutePathname(routeName);
@@ -90,6 +100,7 @@ export default function Calendar({
     calendar_employee_day_breaks: calendarEmployeeDayBreaks = {},
     calendar_employee_day_offs: calendarEmployeeDayOffs = {},
 }) {
+    const t = useT();
     const [selected, setSelected] = useState(null);
     const [dragSavingId, setDragSavingId] = useState(null);
     const [moveError, setMoveError] = useState(null);
@@ -102,13 +113,14 @@ export default function Calendar({
         () => ({
             employee_id: filtersProp.employee_id != null && filtersProp.employee_id !== '' ? String(filtersProp.employee_id) : '',
             status: normalizeAppointmentStatusFilter(filtersProp.status),
+            service_id: normalizeServiceFilterForState(filtersProp.service_id),
             view: filtersProp.view === 'day' || filtersProp.view === 'week' ? filtersProp.view : calendar_view === 'day' ? 'day' : 'week',
             date:
                 filtersProp.date != null && String(filtersProp.date).match(/^\d{4}-\d{2}-\d{2}$/)
                     ? String(filtersProp.date).slice(0, 10)
                     : range_start,
         }),
-        [filtersProp.employee_id, statusFilterKey, filtersProp.view, filtersProp.date, calendar_view, range_start],
+        [filtersProp.employee_id, filtersProp.service_id, statusFilterKey, filtersProp.view, filtersProp.date, calendar_view, range_start],
     );
 
     const [localFilters, setLocalFilters] = useState(normalizedFilters);
@@ -155,6 +167,7 @@ export default function Calendar({
         const next = {
             employee_id: employeeCalendar ? localFilters.employee_id : '',
             status: [...DEFAULT_APPOINTMENT_STATUS_FILTER],
+            service_id: SERVICE_FILTER_ALL,
             date: todayYmd(),
             view: localFilters.view,
         };
@@ -191,26 +204,41 @@ export default function Calendar({
                 onError: (errs) => {
                     setDragSavingId(null);
                     const first = errs.start_time || errs.date || Object.values(errs)[0];
-                    setMoveError(typeof first === 'string' ? first : 'Could not move appointment.');
+                    setMoveError(typeof first === 'string' ? first : t('admin.calendar.move_error'));
                 },
                 onFinish: () => setDragSavingId(null),
             });
         },
-        [employeeCalendar],
+        [employeeCalendar, t],
     );
 
     const employeeOptions = useMemo(
-        () => [{ value: '', label: 'All Staff' }, ...employees.map((e) => ({ value: String(e.id), label: e.name }))],
-        [employees],
+        () => [{ value: '', label: t('admin.appointments.all_staff') }, ...employees.map((e) => ({ value: String(e.id), label: e.name }))],
+        [employees, t],
+    );
+    const viewOptions = useMemo(
+        () => [
+            { value: 'day', label: t('admin.calendar.day') },
+            { value: 'week', label: t('admin.calendar.week') },
+        ],
+        [t],
     );
 
     const statusOptions = useMemo(
         () =>
             APPOINTMENT_STATUSES.map((status) => ({
                 value: status,
-                label: status.charAt(0).toUpperCase() + status.slice(1),
+                label: t(`common.status.${status}`),
             })),
-        [],
+        [t],
+    );
+
+    const serviceOptions = useMemo(
+        () => [
+            { value: SERVICE_FILTER_ALL, label: t('admin.calendar.all_services') },
+            ...services.map((s) => ({ value: String(s.id), label: s.name })),
+        ],
+        [services, t],
     );
 
     const titleMain = useMemo(
@@ -243,15 +271,15 @@ export default function Calendar({
 
     return (
         <Layout>
-            <Head title="Appointments — Calendar" />
+            <Head title={t('admin.calendar.head_title')} />
 
             <div className="w-full min-w-0 max-w-full">
                 {employeeCalendar ? (
                     <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
                         <div className="min-w-0 flex-1">
-                            <h1 className="mb-2 font-headline text-4xl font-extrabold tracking-tight text-on-surface">Appointments</h1>
+                            <h1 className="mb-2 font-headline text-4xl font-extrabold tracking-tight text-on-surface">{t('admin.appointments.title')}</h1>
                             <p className="text-lg text-on-surface-variant">
-                                Day or week view. Drag to reschedule, or open an appointment to change service, time, or status.
+                                {t('admin.calendar.employee_description')}
                             </p>
                         </div>
                         <div className="flex w-full shrink-0 justify-end sm:w-auto">
@@ -260,21 +288,21 @@ export default function Calendar({
                                 className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-on-surface hover:bg-slate-50"
                             >
                                 <Icon name="view_list" size="text-lg" />
-                                Table view
+                                {t('admin.calendar.table_view')}
                             </Link>
                         </div>
                     </div>
                 ) : (
                     <PageHeader
-                        title="Appointments"
-                        description="Day or week view. Pick a date to choose which day or week to show. Drag events to reschedule."
+                        title={t('admin.appointments.title')}
+                        description={t('admin.calendar.description')}
                     >
                         <Link
-                            href={route('admin.appointments.index')}
+                            href={`${route('admin.appointments.index', {}, false)}?list=1`}
                             className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-on-surface hover:bg-slate-50"
                         >
                             <Icon name="view_list" size="text-lg" />
-                            List view
+                            {t('admin.calendar.list_view')}
                         </Link>
                     </PageHeader>
                 )}
@@ -290,7 +318,7 @@ export default function Calendar({
                                 type="button"
                                 onClick={goPrev}
                                 className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50"
-                                aria-label="Previous period"
+                                aria-label={t('admin.calendar.previous_period')}
                             >
                                 <Icon name="chevron_left" />
                             </button>
@@ -298,7 +326,7 @@ export default function Calendar({
                                 <FilterListbox
                                     value={localFilters.view}
                                     onChange={(v) => patchFilters({ view: v, date: localFilters.date })}
-                                    options={VIEW_OPTIONS}
+                                    options={viewOptions}
                                     minWidthClass="min-w-[104px]"
                                     compact
                                     showLabel={false}
@@ -308,7 +336,7 @@ export default function Calendar({
                                 type="button"
                                 onClick={goNext}
                                 className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50"
-                                aria-label="Next period"
+                                aria-label={t('admin.calendar.next_period')}
                             >
                                 <Icon name="chevron_right" />
                             </button>
@@ -316,8 +344,8 @@ export default function Calendar({
                                 type="button"
                                 onClick={goToday}
                                 className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50"
-                                title="Go to today"
-                                aria-label="Go to today"
+                                title={t('admin.calendar.today')}
+                                aria-label={t('admin.calendar.today')}
                             >
                                 <Icon name="calendar_today" />
                             </button>
@@ -327,21 +355,27 @@ export default function Calendar({
                     <div className="mt-4 flex flex-wrap gap-3 border-t border-slate-100 pt-4 items-end">
                         {!employeeCalendar && (
                             <FilterListbox
-                                label="Employee"
+                                label={t('admin.calendar.employee')}
                                 value={localFilters.employee_id}
                                 onChange={(v) => patchFilters({ employee_id: v })}
                                 options={employeeOptions}
                             />
                         )}
                         <DatePicker
-                            label="Date"
+                            label={t('admin.calendar.date')}
                             value={localFilters.date}
                             onChange={(value) => patchFilters({ date: value || todayYmd() })}
-                            placeholder="Select date"
+                            placeholder={t('admin.calendar.date_ph')}
                             portal
                         />
+                        <FilterListbox
+                            label={t('admin.calendar.service')}
+                            value={localFilters.service_id}
+                            onChange={(v) => patchFilters({ service_id: v })}
+                            options={serviceOptions}
+                        />
                         <FilterStatusMulti
-                            label="Status"
+                            label={t('admin.calendar.status')}
                             value={localFilters.status}
                             onChange={(v) => patchFilters({ status: v })}
                             options={statusOptions}
@@ -353,14 +387,14 @@ export default function Calendar({
                                 onClick={clearFilters}
                                 className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-slate-50"
                             >
-                                Clear
+                                {t('admin.calendar.clear')}
                             </button>
                         </div>
                     </div>
 
                     {!employeeCalendar && (
                         <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-slate-100 pt-4">
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-outline">Staff</span>
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-outline">{t('admin.calendar.staff')}</span>
                             <div className="flex flex-wrap gap-4">
                                 {employees.map((e) => (
                                     <div key={e.id} className="flex items-center gap-2">
@@ -382,7 +416,7 @@ export default function Calendar({
                         <Icon name="error" className="shrink-0 text-red-600" />
                         <span>{moveError}</span>
                         <button type="button" className="ml-auto font-bold underline" onClick={() => setMoveError(null)}>
-                            Dismiss
+                            {t('admin.calendar.dismiss')}
                         </button>
                     </div>
                 )}

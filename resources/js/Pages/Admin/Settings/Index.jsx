@@ -2,6 +2,7 @@ import { Head, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import Icon from '@/Components/Icon';
+import { useT } from '@/i18n/useT';
 
 /** Editable fields: clear surface + ring (not gray read-only look). */
 const editableInputCls =
@@ -14,6 +15,16 @@ const rulesNumberCls =
     'w-24 border-0 rounded-lg py-2 px-3 text-sm font-bold text-on-surface text-center bg-surface-container-lowest ring-1 ring-outline-variant focus:outline-none focus:ring-2 focus:ring-on-surface/20 transition-shadow';
 
 function ConfirmSaveModal({ section, onConfirm, onCancel }) {
+    const t = useT();
+    const title =
+        section === 'identity'
+            ? t('admin.settings.confirm.identity_title')
+            : t('admin.settings.confirm.rules_title');
+    const body =
+        section === 'identity'
+            ? t('admin.settings.confirm.identity_body')
+            : t('admin.settings.confirm.rules_body');
+
     return (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onCancel} />
@@ -23,10 +34,8 @@ function ConfirmSaveModal({ section, onConfirm, onCancel }) {
                         <Icon name="save" size="text-xl" className="text-amber-600" />
                     </div>
                     <div>
-                        <h2 className="text-base font-extrabold text-on-surface">Save {section}?</h2>
-                        <p className="mt-1 text-sm text-on-surface-variant">
-                            Are you sure you want to save the changes to <span className="font-semibold text-on-surface">{section}</span>? This will update your configuration immediately.
-                        </p>
+                        <h2 className="text-base font-extrabold text-on-surface">{title}</h2>
+                        <p className="mt-1 text-sm text-on-surface-variant">{body}</p>
                     </div>
                 </div>
                 <div className="mt-6 flex items-center justify-end gap-3">
@@ -35,14 +44,14 @@ function ConfirmSaveModal({ section, onConfirm, onCancel }) {
                         onClick={onCancel}
                         className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-on-surface hover:bg-slate-50 transition-colors"
                     >
-                        Cancel
+                        {t('admin.settings.confirm.cancel')}
                     </button>
                     <button
                         type="button"
                         onClick={onConfirm}
                         className="rounded-xl bg-on-surface px-6 py-2.5 text-sm font-bold text-surface hover:opacity-90 transition-opacity"
                     >
-                        Yes, Save
+                        {t('admin.settings.confirm.yes_save')}
                     </button>
                 </div>
             </div>
@@ -68,6 +77,7 @@ export default function Index({
     show_owner_staff_toggle = false,
     owner_also_works_as_staff = false,
 }) {
+    const t = useT();
     const { flash } = usePage().props;
     const [activeTab, setActiveTab] = useState('identity');
 
@@ -131,6 +141,7 @@ export default function Index({
         max_booking_window: settings.max_booking_window || 30,
         client_identifier_type: settings.client_identifier_type || 'phone',
         allow_employee_service_edit: settings.allow_employee_service_edit ?? true,
+        uses_shared_resources: settings.uses_shared_resources ?? true,
         ...(show_owner_staff_toggle ? { owner_also_works_as_staff: !!owner_also_works_as_staff } : {}),
     });
 
@@ -161,23 +172,23 @@ export default function Index({
 
     return (
         <AdminLayout>
-            <Head title="Configuration" />
+            <Head title={t('admin.settings.head_title')} />
 
             <header className="mb-10">
                 <nav className="flex items-center gap-1.5 text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-4">
-                    <span>Settings</span>
+                    <span>{t('admin.settings.breadcrumb_settings')}</span>
                     <Icon name="chevron_right" size="text-sm" />
-                    <span className="text-on-surface">Business Configuration</span>
+                    <span className="text-on-surface">{t('admin.settings.breadcrumb_current')}</span>
                 </nav>
-                <h1 className="text-4xl font-extrabold font-headline tracking-tight text-on-surface mb-2">Business Configuration</h1>
-                <p className="text-on-surface-variant max-w-2xl text-base leading-relaxed">Manage your business identity and configure booking rules for your clients.</p>
+                <h1 className="text-4xl font-extrabold font-headline tracking-tight text-on-surface mb-2">{t('admin.settings.page_title')}</h1>
+                <p className="text-on-surface-variant max-w-2xl text-base leading-relaxed">{t('admin.settings.page_subtitle')}</p>
             </header>
 
             {flash?.info && (
                 <div className="mb-6 flex items-start gap-3 rounded-2xl border border-outline-variant/40 bg-primary-container/15 px-5 py-4 text-sm text-on-surface">
                     <Icon name="info" size="text-lg" className="mt-0.5 shrink-0 text-on-surface" />
                     <div>
-                        <p className="font-bold">Finish business setup to unlock the dashboard.</p>
+                        <p className="font-bold">{t('admin.settings.flash_setup_title')}</p>
                         <p className="mt-1 text-on-surface-variant">{flash.info}</p>
                     </div>
                 </div>
@@ -195,7 +206,7 @@ export default function Index({
                     }`}
                 >
                     <Icon name="domain" size="text-base" />
-                    Business Identity
+                    {t('admin.settings.tabs.identity')}
                 </button>
                 <button
                     type="button"
@@ -207,7 +218,7 @@ export default function Index({
                     }`}
                 >
                     <Icon name="rule" size="text-base" />
-                    Booking Rules
+                    {t('admin.settings.tabs.rules')}
                 </button>
             </div>
 
@@ -218,14 +229,14 @@ export default function Index({
                     <section className="bg-surface-container-low p-8 rounded-xl">
                         <div className="flex items-center gap-3 mb-8">
                             <Icon name="domain" size="text-xl" className="text-on-surface" />
-                            <h3 className="text-xl font-bold font-headline text-on-surface">Business Identity</h3>
+                            <h3 className="text-xl font-bold font-headline text-on-surface">{t('admin.settings.identity_section')}</h3>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
 
                             {/* Business Name */}
                             <div>
-                                <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">Business Name</label>
+                                <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">{t('admin.settings.label_business_name')}</label>
                                 <input
                                     type="text"
                                     value={identity.data.name}
@@ -237,11 +248,11 @@ export default function Index({
                             </div>
 
                             {/* Account Email — always read-only */}
-                            <ReadOnlyField label="Account Email" value={owner_email} icon="mail" />
+                            <ReadOnlyField label={t('admin.settings.label_account_email')} value={owner_email} icon="mail" />
 
                             {/* Phone */}
                             <div>
-                                <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">Phone Number</label>
+                                <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">{t('admin.settings.label_phone')}</label>
                                 <input
                                     type="tel"
                                     value={identity.data.phone}
@@ -253,7 +264,7 @@ export default function Index({
 
                             {/* Location */}
                             <div>
-                                <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">Location</label>
+                                <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">{t('admin.settings.label_location')}</label>
                                 <input
                                     type="text"
                                     value={identity.data.location}
@@ -265,9 +276,9 @@ export default function Index({
 
                             {/* Booking URL (slug editable) */}
                             <div className="sm:col-span-2">
-                                <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">Booking URL</label>
+                                <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">{t('admin.settings.label_booking_url')}</label>
                                 <div className={bookingSlugRowCls}>
-                                    <span className="shrink-0 px-3 py-3 text-xs text-on-surface-variant border-r border-outline-variant/30 bg-surface-container whitespace-nowrap">/book/</span>
+                                    <span className="shrink-0 px-3 py-3 text-xs text-on-surface-variant border-r border-outline-variant/30 bg-surface-container whitespace-nowrap">{t('admin.settings.booking_path_prefix')}</span>
                                     <input
                                         type="text"
                                         value={identity.data.slug}
@@ -279,7 +290,7 @@ export default function Index({
                                         type="button"
                                         onClick={copyBookingUrl}
                                         className="shrink-0 p-2 mr-1 hover:bg-surface-container rounded-md transition-colors"
-                                        title="Copy booking path"
+                                        title={t('admin.settings.copy_booking_path')}
                                     >
                                         <Icon name={copiedBooking ? 'check' : 'content_copy'} size="text-base" className="text-on-surface-variant" />
                                     </button>
@@ -288,14 +299,16 @@ export default function Index({
                             </div>
 
                             <div className="sm:col-span-2">
-                                <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">Business Logo</label>
+                                <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">{t('admin.settings.label_logo')}</label>
                                 <div className="rounded-2xl border border-dashed border-outline-variant/60 bg-surface-container-lowest ring-1 ring-outline-variant/40 px-4 py-4">
                                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                                         <div className="flex items-center gap-4 min-w-0">
                                             {selectedLogoPreview || currentLogoUrl ? (
                                                 <img
                                                     src={selectedLogoPreview || currentLogoUrl}
-                                                    alt={`${identity.data.name || 'Business'} logo`}
+                                                    alt={t('admin.settings.logo_alt', {
+                                                        name: identity.data.name || t('admin.settings.default_business_name'),
+                                                    })}
                                                     className="h-16 w-16 rounded-2xl object-cover border border-outline-variant/30 bg-surface-container"
                                                 />
                                             ) : (
@@ -306,17 +319,19 @@ export default function Index({
 
                                             <div className="min-w-0">
                                                 <p className="text-sm font-semibold text-on-surface">
-                                                    {identity.data.logo ? identity.data.logo.name : currentLogoUrl ? 'Current business logo' : 'No logo uploaded yet'}
+                                                    {identity.data.logo
+                                                        ? t('admin.settings.logo_status_new')
+                                                        : currentLogoUrl
+                                                          ? t('admin.settings.logo_status_current')
+                                                          : t('admin.settings.logo_status_none')}
                                                 </p>
-                                                <p className="mt-1 text-xs text-on-surface-variant">
-                                                    Upload a PNG, JPG, or WEBP file up to 2 MB. New uploads replace the current logo.
-                                                </p>
+                                                <p className="mt-1 text-xs text-on-surface-variant">{t('admin.settings.logo_help')}</p>
                                             </div>
                                         </div>
 
                                         <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-surface-container-lowest px-4 py-3 text-sm font-semibold text-on-surface ring-1 ring-outline-variant hover:bg-surface-container transition-colors">
                                             <Icon name="upload" size="text-base" />
-                                            Choose logo
+                                            {t('admin.settings.choose_logo')}
                                             <input
                                                 type="file"
                                                 accept="image/png,image/jpeg,image/webp,image/jpg"
@@ -337,11 +352,11 @@ export default function Index({
                                 disabled={identity.processing}
                                 className="bg-on-surface text-surface px-10 py-4 rounded-xl font-bold font-headline text-base hover:opacity-90 active:-translate-y-px transition-all disabled:opacity-50"
                             >
-                                {identity.processing ? 'Saving…' : 'Save Configuration'}
+                                {identity.processing ? t('admin.settings.saving') : t('admin.settings.save_configuration')}
                             </button>
                             {identity.recentlySuccessful && (
                                 <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">
-                                    <Icon name="check_circle" size="text-sm" className="text-on-primary-container" /> Saved successfully
+                                    <Icon name="check_circle" size="text-sm" className="text-on-primary-container" /> {t('admin.settings.saved_success')}
                                 </p>
                             )}
                         </div>
@@ -355,15 +370,15 @@ export default function Index({
                     <section className="bg-surface-container-low p-8 rounded-xl">
                         <div className="flex items-center gap-3 mb-8">
                             <Icon name="rule" size="text-xl" className="text-on-surface" />
-                            <h3 className="text-xl font-bold font-headline text-on-surface">Booking Rules</h3>
+                            <h3 className="text-xl font-bold font-headline text-on-surface">{t('admin.settings.rules_section')}</h3>
                         </div>
 
                         {/* Top row: three numeric rules in a grid */}
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
                             <div className="bg-surface rounded-xl p-6 flex flex-col gap-4">
                                 <div>
-                                    <p className="text-sm font-bold text-on-surface">Time Slot Duration</p>
-                                    <p className="text-xs text-on-surface-variant mt-0.5 leading-tight">Minimum interval between available appointments.</p>
+                                    <p className="text-sm font-bold text-on-surface">{t('admin.settings.slot_duration_title')}</p>
+                                    <p className="text-xs text-on-surface-variant mt-0.5 leading-tight">{t('admin.settings.slot_duration_help')}</p>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <input
@@ -372,14 +387,14 @@ export default function Index({
                                         onChange={e => setData('slot_duration', parseInt(e.target.value))}
                                         className={rulesNumberCls}
                                     />
-                                    <span className="text-xs font-bold text-on-surface-variant uppercase">min</span>
+                                    <span className="text-xs font-bold text-on-surface-variant uppercase">{t('admin.settings.unit_min')}</span>
                                 </div>
                             </div>
 
                             <div className="bg-surface rounded-xl p-6 flex flex-col gap-4">
                                 <div>
-                                    <p className="text-sm font-bold text-on-surface">Minimum Notice</p>
-                                    <p className="text-xs text-on-surface-variant mt-0.5 leading-tight">Lead time required before a booking can be made.</p>
+                                    <p className="text-sm font-bold text-on-surface">{t('admin.settings.min_notice_title')}</p>
+                                    <p className="text-xs text-on-surface-variant mt-0.5 leading-tight">{t('admin.settings.min_notice_help')}</p>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <input
@@ -388,14 +403,14 @@ export default function Index({
                                         onChange={e => setData('min_booking_notice', parseInt(e.target.value))}
                                         className={rulesNumberCls}
                                     />
-                                    <span className="text-xs font-bold text-on-surface-variant uppercase">min</span>
+                                    <span className="text-xs font-bold text-on-surface-variant uppercase">{t('admin.settings.unit_min')}</span>
                                 </div>
                             </div>
 
                             <div className="bg-surface rounded-xl p-6 flex flex-col gap-4">
                                 <div>
-                                    <p className="text-sm font-bold text-on-surface">Booking Window</p>
-                                    <p className="text-xs text-on-surface-variant mt-0.5 leading-tight">How far in advance clients can schedule.</p>
+                                    <p className="text-sm font-bold text-on-surface">{t('admin.settings.booking_window_title')}</p>
+                                    <p className="text-xs text-on-surface-variant mt-0.5 leading-tight">{t('admin.settings.booking_window_help')}</p>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <input
@@ -404,7 +419,7 @@ export default function Index({
                                         onChange={e => setData('max_booking_window', parseInt(e.target.value))}
                                         className={rulesNumberCls}
                                     />
-                                    <span className="text-xs font-bold text-on-surface-variant uppercase">days</span>
+                                    <span className="text-xs font-bold text-on-surface-variant uppercase">{t('admin.settings.unit_days')}</span>
                                 </div>
                             </div>
                         </div>
@@ -414,8 +429,8 @@ export default function Index({
 
                             {/* Client Identification */}
                             <div className="bg-surface rounded-xl p-6">
-                                <p className="text-sm font-bold text-on-surface mb-1">Client Identification</p>
-                                <p className="text-xs text-on-surface-variant mb-4">How clients are identified when booking.</p>
+                                <p className="text-sm font-bold text-on-surface mb-1">{t('admin.settings.client_id_title')}</p>
+                                <p className="text-xs text-on-surface-variant mb-4">{t('admin.settings.client_id_help')}</p>
                                 <div className="flex gap-3">
                                     <button
                                         type="button"
@@ -427,7 +442,7 @@ export default function Index({
                                         }`}
                                     >
                                         <Icon name="phone" size="text-base" />
-                                        Phone
+                                        {t('admin.settings.client_id_phone')}
                                     </button>
                                     <button
                                         type="button"
@@ -439,16 +454,16 @@ export default function Index({
                                         }`}
                                     >
                                         <Icon name="mail" size="text-base" />
-                                        Email
+                                        {t('admin.settings.client_id_email')}
                                     </button>
                                 </div>
                             </div>
 
                             <div className="bg-surface rounded-xl p-6 flex items-center justify-between gap-4">
                                 <div>
-                                    <p className="text-sm font-bold text-on-surface">Allow staff service changes</p>
+                                    <p className="text-sm font-bold text-on-surface">{t('admin.settings.allow_service_edit_title')}</p>
                                     <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">
-                                        If off, employees can only edit appointment date and time.
+                                        {t('admin.settings.allow_service_edit_help')}
                                     </p>
                                 </div>
                                 <button
@@ -465,13 +480,34 @@ export default function Index({
                                 </button>
                             </div>
 
+                            <div className="bg-surface rounded-xl p-6 flex items-center justify-between gap-4 sm:col-span-2">
+                                <div>
+                                    <p className="text-sm font-bold text-on-surface">{t('admin.settings.uses_shared_resources_title')}</p>
+                                    <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">
+                                        {t('admin.settings.uses_shared_resources_help')}
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setData('uses_shared_resources', !data.uses_shared_resources)}
+                                    className={`relative shrink-0 w-12 h-6 rounded-full transition-colors duration-200 ${
+                                        data.uses_shared_resources ? 'bg-on-surface' : 'bg-surface-container-highest'
+                                    }`}
+                                    aria-pressed={data.uses_shared_resources}
+                                >
+                                    <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all duration-200 ${
+                                        data.uses_shared_resources ? 'right-1' : 'left-1'
+                                    }`} />
+                                </button>
+                            </div>
+
                             {/* I also work as staff — optional second-row card */}
                             {show_owner_staff_toggle && (
                                 <div className="bg-surface rounded-xl p-6 flex items-center justify-between gap-4">
                                     <div>
-                                        <p className="text-sm font-bold text-on-surface">I also work as staff</p>
+                                        <p className="text-sm font-bold text-on-surface">{t('admin.settings.owner_staff_title')}</p>
                                         <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">
-                                            Turn this on if you take appointments yourself.
+                                            {t('admin.settings.owner_staff_help')}
                                         </p>
                                     </div>
                                     <button
@@ -497,11 +533,11 @@ export default function Index({
                                 disabled={processing}
                                 className="bg-on-surface text-surface px-10 py-4 rounded-xl font-bold font-headline text-base hover:opacity-90 active:-translate-y-px transition-all disabled:opacity-50"
                             >
-                                {processing ? 'Saving...' : 'Save Configuration'}
+                                {processing ? t('admin.settings.saving') : t('admin.settings.save_configuration')}
                             </button>
                             {recentlySuccessful && (
                                 <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">
-                                    <Icon name="check_circle" size="text-sm" className="text-on-primary-container" /> Saved successfully
+                                    <Icon name="check_circle" size="text-sm" className="text-on-primary-container" /> {t('admin.settings.saved_success')}
                                 </p>
                             )}
                         </div>
@@ -513,7 +549,7 @@ export default function Index({
 
             {confirmSection === 'identity' && (
                 <ConfirmSaveModal
-                    section="Business Identity"
+                    section="identity"
                     onConfirm={doSaveIdentity}
                     onCancel={() => setConfirmSection(null)}
                 />
@@ -521,7 +557,7 @@ export default function Index({
 
             {confirmSection === 'rules' && (
                 <ConfirmSaveModal
-                    section="Booking Rules"
+                    section="rules"
                     onConfirm={doSaveRules}
                     onCancel={() => setConfirmSection(null)}
                 />

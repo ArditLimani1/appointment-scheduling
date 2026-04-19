@@ -3,6 +3,7 @@ import { router, useForm, usePage } from '@inertiajs/react';
 import Modal from '@/Components/Modal';
 import Icon from '@/Components/Icon';
 import InputError from '@/Components/InputError';
+import { useT } from '@/i18n/useT';
 
 function firstError(val) {
     if (val == null || val === '') {
@@ -12,6 +13,7 @@ function firstError(val) {
 }
 
 export default function ResourceModal({ show, onClose, editing }) {
+    const t = useT();
     const { data, setData, reset } = useForm({
         name: '',
         capacity: '1',
@@ -41,7 +43,7 @@ export default function ResourceModal({ show, onClose, editing }) {
         const raw = String(data.capacity ?? '').trim();
         const cap = parseInt(raw, 10);
         if (raw === '' || !Number.isFinite(cap) || cap < 1) {
-            setCapacityError('Enter a whole number of at least 1.');
+            setCapacityError(t('admin.shared_resources.modal.capacity_invalid'));
             return;
         }
 
@@ -75,10 +77,10 @@ export default function ResourceModal({ show, onClose, editing }) {
                 <div className="flex items-start justify-between mb-5">
                     <div>
                         <h2 className="text-lg font-bold text-on-surface">
-                            {editing ? 'Edit resource' : 'Add resource'}
+                            {editing ? t('admin.shared_resources.modal.edit_title') : t('admin.shared_resources.modal.add_title')}
                         </h2>
                         <p className="text-xs text-on-surface-variant mt-0.5">
-                            Shared resources limit how many appointments can use them at the same time.
+                            {t('admin.shared_resources.modal.intro')}
                         </p>
                     </div>
                     <button
@@ -93,13 +95,12 @@ export default function ResourceModal({ show, onClose, editing }) {
                 <div className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-on-surface mb-1.5">
-                            Name <span className="text-error">*</span>
+                            {t('admin.shared_resources.modal.name_label')} <span className="text-error">*</span>
                         </label>
                         <input
                             value={data.name}
                             onChange={(e) => setData('name', e.target.value)}
                             className={inputClass}
-                            placeholder="e.g., Therapy Room"
                             autoFocus
                             required
                         />
@@ -107,7 +108,7 @@ export default function ResourceModal({ show, onClose, editing }) {
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-on-surface mb-1.5">
-                            Capacity <span className="text-error">*</span>
+                            {t('admin.shared_resources.modal.capacity_label')} <span className="text-error">*</span>
                         </label>
                         <input
                             type="text"
@@ -127,10 +128,9 @@ export default function ResourceModal({ show, onClose, editing }) {
                                 }
                             }}
                             className={inputClass}
-                            placeholder="e.g., 2"
                         />
                         <p className="text-xs text-on-surface-variant mt-1">
-                            Maximum concurrent bookings that can use this resource.
+                            {t('admin.shared_resources.modal.capacity_help')}
                         </p>
                         <InputError message={capacityError || firstError(pageErrors.capacity)} className="mt-1" />
                     </div>
@@ -142,14 +142,18 @@ export default function ResourceModal({ show, onClose, editing }) {
                         onClick={onClose}
                         className="rounded-xl border border-outline-variant px-5 py-2.5 text-sm font-medium text-on-surface hover:bg-surface-container-low transition-colors"
                     >
-                        Cancel
+                        {t('admin.shared_resources.modal.cancel')}
                     </button>
                     <button
                         type="submit"
                         disabled={pending}
                         className="rounded-xl bg-on-surface px-5 py-2.5 text-sm font-semibold text-surface hover:opacity-90 transition-opacity disabled:opacity-50"
                     >
-                        {pending ? 'Saving...' : editing ? 'Save changes' : 'Add resource'}
+                        {pending
+                            ? t('admin.shared_resources.modal.saving')
+                            : editing
+                              ? t('admin.shared_resources.modal.save_changes')
+                              : t('admin.shared_resources.modal.submit_add')}
                     </button>
                 </div>
             </form>

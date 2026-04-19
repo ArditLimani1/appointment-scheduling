@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateAppointmentRequest;
 use App\Http\Requests\Admin\UpdateAppointmentStatusRequest;
 use App\Models\Appointment;
+use App\Models\Service;
 use App\Models\User;
 use App\Models\UserAppointmentViewPreference;
 use App\Services\Interfaces\AppointmentServiceInterface;
@@ -73,7 +74,7 @@ class AppointmentController extends Controller
         }
 
         $anchorDate = $this->resolveCalendarAnchorDate($request);
-        $calendarFilters = $this->calendarFiltersFromRequest($request);
+        $calendarFilters = $this->calendarFiltersFromRequest($request, null, (int) $business->id);
         $data = $this->appointmentService->getCalendarView($business, $view, $anchorDate, $calendarFilters);
 
         $data['calendar_day_breaks'] = [];
@@ -114,6 +115,7 @@ class AppointmentController extends Controller
         $data['filters'] = [
             'employee_id' => $calendarFilters['employee_id'] ?? null,
             'status' => $calendarFilters['statuses'],
+            'service_id' => $calendarFilters['service_id'] ?? null,
             'view' => $view,
             'date' => $anchorDate,
         ];
@@ -134,7 +136,7 @@ class AppointmentController extends Controller
         $this->appointmentService->updateStatus($business, $appointment, $request->validated());
 
         return redirect()->back()
-            ->with('success', 'Status updated successfully.')
+            ->with('success', __('messages.status.updated'))
             ->with('flash_nonce', uniqid('', true));
     }
 
@@ -146,7 +148,7 @@ class AppointmentController extends Controller
         $this->appointmentService->updateAppointment($business, $appointment, $request->validated());
 
         return redirect()->back()
-            ->with('success', 'Appointment updated successfully.')
+            ->with('success', __('messages.appointment.updated'))
             ->with('flash_nonce', uniqid('', true));
     }
 
@@ -176,7 +178,7 @@ class AppointmentController extends Controller
         $this->appointmentService->delete($business, $appointment);
 
         return redirect()->back()
-            ->with('success', 'Appointment deleted successfully.')
+            ->with('success', __('messages.appointment.deleted'))
             ->with('flash_nonce', uniqid('', true));
     }
 
@@ -218,6 +220,9 @@ class AppointmentController extends Controller
                 $query->whereIn('status', $cases);
             }
         }
+        if (! empty($filters['service_id'])) {
+            $query->where('service_id', (int) $filters['service_id']);
+        }
 
         $appointments = $query->latest('date')->latest('start_time')->get();
 
@@ -235,12 +240,18 @@ class AppointmentController extends Controller
             $employeeFilter = $business->employees()->find($filters['employee_id'])?->name;
         }
 
+        $serviceFilter = null;
+        if (! empty($filters['service_id'])) {
+            $serviceFilter = Service::query()->whereKey($filters['service_id'])->value('name');
+        }
+
         $pdf = Pdf::loadView('exports.appointments-pdf', [
             'businessName' => $business->name,
             'generatedAt' => Carbon::now()->format('d M Y, H:i'),
             'dateFrom' => $filters['date_from'],
             'dateTo' => $filters['date_to'],
             'employeeFilter' => $employeeFilter,
+            'serviceFilter' => $serviceFilter,
             'statusFilter' => ! empty($filters['statuses']) && is_array($filters['statuses'])
                 ? implode(', ', array_map(fn ($s) => ucfirst((string) $s), $filters['statuses']))
                 : null,
@@ -257,7 +268,7 @@ class AppointmentController extends Controller
     }
 
     /**
-     * @return array{employee_id?: int, date_from: string, date_to: string, statuses: list<string>}
+     * @return array{employee_id?: int, date_from: string, date_to: string, statuses: list<string>, service_id?: int}
      */
     private function filtersFromRequest(Request $request): array
     {
@@ -286,6 +297,23 @@ class AppointmentController extends Controller
         }
 
         $filters['statuses'] = $this->resolveStatusFilterStrings($request);
+
+        $business = $request->user()?->panelBusiness();
+        if ($business) {
+            $rawServiceId = $request->query('service_id');
+            if ($rawServiceId !== null && $rawServiceId !== '') {
+                $parsed = filter_var($rawServiceId, FILTER_VALIDATE_INT);
+                if ($parsed !== false && $parsed > 0) {
+                    $belongs = Service::query()
+                        ->whereKey($parsed)
+                        ->where('business_id', $business->id)
+                        ->exists();
+                    if ($belongs) {
+                        $filters['service_id'] = (int) $parsed;
+                    }
+                }
+            }
+        }
 
         return $filters;
     }

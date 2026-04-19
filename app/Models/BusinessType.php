@@ -11,9 +11,19 @@ class BusinessType extends Model
     protected $fillable = [
         'business_type_category_id',
         'name',
+        'name_sq',
         'sort_order',
         'is_active',
     ];
+
+    public function localizedLabel(): string
+    {
+        if (app()->getLocale() === 'sq' && filled($this->name_sq)) {
+            return $this->name_sq;
+        }
+
+        return $this->name;
+    }
 
     protected function casts(): array
     {

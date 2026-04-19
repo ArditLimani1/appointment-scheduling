@@ -35,7 +35,7 @@ class EmployeeController extends Controller
         $this->employeeService->store($business, $request->validated());
 
         return redirect()->back()
-            ->with('success', 'Employee created successfully.')
+            ->with('success', __('messages.employee.created'))
             ->with('flash_nonce', uniqid('', true));
     }
 
@@ -46,7 +46,7 @@ class EmployeeController extends Controller
         $this->employeeService->update($business, $employee, $request->validated());
 
         return redirect()->back()
-            ->with('success', 'Employee updated successfully.')
+            ->with('success', __('messages.employee.updated'))
             ->with('flash_nonce', uniqid('', true));
     }
 
@@ -57,7 +57,7 @@ class EmployeeController extends Controller
         $this->employeeService->delete($business, $employee);
 
         return redirect()->back()
-            ->with('success', 'Employee deleted successfully.')
+            ->with('success', __('messages.employee.deleted'))
             ->with('flash_nonce', uniqid('', true));
     }
 }

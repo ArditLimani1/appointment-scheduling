@@ -3,23 +3,14 @@ import { router, usePage } from '@inertiajs/react';
 import Icon from '@/Components/Icon';
 import DatePicker from '@/Components/DatePicker';
 import FilterListbox from '@/Components/FilterListbox';
+import { useT } from '@/i18n/useT';
 import { appointmentStatusValue, formatAppointmentDate, formatTimeHm } from '@/utils/appointmentDate';
 
 function toDateString(d) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-const TABS = [
-    { id: 'schedule', label: 'Service & Schedule', icon: 'calendar_month' },
-    { id: 'client',   label: 'Client Details',     icon: 'person'         },
-];
-
 const CURRENCY_SYMBOLS = { EUR: '€', USD: '$', GBP: '£', CHF: 'CHF' };
-
-function statusLabel(status) {
-    const v = appointmentStatusValue(status);
-    return v.charAt(0).toUpperCase() + v.slice(1);
-}
 
 export default function EditAppointmentModal({
     appointment,
@@ -29,6 +20,14 @@ export default function EditAppointmentModal({
     readOnly = false,
     employeeMode = false,
 }) {
+    const t = useT();
+    const tabs = useMemo(
+        () => [
+            { id: 'schedule', label: t('components.edit_appointment.tab_schedule'), icon: 'calendar_month' },
+            { id: 'client', label: t('components.edit_appointment.tab_client'), icon: 'person' },
+        ],
+        [t],
+    );
     const { auth } = usePage().props;
     const currencySymbol = CURRENCY_SYMBOLS[auth?.business?.currency] ?? auth?.business?.currency_symbol ?? '€';
     const employeeCanEditService = (auth?.business?.allow_employee_service_edit ?? true) === true;
@@ -282,7 +281,11 @@ export default function EditAppointmentModal({
                 {/* Header */}
                 <div className="flex shrink-0 items-center justify-between rounded-t-2xl border-b border-slate-100 bg-white px-4 py-3 sm:px-5">
                     <h2 className="font-headline text-lg font-extrabold text-on-surface">
-                        {effectiveReadOnly ? 'Appointment details' : employeeMode ? 'Edit your appointment' : 'Edit Appointment'}
+                        {effectiveReadOnly
+                            ? t('components.edit_appointment.title_readonly')
+                            : employeeMode
+                              ? t('components.edit_appointment.title_edit_employee')
+                              : t('components.edit_appointment.title_edit')}
                     </h2>
                     <button type="button" onClick={onClose} className="p-2 rounded-xl hover:bg-slate-100 transition-colors">
                         <Icon name="close" size="text-xl" className="text-on-surface-variant" />
@@ -294,7 +297,8 @@ export default function EditAppointmentModal({
                     <div className="mx-4 mt-2 flex shrink-0 items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 sm:mx-5">
                         <Icon name="warning" size="text-base" className="mt-0.5 shrink-0 text-amber-500" />
                         <p className="text-xs text-amber-900 sm:text-sm">
-                            <span className="font-bold">Past date.</span> Continue only if you mean to change it.
+                            <span className="font-bold">{t('components.edit_appointment.past_date_title')}</span>{' '}
+                            {t('components.edit_appointment.past_date_body')}
                         </p>
                     </div>
                 )}
@@ -302,7 +306,7 @@ export default function EditAppointmentModal({
                 {/* Tabs */}
                 {!effectiveReadOnly && !employeeMode && (
                 <div className="mt-1 flex shrink-0 border-b border-slate-100 px-4 sm:px-5">
-                    {TABS.map((tab) => {
+                    {tabs.map((tab) => {
                         const errCount = tab.id === 'schedule' ? scheduleErrors : clientErrors;
                         return (
                             <button
@@ -336,14 +340,18 @@ export default function EditAppointmentModal({
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <p className="sm:col-span-2 text-xs text-on-surface-variant">
                                     {employeeCancelledView
-                                        ? 'Cancelled appointments cannot be edited.'
-                                        : 'This booking is view-only. Contact your manager to make changes.'}
+                                        ? t('components.edit_appointment.readonly_cancelled')
+                                        : t('components.edit_appointment.readonly_view_only')}
                                 </p>
-                                {!hideServiceAndPriceForEmployee && readOnlyRow('Service', serviceName)}
-                                {readOnlyRow('Status', statusLabel(appointment.status))}
-                                {readOnlyRow('Staff', employeeName)}
+                                {!hideServiceAndPriceForEmployee &&
+                                    readOnlyRow(t('components.edit_appointment.service'), serviceName)}
                                 {readOnlyRow(
-                                    'Date',
+                                    t('components.edit_appointment.status'),
+                                    t(`common.status.${appointmentStatusValue(appointment.status)}`),
+                                )}
+                                {readOnlyRow(t('components.edit_appointment.staff'), employeeName)}
+                                {readOnlyRow(
+                                    t('components.edit_appointment.date'),
                                     formatAppointmentDate(appointment.date, {
                                         weekday: 'long',
                                         day: 'numeric',
@@ -352,17 +360,23 @@ export default function EditAppointmentModal({
                                     }),
                                 )}
                                 {readOnlyRow(
-                                    'Time',
+                                    t('components.edit_appointment.time'),
                                     `${formatTimeHm(appointment.start_time)} – ${formatTimeHm(appointment.end_time)}`,
                                 )}
-                                {!hideServiceAndPriceForEmployee && readOnlyRow(
-                                    'Payment',
-                                    `${Number(appointment.price ?? 0).toFixed(2)} ${currencySymbol}`,
+                                {!hideServiceAndPriceForEmployee &&
+                                    readOnlyRow(
+                                        t('components.edit_appointment.payment'),
+                                        `${Number(appointment.price ?? 0).toFixed(2)} ${currencySymbol}`,
+                                    )}
+                                {readOnlyRow(
+                                    t('components.edit_appointment.client'),
+                                    `${appointment.client_first_name ?? ''} ${appointment.client_last_name ?? ''}`.trim(),
                                 )}
-                                {readOnlyRow('Client', `${appointment.client_first_name ?? ''} ${appointment.client_last_name ?? ''}`.trim())}
-                                {readOnlyRow('Phone', appointment.client_phone || '—')}
-                                {readOnlyRow('Email', appointment.client_email || '—')}
-                                {appointment.client_notes ? readOnlyRow('Notes', appointment.client_notes) : null}
+                                {readOnlyRow(t('components.edit_appointment.phone'), appointment.client_phone || '—')}
+                                {readOnlyRow(t('components.edit_appointment.email'), appointment.client_email || '—')}
+                                {appointment.client_notes
+                                    ? readOnlyRow(t('components.edit_appointment.notes'), appointment.client_notes)
+                                    : null}
                             </div>
                         )}
 
@@ -372,23 +386,29 @@ export default function EditAppointmentModal({
                                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                     {!lockServiceForEmployee && (
                                         <FilterListbox
-                                            label="Service"
+                                            label={t('components.edit_appointment.service')}
                                             compact
                                             value={form.service_id}
                                             onChange={(v) => { patch('service_id', v); }}
-                                            options={services.map((s) => ({ value: String(s.id), label: `${s.name} (${s.duration} min)` }))}
+                                            options={services.map((s) => ({
+                                                value: String(s.id),
+                                                label: t('components.edit_appointment.service_option', {
+                                                    name: s.name,
+                                                    duration: s.duration,
+                                                }),
+                                            }))}
                                             minWidthClass="w-full"
                                         />
                                     )}
                                     <FilterListbox
-                                        label="Status"
+                                        label={t('components.edit_appointment.status')}
                                         compact
                                         value={form.status}
                                         onChange={(v) => patch('status', v)}
                                         options={[
-                                            { value: 'pending', label: 'Pending' },
-                                            { value: 'confirmed', label: 'Confirmed' },
-                                            { value: 'cancelled', label: 'Cancelled' },
+                                            { value: 'pending', label: t('common.status.pending') },
+                                            { value: 'confirmed', label: t('common.status.confirmed') },
+                                            { value: 'cancelled', label: t('common.status.cancelled') },
                                         ]}
                                         minWidthClass={lockServiceForEmployee ? 'w-full sm:max-w-md' : 'w-full'}
                                     />
@@ -400,7 +420,7 @@ export default function EditAppointmentModal({
                                     <>
                                         <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2">
                                             <FilterListbox
-                                                label="Employee"
+                                                label={t('components.edit_appointment.employee')}
                                                 compact
                                                 value={form.employee_id}
                                                 onChange={(v) => { patch('employee_id', v); patch('start_time', ''); }}
@@ -408,7 +428,7 @@ export default function EditAppointmentModal({
                                                 minWidthClass="w-full"
                                             />
                                             <div>
-                                                <span className={labelCls}>Payment</span>
+                                                <span className={labelCls}>{t('components.edit_appointment.payment')}</span>
                                                 <div className="flex h-[42px] items-center rounded-xl border border-slate-100 bg-slate-50 px-3 text-sm font-bold text-on-surface">
                                                     {Number(appointment.price ?? 0).toFixed(2)}
                                                     <span className="ml-1 font-semibold text-on-surface-variant">{currencySymbol}</span>
@@ -417,49 +437,54 @@ export default function EditAppointmentModal({
                                         </div>
                                         {errors.employee_id && <p className="text-xs text-error">{errors.employee_id}</p>}
                                         {form.service_id && eligibleEmployees.length === 0 && (
-                                            <p className="text-xs text-amber-600">No employee offers this service.</p>
+                                            <p className="text-xs text-amber-600">{t('components.edit_appointment.no_employee_service')}</p>
                                         )}
                                     </>
                                 )}
 
                                 {employeeMode && !lockServiceForEmployee && (
                                     <div>
-                                        <span className={labelCls}>Payment</span>
+                                        <span className={labelCls}>{t('components.edit_appointment.payment')}</span>
                                         <div className="flex h-[42px] items-center rounded-xl border border-slate-100 bg-slate-50 px-3 text-sm font-bold text-on-surface">
                                             {Number(appointment.price ?? 0).toFixed(2)}
                                             <span className="ml-1 font-semibold text-on-surface-variant">{currencySymbol}</span>
                                         </div>
                                         <p className="mt-1 text-[11px] text-on-surface-variant">
-                                            Price updates when you change the service.
+                                            {t('components.edit_appointment.price_updates_hint')}
                                         </p>
                                     </div>
                                 )}
 
                                 <div>
-                                    <label className={labelCls}>Date</label>
+                                    <label className={labelCls}>{t('components.edit_appointment.date')}</label>
                                     <DatePicker
                                         value={form.date}
                                         onChange={(v) => { patch('date', v || apptDate); patch('start_time', ''); }}
-                                        placeholder="Pick a date"
+                                        placeholder={t('components.edit_appointment.date_placeholder')}
                                         portal
                                     />
                                     {errors.date && <p className="text-xs text-error mt-0.5">{errors.date}</p>}
                                 </div>
 
                                 <div>
-                                    <label className={labelCls}>Time</label>
+                                    <label className={labelCls}>{t('components.edit_appointment.time')}</label>
                                     {(!employeeMode && (!form.employee_id || !form.date || !form.service_id)) ? (
-                                        <p className="py-1 text-xs text-on-surface-variant">Choose service, employee, and date first.</p>
+                                        <p className="py-1 text-xs text-on-surface-variant">
+                                            {t('components.edit_appointment.choose_staff_first')}
+                                        </p>
                                     ) : (employeeMode && (!form.date || !form.service_id)) ? (
                                         <p className="py-1 text-xs text-on-surface-variant">
-                                            {lockServiceForEmployee ? 'Choose a date first.' : 'Choose service and date first.'}
+                                            {lockServiceForEmployee
+                                                ? t('components.edit_appointment.choose_date_first')
+                                                : t('components.edit_appointment.choose_service_date_first')}
                                         </p>
                                     ) : loadingSlots ? (
                                         <div className="flex items-center gap-2 py-1 text-xs text-on-surface-variant">
-                                            <Icon name="sync" size="text-sm" className="animate-spin" /> Loading…
+                                            <Icon name="sync" size="text-sm" className="animate-spin" />{' '}
+                                            {t('components.edit_appointment.loading_slots')}
                                         </div>
                                     ) : slotOptions.length === 0 ? (
-                                        <p className="py-1 text-xs text-on-surface-variant">No slots this day.</p>
+                                        <p className="py-1 text-xs text-on-surface-variant">{t('components.edit_appointment.no_slots')}</p>
                                     ) : (
                                         <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-8">
                                             {slotOptions.map((slotHm) => (
@@ -487,7 +512,7 @@ export default function EditAppointmentModal({
                         {!effectiveReadOnly && !employeeMode && activeTab === 'client' && (
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                     <div>
-                                        <label className={labelCls}>First Name</label>
+                                        <label className={labelCls}>{t('components.edit_appointment.first_name')}</label>
                                         <input
                                             value={form.client_first_name}
                                             onChange={(e) => patch('client_first_name', e.target.value)}
@@ -497,7 +522,7 @@ export default function EditAppointmentModal({
                                         {errors.client_first_name && <p className="text-xs text-error mt-1">{errors.client_first_name}</p>}
                                     </div>
                                     <div>
-                                        <label className={labelCls}>Last Name</label>
+                                        <label className={labelCls}>{t('components.edit_appointment.last_name')}</label>
                                         <input
                                             value={form.client_last_name}
                                             onChange={(e) => patch('client_last_name', e.target.value)}
@@ -509,7 +534,7 @@ export default function EditAppointmentModal({
                                     <div className="sm:col-span-2">
                                         {identifierType === 'phone' ? (
                                             <>
-                                                <label className={labelCls}>Phone Number</label>
+                                                <label className={labelCls}>{t('components.edit_appointment.phone')}</label>
                                                 <input
                                                     type="tel"
                                                     value={form.client_phone}
@@ -520,7 +545,7 @@ export default function EditAppointmentModal({
                                             </>
                                         ) : (
                                             <>
-                                                <label className={labelCls}>Email</label>
+                                                <label className={labelCls}>{t('components.edit_appointment.email')}</label>
                                                 <input
                                                     type="email"
                                                     value={form.client_email}
@@ -532,7 +557,12 @@ export default function EditAppointmentModal({
                                         )}
                                     </div>
                                     <div className="sm:col-span-2">
-                                        <label className={labelCls}>Notes <span className="normal-case font-normal">(optional)</span></label>
+                                        <label className={labelCls}>
+                                            {t('components.edit_appointment.notes')}{' '}
+                                            <span className="normal-case font-normal">
+                                                {t('components.edit_appointment.notes_optional')}
+                                            </span>
+                                        </label>
                                         <textarea
                                             value={form.client_notes}
                                             onChange={(e) => patch('client_notes', e.target.value)}
@@ -553,7 +583,7 @@ export default function EditAppointmentModal({
                                     onClick={onClose}
                                     className="rounded-xl bg-on-surface px-5 py-2 text-sm font-bold text-surface transition-opacity hover:opacity-90"
                                 >
-                                    Close
+                                    {t('components.edit_appointment.close')}
                                 </button>
                             </div>
                         ) : (
@@ -564,7 +594,7 @@ export default function EditAppointmentModal({
                                             {form.date} · {form.start_time}
                                         </span>
                                     ) : (
-                                        <span className="italic">No time selected</span>
+                                        <span className="italic">{t('components.edit_appointment.footer_no_time')}</span>
                                     )}
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -573,14 +603,14 @@ export default function EditAppointmentModal({
                                         onClick={onClose}
                                         className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-slate-50"
                                     >
-                                        Cancel
+                                        {t('components.edit_appointment.cancel')}
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={submitting || !form.start_time}
                                         className="rounded-xl bg-on-surface px-5 py-2 text-sm font-bold text-surface transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
                                     >
-                                        {submitting ? 'Saving…' : 'Save'}
+                                        {submitting ? t('components.edit_appointment.saving') : t('components.edit_appointment.save')}
                                     </button>
                                 </div>
                             </>

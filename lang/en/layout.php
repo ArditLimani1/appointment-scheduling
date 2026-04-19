@@ -1,0 +1,74 @@
+<?php
+
+return [
+
+    'admin' => [
+        'panel_subtitle' => 'Admin Panel',
+        'fallback_business' => 'Admin Panel',
+        'header_fallback' => 'My Business',
+        'employee_workspace' => 'Employee view',
+        'view_booking_page' => 'View booking page',
+        'booking_page' => 'Booking page',
+        'admin_user' => 'Admin User',
+        'logout' => 'Logout',
+        'profile' => 'Profile',
+        'configuration' => 'Configuration',
+        'log_out' => 'Log Out',
+        'nav' => [
+            'dashboard' => 'Dashboard',
+            'services' => 'Services',
+            'resources' => 'Resources',
+            'employees' => 'Employees',
+            'roles' => 'Roles',
+            'appointments' => 'Appointments',
+            'analytics' => 'Analytics',
+            'configuration' => 'Configuration',
+            'my_appointments' => 'My Appointments',
+            'my_schedule' => 'My Schedule',
+            'my_analytics' => 'My Analytics',
+            'admin_panel' => 'Admin Panel',
+        ],
+        'mobile' => [
+            'config' => 'Config',
+        ],
+    ],
+
+    'employee' => [
+        'portal_subtitle' => 'Employee view',
+        'fallback_business' => 'Employee Portal',
+        'header_fallback' => 'My Workspace',
+        'employee_user' => 'Employee User',
+        'view_booking_page' => 'View booking page',
+        'booking_page' => 'Booking page',
+        'logout' => 'Logout',
+        'profile' => 'Profile',
+        'log_out' => 'Log Out',
+        'nav' => [
+            'dashboard' => 'Dashboard',
+            'appointments' => 'Appointments',
+            'schedule' => 'Schedule',
+            'analytics' => 'Analytics',
+            'configuration' => 'Configuration',
+            'services' => 'Services',
+            'employees' => 'Employees',
+            'roles' => 'Roles',
+            'admin_appointments' => 'Appointments',
+            'admin_analytics' => 'Analytics',
+            'admin_configuration' => 'Configuration',
+        ],
+        'mobile' => [
+            'appts' => 'Appts',
+            'config' => 'Config',
+        ],
+    ],
+
+    'authenticated' => [
+        'brand' => 'NiTermin',
+        'tagline' => 'Account Space',
+        'profile' => 'Profile',
+        'dashboard' => 'Dashboard',
+        'log_out' => 'Log Out',
+        'account' => 'Account',
+    ],
+
+];

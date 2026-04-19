@@ -1,4 +1,5 @@
 import Icon from '@/Components/Icon';
+import { useT } from '@/i18n/useT';
 import { usePage } from '@inertiajs/react';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 
@@ -9,7 +10,7 @@ const AUTO_DISMISS_MS = 4500;
 /** Flush under sticky top bar: same 73px as `main` offset in employee/admin layouts (+2px so it clears the border). */
 const TOAST_TOP_BELOW_HEADER = 'calc(73px + 2px + env(safe-area-inset-top, 0px))';
 
-function SuccessToastSurface({ message, onDismiss }) {
+function SuccessToastSurface({ message, onDismiss, dismissLabel }) {
     useEffect(() => {
         const t = setTimeout(onDismiss, AUTO_DISMISS_MS);
         return () => clearTimeout(t);
@@ -32,7 +33,7 @@ function SuccessToastSurface({ message, onDismiss }) {
                 type="button"
                 onClick={onDismiss}
                 className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-surface/70 transition-colors hover:bg-white/10 hover:text-surface sm:h-7 sm:w-7"
-                aria-label="Dismiss notification"
+                aria-label={dismissLabel}
             >
                 <Icon name="close" size="text-base" />
             </button>
@@ -42,6 +43,7 @@ function SuccessToastSurface({ message, onDismiss }) {
 
 export function SuccessToastProvider({ children }) {
     const { flash } = usePage().props;
+    const t = useT();
     const [message, setMessage] = useState(null);
     const lastFlashNonceRef = useRef(null);
 
@@ -64,7 +66,7 @@ export function SuccessToastProvider({ children }) {
     return (
         <SuccessToastContext.Provider value={{ showSuccess }}>
             {children}
-            {message ? <SuccessToastSurface message={message} onDismiss={dismiss} /> : null}
+            {message ? <SuccessToastSurface message={message} onDismiss={dismiss} dismissLabel={t('components.toast.dismiss')} /> : null}
         </SuccessToastContext.Provider>
     );
 }

@@ -25,7 +25,9 @@ class ServiceController extends Controller
 
         return Inertia::render('Admin/Services/Index', [
             'services' => $services,
-            'sharedResources' => $business->sharedResources()->orderBy('name')->get(),
+            'sharedResources' => $business->uses_shared_resources
+                ? $business->sharedResources()->orderBy('name')->get()
+                : collect(),
         ]);
     }
 
@@ -36,7 +38,7 @@ class ServiceController extends Controller
         $this->serviceService->store($business, $request->validated());
 
         return redirect()->back()
-            ->with('success', 'Service created successfully.')
+            ->with('success', __('messages.service.created'))
             ->with('flash_nonce', uniqid('', true));
     }
 
@@ -47,7 +49,7 @@ class ServiceController extends Controller
         $this->serviceService->update($business, $service, $request->validated());
 
         return redirect()->back()
-            ->with('success', 'Service updated successfully.')
+            ->with('success', __('messages.service.updated'))
             ->with('flash_nonce', uniqid('', true));
     }
 
@@ -58,7 +60,7 @@ class ServiceController extends Controller
         $this->serviceService->delete($business, $service);
 
         return redirect()->back()
-            ->with('success', 'Service deleted successfully.')
+            ->with('success', __('messages.service.deleted'))
             ->with('flash_nonce', uniqid('', true));
     }
 }

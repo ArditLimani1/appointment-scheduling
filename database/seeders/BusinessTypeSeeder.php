@@ -14,41 +14,41 @@ class BusinessTypeSeeder extends Seeder
     public function run(): void
     {
         $catalog = [
-            ['name' => 'Beauty & personal care', 'sort_order' => 10, 'types' => [
-                ['name' => 'Barbershop', 'sort_order' => 10],
-                ['name' => 'Hair salon', 'sort_order' => 20],
-                ['name' => 'Nail salon', 'sort_order' => 30],
-                ['name' => 'Spa & massage', 'sort_order' => 40],
-                ['name' => 'Tanning / solarium', 'sort_order' => 50],
-                ['name' => 'Brows & lashes', 'sort_order' => 60],
-                ['name' => 'Makeup artist', 'sort_order' => 70],
-                ['name' => 'Tattoo & piercing studio', 'sort_order' => 80],
+            ['name' => 'Beauty & personal care', 'name_sq' => 'Bukuri dhe kujdes personal', 'sort_order' => 10, 'types' => [
+                ['name' => 'Barbershop', 'name_sq' => 'Berber', 'sort_order' => 10],
+                ['name' => 'Hair salon', 'name_sq' => 'Sallon flokësh', 'sort_order' => 20],
+                ['name' => 'Nail salon', 'name_sq' => 'Sallon thonjsh', 'sort_order' => 30],
+                ['name' => 'Spa & massage', 'name_sq' => 'Spa dhe masazh', 'sort_order' => 40],
+                ['name' => 'Tanning / solarium', 'name_sq' => 'Solarium / bronzim', 'sort_order' => 50],
+                ['name' => 'Brows & lashes', 'name_sq' => 'Vetulla dhe qerpikë', 'sort_order' => 60],
+                ['name' => 'Makeup artist', 'name_sq' => 'Artiste grim', 'sort_order' => 70],
+                ['name' => 'Tattoo & piercing studio', 'name_sq' => 'Studio tatuazhesh dhe piercing', 'sort_order' => 80],
             ]],
-            ['name' => 'Health & medical', 'sort_order' => 20, 'types' => [
-                ['name' => 'Dentistry', 'sort_order' => 10],
-                ['name' => 'Physiotherapy', 'sort_order' => 20],
-                ['name' => 'Psychology / counseling', 'sort_order' => 30],
-                ['name' => 'Chiropractic', 'sort_order' => 40],
-                ['name' => 'Medical aesthetics', 'sort_order' => 50],
-                ['name' => 'Optometry / eye care', 'sort_order' => 60],
-                ['name' => 'Podiatry', 'sort_order' => 70],
+            ['name' => 'Health & medical', 'name_sq' => 'Shëndet dhe mjekësi', 'sort_order' => 20, 'types' => [
+                ['name' => 'Dentistry', 'name_sq' => 'Stomatologji', 'sort_order' => 10],
+                ['name' => 'Physiotherapy', 'name_sq' => 'Fizioterapi', 'sort_order' => 20],
+                ['name' => 'Psychology / counseling', 'name_sq' => 'Psikologji / këshillim', 'sort_order' => 30],
+                ['name' => 'Chiropractic', 'name_sq' => 'Kiropraktikë', 'sort_order' => 40],
+                ['name' => 'Medical aesthetics', 'name_sq' => 'Estetikë mjekësore', 'sort_order' => 50],
+                ['name' => 'Optometry / eye care', 'name_sq' => 'Optometri / kujdes për sy', 'sort_order' => 60],
+                ['name' => 'Podiatry', 'name_sq' => 'Podologji', 'sort_order' => 70],
             ]],
-            ['name' => 'Fitness & wellness', 'sort_order' => 30, 'types' => [
-                ['name' => 'Personal training', 'sort_order' => 10],
-                ['name' => 'Yoga / Pilates studio', 'sort_order' => 20],
-                ['name' => 'Nutrition coaching', 'sort_order' => 30],
+            ['name' => 'Fitness & wellness', 'name_sq' => 'Fitness dhe mirëqenie', 'sort_order' => 30, 'types' => [
+                ['name' => 'Personal training', 'name_sq' => 'Trajnim personal', 'sort_order' => 10],
+                ['name' => 'Yoga / Pilates studio', 'name_sq' => 'Studio yoga / pilates', 'sort_order' => 20],
+                ['name' => 'Nutrition coaching', 'name_sq' => 'Këshillim ushqimor', 'sort_order' => 30],
             ]],
-            ['name' => 'Professional & coaching', 'sort_order' => 40, 'types' => [
-                ['name' => 'Tutoring / education', 'sort_order' => 10],
-                ['name' => 'Life / career coaching', 'sort_order' => 20],
-                ['name' => 'Legal (by appointment)', 'sort_order' => 30],
-                ['name' => 'Financial advisory', 'sort_order' => 40],
+            ['name' => 'Professional & coaching', 'name_sq' => 'Profesionale dhe këshillim', 'sort_order' => 40, 'types' => [
+                ['name' => 'Tutoring / education', 'name_sq' => 'Mësime private / arsim', 'sort_order' => 10],
+                ['name' => 'Life / career coaching', 'name_sq' => 'Këshillim për jetë / karrierë', 'sort_order' => 20],
+                ['name' => 'Legal (by appointment)', 'name_sq' => 'Shërbime ligjore (me termin)', 'sort_order' => 30],
+                ['name' => 'Financial advisory', 'name_sq' => 'Këshillim financiar', 'sort_order' => 40],
             ]],
-            ['name' => 'Other services', 'sort_order' => 50, 'types' => [
-                ['name' => 'Pet grooming', 'sort_order' => 10],
-                ['name' => 'Automotive detailing', 'sort_order' => 20],
-                ['name' => 'Photography / studio', 'sort_order' => 30],
-                ['name' => 'Other', 'sort_order' => 100],
+            ['name' => 'Other services', 'name_sq' => 'Shërbime të tjera', 'sort_order' => 50, 'types' => [
+                ['name' => 'Pet grooming', 'name_sq' => 'Kujdes për kafshë shtëpiake', 'sort_order' => 10],
+                ['name' => 'Automotive detailing', 'name_sq' => 'Detajim automjetesh', 'sort_order' => 20],
+                ['name' => 'Photography / studio', 'name_sq' => 'Fotografi / studio', 'sort_order' => 30],
+                ['name' => 'Other', 'name_sq' => 'Tjetër', 'sort_order' => 100],
             ]],
         ];
 

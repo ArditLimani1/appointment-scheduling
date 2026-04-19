@@ -4,9 +4,11 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import Icon from '@/Components/Icon';
 import PageHeader from '@/Components/PageHeader';
 import DeleteConfirmModal from '@/Components/DeleteConfirmModal';
+import { useT } from '@/i18n/useT';
 import EmployeeModal from './EmployeeModal';
 
 export default function Index({ employees, services, businessRoles = [], businessOwnerId }) {
+    const t = useT();
     const [showModal, setShowModal] = useState(false);
     const [editing, setEditing] = useState(null);
     const [deleteTarget, setDeleteTarget] = useState(null);
@@ -33,34 +35,36 @@ export default function Index({ employees, services, businessRoles = [], busines
 
     return (
         <AdminLayout>
-            <Head title="Employees" />
+            <Head title={t('admin.employees.head_title')} />
 
             <PageHeader
-                title="Employees"
-                description="Manage your team members. Assign services and control their access and availability."
+                title={t('admin.employees.title')}
+                description={t('admin.employees.description')}
             >
                 <button
                     onClick={openCreate}
                     className="flex items-center gap-2 rounded-xl bg-on-surface px-6 py-3 text-sm font-bold text-surface hover:opacity-90 transition-all active:scale-95 shadow-sm shrink-0"
                 >
-                    <Icon name="add_circle" size="text-lg" /> Add Employee
+                    <Icon name="add_circle" size="text-lg" /> {t('admin.employees.add_employee')}
                 </button>
             </PageHeader>
 
             <div className="bg-surface-container-lowest rounded-2xl overflow-hidden ring-1 ring-slate-100 shadow-sm">
                 <div className="px-8 py-5 border-b border-slate-50 flex items-center justify-between bg-white">
-                    <h3 className="font-headline font-bold text-base text-on-surface">Team Members</h3>
+                    <h3 className="font-headline font-bold text-base text-on-surface">{t('admin.employees.team_title')}</h3>
                     <p className="text-xs text-on-surface-variant">
-                        {employees.length} employee{employees.length !== 1 ? 's' : ''} total
+                        {employees.length === 1
+                            ? t('admin.employees.count_one')
+                            : t('admin.employees.count_many', { count: employees.length })}
                     </p>
                 </div>
 
                 {employees.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-24 text-center">
                         <Icon name="people" size="text-5xl" className="text-outline mb-3" />
-                        <p className="text-sm text-on-surface-variant mb-4">No employees yet.</p>
+                        <p className="text-sm text-on-surface-variant mb-4">{t('admin.employees.empty')}</p>
                         <button onClick={openCreate} className="flex items-center gap-2 rounded-xl bg-on-surface px-4 py-2 text-sm font-semibold text-surface hover:opacity-90 transition-opacity">
-                            <Icon name="add" size="text-base" /> Add First Employee
+                            <Icon name="add" size="text-base" /> {t('admin.employees.add_first')}
                         </button>
                     </div>
                 ) : (
@@ -70,14 +74,14 @@ export default function Index({ employees, services, businessRoles = [], busines
                                 <thead>
                                     <tr className="bg-slate-50/50">
                                         <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">
-                                            Name
+                                            {t('admin.employees.th_name')}
                                         </th>
-                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">Email</th>
-                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">Title</th>
-                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">Role</th>
-                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">Services</th>
-                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-center">Status</th>
-                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-right">Actions</th>
+                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">{t('admin.employees.th_email')}</th>
+                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">{t('admin.employees.th_title')}</th>
+                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">{t('admin.employees.th_role')}</th>
+                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">{t('admin.employees.th_services')}</th>
+                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-center">{t('admin.employees.th_status')}</th>
+                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-right">{t('admin.employees.th_actions')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
@@ -90,7 +94,7 @@ export default function Index({ employees, services, businessRoles = [], busines
                                                     <p className="font-headline font-bold text-on-surface text-sm">{emp.name}</p>
                                                     {isOwner && (
                                                         <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-primary-container/40 text-on-surface text-[10px] font-bold uppercase tracking-wide">
-                                                            Owner
+                                                            {t('admin.employees.owner_badge')}
                                                         </span>
                                                     )}
                                                 </div>
@@ -103,7 +107,7 @@ export default function Index({ employees, services, businessRoles = [], busines
                                             </td>
                                             <td className="px-8 py-5">
                                                 <p className="text-sm text-on-surface-variant">
-                                                    {isOwner ? 'Owner account' : (emp.business_role?.name ?? 'Employee')}
+                                                    {isOwner ? t('admin.employees.owner_account') : (emp.business_role?.name ?? t('admin.employees.role_default'))}
                                                 </p>
                                             </td>
                                             <td className="px-8 py-5">
@@ -131,7 +135,7 @@ export default function Index({ employees, services, businessRoles = [], busines
                                                     <button
                                                         onClick={() => openEdit(emp)}
                                                         className="p-2 text-outline hover:text-on-surface transition-colors rounded-lg hover:bg-surface-container"
-                                                        title="Edit"
+                                                        title={t('admin.employees.edit_title')}
                                                     >
                                                         <Icon name="edit" size="text-[18px]" />
                                                     </button>
@@ -139,7 +143,7 @@ export default function Index({ employees, services, businessRoles = [], busines
                                                         <button
                                                             onClick={() => setDeleteTarget(emp)}
                                                             className="p-2 text-outline hover:text-error transition-colors rounded-lg hover:bg-error-container"
-                                                            title="Delete"
+                                                            title={t('admin.employees.delete_title')}
                                                         >
                                                             <Icon name="delete" size="text-[18px]" />
                                                         </button>
@@ -154,7 +158,11 @@ export default function Index({ employees, services, businessRoles = [], busines
                         </div>
                         <div className="px-8 py-4 bg-slate-50/30 flex items-center justify-between border-t border-slate-50">
                             <p className="text-sm text-on-surface-variant">
-                                Showing <span className="font-bold text-on-surface">{employees.length}</span> employee{employees.length !== 1 ? 's' : ''}
+                                {t('admin.employees.showing')}{' '}
+                                <span className="font-bold text-on-surface">{employees.length}</span>{' '}
+                                {employees.length === 1
+                                    ? t('admin.employees.employee_word_one')
+                                    : t('admin.employees.employee_word_other')}
                             </p>
                         </div>
                     </>
@@ -165,8 +173,8 @@ export default function Index({ employees, services, businessRoles = [], busines
                 show={!!deleteTarget}
                 onClose={() => setDeleteTarget(null)}
                 onConfirm={confirmDelete}
-                title="Delete Employee?"
-                message={`"${deleteTarget?.name}" will be permanently removed. This cannot be undone.`}
+                title={t('admin.employees.delete_confirm_title')}
+                message={deleteTarget ? t('admin.employees.delete_confirm_message', { name: deleteTarget.name }) : ''}
             />
 
             <EmployeeModal

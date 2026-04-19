@@ -7,7 +7,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class BusinessTypeCategory extends Model
 {
-    protected $fillable = ['name', 'sort_order'];
+    protected $fillable = ['name', 'name_sq', 'sort_order'];
+
+    public function localizedLabel(): string
+    {
+        if (app()->getLocale() === 'sq' && filled($this->name_sq)) {
+            return $this->name_sq;
+        }
+
+        return $this->name;
+    }
 
     protected function casts(): array
     {
