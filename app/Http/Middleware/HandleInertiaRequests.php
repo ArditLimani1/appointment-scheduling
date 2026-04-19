@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Session;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -31,6 +32,7 @@ class HandleInertiaRequests extends Middleware
                 'user' => $user,
                 'business' => $business,
                 'permissions' => $user ? $user->effectivePermissionKeys() : [],
+                'impersonating' => Session::has('impersonator_id'),
             ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),

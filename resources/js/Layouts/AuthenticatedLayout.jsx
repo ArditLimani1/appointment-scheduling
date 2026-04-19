@@ -1,5 +1,6 @@
 import Dropdown from '@/Components/Dropdown';
 import Icon from '@/Components/Icon';
+import NiterminLogo from '@/Components/NiterminLogo';
 import { Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 
@@ -29,17 +30,11 @@ export default function AuthenticatedLayout({ header, children }) {
                         </button>
 
                         <Link href="/" className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-on-primary shadow-sm">
-                                <Icon name="calendar_month" size="text-lg" />
-                            </div>
-                            <div>
-                                <span className="block text-lg font-black font-headline leading-none tracking-tight text-on-surface">
-                                    NiTermin
-                                </span>
-                                <span className="block text-[11px] uppercase tracking-[0.24em] text-on-surface-variant">
-                                    Account Space
-                                </span>
-                            </div>
+                            <NiterminLogo
+                                markClassName="h-9 w-9 text-on-surface"
+                                wordClassName="text-lg font-semibold tracking-tight text-on-surface"
+                                dotClassName="text-on-surface-variant"
+                            />
                         </Link>
                     </div>
 

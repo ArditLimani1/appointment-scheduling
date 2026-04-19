@@ -5,6 +5,7 @@ use App\Http\Middleware\EnsureAdminPanelAccess;
 use App\Http\Middleware\EnsureBusinessExists;
 use App\Http\Middleware\EnsureEmployeeOrAdmin;
 use App\Http\Middleware\EnsurePermission;
+use App\Http\Middleware\EnsureSuperAdmin;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\RoleMiddleware;
 use Illuminate\Foundation\Application;
@@ -32,6 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin_panel' => EnsureAdminPanelAccess::class,
             'employee_area' => EnsureEmployeeOrAdmin::class,
             'permission' => EnsurePermission::class,
+            'super_admin' => EnsureSuperAdmin::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -3,6 +3,7 @@
 namespace App\Repositories\Interfaces;
 
 use App\Models\Appointment;
+use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -30,4 +31,8 @@ interface AppointmentRepositoryInterface
     public function update(Appointment $appointment, array $data): Appointment;
 
     public function delete(Appointment $appointment): void;
+
+    public function countAll(): int;
+
+    public function countSince(Carbon $since): int;
 }

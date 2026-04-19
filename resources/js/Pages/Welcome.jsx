@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import Icon from '@/Components/Icon';
+import NiterminLogo from '@/Components/NiterminLogo';
 
 const highlights = [
     {
@@ -36,17 +37,17 @@ const highlights = [
 
 const steps = [
     {
-        number: '01',
+        number: '1',
         title: 'Krijo biznesin tënd',
         description: 'Vendos emrin, identitetin, zonën kohore, valutën dhe rregullat e rezervimit për pak minuta.',
     },
     {
-        number: '02',
+        number: '2',
         title: 'Shto ekipin dhe shërbimet',
         description: 'Përcakto çfarë ofron secili punëtor dhe vendos kohëzgjatjen, çmimin dhe disponueshmërinë.',
     },
     {
-        number: '03',
+        number: '3',
         title: 'Fillo të pranosh termine',
         description: 'Ndaje faqen tënde të NiTermin dhe lejo klientët të rezervojnë pa telefonata dhe pa pritje.',
     },
@@ -128,13 +129,11 @@ export default function Welcome({ auth, canLogin, canRegister }) {
             <header className="glass-header sticky top-0 z-30 border-b border-outline-variant">
                 <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
                     <Link href="/" className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary">
-                            <Icon name="calendar_month" size="text-lg" className="text-on-primary" />
-                        </div>
-                        <div>
-                            <span className="block text-lg font-black font-headline leading-none tracking-tight text-on-surface">NiTermin</span>
-                            <span className="block text-[11px] uppercase tracking-[0.24em] text-on-surface-variant">Një Termin Më Afër</span>
-                        </div>
+                        <NiterminLogo
+                            markClassName="h-9 w-9 text-on-surface"
+                            wordClassName="text-lg font-semibold tracking-tight text-on-surface"
+                            dotClassName="text-on-surface-variant"
+                        />
                     </Link>
 
                     <nav className="flex items-center gap-2">
@@ -191,8 +190,10 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                         </h1>
 
                         <p className="mt-6 max-w-2xl text-lg leading-relaxed text-on-surface-variant sm:text-xl">
-                            `Ni` do të thotë një. `Termin` do të thotë takim apo rezervim. Së bashku, NiTermin u jep bizneseve
-                            shërbyese një vend të qartë për të menaxhuar rezervimet, oraret, stafin dhe rrjedhën e klientëve nga klikimi i parë deri te vizita e fundit.
+                            <span className="font-semibold text-on-surface">Ni</span> do të thotë një.{' '}
+                            <span className="font-semibold text-on-surface">Termin</span> do të thotë takim apo rezervim.
+                            Së bashku, NiTermin u jep bizneseve shërbyese një vend të qartë për të menaxhuar rezervimet,
+                            oraret, stafin dhe rrjedhën e klientëve nga klikimi i parë deri te vizita e fundit.
                         </p>
 
                         <div className="mt-10 flex flex-col gap-3 sm:flex-row">
@@ -241,15 +242,17 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                             <div className="border-b border-outline-variant bg-surface-container px-5 py-4">
                                 <div className="flex items-center justify-between gap-4">
                                     <div className="flex items-center gap-3">
-                                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-on-primary">
-                                            <Icon name="calendar_month" size="text-lg" />
-                                        </div>
+                                        <NiterminLogo
+                                            variant="mark"
+                                            className="h-10 w-10 rounded-2xl bg-surface p-2 text-on-surface"
+                                        />
                                         <div>
                                             <p className="text-sm font-bold font-headline text-on-surface">NiTermin Admin</p>
                                             <p className="text-xs text-on-surface-variant">Pamje e shpejtë për sot</p>
                                         </div>
                                     </div>
-                                    <span className="rounded-full bg-primary-container px-3 py-1 text-xs font-semibold text-on-primary-container">
+                                    <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                                        <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                                         Rezervime live
                                     </span>
                                 </div>
@@ -277,7 +280,7 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                                     <div className="space-y-3">
                                         {bookingMoments.map((moment, index) => (
                                             <div key={moment} className="flex items-center gap-3 rounded-2xl bg-surface-container-low px-4 py-3">
-                                                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-on-primary">
+                                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-container text-sm font-bold text-white shadow-sm ring-1 ring-primary-container/20">
                                                     {index + 1}
                                                 </span>
                                                 <span className="text-sm font-medium text-on-surface">{moment}</span>
@@ -315,10 +318,10 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                     {highlights.map((item) => (
                         <div
                             key={item.title}
-                            className="rounded-3xl border border-outline-variant bg-surface-container-lowest p-6 transition-colors hover:border-primary/30"
+                            className="group rounded-3xl border border-outline-variant bg-surface-container-lowest p-6 transition-all hover:-translate-y-0.5 hover:border-on-primary-container/30 hover:shadow-md"
                         >
-                            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-container">
-                                <Icon name={item.icon} size="text-xl" className="text-on-primary-container" />
+                            <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-on-primary-container/15 bg-on-primary-container/10 text-on-primary-container transition-colors group-hover:bg-on-primary-container/15">
+                                <Icon name={item.icon} size="text-xl" />
                             </div>
                             <h3 className="font-bold font-headline text-on-surface">{item.title}</h3>
                             <p className="mt-2 text-sm leading-relaxed text-on-surface-variant">{item.description}</p>
@@ -344,11 +347,11 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                         <div key={item.title} className="rounded-[2rem] border border-outline-variant bg-surface-container-lowest p-6 shadow-sm">
                             <div className="flex items-start justify-between gap-4">
                                 <div>
-                                    <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">{item.eyebrow}</p>
+                                    <p className="text-sm font-semibold uppercase tracking-[0.2em] text-on-primary-container">{item.eyebrow}</p>
                                     <h3 className="mt-3 text-2xl font-black font-headline text-on-surface">{item.title}</h3>
                                 </div>
-                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-container">
-                                    <Icon name={item.icon} size="text-xl" className="text-on-primary-container" />
+                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-on-primary-container/15 bg-on-primary-container/10 text-on-primary-container">
+                                    <Icon name={item.icon} size="text-xl" />
                                 </div>
                             </div>
 
@@ -409,7 +412,10 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                                                     <p className="text-sm font-semibold text-on-surface">{name}</p>
                                                     <p className="text-xs text-on-surface-variant">{role}</p>
                                                 </div>
-                                                <span className="rounded-full bg-primary-container px-3 py-1 text-xs font-semibold text-on-primary-container">Aktiv</span>
+                                                <span className="inline-flex items-center gap-1.5 rounded-full border border-on-primary-container/20 bg-on-primary-container/10 px-3 py-1 text-xs font-semibold text-on-primary-container">
+                                                    <span className="h-1.5 w-1.5 rounded-full bg-on-primary-container" />
+                                                    Aktiv
+                                                </span>
                                             </div>
                                         ))}
                                     </div>
@@ -490,8 +496,8 @@ export default function Welcome({ auth, canLogin, canRegister }) {
 
                     <div className="space-y-4">
                         {steps.map((step) => (
-                            <div key={step.number} className="flex gap-4 rounded-3xl border border-outline-variant bg-surface p-5">
-                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-sm font-black text-on-primary">
+                            <div key={step.number} className="flex items-start gap-4 rounded-3xl border border-outline-variant bg-surface p-5">
+                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary-container text-base font-black text-white shadow-sm">
                                     {step.number}
                                 </div>
                                 <div>
@@ -523,37 +529,38 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                         <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-white/80 sm:text-lg">
                             Jepu klientëve një mënyrë të thjeshtë për rezervim. Jepi ekipit një orar të strukturuar. Jepi biznesit një ritëm më të mirë të përditshëm.
                         </p>
-                        <p className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white">
-                            <Icon name="redeem" size="text-sm" />
-                            1 muaj falas për testim
-                        </p>
+                        <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-5">
+                            <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white">
+                                <Icon name="redeem" size="text-sm" />
+                                1 muaj falas për testim
+                            </span>
 
-                        {canRegister && (
-                            <Link
-                                href={route('register')}
-                                className="mt-8 inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white px-8 py-4 text-base font-semibold text-slate-900 shadow-lg transition-transform hover:scale-[1.02]"
-                            >
-                                Fillo me NiTermin
-                                <Icon name="arrow_forward" size="text-lg" />
-                            </Link>
-                        )}
+                            {canRegister && (
+                                <Link
+                                    href={route('register')}
+                                    className="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white px-8 py-4 text-base font-semibold text-slate-900 shadow-lg transition-transform hover:scale-[1.02]"
+                                >
+                                    Fillo me NiTermin
+                                    <Icon name="arrow_forward" size="text-lg" />
+                                </Link>
+                            )}
+                        </div>
                     </div>
                 </div>
             </section>
 
             <footer className="border-t border-outline-variant">
                 <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-8 sm:flex-row">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary">
-                            <Icon name="calendar_month" size="text-sm" className="text-on-primary" />
-                        </div>
-                        <div>
-                            <p className="text-sm font-bold font-headline text-on-surface">NiTermin</p>
-                            <p className="text-xs text-on-surface-variant">Një termin, i menaxhuar më mirë.</p>
-                        </div>
+                    <div className="flex flex-col items-center gap-1 sm:items-start">
+                        <NiterminLogo
+                            markClassName="h-7 w-7 text-on-surface"
+                            wordClassName="text-sm font-semibold tracking-tight text-on-surface"
+                            dotClassName="text-on-surface-variant"
+                        />
+                        <p className="text-xs text-on-surface-variant">Një termin, i menaxhuar më mirë.</p>
                     </div>
 
-                    <p className="text-xs text-on-surface-variant">© 2026 NiTermin. Ndërtuar për biznese që punojnë me termine.</p>
+                    <p className="text-xs text-on-surface-variant">© 2026 nitermin. Ndërtuar për biznese që punojnë me termine.</p>
                 </div>
             </footer>
         </div>

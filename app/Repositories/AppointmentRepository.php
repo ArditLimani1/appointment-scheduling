@@ -140,4 +140,14 @@ class AppointmentRepository implements AppointmentRepositoryInterface
     {
         $appointment->delete();
     }
+
+    public function countAll(): int
+    {
+        return Appointment::count();
+    }
+
+    public function countSince(Carbon $since): int
+    {
+        return Appointment::where('created_at', '>=', $since)->count();
+    }
 }

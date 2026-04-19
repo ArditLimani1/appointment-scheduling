@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Booking\BookingController;
 use App\Http\Controllers\Employee;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SuperAdmin;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -17,6 +18,10 @@ Route::get('/', function () {
 
 Route::get('/dashboard', function () {
     $user = auth()->user();
+
+    if ($user->isSuperAdmin()) {
+        return redirect()->route('super-admin.dashboard');
+    }
 
     if ($user->hasAdminPanelAccess()) {
         return redirect()->route('admin.dashboard');
@@ -79,6 +84,36 @@ Route::middleware(['auth', 'admin_panel', 'has_business'])->prefix('admin')->nam
         Route::resource('roles', Admin\BusinessRoleController::class)->only(['index', 'store', 'update', 'destroy']);
     });
 });
+
+Route::middleware(['auth', 'super_admin'])->prefix('super-admin')->name('super-admin.')->group(function () {
+    Route::get('/dashboard', [SuperAdmin\DashboardController::class, 'index'])->name('dashboard');
+
+    Route::get('/businesses', [SuperAdmin\BusinessController::class, 'index'])->name('businesses.index');
+    Route::get('/businesses/{business}', [SuperAdmin\BusinessController::class, 'show'])->name('businesses.show');
+    Route::put('/businesses/{business}', [SuperAdmin\BusinessController::class, 'update'])->name('businesses.update');
+    Route::patch('/businesses/{business}/toggle-suspend', [SuperAdmin\BusinessController::class, 'toggleSuspend'])->name('businesses.toggle-suspend');
+    Route::delete('/businesses/{business}', [SuperAdmin\BusinessController::class, 'destroy'])->name('businesses.destroy');
+
+    Route::get('/users', [SuperAdmin\UserController::class, 'index'])->name('users.index');
+    Route::post('/users/{user}/password-reset', [SuperAdmin\UserController::class, 'sendPasswordReset'])->name('users.password-reset');
+    Route::post('/users/{user}/impersonate', [SuperAdmin\UserController::class, 'impersonate'])->name('users.impersonate');
+
+    Route::get('/business-type-categories', [SuperAdmin\BusinessTypeCategoryController::class, 'index'])->name('business-type-categories.index');
+    Route::post('/business-type-categories', [SuperAdmin\BusinessTypeCategoryController::class, 'store'])->name('business-type-categories.store');
+    Route::put('/business-type-categories/{category}', [SuperAdmin\BusinessTypeCategoryController::class, 'update'])->name('business-type-categories.update');
+    Route::delete('/business-type-categories/{category}', [SuperAdmin\BusinessTypeCategoryController::class, 'destroy'])->name('business-type-categories.destroy');
+
+    Route::get('/business-types', [SuperAdmin\BusinessTypeController::class, 'index'])->name('business-types.index');
+    Route::post('/business-types', [SuperAdmin\BusinessTypeController::class, 'store'])->name('business-types.store');
+    Route::put('/business-types/{type}', [SuperAdmin\BusinessTypeController::class, 'update'])->name('business-types.update');
+    Route::delete('/business-types/{type}', [SuperAdmin\BusinessTypeController::class, 'destroy'])->name('business-types.destroy');
+
+    Route::get('/audit-logs', [SuperAdmin\AuditLogController::class, 'index'])->name('audit-logs.index');
+});
+
+Route::post('/super-admin/stop-impersonating', [SuperAdmin\UserController::class, 'stopImpersonating'])
+    ->middleware('auth')
+    ->name('super-admin.stop-impersonating');
 
 Route::middleware(['auth', 'employee_area'])->prefix('employee')->name('employee.')->group(function () {
     Route::middleware('permission:employee.dashboard')->group(function () {

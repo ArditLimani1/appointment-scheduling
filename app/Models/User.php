@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\Permission;
 use App\Enums\UserRole;
+use App\Enums\UserType;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,7 +21,7 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
-        'name', 'email', 'password', 'role', 'phone', 'title', 'avatar', 'is_active', 'business_id', 'business_role_id', 'also_works_as_staff', 'booking_slug',
+        'name', 'email', 'password', 'role', 'user_type', 'phone', 'title', 'avatar', 'is_active', 'business_id', 'business_role_id', 'also_works_as_staff', 'booking_slug',
     ];
 
     protected $hidden = [
@@ -35,6 +36,7 @@ class User extends Authenticatable
             'is_active' => 'boolean',
             'also_works_as_staff' => 'boolean',
             'role' => UserRole::class,
+            'user_type' => UserType::class,
         ];
     }
 
@@ -82,6 +84,11 @@ class User extends Authenticatable
     public function isEmployee(): bool
     {
         return $this->role === UserRole::Employee;
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->user_type === UserType::SuperAdmin;
     }
 
     public function ownedBusiness(): HasOne
