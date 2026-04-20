@@ -112,6 +112,7 @@ return [
         'to' => 'To',
         'break' => 'Break',
         'add_break' => 'Add Break',
+        'remove_break' => 'Remove break',
         'add_break_title' => 'Add Break',
         'start_time' => 'Start time',
         'end_time' => 'End time',

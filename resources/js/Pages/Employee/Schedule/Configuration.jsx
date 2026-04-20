@@ -25,6 +25,16 @@ function formatDayHeader(dateStr, dayLabel, locale) {
     return `${dayLabel}, ${datePart}`;
 }
 
+/** "09:30" → "9:30" for compact break display (read-only). */
+function formatTimeShort(hm) {
+    if (!hm || typeof hm !== 'string') return '';
+    const [hs, ms] = hm.split(':');
+    const h = parseInt(hs, 10);
+    const m = (ms ?? '00').slice(0, 2).padStart(2, '0');
+    if (Number.isNaN(h)) return hm;
+    return `${h}:${m}`;
+}
+
 // ─── Read-only info field ─────────────────────────────────────────────────────
 function ReadOnlyField({ label, value, icon }) {
     return (
@@ -234,21 +244,20 @@ function AddBreakModal({ dayLabel, onSave, onClose }) {
 // ─── Day card (layout matches Schedule / Availability `DayCard`) ─────────────
 function ConfigurationDayCard({ day, locale, onChange, onOpenBreakModal, onRemoveBreak }) {
     const t = useT();
-    const inputClass = 'rounded-xl border-0 bg-surface-container-low px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-surface-tint';
+    const inputClass =
+        'w-full rounded-xl border-0 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:ring-2 focus:ring-surface-tint md:w-auto md:py-2';
     const dateStr = representativeDateForWeekday(day.day_of_week);
     const dayLabel = t(`employee.schedule.weekday_${day.day_of_week}`);
 
+    const shellClass = day.is_active
+        ? 'border-outline-variant bg-surface-container-lowest'
+        : 'border-outline-variant/50 bg-surface-container-low opacity-60';
+
     return (
-        <div
-            className={`rounded-3xl border px-5 py-4 transition-all ${
-                day.is_active
-                    ? 'bg-surface-container-lowest border-outline-variant'
-                    : 'bg-surface-container-low border-outline-variant/50 opacity-60'
-            }`}
-        >
-            <div className="flex items-center gap-4">
-                <div className="flex items-center gap-3 w-[210px] shrink-0">
-                    <label className="relative inline-flex cursor-pointer items-center">
+        <div className={`rounded-2xl border p-4 shadow-sm transition-all md:rounded-3xl md:px-5 md:py-4 ${shellClass}`}>
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-4">
+                <div className="flex min-w-0 items-center gap-3 md:w-[210px] md:shrink-0">
+                    <label className="relative inline-flex shrink-0 cursor-pointer items-center">
                         <input
                             type="checkbox"
                             checked={day.is_active}
@@ -257,65 +266,80 @@ function ConfigurationDayCard({ day, locale, onChange, onOpenBreakModal, onRemov
                         />
                         <div className="peer relative h-6 w-11 shrink-0 rounded-full bg-surface-container-high after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow-sm after:transition-all after:content-[''] peer-checked:bg-black peer-checked:after:translate-x-full" />
                     </label>
-                    <div>
-                        <p className={`font-bold font-headline text-sm leading-tight ${day.is_active ? 'text-on-surface' : 'text-on-surface-variant'}`}>
+                    <div className="min-w-0 flex-1">
+                        <p className={`font-headline text-sm font-bold leading-tight ${day.is_active ? 'text-on-surface' : 'text-on-surface-variant'}`}>
                             {formatDayHeader(dateStr, dayLabel, locale)}
                         </p>
                         {!day.is_active && (
-                            <p className="text-xs text-on-surface-variant mt-0.5">{t('employee.schedule.day_off')}</p>
+                            <p className="mt-0.5 text-xs text-on-surface-variant">{t('employee.schedule.day_off')}</p>
                         )}
                     </div>
                 </div>
 
-                <div className="flex-1 flex flex-col items-center gap-3">
+                <div className="flex min-w-0 flex-1 flex-col gap-3 border-t border-outline-variant/25 pt-4 md:border-t-0 md:pt-0 md:items-center">
                     {day.is_active && (
-                        <div className="flex items-center gap-2 flex-wrap justify-center">
-                            <label className="text-xs text-on-surface-variant">{t('employee.schedule.from')}</label>
-                            <input
-                                type="time"
-                                value={day.start_time}
-                                onChange={(e) => onChange({ ...day, start_time: e.target.value })}
-                                className={`${inputClass} w-auto`}
-                            />
-                            <span className="text-on-surface-variant">–</span>
-                            <label className="text-xs text-on-surface-variant">{t('employee.schedule.to')}</label>
-                            <input
-                                type="time"
-                                value={day.end_time}
-                                onChange={(e) => onChange({ ...day, end_time: e.target.value })}
-                                className={`${inputClass} w-auto`}
-                            />
+                        <div className="grid w-full grid-cols-2 gap-3 md:flex md:flex-wrap md:justify-center md:gap-2">
+                            <div className="min-w-0">
+                                <label className="mb-1 block text-xs text-on-surface-variant">{t('employee.schedule.from')}</label>
+                                <input
+                                    type="time"
+                                    value={day.start_time}
+                                    onChange={(e) => onChange({ ...day, start_time: e.target.value })}
+                                    className={inputClass}
+                                />
+                            </div>
+                            <div className="min-w-0">
+                                <label className="mb-1 block text-xs text-on-surface-variant">{t('employee.schedule.to')}</label>
+                                <input
+                                    type="time"
+                                    value={day.end_time}
+                                    onChange={(e) => onChange({ ...day, end_time: e.target.value })}
+                                    className={inputClass}
+                                />
+                            </div>
                         </div>
                     )}
 
                     {day.is_active && (day.breaks ?? []).length > 0 && (
-                        <div className="flex flex-col items-center gap-2 w-full">
+                        <div className="flex w-full flex-col gap-2 md:items-center">
                             {(day.breaks ?? []).map((brk, bi) => (
-                                <div key={bi} className="flex items-center gap-2 flex-wrap justify-center">
-                                    <Icon name="free_breakfast" size="text-sm" className="text-on-surface-variant" />
-                                    <span className="text-xs text-on-surface-variant">{t('employee.schedule.break')}</span>
-                                    <input type="time" value={brk.start_time} readOnly className={inputClass} />
-                                    <span className="text-on-surface-variant text-xs">–</span>
-                                    <input type="time" value={brk.end_time} readOnly className={inputClass} />
-                                    <button
-                                        type="button"
-                                        onClick={() => onRemoveBreak(bi)}
-                                        className="rounded-xl bg-error-container p-1.5 text-on-error-container hover:opacity-80 transition-opacity"
-                                    >
-                                        <Icon name="close" size="text-sm" />
-                                    </button>
+                                <div
+                                    key={bi}
+                                    className="flex min-w-0 w-full items-center gap-1 overflow-x-auto rounded-xl border border-outline-variant/40 bg-surface-container-low/90 px-3 py-2.5 md:w-auto md:max-w-full md:flex-nowrap md:items-center md:justify-center md:gap-2 md:overflow-visible md:border-0 md:bg-transparent md:px-0 md:py-0"
+                                >
+                                    <div className="flex min-w-0 flex-1 basis-0 items-center justify-start md:contents">
+                                        <div className="flex shrink-0 items-center gap-1.5 text-on-surface-variant">
+                                            <Icon name="free_breakfast" size="text-sm" />
+                                            <span className="whitespace-nowrap text-xs font-semibold">{t('employee.schedule.break')}</span>
+                                        </div>
+                                    </div>
+                                    <span className="shrink-0 whitespace-nowrap px-1 text-center text-sm font-semibold tabular-nums text-on-surface md:rounded-xl md:border-0 md:bg-surface-container-low md:px-3 md:py-2 md:text-left md:text-on-surface">
+                                        {formatTimeShort(brk.start_time)}
+                                        <span className="mx-0.5 font-normal text-on-surface-variant">–</span>
+                                        {formatTimeShort(brk.end_time)}
+                                    </span>
+                                    <div className="flex min-w-0 flex-1 basis-0 items-center justify-end md:contents">
+                                        <button
+                                            type="button"
+                                            onClick={() => onRemoveBreak(bi)}
+                                            className="shrink-0 rounded-xl bg-error-container p-2 text-on-error-container transition-opacity hover:opacity-80"
+                                            aria-label={t('employee.schedule.remove_break')}
+                                        >
+                                            <Icon name="close" size="text-sm" />
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
                         </div>
                     )}
                 </div>
 
-                <div className="w-[140px] shrink-0 flex justify-end">
+                <div className="border-t border-outline-variant/25 pt-3 md:w-[140px] md:shrink-0 md:border-t-0 md:pt-0 md:flex md:justify-end">
                     {day.is_active && (
                         <button
                             type="button"
                             onClick={onOpenBreakModal}
-                            className="flex items-center gap-1 rounded-xl border border-outline-variant px-3 py-2 text-xs font-medium text-on-surface-variant hover:bg-surface-container transition-colors"
+                            className="flex w-full items-center justify-center gap-2 rounded-xl border border-outline-variant px-4 py-2.5 text-xs font-bold text-on-surface-variant transition-colors hover:bg-surface-container md:w-auto md:py-2"
                         >
                             <Icon name="add" size="text-sm" /> {t('employee.schedule.add_break')}
                         </button>

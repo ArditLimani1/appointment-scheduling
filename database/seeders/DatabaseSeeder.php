@@ -33,6 +33,7 @@ class DatabaseSeeder extends Seeder
             'role' => UserRole::Admin,
             'is_active' => true,
         ]);
+        $admin->forceFill(['email_verified_at' => now()])->save();
 
         $barbershopTypeId = BusinessType::query()->where('name', 'Barbershop')->value('id');
 

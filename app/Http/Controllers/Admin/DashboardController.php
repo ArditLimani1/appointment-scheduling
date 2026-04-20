@@ -17,7 +17,9 @@ class DashboardController extends Controller
     {
         $business = auth()->user()->panelBusiness();
         abort_unless($business, 403);
-        $data = $this->dashboardService->getAdminDashboardData($business);
+        $data = array_merge($this->dashboardService->getAdminDashboardData($business), [
+            'admin_compact_mobile_appointments' => true,
+        ]);
 
         return Inertia::render('Admin/Dashboard', $data);
     }

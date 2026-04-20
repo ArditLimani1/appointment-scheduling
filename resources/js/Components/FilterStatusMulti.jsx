@@ -4,9 +4,9 @@ import { useT } from '@/i18n/useT';
 
 /**
  * Multi-select status filter (appointments / calendar).
- * @param {{ label: string, value: string[], onChange: (next: string[]) => void, options: { value: string, label: string }[], minWidthClass?: string }} props
+ * @param {{ label: string, value: string[], onChange: (next: string[]) => void, options: { value: string, label: string }[], minWidthClass?: string, className?: string }} props
  */
-export default function FilterStatusMulti({ label, value, onChange, options, minWidthClass = 'min-w-[160px]' }) {
+export default function FilterStatusMulti({ label, value, onChange, options, minWidthClass = 'min-w-[160px]', className = '' }) {
     const t = useT();
     const selected = Array.isArray(value) ? value : [];
 
@@ -30,7 +30,7 @@ export default function FilterStatusMulti({ label, value, onChange, options, min
                   .join(', ') || t('common.status.filter_select');
 
     return (
-        <div className={`flex shrink-0 flex-col gap-1.5 ${minWidthClass}`}>
+        <div className={`flex min-w-0 flex-col gap-1.5 ${minWidthClass} ${className}`.trim()}>
             <Popover className="relative">
                 <span className="ml-1 block text-[10px] font-bold uppercase tracking-widest text-outline">{label}</span>
                 <PopoverButton className="relative flex min-h-[2.75rem] w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-left text-sm leading-5 text-on-surface transition-colors focus:outline-none focus-visible:border-on-surface/20 focus-visible:ring-2 focus-visible:ring-on-surface/10 data-[hover]:border-slate-300">

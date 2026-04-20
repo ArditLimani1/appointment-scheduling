@@ -9,7 +9,7 @@ import DatePicker from '@/Components/DatePicker';
 import AppointmentStatusMenu from '@/Components/AppointmentStatusMenu';
 import EditAppointmentModal from '@/Components/EditAppointmentModal';
 import { useT } from '@/i18n/useT';
-import { formatAppointmentDate, formatTimeHm } from '@/utils/appointmentDate';
+import { appointmentStatusValue, formatAppointmentDate, formatTimeHm } from '@/utils/appointmentDate';
 import {
     appendAppointmentStatusParams,
     DEFAULT_APPOINTMENT_STATUS_FILTER,
@@ -130,10 +130,11 @@ function ExportDropdown({ excelUrl, pdfUrl }) {
     }, [open]);
 
     return (
-        <div ref={ref} className="relative shrink-0">
+        <div ref={ref} className="relative w-full shrink-0 sm:w-auto">
             <button
+                type="button"
                 onClick={() => setOpen((v) => !v)}
-                className="flex items-center gap-2 rounded-xl bg-on-surface px-6 py-3 text-sm font-bold text-surface hover:opacity-90 transition-opacity"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-on-surface px-6 py-3 text-sm font-bold text-surface transition-opacity hover:opacity-90 sm:w-auto"
             >
                 <Icon name="download" size="text-lg" />
                 {t('common.actions.export')}
@@ -161,9 +162,17 @@ function ExportDropdown({ excelUrl, pdfUrl }) {
     );
 }
 
-export default function Index({ appointments, employees, services = [], filters = {} }) {
+export default function Index({
+    appointments,
+    employees,
+    services = [],
+    filters = {},
+    admin_compact_mobile_appointments = false,
+}) {
     const t = useT();
-    const { auth } = usePage().props;
+    const page = usePage();
+    const { auth } = page.props;
+    const inertiaUrl = typeof page.url === 'string' ? page.url : `${window.location.pathname}${window.location.search}`;
     const CURRENCY_SYMBOLS = { EUR: '€', USD: '$', GBP: '£', CHF: 'CHF' };
     const currencySymbol = CURRENCY_SYMBOLS[auth?.business?.currency] ?? auth?.business?.currency_symbol ?? '€';
 
@@ -223,6 +232,39 @@ export default function Index({ appointments, employees, services = [], filters 
 
     const [editingAppointment, setEditingAppointment]   = useState(null);
     const [deletingAppointment, setDeletingAppointment] = useState(null);
+    const openedFromEditQueryRef = useRef(null);
+
+    useEffect(() => {
+        let u;
+        try {
+            u = new URL(inertiaUrl, window.location.origin);
+        } catch {
+            return;
+        }
+        const editRaw = u.searchParams.get('edit');
+        if (!editRaw) {
+            openedFromEditQueryRef.current = null;
+            return;
+        }
+        const id = parseInt(editRaw, 10);
+        if (Number.isNaN(id)) {
+            return;
+        }
+        const found = rows.find((r) => Number(r.id) === id);
+        if (!found) {
+            return;
+        }
+        const dedupeKey = `${inertiaUrl}|${id}`;
+        if (openedFromEditQueryRef.current === dedupeKey) {
+            return;
+        }
+        openedFromEditQueryRef.current = dedupeKey;
+        setEditingAppointment(found);
+        u.searchParams.delete('edit');
+        const qs = u.searchParams.toString();
+        const clean = `${u.pathname}${qs ? `?${qs}` : ''}`;
+        window.history.replaceState(window.history.state, '', clean);
+    }, [inertiaUrl, rows]);
 
     const updateStatus = (apt, status) => {
         router.patch(route('admin.appointments.update', apt.id), { status }, { preserveScroll: true });
@@ -283,6 +325,8 @@ export default function Index({ appointments, employees, services = [], filters 
         [services, t],
     );
 
+    const isRange = localFilters.date_from !== localFilters.date_to;
+
     return (
         <AdminLayout>
             <Head title={t('admin.appointments.head_title')} />
@@ -293,7 +337,7 @@ export default function Index({ appointments, employees, services = [], filters 
             >
                 <Link
                     href={route('admin.appointments.calendar')}
-                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-on-surface hover:bg-slate-50"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-on-surface transition-colors hover:bg-slate-50 sm:w-auto"
                 >
                     <Icon name="calendar_view_week" size="text-lg" />
                     {t('admin.appointments.calendar')}
@@ -305,43 +349,52 @@ export default function Index({ appointments, employees, services = [], filters 
             </PageHeader>
 
             <div className="mb-6 rounded-2xl bg-surface-container-lowest p-4 ring-1 ring-slate-100 shadow-sm">
-                <div className="flex flex-wrap items-end gap-3 xl:flex-nowrap xl:gap-3">
+                <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:flex-nowrap lg:items-end lg:gap-3 lg:w-full">
                     <FilterListbox
                         label={t('admin.appointments.employee')}
                         value={localFilters.employee_id}
                         onChange={(v) => patchFilters({ employee_id: v })}
                         options={employeeOptions}
+                        minWidthClass="min-w-0"
+                        wrapperClassName="flex w-full min-w-0 flex-col gap-1.5 lg:flex-1"
                     />
                     <FilterListbox
                         label={t('admin.appointments.service')}
                         value={localFilters.service_id}
                         onChange={(v) => patchFilters({ service_id: v })}
                         options={serviceOptions}
+                        minWidthClass="min-w-0"
+                        wrapperClassName="flex w-full min-w-0 flex-col gap-1.5 lg:flex-1"
                     />
                     <DatePicker
+                        className="w-full min-w-0 lg:flex-1 lg:min-w-0"
                         label={t('admin.appointments.from')}
                         value={localFilters.date_from}
                         onChange={(value) => patchFilters({ date_from: value })}
                         placeholder={t('admin.appointments.start_date_ph')}
+                        buttonClassName="max-lg:!min-w-0"
                     />
                     <DatePicker
+                        className="w-full min-w-0 lg:flex-1 lg:min-w-0"
                         label={t('admin.appointments.to')}
                         value={localFilters.date_to}
                         onChange={(value) => patchFilters({ date_to: value })}
                         placeholder={t('admin.appointments.end_date_ph')}
+                        buttonClassName="max-lg:!min-w-0"
                     />
                     <FilterStatusMulti
                         label={t('admin.appointments.status')}
                         value={localFilters.status}
                         onChange={(v) => patchFilters({ status: v })}
                         options={statusOptions}
-                        minWidthClass="min-w-[200px]"
+                        minWidthClass="w-full min-w-0"
+                        className="lg:flex-1 lg:min-w-0"
                     />
-                    <div className="flex shrink-0 items-end">
+                    <div className="flex w-full shrink-0 items-end justify-stretch lg:w-auto lg:flex-none">
                         <button
                             type="button"
                             onClick={clearFilters}
-                            className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-slate-50"
+                            className="w-full max-lg:min-h-[2.75rem] rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-slate-50 lg:w-auto"
                         >
                             {t('admin.appointments.clear')}
                         </button>
@@ -349,9 +402,9 @@ export default function Index({ appointments, employees, services = [], filters 
                 </div>
             </div>
 
-            <div className="bg-surface-container-lowest rounded-2xl overflow-hidden ring-1 ring-slate-100 shadow-sm">
-                <div className="px-8 py-5 border-b border-slate-50 flex items-center justify-between bg-white">
-                    <h3 className="font-headline font-bold text-base text-on-surface">{t('admin.appointments.all_bookings')}</h3>
+            <div className="min-w-0 bg-surface-container-lowest overflow-hidden rounded-2xl ring-1 ring-slate-100 shadow-sm">
+                <div className="flex flex-col gap-2 border-b border-slate-50 bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 md:px-8">
+                    <h3 className="font-headline text-base font-bold text-on-surface">{t('admin.appointments.all_bookings')}</h3>
                     <p className="text-xs text-on-surface-variant">
                         {totalCount === 1
                             ? t('admin.appointments.appointment_total_one', { count: totalCount })
@@ -360,37 +413,130 @@ export default function Index({ appointments, employees, services = [], filters 
                 </div>
 
                 {rows.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-24 text-center px-6">
+                    <div className="flex flex-col items-center justify-center px-6 py-24 text-center">
                         <Icon name="event_busy" size="text-5xl" className="text-outline mb-3" />
                         <p className="text-sm text-on-surface-variant">{t('admin.appointments.empty')}</p>
                     </div>
                 ) : (
                     <>
-                        <div className="overflow-x-auto">
-                            <table className="w-full min-w-[760px] text-left border-collapse">
+                        {admin_compact_mobile_appointments ? (
+                            <div className="space-y-3 border-b border-slate-50 bg-white p-4 md:hidden">
+                                {rows.map((apt) => {
+                                    const st = appointmentStatusValue(apt.status);
+                                    const rowCancelled = st === 'cancelled';
+                                    return (
+                                        <article
+                                            key={apt.id}
+                                            className={`rounded-2xl border border-outline-variant/35 p-4 shadow-sm ${
+                                                rowCancelled ? 'bg-error-container/15' : 'bg-surface-container-low/50'
+                                            }`}
+                                        >
+                                            <div className="min-w-0">
+                                                {isRange ? (
+                                                    <p className="mb-1 text-xs font-semibold text-on-surface-variant">
+                                                        {formatAppointmentDate(apt.date, {
+                                                            day: 'numeric',
+                                                            month: 'short',
+                                                            year: 'numeric',
+                                                        })}
+                                                    </p>
+                                                ) : null}
+                                                <p className="font-headline text-sm font-bold leading-snug text-on-surface">
+                                                    {apt.client_first_name} {apt.client_last_name}
+                                                </p>
+                                                <p className="mt-0.5 text-sm text-on-surface-variant">
+                                                    {apt.service?.name || '—'}
+                                                </p>
+                                            </div>
+                                            <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                                                <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-on-surface">
+                                                    <Icon name="schedule" size="text-sm" className="text-on-surface-variant" />
+                                                    {formatTimeHm(apt.start_time)} – {formatTimeHm(apt.end_time)}
+                                                </span>
+                                                <span className="text-xs text-on-surface-variant">
+                                                    {apt.employee?.name ?? '—'}
+                                                </span>
+                                                <span className="text-xs font-semibold tabular-nums text-on-surface">
+                                                    {Number(apt.price).toFixed(2)} {currencySymbol}
+                                                </span>
+                                            </div>
+                                            <div className="mt-2 break-words text-sm text-on-surface-variant">
+                                                {apt.client_email || apt.client_phone || '—'}
+                                            </div>
+                                            <div className="mt-3 w-full min-w-0 max-w-full">
+                                                <AppointmentStatusMenu
+                                                    layout="block"
+                                                    status={apt.status}
+                                                    onChange={(s) => updateStatus(apt, s)}
+                                                />
+                                            </div>
+                                            <div className="mt-3 flex flex-wrap items-center justify-end gap-2 border-t border-outline-variant/25 pt-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setEditingAppointment(apt)}
+                                                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-surface-container-high px-4 py-2.5 text-sm font-bold text-on-surface transition-colors hover:bg-surface-container-highest sm:flex-none"
+                                                >
+                                                    <Icon name="edit" size="text-lg" />
+                                                    {t('admin.appointments.edit')}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setDeletingAppointment(apt)}
+                                                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-bold text-red-950 transition-colors hover:bg-red-100/90"
+                                                >
+                                                    <Icon name="delete" size="text-lg" />
+                                                    {t('admin.appointments.delete')}
+                                                </button>
+                                            </div>
+                                        </article>
+                                    );
+                                })}
+                            </div>
+                        ) : null}
+
+                        <div
+                            className={`overflow-x-auto px-4 sm:px-6 md:px-8 ${
+                                admin_compact_mobile_appointments ? 'hidden md:block' : ''
+                            }`}
+                        >
+                            <table className="w-full min-w-[760px] border-collapse text-left">
                                 <thead>
                                     <tr className="bg-slate-50/50">
-                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">{t('admin.appointments.th_client')}</th>
-                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">{t('admin.appointments.th_employee')}</th>
-                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">{t('admin.appointments.th_service')}</th>
-                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">{t('admin.appointments.th_datetime')}</th>
-                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">{t('admin.appointments.th_status')}</th>
-                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-right">{t('admin.appointments.th_price')}</th>
-                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-right">{t('admin.appointments.th_actions')}</th>
+                                        <th className="px-4 py-4 text-[11px] font-bold uppercase tracking-widest text-outline sm:px-6 lg:px-8">
+                                            {t('admin.appointments.th_client')}
+                                        </th>
+                                        <th className="px-4 py-4 text-[11px] font-bold uppercase tracking-widest text-outline sm:px-6 lg:px-8">
+                                            {t('admin.appointments.th_employee')}
+                                        </th>
+                                        <th className="px-4 py-4 text-[11px] font-bold uppercase tracking-widest text-outline sm:px-6 lg:px-8">
+                                            {t('admin.appointments.th_service')}
+                                        </th>
+                                        <th className="px-4 py-4 text-[11px] font-bold uppercase tracking-widest text-outline sm:px-6 lg:px-8">
+                                            {t('admin.appointments.th_datetime')}
+                                        </th>
+                                        <th className="px-4 py-4 text-[11px] font-bold uppercase tracking-widest text-outline sm:px-6 lg:px-8">
+                                            {t('admin.appointments.th_status')}
+                                        </th>
+                                        <th className="px-4 py-4 text-right text-[11px] font-bold uppercase tracking-widest text-outline sm:px-6 lg:px-8">
+                                            {t('admin.appointments.th_price')}
+                                        </th>
+                                        <th className="px-4 py-4 text-right text-[11px] font-bold uppercase tracking-widest text-outline sm:px-6 lg:px-8">
+                                            {t('admin.appointments.th_actions')}
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
                                     {rows.map((apt) => (
-                                        <tr key={apt.id} className="hover:bg-slate-50/50 transition-colors">
-                                            <td className="px-8 py-5">
-                                                <p className="font-headline font-bold text-on-surface text-sm">
+                                        <tr key={apt.id} className="transition-colors hover:bg-slate-50/50">
+                                            <td className="px-4 py-5 sm:px-6 lg:px-8">
+                                                <p className="font-headline text-sm font-bold text-on-surface">
                                                     {apt.client_first_name} {apt.client_last_name}
                                                 </p>
                                                 <p className="text-xs text-on-surface-variant">{apt.client_email || apt.client_phone || '—'}</p>
                                             </td>
-                                            <td className="px-8 py-5 text-sm text-on-surface-variant">{apt.employee?.name ?? '—'}</td>
-                                            <td className="px-8 py-5 text-sm text-on-surface-variant">{apt.service?.name || '—'}</td>
-                                            <td className="px-8 py-5">
+                                            <td className="px-4 py-5 text-sm text-on-surface-variant sm:px-6 lg:px-8">{apt.employee?.name ?? '—'}</td>
+                                            <td className="px-4 py-5 text-sm text-on-surface-variant sm:px-6 lg:px-8">{apt.service?.name || '—'}</td>
+                                            <td className="px-4 py-5 sm:px-6 lg:px-8">
                                                 <p className="text-sm font-semibold text-on-surface">
                                                     {formatAppointmentDate(apt.date, { day: 'numeric', month: 'short', year: 'numeric' })}
                                                 </p>
@@ -398,18 +544,18 @@ export default function Index({ appointments, employees, services = [], filters 
                                                     {formatTimeHm(apt.start_time)} – {formatTimeHm(apt.end_time)}
                                                 </p>
                                             </td>
-                                            <td className="px-8 py-5 align-middle">
+                                            <td className="px-4 py-5 align-middle sm:px-6 lg:px-8">
                                                 <AppointmentStatusMenu status={apt.status} onChange={(s) => updateStatus(apt, s)} />
                                             </td>
-                                            <td className="px-8 py-5 text-right text-sm font-bold text-on-surface">
+                                            <td className="px-4 py-5 text-right text-sm font-bold text-on-surface sm:px-6 lg:px-8">
                                                 {Number(apt.price).toFixed(2)} {currencySymbol}
                                             </td>
-                                            <td className="px-8 py-5 text-right">
+                                            <td className="px-4 py-5 text-right sm:px-6 lg:px-8">
                                                 <div className="inline-flex items-center gap-1">
                                                     <button
                                                         type="button"
                                                         onClick={() => setEditingAppointment(apt)}
-                                                        className="inline-flex rounded-lg p-2 text-outline hover:text-on-surface hover:bg-surface-container transition-colors"
+                                                        className="inline-flex rounded-lg p-2 text-outline transition-colors hover:bg-surface-container hover:text-on-surface"
                                                         title={t('admin.appointments.edit')}
                                                     >
                                                         <Icon name="edit" size="text-[18px]" />
@@ -417,7 +563,7 @@ export default function Index({ appointments, employees, services = [], filters 
                                                     <button
                                                         type="button"
                                                         onClick={() => setDeletingAppointment(apt)}
-                                                        className="inline-flex rounded-lg p-2 text-outline hover:text-error hover:bg-error-container transition-colors"
+                                                        className="inline-flex rounded-lg p-2 text-outline transition-colors hover:bg-error-container hover:text-error"
                                                         title={t('admin.appointments.delete')}
                                                     >
                                                         <Icon name="delete" size="text-[18px]" />
@@ -430,7 +576,7 @@ export default function Index({ appointments, employees, services = [], filters 
                             </table>
                         </div>
 
-                        <div className="px-8 py-4 bg-slate-50/30 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-50">
+                        <div className="flex flex-col items-center justify-between gap-4 border-t border-slate-50 bg-slate-50/30 px-4 py-4 sm:flex-row sm:px-6 md:px-8">
                             <p className="text-sm text-on-surface-variant">
                                 {meta ? (
                                     <>

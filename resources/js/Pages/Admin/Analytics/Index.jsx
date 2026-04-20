@@ -2,6 +2,7 @@ import { Head, router, usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import Icon from '@/Components/Icon';
+import MetricCard from '@/Components/MetricCard';
 import PageHeader from '@/Components/PageHeader';
 import FilterListbox from '@/Components/FilterListbox';
 import DatePicker from '@/Components/DatePicker';
@@ -63,7 +64,7 @@ function ExportDropdown({ filters }) {
             <button
                 type="button"
                 onClick={() => setOpen((o) => !o)}
-                className="flex items-center gap-2 rounded-xl bg-on-surface px-6 py-3 text-sm font-bold text-surface hover:opacity-90 transition-opacity"
+                className="flex items-center gap-2 rounded-xl bg-on-surface px-4 py-2.5 text-xs font-bold text-surface transition-opacity hover:opacity-90 sm:px-6 sm:py-3 sm:text-sm"
             >
                 <Icon name="download" size="text-lg" />
                 {t('admin.analytics.export')}
@@ -148,87 +149,121 @@ export default function Index({
                 <ExportDropdown filters={localFilters} />
             </PageHeader>
 
-            {/* Filters */}
-            <section className="mb-8 bg-surface-container-lowest rounded-2xl p-6 ring-1 ring-slate-100 shadow-sm">
-                <div className="flex flex-wrap gap-4 items-end">
+            {/* Filters — same stacked / full-width pattern as admin appointments */}
+            <section className="mb-8 rounded-2xl bg-surface-container-lowest p-4 ring-1 ring-slate-100 shadow-sm sm:p-6">
+                <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:flex-nowrap lg:items-end lg:gap-3 lg:w-full">
                     <DatePicker
+                        className="w-full min-w-0 lg:flex-1 lg:min-w-0"
                         label={t('admin.analytics.start_date')}
                         value={localFilters.date_from}
                         onChange={(value) => patchFilters({ date_from: value })}
                         placeholder={t('admin.analytics.start_date_ph')}
+                        buttonClassName="max-lg:!min-w-0"
                     />
                     <DatePicker
+                        className="w-full min-w-0 lg:flex-1 lg:min-w-0"
                         label={t('admin.analytics.end_date')}
                         value={localFilters.date_to}
                         onChange={(value) => patchFilters({ date_to: value })}
                         placeholder={t('admin.analytics.end_date_ph')}
+                        buttonClassName="max-lg:!min-w-0"
                     />
                     <FilterListbox
                         label={t('admin.analytics.employee')}
                         value={localFilters.employee_id}
                         onChange={(value) => patchFilters({ employee_id: value })}
                         options={employeeOptions}
+                        minWidthClass="min-w-0"
+                        wrapperClassName="flex w-full min-w-0 flex-col gap-1.5 lg:flex-1"
                     />
-                    <div className="flex items-end">
+                    <div className="flex w-full shrink-0 items-end justify-stretch lg:w-auto lg:flex-none">
                         <button
                             type="button"
                             onClick={clearFilters}
-                            className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-on-surface hover:bg-slate-50 transition-colors"
+                            className="w-full max-lg:min-h-[2.75rem] rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-slate-50 lg:w-auto"
                         >
-                            {t('admin.analytics.reset')}
+                            {t('admin.analytics.clear')}
                         </button>
                     </div>
                 </div>
             </section>
 
-            {/* Widgets */}
-            <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                <div className="bg-surface-container-lowest rounded-3xl border border-slate-100 shadow-sm p-8 flex items-center justify-between">
-                    <div className="space-y-2">
-                        <p className="text-xs font-bold text-outline uppercase tracking-widest">{t('admin.analytics.total_appointments')}</p>
-                        <p className="text-5xl font-extrabold font-headline tracking-tight text-on-surface">
-                            {total_appointments.toLocaleString()}
-                        </p>
-                    </div>
-                    <div className="w-16 h-16 bg-surface-container-low rounded-2xl flex items-center justify-center shrink-0">
-                        <Icon name="event_available" size="text-3xl" filled className="text-on-surface" />
-                    </div>
-                </div>
-
-                <div className="bg-primary-container rounded-3xl shadow-xl p-8 flex items-center justify-between">
-                    <div className="space-y-2">
-                        <p className="text-xs font-bold text-slate-300 uppercase tracking-widest">{t('admin.analytics.total_revenue')}</p>
-                        <p className="text-5xl font-extrabold font-headline tracking-tight text-white">
-                            {fmt(total_revenue)} {symbol}
-                        </p>
-                        <p className="text-xs text-white/60">{t('admin.analytics.confirmed_base')}</p>
-                    </div>
-                    <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center shrink-0">
-                        <Icon name="payments" size="text-3xl" filled className="text-white" />
-                    </div>
+            {/* Summary — same compact grid as admin dashboard */}
+            <section className="mb-8">
+                <div className="grid grid-cols-2 gap-2 sm:gap-6">
+                    <MetricCard
+                        icon="event_available"
+                        iconBg="bg-primary-fixed"
+                        iconClass="text-on-primary-fixed-variant"
+                        label={t('admin.analytics.total_appointments')}
+                        value={total_appointments.toLocaleString()}
+                    />
+                    <MetricCard
+                        variant="primary"
+                        icon="payments"
+                        label={t('admin.analytics.total_revenue')}
+                        value={`${fmt(total_revenue)} ${symbol}`}
+                        badge={t('admin.analytics.confirmed_base')}
+                    />
                 </div>
             </section>
 
             {/* Table */}
-            <section className="bg-surface-container-lowest rounded-2xl overflow-hidden ring-1 ring-slate-100 shadow-sm">
-                <div className="px-8 py-5 border-b border-slate-50 flex items-center justify-between bg-white">
+            <section className="min-w-0 overflow-hidden rounded-2xl bg-surface-container-lowest ring-1 ring-slate-100 shadow-sm">
+                <div className="flex items-center justify-between border-b border-slate-50 bg-white px-4 py-4 sm:px-6 md:px-8">
                     <div>
-                        <h3 className="font-headline font-bold text-base text-on-surface">{t('admin.analytics.employee_performance')}</h3>
-                        <p className="text-xs text-on-surface-variant mt-0.5">{t('admin.analytics.employee_breakdown')}</p>
+                        <h3 className="font-headline text-base font-bold text-on-surface">{t('admin.analytics.employee_performance')}</h3>
+                        <p className="mt-0.5 text-xs text-on-surface-variant">{t('admin.analytics.employee_breakdown')}</p>
                     </div>
                 </div>
 
                 {employee_stats.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-24 text-center px-6">
+                    <div className="flex flex-col items-center justify-center px-6 py-24 text-center">
                         <Icon name="query_stats" size="text-5xl" className="text-outline mb-3" />
                         <p className="text-sm font-bold text-on-surface">{t('admin.analytics.no_data')}</p>
-                        <p className="text-xs text-on-surface-variant mt-1">
+                        <p className="mt-1 text-xs text-on-surface-variant">
                             {t('admin.analytics.no_data_hint')}
                         </p>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full min-w-[640px] text-left border-collapse">
+                    <>
+                        <div className="space-y-3 border-b border-slate-50 bg-white p-4 md:hidden">
+                            {employee_stats.map((stat, index) => (
+                                <article
+                                    key={index}
+                                    className="rounded-2xl border border-outline-variant/35 bg-surface-container-low/50 p-4 shadow-sm"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-container font-headline text-sm font-bold text-on-primary">
+                                            {stat.name.charAt(0).toUpperCase()}
+                                        </div>
+                                        <p className="text-sm font-bold text-on-surface">{stat.name}</p>
+                                    </div>
+                                    <div className="mt-4 grid grid-cols-2 gap-3">
+                                        <div>
+                                            <p className="text-[10px] font-bold uppercase tracking-wider text-outline">{t('admin.analytics.th_cancelled')}</p>
+                                            <p className="mt-0.5 text-lg font-semibold text-red-600 tabular-nums">{stat.cancelled_count}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold uppercase tracking-wider text-outline">{t('admin.analytics.th_pending')}</p>
+                                            <p className="mt-0.5 text-lg font-semibold text-amber-600 tabular-nums">{stat.pending_count}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold uppercase tracking-wider text-outline">{t('admin.analytics.th_confirmed')}</p>
+                                            <p className="mt-0.5 text-lg font-semibold text-emerald-600 tabular-nums">{stat.confirmed_count}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold uppercase tracking-wider text-outline">{t('admin.analytics.th_revenue')}</p>
+                                            <p className="mt-0.5 text-sm font-extrabold tabular-nums text-on-surface">
+                                                {fmt(stat.revenue)} {symbol}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </article>
+                            ))}
+                        </div>
+                        <div className="hidden overflow-x-auto md:block">
+                            <table className="w-full min-w-[640px] border-collapse text-left">
                             <thead>
                                 <tr className="bg-slate-50/50">
                                     <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">{t('admin.analytics.th_employee')}</th>
@@ -265,20 +300,51 @@ export default function Index({
                                 ))}
                             </tbody>
                         </table>
-                    </div>
+                        </div>
+                    </>
                 )}
             </section>
 
             {/* Monthly overview — same logic as employee analytics */}
-            <section className="bg-surface-container-lowest rounded-2xl overflow-hidden ring-1 ring-slate-100 shadow-sm mt-8">
-                <div className="px-8 py-5 border-b border-slate-50 bg-white">
-                    <h3 className="font-headline font-bold text-base text-on-surface">{t('admin.analytics.monthly_overview')}</h3>
-                    <p className="text-xs text-on-surface-variant mt-0.5">
+            <section className="mt-8 min-w-0 overflow-hidden rounded-2xl bg-surface-container-lowest ring-1 ring-slate-100 shadow-sm">
+                <div className="border-b border-slate-50 bg-white px-4 py-4 sm:px-6 md:px-8">
+                    <h3 className="font-headline text-base font-bold text-on-surface">{t('admin.analytics.monthly_overview')}</h3>
+                    <p className="mt-0.5 text-xs text-on-surface-variant">
                         {t('admin.analytics.monthly_overview_hint')}
                     </p>
                 </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full min-w-[560px] text-left border-collapse">
+                <div className="space-y-3 border-b border-slate-50 bg-white p-4 md:hidden">
+                    {monthly_performance.map((m) => (
+                        <article
+                            key={m.month}
+                            className="rounded-2xl border border-outline-variant/35 bg-surface-container-low/50 p-4 shadow-sm"
+                        >
+                            <p className="font-headline text-sm font-bold text-on-surface">{m.label}</p>
+                            <div className="mt-3 grid grid-cols-2 gap-3">
+                                <div>
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-outline">{t('admin.analytics.th_cancelled')}</p>
+                                    <p className="mt-0.5 text-lg font-semibold text-red-600 tabular-nums">{m.cancelled}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-outline">{t('admin.analytics.th_pending')}</p>
+                                    <p className="mt-0.5 text-lg font-semibold text-amber-600 tabular-nums">{m.pending}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-outline">{t('admin.analytics.th_confirmed')}</p>
+                                    <p className="mt-0.5 text-lg font-semibold text-emerald-600 tabular-nums">{m.confirmed}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-outline">{t('admin.analytics.th_revenue')}</p>
+                                    <p className="mt-0.5 text-sm font-extrabold tabular-nums text-on-surface">
+                                        {fmt(m.revenue)} {symbol}
+                                    </p>
+                                </div>
+                            </div>
+                        </article>
+                    ))}
+                </div>
+                <div className="hidden overflow-x-auto md:block">
+                    <table className="w-full min-w-[560px] border-collapse text-left">
                         <thead>
                             <tr className="bg-slate-50/50">
                                 <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">
