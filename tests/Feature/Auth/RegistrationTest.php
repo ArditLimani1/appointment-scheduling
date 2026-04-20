@@ -2,9 +2,13 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Notifications\VerifyBusinessEmail;
 use App\Models\BusinessType;
+use App\Models\User;
 use Database\Seeders\BusinessTypeSeeder;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class RegistrationTest extends TestCase
@@ -22,6 +26,8 @@ class RegistrationTest extends TestCase
 
     public function test_new_users_can_register(): void
     {
+        Notification::fake();
+
         $this->seed(BusinessTypeSeeder::class);
 
         $businessTypeId = BusinessType::query()->value('id');
@@ -36,7 +42,12 @@ class RegistrationTest extends TestCase
             'business_type_id' => $businessTypeId,
         ]);
 
-        $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $user = User::query()->where('email', 'test@example.com')->firstOrFail();
+
+        $this->assertGuest();
+        $this->assertFalse($user->hasVerifiedEmail());
+        Notification::assertSentTo($user, VerifyBusinessEmail::class, fn (VerifyBusinessEmail $notification): bool => $notification instanceof ShouldQueue);
+        $response->assertRedirect(route('login', absolute: false));
+        $response->assertSessionHas('status', 'We sent you a verification link. Please verify your email before signing in.');
     }
 }

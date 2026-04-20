@@ -5,6 +5,7 @@ namespace App\Http\Requests\Auth;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -44,6 +45,22 @@ class LoginRequest extends FormRequest
         }
 
         RateLimiter::clear($this->throttleKey());
+
+        $user = Auth::user();
+
+        if ($user && $user->requiresEmailVerification() && ! $user->hasVerifiedEmail()) {
+            if (Cache::add('verification-login-resend:'.$user->getKey(), true, now()->addMinute())) {
+                $user->sendEmailVerificationNotification();
+            }
+
+            Auth::logout();
+            $this->session()->invalidate();
+            $this->session()->regenerateToken();
+
+            throw ValidationException::withMessages([
+                'email' => 'Please verify your email before logging in. We sent you a fresh verification link.',
+            ]);
+        }
     }
 
     /**

@@ -5,7 +5,9 @@ namespace App\Models;
 use App\Enums\Permission;
 use App\Enums\UserRole;
 use App\Enums\UserType;
+use App\Notifications\VerifyBusinessEmail;
 use Database\Factories\UserFactory;
+use Illuminate\Contracts\Auth\MustVerifyEmail as MustVerifyEmailContract;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -15,7 +17,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmailContract
 {
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
@@ -89,6 +91,29 @@ class User extends Authenticatable
     public function isSuperAdmin(): bool
     {
         return $this->user_type === UserType::SuperAdmin;
+    }
+
+    public function requiresEmailVerification(): bool
+    {
+        return $this->isAdmin() && ! $this->isSuperAdmin();
+    }
+
+    public function hasVerifiedEmail(): bool
+    {
+        if (! $this->requiresEmailVerification()) {
+            return true;
+        }
+
+        return ! is_null($this->email_verified_at);
+    }
+
+    public function sendEmailVerificationNotification(): void
+    {
+        if (! $this->requiresEmailVerification()) {
+            return;
+        }
+
+        $this->notify(new VerifyBusinessEmail);
     }
 
     public function ownedBusiness(): HasOne

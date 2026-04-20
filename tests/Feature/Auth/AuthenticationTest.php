@@ -2,8 +2,12 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Enums\UserRole;
+use App\Enums\UserType;
 use App\Models\User;
+use App\Notifications\VerifyBusinessEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
@@ -40,6 +44,58 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertGuest();
+    }
+
+    public function test_unverified_business_owners_can_not_authenticate_and_receive_a_fresh_verification_link(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->unverified()->create([
+            'role' => UserRole::Admin,
+        ]);
+
+        $response = $this->from('/login')->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $response->assertRedirect('/login');
+        $response->assertSessionHasErrors([
+            'email' => 'Please verify your email before logging in. We sent you a fresh verification link.',
+        ]);
+        $this->assertGuest();
+        Notification::assertSentTo($user, VerifyBusinessEmail::class);
+    }
+
+    public function test_unverified_employees_can_still_authenticate(): void
+    {
+        $user = User::factory()->unverified()->create([
+            'role' => UserRole::Employee,
+        ]);
+
+        $response = $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticated();
+        $response->assertRedirect(route('dashboard', absolute: false));
+    }
+
+    public function test_unverified_super_admins_can_still_authenticate(): void
+    {
+        $user = User::factory()->unverified()->create([
+            'role' => UserRole::Admin,
+            'user_type' => UserType::SuperAdmin,
+        ]);
+
+        $response = $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticated();
+        $response->assertRedirect(route('dashboard', absolute: false));
     }
 
     public function test_users_can_logout(): void
