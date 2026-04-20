@@ -26,6 +26,7 @@ class DashboardService implements DashboardServiceInterface
         $recentAppointments = $this->appointmentRepository
             ->getRecent($business->id, 10, $today)
             ->map(fn ($apt) => [
+                'id' => $apt->id,
                 'client_name' => $apt->client_first_name.' '.$apt->client_last_name,
                 'service_name' => $apt->service?->name ?? 'Appointment',
                 'service_price' => $apt->price,

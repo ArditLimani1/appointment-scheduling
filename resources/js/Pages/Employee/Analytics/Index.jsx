@@ -63,7 +63,7 @@ function ExportDropdown({ filters }) {
             <button
                 type="button"
                 onClick={() => setOpen((o) => !o)}
-                className="flex items-center gap-2 rounded-xl bg-on-surface px-6 py-3 text-sm font-bold text-surface hover:opacity-90 transition-opacity"
+                className="flex items-center gap-2 rounded-xl bg-on-surface px-4 py-2.5 text-xs font-bold text-surface transition-opacity hover:opacity-90 sm:px-6 sm:py-3 sm:text-sm"
             >
                 <Icon name="download" size="text-lg" />
                 {t('employee.analytics.export')}
@@ -127,7 +127,7 @@ export default function Index({
         [visitOpts]
     );
 
-    const clearFilters = useCallback(() => {
+    const resetFilters = useCallback(() => {
         const defaultFilters = {
             date_from: currentMonthStart(),
             date_to: currentMonthEnd(),
@@ -159,31 +159,37 @@ export default function Index({
                 <ExportDropdown filters={localFilters} />
             </PageHeader>
 
-            <section className="mb-8 bg-surface-container-lowest rounded-2xl p-6 ring-1 ring-slate-100 shadow-sm">
-                <div className="flex flex-wrap gap-4 items-end">
+            <section className="mb-8 bg-surface-container-lowest rounded-2xl p-4 ring-1 ring-slate-100 shadow-sm md:p-6">
+                <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-end md:gap-4">
                     <DatePicker
+                        className="w-full min-w-0 md:w-auto md:min-w-[12rem]"
+                        buttonClassName="min-w-0 md:min-w-[190px]"
                         label={t('employee.analytics.from')}
                         value={localFilters.date_from}
                         onChange={(value) => patchFilters({ date_from: value })}
                         placeholder={t('employee.analytics.start_date_ph')}
                     />
                     <DatePicker
+                        className="w-full min-w-0 md:w-auto md:min-w-[12rem]"
+                        buttonClassName="min-w-0 md:min-w-[190px]"
                         label={t('employee.analytics.to')}
                         value={localFilters.date_to}
                         onChange={(value) => patchFilters({ date_to: value })}
                         placeholder={t('employee.analytics.end_date_ph')}
                     />
                     <FilterListbox
+                        wrapperClassName="flex w-full min-w-0 flex-col gap-1.5 md:w-auto md:min-w-[12rem]"
+                        minWidthClass="min-w-0"
                         label={t('employee.analytics.service')}
                         value={localFilters.service_id}
                         onChange={(value) => patchFilters({ service_id: value })}
                         options={serviceListboxOptions}
                     />
-                    <div className="flex items-end">
+                    <div className="flex w-full items-end md:w-auto">
                         <button
                             type="button"
-                            onClick={clearFilters}
-                            className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-on-surface hover:bg-slate-50 transition-colors"
+                            onClick={resetFilters}
+                            className="w-full rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-slate-50 md:w-auto"
                         >
                             {t('employee.analytics.reset')}
                         </button>
@@ -191,43 +197,53 @@ export default function Index({
                 </div>
             </section>
 
-            {/* Summary widgets */}
-            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
-                <div className="bg-surface-container-lowest rounded-2xl border border-slate-100 p-6 shadow-sm">
-                    <p className="text-[10px] font-bold text-outline uppercase tracking-widest">{t('employee.analytics.total_appointments')}</p>
-                    <p className="mt-2 text-3xl font-extrabold font-headline text-on-surface">
+            {/* Summary widgets — compact 2×2 on mobile, full strip from sm */}
+            <section className="mb-8 grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-6">
+                <div className="rounded-xl border border-slate-100 bg-surface-container-lowest p-3 shadow-sm sm:rounded-2xl sm:p-6">
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-outline sm:text-[10px]">
+                        {t('employee.analytics.total_appointments')}
+                    </p>
+                    <p className="mt-1.5 font-headline text-xl font-extrabold text-on-surface sm:mt-2 sm:text-3xl">
                         {(summary.total_appointments ?? 0).toLocaleString()}
                     </p>
                 </div>
-                <div className="bg-surface-container-lowest rounded-2xl border border-slate-100 p-6 shadow-sm">
-                    <p className="text-[10px] font-bold text-outline uppercase tracking-widest">{t('employee.analytics.confirmed')}</p>
-                    <p className="mt-2 text-3xl font-extrabold font-headline text-emerald-700">
+                <div className="rounded-xl border border-slate-100 bg-surface-container-lowest p-3 shadow-sm sm:rounded-2xl sm:p-6">
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-outline sm:text-[10px]">
+                        {t('employee.analytics.confirmed')}
+                    </p>
+                    <p className="mt-1.5 font-headline text-xl font-extrabold text-emerald-700 sm:mt-2 sm:text-3xl">
                         {(summary.confirmed_count ?? 0).toLocaleString()}
                     </p>
                 </div>
-                <div className="bg-surface-container-lowest rounded-2xl border border-slate-100 p-6 shadow-sm">
-                    <p className="text-[10px] font-bold text-outline uppercase tracking-widest">{t('employee.analytics.cancelled')}</p>
-                    <p className="mt-2 text-3xl font-extrabold font-headline text-red-700">
+                <div className="rounded-xl border border-slate-100 bg-surface-container-lowest p-3 shadow-sm sm:rounded-2xl sm:p-6">
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-outline sm:text-[10px]">
+                        {t('employee.analytics.cancelled')}
+                    </p>
+                    <p className="mt-1.5 font-headline text-xl font-extrabold text-red-700 sm:mt-2 sm:text-3xl">
                         {(summary.cancelled_count ?? 0).toLocaleString()}
                     </p>
                 </div>
-                <div className="bg-surface-container-lowest rounded-2xl border border-slate-100 p-6 shadow-sm">
-                    <p className="text-[10px] font-bold text-outline uppercase tracking-widest">{t('employee.analytics.pending')}</p>
-                    <p className="mt-2 text-3xl font-extrabold font-headline text-amber-700">
+                <div className="rounded-xl border border-slate-100 bg-surface-container-lowest p-3 shadow-sm sm:rounded-2xl sm:p-6">
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-outline sm:text-[10px]">
+                        {t('employee.analytics.pending')}
+                    </p>
+                    <p className="mt-1.5 font-headline text-xl font-extrabold text-amber-700 sm:mt-2 sm:text-3xl">
                         {(summary.pending_count ?? 0).toLocaleString()}
                     </p>
                 </div>
-                <div className="sm:col-span-2 lg:col-span-2 xl:col-span-2 bg-primary-container rounded-2xl shadow-lg p-6 flex flex-col justify-center">
-                    <p className="text-[10px] font-bold text-white/70 uppercase tracking-widest">{t('employee.analytics.total_earnings')}</p>
-                    <p className="mt-1 text-3xl sm:text-4xl font-extrabold font-headline text-white">
+                <div className="col-span-2 flex flex-col justify-center rounded-xl bg-primary-container p-4 shadow-lg sm:col-span-2 sm:rounded-2xl sm:p-6 lg:col-span-2 xl:col-span-2">
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-white/70 sm:text-[10px]">
+                        {t('employee.analytics.total_earnings')}
+                    </p>
+                    <p className="mt-0.5 font-headline text-2xl font-extrabold text-white sm:mt-1 sm:text-3xl md:text-4xl">
                         {fmt(summary.revenue ?? 0)} {symbol}
                     </p>
-                    <p className="mt-1 text-xs text-white/60">{t('employee.analytics.earnings_hint')}</p>
+                    <p className="mt-0.5 text-[11px] text-white/60 sm:mt-1 sm:text-xs">{t('employee.analytics.earnings_hint')}</p>
                 </div>
             </section>
 
             {selected_service_name && (
-                <section className="mb-8 rounded-2xl border border-slate-200 bg-slate-50/80 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+                <section className="mb-8 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-4 sm:px-6">
                     <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-on-surface text-surface">
                             <Icon name="content_cut" size="text-xl" />
@@ -247,96 +263,154 @@ export default function Index({
             )}
 
             {/* By service */}
-            <section className="bg-surface-container-lowest rounded-2xl overflow-hidden ring-1 ring-slate-100 shadow-sm mb-8">
-                <div className="px-8 py-5 border-b border-slate-50 bg-white">
-                    <h3 className="font-headline font-bold text-base text-on-surface">{t('employee.analytics.performance_by_service')}</h3>
-                    <p className="text-xs text-on-surface-variant mt-0.5">
-                        {t('employee.analytics.performance_by_service_hint')}
-                    </p>
+            <section className="mb-8 overflow-hidden rounded-2xl bg-surface-container-lowest shadow-sm ring-1 ring-slate-100">
+                <div className="border-b border-slate-50 bg-white px-4 py-4 md:px-8 md:py-5">
+                    <h3 className="font-headline text-base font-bold text-on-surface">{t('employee.analytics.performance_by_service')}</h3>
+                    <p className="mt-0.5 text-xs text-on-surface-variant">{t('employee.analytics.performance_by_service_hint')}</p>
                 </div>
 
                 {service_stats.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-                        <Icon name="query_stats" size="text-5xl" className="text-outline mb-3" />
+                    <div className="flex flex-col items-center justify-center px-6 py-16 text-center sm:py-20">
+                        <Icon name="query_stats" className="mb-3 text-outline" size="text-5xl" />
                         <p className="text-sm font-bold text-on-surface">{t('employee.analytics.no_appointments')}</p>
-                        <p className="text-xs text-on-surface-variant mt-1">{t('employee.analytics.no_appointments_hint')}</p>
+                        <p className="mt-1 text-xs text-on-surface-variant">{t('employee.analytics.no_appointments_hint')}</p>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full min-w-[720px] text-left border-collapse">
-                            <thead>
-                                <tr className="bg-slate-50/50">
-                                    <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">{t('employee.analytics.th_service')}</th>
-                                    <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-center">
-                                        {t('employee.analytics.th_cancelled')}
-                                    </th>
-                                    <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-center">
-                                        {t('employee.analytics.th_pending')}
-                                    </th>
-                                    <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-center">
-                                        {t('employee.analytics.th_confirmed')}
-                                    </th>
-                                    <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-center">
-                                        {t('employee.analytics.th_revenue')}
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-50">
-                                {service_stats.map((row) => (
-                                    <tr key={row.service_id} className="hover:bg-slate-50/50 transition-colors">
-                                        <td className="px-8 py-5">
-                                            <p className="text-sm font-bold text-on-surface">{row.service_name}</p>
-                                        </td>
-                                        <td className="px-8 py-5 text-center text-sm font-semibold text-red-600">
-                                            {row.cancelled_count}
-                                        </td>
-                                        <td className="px-8 py-5 text-center text-sm font-semibold text-amber-600">
-                                            {row.pending_count}
-                                        </td>
-                                        <td className="px-8 py-5 text-center text-sm font-semibold text-emerald-600">
-                                            {row.confirmed_count}
-                                        </td>
-                                        <td className="px-8 py-5 text-center font-extrabold text-on-surface">
-                                            {fmt(row.revenue)} {symbol}
-                                        </td>
+                    <>
+                        <div className="divide-y divide-slate-100 md:hidden">
+                            {service_stats.map((row) => (
+                                <article key={row.service_id} className="bg-white px-4 py-4">
+                                    <h4 className="text-sm font-bold text-on-surface">{row.service_name}</h4>
+                                    <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                                        <div className="rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-2">
+                                            <dt className="font-bold uppercase tracking-wider text-outline">
+                                                {t('employee.analytics.th_cancelled')}
+                                            </dt>
+                                            <dd className="mt-1 text-lg font-semibold tabular-nums text-red-600">{row.cancelled_count}</dd>
+                                        </div>
+                                        <div className="rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-2">
+                                            <dt className="font-bold uppercase tracking-wider text-outline">
+                                                {t('employee.analytics.th_pending')}
+                                            </dt>
+                                            <dd className="mt-1 text-lg font-semibold tabular-nums text-amber-600">{row.pending_count}</dd>
+                                        </div>
+                                        <div className="col-span-2 rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-2">
+                                            <dt className="font-bold uppercase tracking-wider text-outline">
+                                                {t('employee.analytics.th_confirmed')}
+                                            </dt>
+                                            <dd className="mt-1 text-lg font-extrabold tabular-nums text-emerald-600">{row.confirmed_count}</dd>
+                                        </div>
+                                        <div className="col-span-2 rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-2">
+                                            <dt className="font-bold uppercase tracking-wider text-outline">
+                                                {t('employee.analytics.th_revenue')}
+                                            </dt>
+                                            <dd className="mt-1 text-lg font-extrabold tabular-nums text-on-surface">
+                                                {fmt(row.revenue)} {symbol}
+                                            </dd>
+                                        </div>
+                                    </dl>
+                                </article>
+                            ))}
+                        </div>
+                        <div className="hidden overflow-x-auto md:block">
+                            <table className="w-full min-w-[720px] border-collapse text-left">
+                                <thead>
+                                    <tr className="bg-slate-50/50">
+                                        <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">
+                                            {t('employee.analytics.th_service')}
+                                        </th>
+                                        <th className="px-8 py-4 text-center text-[11px] font-bold uppercase tracking-widest text-outline">
+                                            {t('employee.analytics.th_cancelled')}
+                                        </th>
+                                        <th className="px-8 py-4 text-center text-[11px] font-bold uppercase tracking-widest text-outline">
+                                            {t('employee.analytics.th_pending')}
+                                        </th>
+                                        <th className="px-8 py-4 text-center text-[11px] font-bold uppercase tracking-widest text-outline">
+                                            {t('employee.analytics.th_confirmed')}
+                                        </th>
+                                        <th className="px-8 py-4 text-center text-[11px] font-bold uppercase tracking-widest text-outline">
+                                            {t('employee.analytics.th_revenue')}
+                                        </th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50">
+                                    {service_stats.map((row) => (
+                                        <tr key={row.service_id} className="transition-colors hover:bg-slate-50/50">
+                                            <td className="px-8 py-5">
+                                                <p className="text-sm font-bold text-on-surface">{row.service_name}</p>
+                                            </td>
+                                            <td className="px-8 py-5 text-center text-sm font-semibold text-red-600">{row.cancelled_count}</td>
+                                            <td className="px-8 py-5 text-center text-sm font-semibold text-amber-600">{row.pending_count}</td>
+                                            <td className="px-8 py-5 text-center text-sm font-semibold text-emerald-600">{row.confirmed_count}</td>
+                                            <td className="px-8 py-5 text-center font-extrabold text-on-surface">
+                                                {fmt(row.revenue)} {symbol}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
                 )}
             </section>
 
             {/* Monthly overview */}
-            <section className="bg-surface-container-lowest rounded-2xl overflow-hidden ring-1 ring-slate-100 shadow-sm">
-                <div className="px-8 py-5 border-b border-slate-50 bg-white">
-                    <h3 className="font-headline font-bold text-base text-on-surface">{t('employee.analytics.monthly_overview')}</h3>
-                    <p className="text-xs text-on-surface-variant mt-0.5">
-                        {t('employee.analytics.monthly_overview_hint')}
-                    </p>
+            <section className="overflow-hidden rounded-2xl bg-surface-container-lowest shadow-sm ring-1 ring-slate-100">
+                <div className="border-b border-slate-50 bg-white px-4 py-4 md:px-8 md:py-5">
+                    <h3 className="font-headline text-base font-bold text-on-surface">{t('employee.analytics.monthly_overview')}</h3>
+                    <p className="mt-0.5 text-xs text-on-surface-variant">{t('employee.analytics.monthly_overview_hint')}</p>
                 </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full min-w-[560px] text-left border-collapse">
+                <div className="divide-y divide-slate-100 md:hidden">
+                    {monthly_performance.map((m) => (
+                        <article key={m.month} className="bg-white px-4 py-4">
+                            <h4 className="text-sm font-bold text-on-surface">{m.label}</h4>
+                            <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                                <div className="rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-2">
+                                    <dt className="font-bold uppercase tracking-wider text-outline">{t('employee.analytics.th_cancelled')}</dt>
+                                    <dd className="mt-1 text-lg font-semibold tabular-nums text-red-600">{m.cancelled}</dd>
+                                </div>
+                                <div className="rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-2">
+                                    <dt className="font-bold uppercase tracking-wider text-outline">{t('employee.analytics.th_pending')}</dt>
+                                    <dd className="mt-1 text-lg font-semibold tabular-nums text-amber-600">{m.pending}</dd>
+                                </div>
+                                <div className="col-span-2 rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-2">
+                                    <dt className="font-bold uppercase tracking-wider text-outline">{t('employee.analytics.th_confirmed')}</dt>
+                                    <dd className="mt-1 text-lg font-extrabold tabular-nums text-emerald-600">{m.confirmed}</dd>
+                                </div>
+                                <div className="col-span-2 rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-2">
+                                    <dt className="font-bold uppercase tracking-wider text-outline">{t('employee.analytics.th_revenue')}</dt>
+                                    <dd className="mt-1 text-lg font-extrabold tabular-nums text-on-surface">
+                                        {fmt(m.revenue)} {symbol}
+                                    </dd>
+                                </div>
+                            </dl>
+                        </article>
+                    ))}
+                </div>
+                <div className="hidden overflow-x-auto md:block">
+                    <table className="w-full min-w-[560px] border-collapse text-left">
                         <thead>
                             <tr className="bg-slate-50/50">
-                                <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">{t('employee.analytics.th_month')}</th>
-                                <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-center">
+                                <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">
+                                    {t('employee.analytics.th_month')}
+                                </th>
+                                <th className="px-8 py-4 text-center text-[11px] font-bold uppercase tracking-widest text-outline">
                                     {t('employee.analytics.th_cancelled')}
                                 </th>
-                                <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-center">
+                                <th className="px-8 py-4 text-center text-[11px] font-bold uppercase tracking-widest text-outline">
                                     {t('employee.analytics.th_pending')}
                                 </th>
-                                <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-center">
+                                <th className="px-8 py-4 text-center text-[11px] font-bold uppercase tracking-widest text-outline">
                                     {t('employee.analytics.th_confirmed')}
                                 </th>
-                                <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline text-center">
+                                <th className="px-8 py-4 text-center text-[11px] font-bold uppercase tracking-widest text-outline">
                                     {t('employee.analytics.th_revenue')}
                                 </th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
                             {monthly_performance.map((m) => (
-                                <tr key={m.month} className="hover:bg-slate-50/50 transition-colors">
+                                <tr key={m.month} className="transition-colors hover:bg-slate-50/50">
                                     <td className="px-8 py-4 text-sm font-semibold text-on-surface">{m.label}</td>
                                     <td className="px-8 py-4 text-center text-sm font-semibold text-red-600">{m.cancelled}</td>
                                     <td className="px-8 py-4 text-center text-sm font-semibold text-amber-600">{m.pending}</td>

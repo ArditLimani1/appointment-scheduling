@@ -58,7 +58,9 @@ class AppointmentController extends Controller
         $preference->update(['is_calendar_default' => false]);
 
         $filters = $this->filtersFromRequest($request);
-        $data = $this->appointmentService->getFiltered($business, $filters);
+        $data = array_merge($this->appointmentService->getFiltered($business, $filters), [
+            'admin_compact_mobile_appointments' => true,
+        ]);
 
         return Inertia::render('Admin/Appointments/Index', $data);
     }

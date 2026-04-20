@@ -49,9 +49,9 @@ export default function Index({ roles, permissionGroups }) {
                 </button>
             </PageHeader>
 
-            <div className="bg-surface-container-lowest rounded-2xl overflow-hidden ring-1 ring-slate-100 shadow-sm">
-                <div className="px-8 py-5 border-b border-slate-50 flex items-center justify-between bg-white">
-                    <h3 className="font-headline font-bold text-base text-on-surface">{t('admin.roles.section_title')}</h3>
+            <div className="min-w-0 bg-surface-container-lowest overflow-hidden rounded-2xl ring-1 ring-slate-100 shadow-sm">
+                <div className="flex items-center justify-between border-b border-slate-50 bg-white px-4 py-4 sm:px-6 md:px-8">
+                    <h3 className="font-headline text-base font-bold text-on-surface">{t('admin.roles.section_title')}</h3>
                     <p className="text-xs text-on-surface-variant">
                         {roles.length === 1
                             ? t('admin.roles.count_one')
@@ -73,8 +73,47 @@ export default function Index({ roles, permissionGroups }) {
                         </button>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
+                    <>
+                        <div className="space-y-3 border-b border-slate-50 bg-white p-4 md:hidden">
+                            {roles.map((role) => {
+                                const permText =
+                                    (role.permissions || []).length === 0
+                                        ? '—'
+                                        : (role.permissions || []).map((k) => permissionLabel(k, permissionGroups)).join(', ');
+                                return (
+                                    <article
+                                        key={role.id}
+                                        className="rounded-2xl border border-outline-variant/35 bg-surface-container-low/50 p-4 shadow-sm"
+                                    >
+                                        <p className="font-headline text-sm font-bold text-on-surface">{role.name}</p>
+                                        <div className="mt-2">
+                                            <p className="text-[10px] font-bold uppercase tracking-wider text-outline">{t('admin.roles.th_permissions')}</p>
+                                            <p className="mt-1 line-clamp-6 text-xs leading-relaxed text-on-surface-variant">{permText}</p>
+                                        </div>
+                                        <div className="mt-3 flex flex-wrap justify-end gap-2 border-t border-outline-variant/25 pt-3">
+                                            <button
+                                                type="button"
+                                                onClick={() => openEdit(role)}
+                                                className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-surface-container-high px-4 py-2.5 text-sm font-bold text-on-surface transition-colors hover:bg-surface-container-highest sm:flex-none"
+                                            >
+                                                <Icon name="edit" size="text-lg" />
+                                                {t('admin.roles.edit_title')}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setDeleteTarget(role)}
+                                                className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-bold text-red-950 transition-colors hover:bg-red-100/90"
+                                            >
+                                                <Icon name="delete" size="text-lg" />
+                                                {t('admin.roles.delete_title')}
+                                            </button>
+                                        </div>
+                                    </article>
+                                );
+                            })}
+                        </div>
+                        <div className="hidden overflow-x-auto md:block">
+                            <table className="w-full border-collapse text-left">
                             <thead>
                                 <tr className="bg-slate-50/50">
                                     <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-outline">
@@ -123,7 +162,8 @@ export default function Index({ roles, permissionGroups }) {
                                 ))}
                             </tbody>
                         </table>
-                    </div>
+                        </div>
+                    </>
                 )}
             </div>
 

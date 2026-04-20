@@ -202,20 +202,21 @@ export default function AdminLayout({ children }) {
             </aside>
 
             <div className="lg:pl-72">
-                <header className="sticky top-0 z-30 flex min-h-[73px] shrink-0 items-center justify-between border-b border-outline-variant/20 bg-surface/80 px-8 py-4 backdrop-blur-xl">
-                    <div className="flex items-center gap-4">
+                <header className="sticky top-0 z-30 flex min-h-[73px] shrink-0 items-center justify-between border-b border-outline-variant/20 bg-surface/80 px-4 py-4 backdrop-blur-xl sm:px-8">
+                    <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
                         <button
+                            type="button"
                             onClick={() => setSidebarOpen(true)}
-                            className="lg:hidden rounded-lg p-1.5 text-on-surface-variant hover:bg-surface-container transition-colors"
+                            className="shrink-0 rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container lg:hidden"
                         >
                             <Icon name="menu" size="text-2xl" />
                         </button>
-                        <h1 className="font-headline text-xl font-bold tracking-tight text-on-surface">
+                        <h1 className="min-w-0 truncate font-headline text-lg font-bold tracking-tight text-on-surface sm:text-xl">
                             {business?.name ?? t('layout.admin.header_fallback')}
                         </h1>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="ml-2 flex shrink-0 items-center gap-2 sm:gap-3">
                         {business?.slug && (
                             <a
                                 href={bookingUrl}
@@ -247,7 +248,7 @@ export default function AdminLayout({ children }) {
                     </div>
                 </header>
 
-                <main className="p-6 sm:p-8 pb-24 lg:pb-8 bg-surface min-h-[calc(100vh-73px)]">
+                <main className="min-h-[calc(100vh-73px)] bg-surface p-4 pb-24 sm:p-8 lg:pb-8">
                     {children}
                 </main>
             </div>

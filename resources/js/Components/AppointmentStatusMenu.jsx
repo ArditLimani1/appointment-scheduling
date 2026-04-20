@@ -27,7 +27,7 @@ function optionFor(status) {
     return STATUS_META.find((o) => o.value === status) || STATUS_META[0];
 }
 
-export default function AppointmentStatusMenu({ status, onChange }) {
+export default function AppointmentStatusMenu({ status, onChange, layout = 'inline' }) {
     const t = useT();
     const current = optionFor(status);
     const handleChange = (nextValue) => {
@@ -38,9 +38,22 @@ export default function AppointmentStatusMenu({ status, onChange }) {
         onChange(nextValue);
     };
 
+    const blockLayout = layout === 'block';
+
     return (
-        <Menu as="div" className="relative inline-block text-left">
-            <MenuButton className={`inline-flex min-w-[10rem] max-w-full items-center justify-between gap-2 rounded-full px-3.5 py-2 text-left text-[11px] font-bold uppercase tracking-wider shadow-sm ring-1 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-on-surface/25 ${current.trigger}`}>
+        <Menu
+            as="div"
+            className={
+                blockLayout
+                    ? 'relative block w-full min-w-0 max-w-full text-left'
+                    : 'relative inline-block text-left'
+            }
+        >
+            <MenuButton
+                className={`inline-flex max-w-full items-center justify-between gap-2 rounded-full px-3.5 py-2 text-left text-[11px] font-bold uppercase tracking-wider shadow-sm ring-1 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-on-surface/25 ${current.trigger} ${
+                    blockLayout ? 'w-full min-w-0' : 'min-w-[10rem]'
+                }`}
+            >
                 <span className="truncate">{t(`common.status.${current.value}`)}</span>
                 <Icon name="expand_more" size="text-lg" className="shrink-0 opacity-60" />
             </MenuButton>
