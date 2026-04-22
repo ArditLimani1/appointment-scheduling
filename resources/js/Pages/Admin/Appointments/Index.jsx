@@ -444,9 +444,14 @@ export default function Index({
                                                 <p className="font-headline text-sm font-bold leading-snug text-on-surface">
                                                     {apt.client_first_name} {apt.client_last_name}
                                                 </p>
-                                                <p className="mt-0.5 text-sm text-on-surface-variant">
-                                                    {apt.service?.name || '—'}
-                                                </p>
+                                                <div className="mt-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                                                    <p className="text-sm text-on-surface-variant">{apt.service?.name || '—'}</p>
+                                                    <p className="whitespace-nowrap text-sm font-semibold tabular-nums text-on-surface">
+                                                        {Number(apt.price).toFixed(2)}
+                                                        {'\u00a0'}
+                                                        {currencySymbol}
+                                                    </p>
+                                                </div>
                                             </div>
                                             <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
                                                 <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-on-surface">
@@ -455,9 +460,6 @@ export default function Index({
                                                 </span>
                                                 <span className="text-xs text-on-surface-variant">
                                                     {apt.employee?.name ?? '—'}
-                                                </span>
-                                                <span className="text-xs font-semibold tabular-nums text-on-surface">
-                                                    {Number(apt.price).toFixed(2)} {currencySymbol}
                                                 </span>
                                             </div>
                                             <div className="mt-2 break-words text-sm text-on-surface-variant">
@@ -517,7 +519,7 @@ export default function Index({
                                         <th className="px-4 py-4 text-[11px] font-bold uppercase tracking-widest text-outline sm:px-6 lg:px-8">
                                             {t('admin.appointments.th_status')}
                                         </th>
-                                        <th className="px-4 py-4 text-right text-[11px] font-bold uppercase tracking-widest text-outline sm:px-6 lg:px-8">
+                                        <th className="min-w-[5.5rem] whitespace-nowrap px-4 py-4 text-right text-[11px] font-bold uppercase tracking-widest text-outline sm:px-6 lg:px-8">
                                             {t('admin.appointments.th_price')}
                                         </th>
                                         <th className="px-4 py-4 text-right text-[11px] font-bold uppercase tracking-widest text-outline sm:px-6 lg:px-8">
@@ -547,8 +549,10 @@ export default function Index({
                                             <td className="px-4 py-5 align-middle sm:px-6 lg:px-8">
                                                 <AppointmentStatusMenu status={apt.status} onChange={(s) => updateStatus(apt, s)} />
                                             </td>
-                                            <td className="px-4 py-5 text-right text-sm font-bold text-on-surface sm:px-6 lg:px-8">
-                                                {Number(apt.price).toFixed(2)} {currencySymbol}
+                                            <td className="min-w-[5.5rem] whitespace-nowrap px-4 py-5 text-right text-sm font-bold tabular-nums text-on-surface sm:px-6 lg:px-8">
+                                                {Number(apt.price).toFixed(2)}
+                                                {'\u00a0'}
+                                                {currencySymbol}
                                             </td>
                                             <td className="px-4 py-5 text-right sm:px-6 lg:px-8">
                                                 <div className="inline-flex items-center gap-1">

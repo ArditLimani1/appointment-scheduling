@@ -687,7 +687,6 @@ export default function Index({
                                                 placeholder={t('booking_ui.steps.date_placeholder')}
                                                 minDate={bookingToday}
                                                 maxDate={bookingMaxDate}
-                                                weekStartsOn="monday"
                                                 todayDateString={bookingToday}
                                             />
                                         </div>

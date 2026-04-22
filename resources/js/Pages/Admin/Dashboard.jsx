@@ -146,7 +146,12 @@ export default function Dashboard({
                                             <div className="flex items-start justify-between gap-3">
                                                 <div className="min-w-0 flex-1">
                                                     <p className="font-bold leading-snug text-on-surface">{apt.client_name}</p>
-                                                    <p className="mt-0.5 text-sm text-on-surface-variant">{apt.service_name}</p>
+                                                    <div className="mt-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                                                        <p className="text-sm text-on-surface-variant">{apt.service_name}</p>
+                                                        <p className="text-sm font-semibold tabular-nums text-on-surface">
+                                                            {Number(apt.service_price ?? 0).toFixed(2)} {currencySymbol}
+                                                        </p>
+                                                    </div>
                                                 </div>
                                                 <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase ${bg}`}>
                                                     {t(`common.status.${st}`)}
@@ -156,9 +161,6 @@ export default function Dashboard({
                                                 <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-on-surface">
                                                     <Icon name="person" size="text-sm" className="text-on-surface-variant" />
                                                     <span className="min-w-0 truncate">{apt.employee_name || t('common.dash')}</span>
-                                                </span>
-                                                <span className="text-xs font-semibold tabular-nums text-on-surface-variant">
-                                                    {Number(apt.service_price ?? 0).toFixed(2)} {currencySymbol}
                                                 </span>
                                             </div>
                                             <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-on-surface-variant">

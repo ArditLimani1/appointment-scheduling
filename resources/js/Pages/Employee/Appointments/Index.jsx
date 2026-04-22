@@ -102,7 +102,7 @@ function fmt(d, opts) {
 function formatPrice(amount, symbol) {
     const n = amount != null && amount !== '' ? Number(amount) : 0;
     const safe = Number.isFinite(n) ? n : 0;
-    return `${safe.toFixed(2)} ${symbol}`;
+    return `${safe.toFixed(2)}\u00a0${symbol}`;
 }
 
 function normalizeServiceFilterForState(serviceIdFromServer) {
@@ -595,9 +595,14 @@ export default function EmployeeAppointmentsIndex({
                                                     <p className="font-bold text-on-surface leading-snug">
                                                         {apt.client_first_name} {apt.client_last_name}
                                                     </p>
-                                                    <p className="text-sm text-on-surface-variant mt-0.5">
-                                                        {apt.service?.name ?? t('employee.appointments.appointment_fallback')}
-                                                    </p>
+                                                    <div className="mt-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                                                        <p className="text-sm text-on-surface-variant">
+                                                            {apt.service?.name ?? t('employee.appointments.appointment_fallback')}
+                                                        </p>
+                                                        <p className="text-sm font-semibold tabular-nums text-on-surface">
+                                                            {formatPrice(apt.price, currencySymbol)}
+                                                        </p>
+                                                    </div>
                                                 </div>
                                                 <AppointmentStatusBadge status={apt.status} />
                                             </div>
@@ -605,9 +610,6 @@ export default function EmployeeAppointmentsIndex({
                                                 <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-on-surface">
                                                     <Icon name="schedule" size="text-sm" className="text-on-surface-variant" />
                                                     {formatTimeHm(apt.start_time)} – {formatTimeHm(apt.end_time)}
-                                                </span>
-                                                <span className="text-xs text-on-surface-variant">
-                                                    {formatPrice(apt.price, currencySymbol)}
                                                 </span>
                                             </div>
                                             <div className="mt-2 text-sm text-on-surface-variant break-words">

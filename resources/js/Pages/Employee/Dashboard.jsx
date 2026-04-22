@@ -235,9 +235,14 @@ export default function Dashboard({
                                                     <p className="font-bold text-on-surface leading-snug">
                                                         {apt.client_first_name} {apt.client_last_name}
                                                     </p>
-                                                    <p className="text-sm text-on-surface-variant mt-0.5">
-                                                        {apt.service?.name ?? t('employee.appointments.appointment_fallback')}
-                                                    </p>
+                                                    <div className="mt-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                                                        <p className="text-sm text-on-surface-variant">
+                                                            {apt.service?.name ?? t('employee.appointments.appointment_fallback')}
+                                                        </p>
+                                                        <p className="text-sm font-semibold tabular-nums text-on-surface">
+                                                            {Number(apt.price).toFixed(2)} {currencySymbol}
+                                                        </p>
+                                                    </div>
                                                 </div>
                                                 <span className={`shrink-0 px-2.5 py-0.5 text-[10px] font-extrabold uppercase rounded-full ${bg}`}>
                                                     {t(`common.status.${st}`)}
@@ -248,9 +253,6 @@ export default function Dashboard({
                                                 <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-on-surface">
                                                     <Icon name="schedule" size="text-sm" className="text-on-surface-variant" />
                                                     {formatTimeHm(apt.start_time)} – {formatTimeHm(apt.end_time)}
-                                                </span>
-                                                <span className="text-xs text-on-surface-variant">
-                                                    {Number(apt.price).toFixed(2)} {currencySymbol}
                                                 </span>
                                             </div>
 
