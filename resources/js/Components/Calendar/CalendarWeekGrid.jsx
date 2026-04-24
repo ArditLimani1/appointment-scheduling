@@ -130,7 +130,8 @@ function resolveCalendarRange(calendarHours, gridLineMinutesRaw) {
 }
 
 /**
- * While dragging, snap to the finer of: business grid step vs service length (e.g. 30 vs 15 → 15).
+ * Match backend available-slot stepping:
+ * snap to the finer cadence between grid step and service duration.
  */
 function dragSnapMinutes(gridLineMinutes, serviceDurationMinutes) {
     const g = clampSlotMinutes(gridLineMinutes);
@@ -306,7 +307,10 @@ function computeDropPreviewFromEvent(event, { gridBodyRefs, gridMinHeight, minut
     const pxPerMinute = h / minutesInView;
 
     let newStartMin = startMin + delta.y / pxPerMinute;
-    newStartMin = Math.round(newStartMin / snapMinutes) * snapMinutes;
+    // Snap relative to the visible range start (not midnight) so service-based
+    // increments align with the same visual grid anchor used by the calendar.
+    const snapOffset = newStartMin - rangeStartMin;
+    newStartMin = rangeStartMin + Math.round(snapOffset / snapMinutes) * snapMinutes;
 
     const duration = Math.max(5, timeToMinutes(apt.end_time) - timeToMinutes(apt.start_time));
     newStartMin = Math.max(rangeStartMin, Math.min(newStartMin, rangeEndMin - duration));
@@ -315,6 +319,45 @@ function computeDropPreviewFromEvent(event, { gridBodyRefs, gridMinHeight, minut
         dateStr: targetDate,
         startMin: newStartMin,
         endMin: newStartMin + duration,
+    };
+}
+
+/**
+ * When slot sets are loaded from the backend, snap drag preview to the nearest
+ * allowed start time for the target date. This mirrors server-side interval logic
+ * (which can restart stepping after breaks/conflicts) instead of relying only on
+ * a continuous client arithmetic grid.
+ */
+function snapPreviewToNearestAllowedSlot(preview, slotSetsByDate) {
+    if (!preview || !slotSetsByDate) {
+        return preview;
+    }
+    const allowedSet = slotSetsByDate[preview.dateStr];
+    if (!allowedSet || allowedSet.size === 0) {
+        return preview;
+    }
+    const allowedMinutes = [...allowedSet]
+        .map((t) => timeToMinutes(t))
+        .filter((m) => Number.isFinite(m))
+        .sort((a, b) => a - b);
+    if (allowedMinutes.length === 0) {
+        return preview;
+    }
+    let nearest = allowedMinutes[0];
+    let bestDist = Math.abs(nearest - preview.startMin);
+    for (let i = 1; i < allowedMinutes.length; i += 1) {
+        const cand = allowedMinutes[i];
+        const dist = Math.abs(cand - preview.startMin);
+        if (dist < bestDist) {
+            nearest = cand;
+            bestDist = dist;
+        }
+    }
+    const duration = Math.max(5, preview.endMin - preview.startMin);
+    return {
+        ...preview,
+        startMin: nearest,
+        endMin: nearest + duration,
     };
 }
 
@@ -347,21 +390,59 @@ function BreakIntervalLayers({ breaks, rangeStartMin, rangeEndMin, minutesInView
 
 /**
  * Full-column markers for API-invalid start times (breaks, conflicts, resources).
+ *
+ * Rendered as the COMPLEMENT of the allowed-slot windows within the visible range so
+ * the backend's post-break / post-appointment re-anchoring is preserved visually:
+ * each allowed start anchors a window of `snapMin` minutes, consecutive allowed anchors
+ * merge into one continuous "free" band, and the red bands cover exactly the gaps.
+ * Previously this component iterated a fixed `snapMin` grid anchored at `rangeStartMin`,
+ * which painted every re-anchored slot (e.g. 14:45 after a 14:00-14:45 appointment) red
+ * because it missed the :15/:45 offset entirely.
+ *
  * Same look as invalid DropSlotPreview. Renders above {@link BreakIntervalLayers} so invalid reads clearly on grab.
  */
 function UnavailableSlotBands({ allowedSet, rangeStartMin, rangeEndMin, minutesInView, durationMin, snapMin }) {
     const bands = useMemo(() => {
-        if (!allowedSet || snapMin < 1 || durationMin < 1) {
+        if (!allowedSet || snapMin < 1 || durationMin < 1 || rangeEndMin <= rangeStartMin) {
             return [];
         }
-        const out = [];
-        const lastStart = rangeEndMin - durationMin;
-        for (let t = rangeStartMin; t <= lastStart; t += snapMin) {
-            if (!allowedSet.has(minutesToTimeHm(t))) {
-                out.push(t);
+
+        const allowedStarts = [...allowedSet]
+            .map((t) => timeToMinutes(t))
+            .filter((m) => Number.isFinite(m))
+            .sort((a, b) => a - b);
+
+        if (allowedStarts.length === 0) {
+            return [{ start: rangeStartMin, end: rangeEndMin }];
+        }
+
+        const merged = [];
+        for (const t of allowedStarts) {
+            const ws = Math.max(rangeStartMin, t);
+            const we = Math.min(rangeEndMin, t + snapMin);
+            if (we <= ws) {
+                continue;
+            }
+            const last = merged[merged.length - 1];
+            if (last && ws <= last.end) {
+                last.end = Math.max(last.end, we);
+            } else {
+                merged.push({ start: ws, end: we });
             }
         }
-        return out;
+
+        const invalid = [];
+        let cursor = rangeStartMin;
+        for (const window of merged) {
+            if (window.start > cursor) {
+                invalid.push({ start: cursor, end: window.start });
+            }
+            cursor = Math.max(cursor, window.end);
+        }
+        if (cursor < rangeEndMin) {
+            invalid.push({ start: cursor, end: rangeEndMin });
+        }
+        return invalid;
     }, [allowedSet, rangeStartMin, rangeEndMin, durationMin, snapMin]);
 
     if (!bands.length) {
@@ -370,12 +451,12 @@ function UnavailableSlotBands({ allowedSet, rangeStartMin, rangeEndMin, minutesI
 
     return (
         <>
-            {bands.map((t) => {
-                const topPct = ((t - rangeStartMin) / minutesInView) * 100;
-                const heightPct = (durationMin / minutesInView) * 100;
+            {bands.map((band) => {
+                const topPct = ((band.start - rangeStartMin) / minutesInView) * 100;
+                const heightPct = ((band.end - band.start) / minutesInView) * 100;
                 return (
                     <div
-                        key={t}
+                        key={`${band.start}-${band.end}`}
                         className={`pointer-events-none absolute right-0.5 left-0.5 z-[12] ${BUSY_CONFLICT_OVERLAY_CLASS}`}
                         style={{ top: `${topPct}%`, height: `${Math.max(heightPct, 0.2)}%` }}
                         aria-hidden
@@ -629,7 +710,8 @@ export default function CalendarWeekGrid({
         // When `over` is briefly null (between columns, first frame of drag), keep the last
         // preview — otherwise the dashed outline clears until the pointer enters a day again.
         setDropPreview((prev) => {
-            const next = computeDropPreviewFromEvent(event, dragLayoutCtx);
+            const nextRaw = computeDropPreviewFromEvent(event, dragLayoutCtx);
+            const next = snapPreviewToNearestAllowedSlot(nextRaw, slotSetsByDate);
             if (next !== null) {
                 return next;
             }
@@ -639,6 +721,24 @@ export default function CalendarWeekGrid({
             return dragPreviewFallbackRef.current;
         });
     };
+
+    // When slot sets arrive mid-drag, re-snap the current preview — otherwise the pointer-derived
+    // minute can stay "between" backend-allowed starts until the next drag-move event.
+    useEffect(() => {
+        if (readOnly) {
+            return;
+        }
+        setDropPreview((prev) => {
+            if (!prev) {
+                return prev;
+            }
+            const snapped = snapPreviewToNearestAllowedSlot(prev, slotSetsByDate);
+            if (!snapped || snapped.startMin === prev.startMin) {
+                return prev;
+            }
+            return snapped;
+        });
+    }, [readOnly, slotSetsByDate]);
 
     const resetDragSlotFetch = () => {
         dragSlotFetchGen.current += 1;
@@ -783,7 +883,8 @@ export default function CalendarWeekGrid({
         if (!over || !active.data.current?.appointment) {
             return;
         }
-        const preview = computeDropPreviewFromEvent(event, dragLayoutCtx);
+        const previewRaw = computeDropPreviewFromEvent(event, dragLayoutCtx);
+        const preview = snapPreviewToNearestAllowedSlot(previewRaw, slotSetsByDate);
         if (!preview) {
             return;
         }
@@ -928,7 +1029,12 @@ export default function CalendarWeekGrid({
                                     <div className="relative h-full w-full" style={{ minHeight: gridMinHeight }}>
                                         {dragOverlaySpec &&
                                             slotSetsByDate?.[dateStr] &&
-                                            !calendarDayOffs.includes(dateStr) && (
+                                            !dayOffForDayColumn(
+                                                dateStr,
+                                                resolvedOverlayEmployeeId,
+                                                calendarEmployeeDayOffs,
+                                                calendarDayOffs,
+                                            ) && (
                                                 <UnavailableSlotBands
                                                     allowedSet={slotSetsByDate[dateStr]}
                                                     rangeStartMin={rangeStartMin}

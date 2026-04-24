@@ -302,7 +302,7 @@ class AppointmentService implements AppointmentServiceInterface
             $data['date'],
             $startTime,
             $appointment->id,
-            true,
+            false,
         );
 
         $updated = DB::transaction(function () use ($business, $appointment, $data, $serviceId, $service, $startTime, $endTime) {
@@ -374,7 +374,7 @@ class AppointmentService implements AppointmentServiceInterface
             $dateYmd,
             $startTime,
             $appointment->id,
-            true,
+            false,
         );
 
         $updated = DB::transaction(function () use ($appointment, $business, $service, $dateYmd, $startTime, $endTime) {
@@ -491,6 +491,9 @@ class AppointmentService implements AppointmentServiceInterface
      * True when another appointment on the same day overlaps the proposed window with positive duration.
      * Back-to-back (one ends exactly when the other starts) is not a conflict.
      * Uses Carbon instead of raw SQL time comparisons so SQLite TIME string ordering cannot mis-order adjacent times.
+     * Both operands must be parsed in the window's timezone — otherwise appointments stored as
+     * wall-clock "H:i" in a non-UTC business (e.g. Europe/Belgrade, UTC+2) would be compared as UTC
+     * against tz-aware window bounds and flag false overlaps for any late-morning move.
      */
     private function hasOverlappingAppointmentForEmployee(
         int $employeeId,
@@ -508,10 +511,12 @@ class AppointmentService implements AppointmentServiceInterface
             $query->where('id', '!=', $ignoreAppointmentId);
         }
 
+        $timezone = $windowStart->timezone;
+
         return $query->get(['id', 'start_time', 'end_time'])
-            ->contains(function (Appointment $other) use ($dateYmd, $windowStart, $windowEnd) {
-                $otherStart = Carbon::parse($dateYmd.' '.$other->start_time);
-                $otherEnd = Carbon::parse($dateYmd.' '.$other->end_time);
+            ->contains(function (Appointment $other) use ($dateYmd, $windowStart, $windowEnd, $timezone) {
+                $otherStart = Carbon::parse($dateYmd.' '.$other->start_time, $timezone);
+                $otherEnd = Carbon::parse($dateYmd.' '.$other->end_time, $timezone);
 
                 return $otherStart->lt($windowEnd) && $otherEnd->gt($windowStart);
             });

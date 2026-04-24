@@ -421,23 +421,18 @@ class BookingService implements BookingServiceInterface
 
     /**
      * Step between candidate start times for a reservation of {@see $blockMinutes} length.
-     * When the service is longer than the business grid (e.g. 30 min service, 15 min grid), step by the
-     * full block length so starts align to that duration (no :15/:45-only starts for a 30 min booking).
+     * Business rule: use the finer cadence between business slot grid and service duration.
      */
     private function resolveStepMinutesForSlotBlock(int $businessSlotMinutes, int $blockMinutes): int
     {
         $businessSlotMinutes = max(1, min(120, $businessSlotMinutes));
         $blockMinutes = max(1, min(120, $blockMinutes));
 
-        if ($blockMinutes > $businessSlotMinutes) {
-            return $blockMinutes;
-        }
-
         return min($businessSlotMinutes, $blockMinutes);
     }
 
     /**
-     * @param  bool  $ignoreScheduleBreaks  When true, scheduled lunch/break windows are treated as bookable (employee self-service calendar only).
+     * @param  bool  $ignoreScheduleBreaks  When true, scheduled lunch/break windows are treated as bookable.
      */
     private function calculateSlots(
         Carbon $date,
@@ -478,6 +473,10 @@ class BookingService implements BookingServiceInterface
                 continue;
             }
 
+            // Each free interval already begins at a real boundary (open time, after a break,
+            // after an appointment, etc.). Start stepping from that boundary directly — do not
+            // re-phase to the business open time, or mid-day gaps like 11:45–13:00 can incorrectly
+            // snap forward to 12:00.
             $t = $intervalStart->copy();
             while ($t->copy()->addMinutes($slotDuration)->lte($intervalEnd)) {
                 if ($t->gte($minNoticeTime)) {
