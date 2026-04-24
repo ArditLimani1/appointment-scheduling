@@ -314,7 +314,6 @@ class AppointmentController extends Controller
             'service_id' => $serviceId,
             'date' => $date,
             'exclude_id' => $appointment->id,
-            'ignore_schedule_breaks' => true,
         ]);
 
         return response()->json(['slots' => $slots]);
