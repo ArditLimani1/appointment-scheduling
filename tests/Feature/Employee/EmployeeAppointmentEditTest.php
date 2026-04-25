@@ -297,7 +297,7 @@ class EmployeeAppointmentEditTest extends TestCase
         $this->assertSame('11:15', substr((string) $first->end_time, 0, 5));
     }
 
-    public function test_employee_can_move_appointment_into_own_scheduled_break(): void
+    public function test_employee_cannot_move_appointment_into_own_scheduled_break(): void
     {
         $this->seed(BusinessTypeSeeder::class);
 
@@ -372,9 +372,9 @@ class EmployeeAppointmentEditTest extends TestCase
             'start_time' => '12:00',
         ]);
 
-        $response->assertRedirect();
+        $response->assertSessionHasErrors('start_time');
         $appointment->refresh();
-        $this->assertSame('12:00', substr((string) $appointment->start_time, 0, 5));
-        $this->assertSame('12:30', substr((string) $appointment->end_time, 0, 5));
+        $this->assertSame('10:00', substr((string) $appointment->start_time, 0, 5));
+        $this->assertSame('10:30', substr((string) $appointment->end_time, 0, 5));
     }
 }

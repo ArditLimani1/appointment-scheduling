@@ -179,7 +179,8 @@ class DatabaseSeeder extends Seeder
         $elena->services()->attach([$prerje->id, $ngjyrosje->id]);
 
         foreach ($employees as $employee) {
-            for ($day = 0; $day <= 4; $day++) {
+            // Monday (0) through Saturday (5), closed Sunday (6)
+            for ($day = 0; $day <= 5; $day++) {
                 $schedule = Schedule::create([
                     'user_id' => $employee->id,
                     'day_of_week' => $day,

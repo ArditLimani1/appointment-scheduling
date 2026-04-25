@@ -18,7 +18,7 @@ class AdminAvailableSlotsStepTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_longer_service_than_business_grid_steps_by_service_duration_not_finer_grid(): void
+    public function test_longer_service_than_business_grid_uses_finer_business_grid_step(): void
     {
         $this->seed(BusinessTypeSeeder::class);
 
@@ -75,8 +75,8 @@ class AdminAvailableSlotsStepTest extends TestCase
             'date' => $monday,
         ]);
 
-        $this->assertNotContains('11:15', $slots, '30 min service with 15 min grid must not offer :15-only starts');
-        $this->assertNotContains('10:45', $slots);
+        $this->assertContains('11:15', $slots, '30 min service with 15 min grid should offer finer :15 starts');
+        $this->assertContains('10:45', $slots);
         $this->assertContains('11:00', $slots);
         $this->assertContains('11:30', $slots);
     }
