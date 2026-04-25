@@ -144,30 +144,54 @@ export default function Dashboard({
                                             }`}
                                         >
                                             <div className="flex items-start justify-between gap-3">
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="font-bold leading-snug text-on-surface">{apt.client_name}</p>
-                                                    <p className="mt-0.5 text-sm text-on-surface-variant">{apt.service_name}</p>
-                                                </div>
+                                                <p className="font-headline text-sm font-bold leading-snug text-on-surface">
+                                                    {apt.employee_name || t('common.dash')}
+                                                </p>
                                                 <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase ${bg}`}>
                                                     {t(`common.status.${st}`)}
                                                 </span>
                                             </div>
-                                            <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                                                <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-on-surface">
-                                                    <Icon name="person" size="text-sm" className="text-on-surface-variant" />
-                                                    <span className="min-w-0 truncate">{apt.employee_name || t('common.dash')}</span>
-                                                </span>
-                                                <span className="text-xs font-semibold tabular-nums text-on-surface-variant">
-                                                    {Number(apt.service_price ?? 0).toFixed(2)} {currencySymbol}
-                                                </span>
-                                            </div>
-                                            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-on-surface-variant">
-                                                <span>{formatDate(apt.date)}</span>
-                                                <span className="inline-flex items-center gap-1 font-semibold text-on-surface">
-                                                    <Icon name="schedule" size="text-sm" className="text-on-surface-variant" />
-                                                    {formatTimeHm(apt.start_time)}
-                                                </span>
-                                            </div>
+
+                                            <dl className="mt-3 space-y-2 text-xs">
+                                                <div className="rounded-xl border border-outline-variant/25 bg-surface-container-lowest/70 px-3 py-2">
+                                                    <dt className="text-[10px] font-bold uppercase tracking-wider text-outline">
+                                                        {t('admin.dashboard.th_client')}
+                                                    </dt>
+                                                    <dd className="mt-1 text-sm font-semibold text-on-surface">
+                                                        {apt.client_name}
+                                                    </dd>
+                                                </div>
+
+                                                <div className="rounded-xl border border-outline-variant/25 bg-surface-container-lowest/70 px-3 py-2">
+                                                    <dt className="text-[10px] font-bold uppercase tracking-wider text-outline">
+                                                        {t('admin.dashboard.th_service')}
+                                                    </dt>
+                                                    <dd className="mt-1 flex items-baseline justify-between gap-2">
+                                                        <span className="min-w-0 truncate text-sm text-on-surface-variant">
+                                                            {apt.service_name || t('common.dash')}
+                                                        </span>
+                                                        <span className="shrink-0 whitespace-nowrap text-sm font-semibold tabular-nums text-on-surface">
+                                                            {Number(apt.service_price ?? 0).toFixed(2)}
+                                                            {'\u00a0'}
+                                                            {currencySymbol}
+                                                        </span>
+                                                    </dd>
+                                                </div>
+
+                                                <div className="rounded-xl border border-outline-variant/25 bg-surface-container-lowest/70 px-3 py-2">
+                                                    <dt className="text-[10px] font-bold uppercase tracking-wider text-outline">
+                                                        {t('admin.dashboard.th_date')} & {t('admin.dashboard.th_time')}
+                                                    </dt>
+                                                    <dd className="mt-1 flex items-center gap-2 text-sm text-on-surface-variant">
+                                                        <span>{formatDate(apt.date)}</span>
+                                                        <span className="inline-flex items-center gap-1 font-semibold text-on-surface">
+                                                            <Icon name="schedule" size="text-sm" className="text-on-surface-variant" />
+                                                            {formatTimeHm(apt.start_time)} - {formatTimeHm(apt.end_time)}
+                                                        </span>
+                                                    </dd>
+                                                </div>
+                                            </dl>
+
                                             <div className="mt-3 flex justify-end border-t border-outline-variant/25 pt-3">
                                                 {apt.id != null ? (
                                                     <Link
@@ -226,7 +250,9 @@ export default function Dashboard({
                                             <td className="py-5 pr-4">
                                                 <div className="flex items-center gap-1.5">
                                                     <Icon name="schedule" size="text-sm" className="text-on-surface-variant" />
-                                                    <p className="text-sm font-semibold text-on-surface">{formatTimeHm(apt.start_time)}</p>
+                                                    <p className="text-sm font-semibold text-on-surface">
+                                                        {formatTimeHm(apt.start_time)} - {formatTimeHm(apt.end_time)}
+                                                    </p>
                                                 </div>
                                             </td>
                                             <td className="py-5 pr-4">

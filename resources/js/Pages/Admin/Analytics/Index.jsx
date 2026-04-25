@@ -239,24 +239,30 @@ export default function Index({
                                         </div>
                                         <p className="text-sm font-bold text-on-surface">{stat.name}</p>
                                     </div>
-                                    <div className="mt-4 grid grid-cols-2 gap-3">
-                                        <div>
-                                            <p className="text-[10px] font-bold uppercase tracking-wider text-outline">{t('admin.analytics.th_cancelled')}</p>
-                                            <p className="mt-0.5 text-lg font-semibold text-red-600 tabular-nums">{stat.cancelled_count}</p>
+
+                                    <div className="mt-4 space-y-2.5">
+                                        <div className="grid grid-cols-2 gap-2.5">
+                                            <div className="rounded-xl border border-outline-variant/25 bg-surface-container-lowest/80 px-3 py-2.5 text-center">
+                                                <p className="text-[10px] font-bold uppercase tracking-wider text-outline">{t('admin.analytics.th_confirmed')}</p>
+                                                <p className="mt-0.5 text-xl font-extrabold tabular-nums text-emerald-600">{stat.confirmed_count}</p>
+                                            </div>
+                                            <div className="rounded-xl border border-outline-variant/25 bg-surface-container-lowest/80 px-3 py-2.5 text-center">
+                                                <p className="text-[10px] font-bold uppercase tracking-wider text-outline">{t('admin.analytics.th_revenue')}</p>
+                                                <p className="mt-0.5 text-base font-extrabold tabular-nums text-on-surface">
+                                                    {fmt(stat.revenue)} {symbol}
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className="text-[10px] font-bold uppercase tracking-wider text-outline">{t('admin.analytics.th_pending')}</p>
-                                            <p className="mt-0.5 text-lg font-semibold text-amber-600 tabular-nums">{stat.pending_count}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-bold uppercase tracking-wider text-outline">{t('admin.analytics.th_confirmed')}</p>
-                                            <p className="mt-0.5 text-lg font-semibold text-emerald-600 tabular-nums">{stat.confirmed_count}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-bold uppercase tracking-wider text-outline">{t('admin.analytics.th_revenue')}</p>
-                                            <p className="mt-0.5 text-sm font-extrabold tabular-nums text-on-surface">
-                                                {fmt(stat.revenue)} {symbol}
-                                            </p>
+
+                                        <div className="grid grid-cols-2 gap-2.5">
+                                            <div className="rounded-xl border border-outline-variant/25 bg-surface-container-lowest/80 px-3 py-2 text-center">
+                                                <p className="text-[10px] font-bold uppercase tracking-wider text-outline">{t('admin.analytics.th_pending')}</p>
+                                                <p className="mt-0.5 text-lg font-semibold tabular-nums text-amber-600">{stat.pending_count}</p>
+                                            </div>
+                                            <div className="rounded-xl border border-outline-variant/25 bg-surface-container-lowest/80 px-3 py-2 text-center">
+                                                <p className="text-[10px] font-bold uppercase tracking-wider text-outline">{t('admin.analytics.th_cancelled')}</p>
+                                                <p className="mt-0.5 text-lg font-semibold tabular-nums text-red-600">{stat.cancelled_count}</p>
+                                            </div>
                                         </div>
                                     </div>
                                 </article>
@@ -320,24 +326,28 @@ export default function Index({
                             className="rounded-2xl border border-outline-variant/35 bg-surface-container-low/50 p-4 shadow-sm"
                         >
                             <p className="font-headline text-sm font-bold text-on-surface">{m.label}</p>
-                            <div className="mt-3 grid grid-cols-2 gap-3">
-                                <div>
-                                    <p className="text-[10px] font-bold uppercase tracking-wider text-outline">{t('admin.analytics.th_cancelled')}</p>
-                                    <p className="mt-0.5 text-lg font-semibold text-red-600 tabular-nums">{m.cancelled}</p>
+                            <div className="mt-3 space-y-2.5">
+                                <div className="grid grid-cols-2 gap-2.5">
+                                    <div className="rounded-xl border border-outline-variant/25 bg-surface-container-lowest/80 px-3 py-2.5 text-center">
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-outline">{t('admin.analytics.th_confirmed')}</p>
+                                        <p className="mt-0.5 text-xl font-extrabold tabular-nums text-emerald-600">{m.confirmed}</p>
+                                    </div>
+                                    <div className="rounded-xl border border-outline-variant/25 bg-surface-container-lowest/80 px-3 py-2.5 text-center">
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-outline">{t('admin.analytics.th_revenue')}</p>
+                                        <p className="mt-0.5 text-base font-extrabold tabular-nums text-on-surface">
+                                            {fmt(m.revenue)} {symbol}
+                                        </p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="text-[10px] font-bold uppercase tracking-wider text-outline">{t('admin.analytics.th_pending')}</p>
-                                    <p className="mt-0.5 text-lg font-semibold text-amber-600 tabular-nums">{m.pending}</p>
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-bold uppercase tracking-wider text-outline">{t('admin.analytics.th_confirmed')}</p>
-                                    <p className="mt-0.5 text-lg font-semibold text-emerald-600 tabular-nums">{m.confirmed}</p>
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-bold uppercase tracking-wider text-outline">{t('admin.analytics.th_revenue')}</p>
-                                    <p className="mt-0.5 text-sm font-extrabold tabular-nums text-on-surface">
-                                        {fmt(m.revenue)} {symbol}
-                                    </p>
+                                <div className="grid grid-cols-2 gap-2.5">
+                                    <div className="rounded-xl border border-outline-variant/25 bg-surface-container-lowest/80 px-3 py-2 text-center">
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-outline">{t('admin.analytics.th_pending')}</p>
+                                        <p className="mt-0.5 text-lg font-semibold tabular-nums text-amber-600">{m.pending}</p>
+                                    </div>
+                                    <div className="rounded-xl border border-outline-variant/25 bg-surface-container-lowest/80 px-3 py-2 text-center">
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-outline">{t('admin.analytics.th_cancelled')}</p>
+                                        <p className="mt-0.5 text-lg font-semibold tabular-nums text-red-600">{m.cancelled}</p>
+                                    </div>
                                 </div>
                             </div>
                         </article>

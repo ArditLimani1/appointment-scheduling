@@ -3,7 +3,13 @@ import { useCallback, useEffect, useState } from 'react';
 import EmployeeLayout from '@/Layouts/EmployeeLayout';
 import Icon from '@/Components/Icon';
 import { useT } from '@/i18n/useT';
-import { formatAppointmentDate } from '@/utils/appointmentDate';
+import { appointmentStatusValue, formatAppointmentDate, formatTimeHm } from '@/utils/appointmentDate';
+
+const DAY_OFF_MODAL_STATUS_BG = {
+    pending: 'bg-surface-container-highest text-on-surface-variant',
+    confirmed: 'bg-tertiary-fixed text-on-tertiary-fixed-variant',
+    cancelled: 'bg-error-container text-on-error-container',
+};
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -139,9 +145,83 @@ function AddBreakModal({ dayLabel, onSave, onClose }) {
     );
 }
 
+// ─── Day off (has appointments) ─────────────────────────────────────────────
+
+function DayOffBlockingModal({ dayLabel, appointments, onConfirm, onClose }) {
+    const t = useT();
+    return (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-4">
+            <div className="w-full max-w-md rounded-3xl bg-surface p-6 shadow-2xl">
+                <div className="mb-4 flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary-container">
+                        <Icon name="event_busy" size="text-lg" className="text-on-secondary-container" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                        <h3 className="font-headline text-lg font-bold text-on-surface">{t('employee.schedule.day_off_blocking_title')}</h3>
+                        <p className="mt-0.5 text-xs font-medium text-on-surface-variant">{dayLabel}</p>
+                        <p className="mt-2 text-sm leading-relaxed text-on-surface-variant">{t('employee.schedule.day_off_blocking_intro')}</p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="shrink-0 rounded-full p-1.5 text-on-surface-variant hover:bg-surface-container transition-colors"
+                        aria-label={t('employee.schedule.cancel')}
+                    >
+                        <Icon name="close" size="text-xl" />
+                    </button>
+                </div>
+
+                <ul className="max-h-56 space-y-2 overflow-y-auto rounded-xl border border-outline-variant/30 bg-surface-container-low/50 p-3">
+                    {appointments.map((apt) => {
+                        const st = appointmentStatusValue(apt.status);
+                        const bg = DAY_OFF_MODAL_STATUS_BG[st] || DAY_OFF_MODAL_STATUS_BG.pending;
+                        return (
+                            <li
+                                key={apt.id}
+                                className="rounded-lg border border-outline-variant/20 bg-surface-container-lowest px-3 py-2.5 text-sm shadow-sm"
+                            >
+                                <p className="font-semibold text-on-surface">{apt.client_name || '—'}</p>
+                                <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-on-surface-variant">
+                                    <span className="font-medium text-outline">{t('employee.schedule.day_off_blocking_th_time')}:</span>
+                                    <span className="tabular-nums font-medium text-on-surface">{formatTimeHm(apt.start_time)}</span>
+                                    <span className="text-outline">·</span>
+                                    <span className="min-w-0">
+                                        <span className="font-medium text-outline">{t('employee.schedule.day_off_blocking_th_service')}: </span>
+                                        {apt.service_name || '—'}
+                                    </span>
+                                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase ${bg}`}>
+                                        {t(`common.status.${st}`)}
+                                    </span>
+                                </div>
+                            </li>
+                        );
+                    })}
+                </ul>
+
+                <div className="mt-6 flex flex-wrap items-center justify-end gap-3">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="rounded-xl border border-outline-variant px-4 py-2.5 text-sm font-medium text-on-surface-variant hover:bg-surface-container transition-colors"
+                    >
+                        {t('employee.schedule.cancel')}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onConfirm}
+                        className="rounded-xl bg-on-surface px-5 py-2.5 text-sm font-bold text-surface shadow-sm transition-opacity hover:opacity-90"
+                    >
+                        {t('employee.schedule.day_off_blocking_confirm')}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // ─── Day Card ─────────────────────────────────────────────────────────────────
 
-function DayCard({ day, locale, onToggle, onOpenBreakModal, onRemoveBreak }) {
+function DayCard({ day, locale, onToggle, onUpdateDay, onOpenBreakModal, onRemoveBreak }) {
     const t = useT();
     const inputClass = 'w-full rounded-xl border-0 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:ring-2 focus:ring-surface-tint md:w-auto md:py-2';
 
@@ -178,11 +258,21 @@ function DayCard({ day, locale, onToggle, onOpenBreakModal, onRemoveBreak }) {
                         <div className="grid w-full grid-cols-2 gap-3 md:flex md:flex-wrap md:justify-center md:gap-2">
                             <div className="min-w-0">
                                 <label className="mb-1 block text-xs text-on-surface-variant">{t('employee.schedule.from')}</label>
-                                <input type="time" value={day.start_time} readOnly className={inputClass} />
+                                <input
+                                    type="time"
+                                    value={day.start_time}
+                                    onChange={(e) => onUpdateDay(day.date, { start_time: e.target.value })}
+                                    className={inputClass}
+                                />
                             </div>
                             <div className="min-w-0">
                                 <label className="mb-1 block text-xs text-on-surface-variant">{t('employee.schedule.to')}</label>
-                                <input type="time" value={day.end_time} readOnly className={inputClass} />
+                                <input
+                                    type="time"
+                                    value={day.end_time}
+                                    onChange={(e) => onUpdateDay(day.date, { end_time: e.target.value })}
+                                    className={inputClass}
+                                />
                             </div>
                         </div>
                     )}
@@ -242,11 +332,12 @@ function DayCard({ day, locale, onToggle, onOpenBreakModal, onRemoveBreak }) {
 
 export default function Index({ days: initialDays, dateFrom, dateTo }) {
     const t = useT();
-    const { localeBcp47 } = usePage().props;
+    const { localeBcp47, days: pageDaysProp } = usePage().props;
     const dateLocale = localeBcp47 ?? 'en-GB';
 
     const [days, setDays] = useState(initialDays);
     const [breakModalDate, setBreakModalDate] = useState(null); // date string of the day being edited
+    const [dayOffModal, setDayOffModal] = useState(null); // { date, dayLabel, appointments }
 
     useEffect(() => { setDays(initialDays); }, [initialDays]);
 
@@ -273,7 +364,8 @@ export default function Index({ days: initialDays, dateFrom, dateTo }) {
             { days: updatedDays, success_context: successContext },
             {
                 preserveScroll: true,
-                preserveState: true,
+                // Reload props from server so each day keeps `appointments` (needed for day-off warnings).
+                preserveState: false,
             }
         );
     }, []);
@@ -281,10 +373,41 @@ export default function Index({ days: initialDays, dateFrom, dateTo }) {
     // ── Toggle day ────────────────────────────────────────────────────────
 
     const handleToggle = useCallback((date, isActive) => {
+        if (!isActive) {
+            // Prefer server `days` (includes `appointments`); local state can lag after autosaves.
+            const pageDays = Array.isArray(pageDaysProp) ? pageDaysProp : [];
+            const pageDay = pageDays.find((d) => d.date === date);
+            const localDay = days.find((d) => d.date === date);
+            const day = pageDay ?? localDay;
+            const raw = pageDay?.appointments ?? localDay?.appointments ?? [];
+            const blocking = raw.filter((a) => appointmentStatusValue(a.status) !== 'cancelled');
+            if (blocking.length > 0) {
+                const dayLabel = day ? formatDayHeader(day.date, day.day_label, dateLocale) : date;
+                setDayOffModal({ date, dayLabel, appointments: blocking });
+                return;
+            }
+        }
         const updated = days.map((d) =>
             (d.date === date ? { ...d, is_active: isActive, is_overridden: true } : d),
         );
         autoSave(updated, isActive ? 'day_on' : 'day_off');
+    }, [days, pageDaysProp, autoSave, dateLocale]);
+
+    const confirmDayOffDespiteAppointments = useCallback(() => {
+        if (!dayOffModal) return;
+        const { date } = dayOffModal;
+        const updated = days.map((d) =>
+            (d.date === date ? { ...d, is_active: false, is_overridden: true } : d),
+        );
+        setDayOffModal(null);
+        autoSave(updated, 'day_off');
+    }, [dayOffModal, days, autoSave]);
+
+    const handleUpdateDay = useCallback((date, patch) => {
+        const updated = days.map((d) =>
+            (d.date === date ? { ...d, ...patch, is_overridden: true } : d),
+        );
+        autoSave(updated, 'day_time_updated');
     }, [days, autoSave]);
 
     // ── Add break (via modal) ─────────────────────────────────────────────
@@ -382,6 +505,7 @@ export default function Index({ days: initialDays, dateFrom, dateTo }) {
                         day={day}
                         locale={dateLocale}
                         onToggle={handleToggle}
+                        onUpdateDay={handleUpdateDay}
                         onOpenBreakModal={setBreakModalDate}
                         onRemoveBreak={handleRemoveBreak}
                     />
@@ -396,6 +520,15 @@ export default function Index({ days: initialDays, dateFrom, dateTo }) {
                     onClose={() => setBreakModalDate(null)}
                 />
             )}
+
+            {dayOffModal ? (
+                <DayOffBlockingModal
+                    dayLabel={dayOffModal.dayLabel}
+                    appointments={dayOffModal.appointments}
+                    onConfirm={confirmDayOffDespiteAppointments}
+                    onClose={() => setDayOffModal(null)}
+                />
+            ) : null}
 
         </EmployeeLayout>
     );

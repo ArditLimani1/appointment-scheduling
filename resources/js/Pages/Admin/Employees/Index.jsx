@@ -16,6 +16,12 @@ export default function Index({ employees, services, businessRoles = [], busines
     const openCreate = () => { setEditing(null); setShowModal(true); };
     const openEdit = (emp) => { setEditing(emp); setShowModal(true); };
 
+    const requestDelete = (emp) => {
+        setShowModal(false);
+        setEditing(null);
+        setDeleteTarget(emp);
+    };
+
     const confirmDelete = () => {
         router.delete(route('admin.employees.destroy', deleteTarget.id));
         setDeleteTarget(null);
@@ -127,25 +133,38 @@ export default function Index({ employees, services, businessRoles = [], busines
                                                 />
                                             </button>
                                         </div>
-                                        <div className="mt-3 flex flex-wrap justify-end gap-2 border-t border-outline-variant/25 pt-3">
-                                            <button
-                                                type="button"
-                                                onClick={() => openEdit(emp)}
-                                                className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-surface-container-high px-4 py-2.5 text-sm font-bold text-on-surface transition-colors hover:bg-surface-container-highest sm:flex-none"
-                                            >
-                                                <Icon name="edit" size="text-lg" />
-                                                {t('admin.employees.edit_title')}
-                                            </button>
+                                        <div className="mt-3 mx-auto w-full max-w-[19rem] border-t border-outline-variant/25 pt-3">
                                             {!isOwner ? (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setDeleteTarget(emp)}
-                                                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-bold text-red-950 transition-colors hover:bg-red-100/90"
-                                                >
-                                                    <Icon name="delete" size="text-lg" />
-                                                    {t('admin.employees.delete_title')}
-                                                </button>
-                                            ) : null}
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openEdit(emp)}
+                                                        className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-surface-container-high px-3 py-2.5 text-xs font-bold text-on-surface transition-colors hover:bg-surface-container-highest sm:text-sm"
+                                                    >
+                                                        <Icon name="edit" size="text-lg" className="shrink-0" />
+                                                        <span className="truncate">{t('admin.employees.edit_title')}</span>
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => requestDelete(emp)}
+                                                        className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-xs font-bold text-red-950 transition-colors hover:bg-red-100/90 sm:text-sm"
+                                                    >
+                                                        <Icon name="delete" size="text-lg" className="shrink-0" />
+                                                        <span className="truncate">{t('admin.employees.delete_title')}</span>
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="flex justify-center">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openEdit(emp)}
+                                                        className="inline-flex w-full max-w-[9.5rem] items-center justify-center gap-1.5 rounded-xl bg-surface-container-high px-3 py-2.5 text-xs font-bold text-on-surface transition-colors hover:bg-surface-container-highest sm:text-sm"
+                                                    >
+                                                        <Icon name="edit" size="text-lg" className="shrink-0" />
+                                                        <span className="truncate">{t('admin.employees.edit_title')}</span>
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
                                     </article>
                                 );
@@ -223,7 +242,7 @@ export default function Index({ employees, services, businessRoles = [], busines
                                                     </button>
                                                     {!isOwner && (
                                                         <button
-                                                            onClick={() => setDeleteTarget(emp)}
+                                                            onClick={() => requestDelete(emp)}
                                                             className="p-2 text-outline hover:text-error transition-colors rounded-lg hover:bg-error-container"
                                                             title={t('admin.employees.delete_title')}
                                                         >
@@ -251,22 +270,29 @@ export default function Index({ employees, services, businessRoles = [], busines
                 )}
             </div>
 
-            <DeleteConfirmModal
-                show={!!deleteTarget}
-                onClose={() => setDeleteTarget(null)}
-                onConfirm={confirmDelete}
-                title={t('admin.employees.delete_confirm_title')}
-                message={deleteTarget ? t('admin.employees.delete_confirm_message', { name: deleteTarget.name }) : ''}
-            />
+            {deleteTarget ? (
+                <DeleteConfirmModal
+                    show
+                    onClose={() => setDeleteTarget(null)}
+                    onConfirm={confirmDelete}
+                    title={t('admin.employees.delete_confirm_title')}
+                    message={t('admin.employees.delete_confirm_message', { name: deleteTarget.name })}
+                />
+            ) : null}
 
-            <EmployeeModal
-                show={showModal}
-                onClose={() => setShowModal(false)}
-                editing={editing}
-                services={services}
-                businessRoles={businessRoles}
-                businessOwnerId={businessOwnerId}
-            />
+            {showModal ? (
+                <EmployeeModal
+                    show
+                    onClose={() => {
+                        setShowModal(false);
+                        setEditing(null);
+                    }}
+                    editing={editing}
+                    services={services}
+                    businessRoles={businessRoles}
+                    businessOwnerId={businessOwnerId}
+                />
+            ) : null}
         </AdminLayout>
     );
 }

@@ -28,6 +28,12 @@ export default function Index({ roles, permissionGroups }) {
         setShowModal(true);
     };
 
+    const requestDelete = (role) => {
+        setShowModal(false);
+        setEditing(null);
+        setDeleteTarget(role);
+    };
+
     const confirmDelete = () => {
         router.delete(route('admin.roles.destroy', deleteTarget.id));
         setDeleteTarget(null);
@@ -90,23 +96,25 @@ export default function Index({ roles, permissionGroups }) {
                                             <p className="text-[10px] font-bold uppercase tracking-wider text-outline">{t('admin.roles.th_permissions')}</p>
                                             <p className="mt-1 line-clamp-6 text-xs leading-relaxed text-on-surface-variant">{permText}</p>
                                         </div>
-                                        <div className="mt-3 flex flex-wrap justify-end gap-2 border-t border-outline-variant/25 pt-3">
-                                            <button
-                                                type="button"
-                                                onClick={() => openEdit(role)}
-                                                className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-surface-container-high px-4 py-2.5 text-sm font-bold text-on-surface transition-colors hover:bg-surface-container-highest sm:flex-none"
-                                            >
-                                                <Icon name="edit" size="text-lg" />
-                                                {t('admin.roles.edit_title')}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setDeleteTarget(role)}
-                                                className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-bold text-red-950 transition-colors hover:bg-red-100/90"
-                                            >
-                                                <Icon name="delete" size="text-lg" />
-                                                {t('admin.roles.delete_title')}
-                                            </button>
+                                        <div className="mt-3 mx-auto w-full max-w-[19rem] border-t border-outline-variant/25 pt-3">
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openEdit(role)}
+                                                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-surface-container-high px-3 py-2.5 text-xs font-bold text-on-surface transition-colors hover:bg-surface-container-highest sm:text-sm"
+                                                >
+                                                    <Icon name="edit" size="text-lg" className="shrink-0" />
+                                                    <span className="truncate">{t('admin.roles.edit_title')}</span>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => requestDelete(role)}
+                                                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-xs font-bold text-red-950 transition-colors hover:bg-red-100/90 sm:text-sm"
+                                                >
+                                                    <Icon name="delete" size="text-lg" className="shrink-0" />
+                                                    <span className="truncate">{t('admin.roles.delete_title')}</span>
+                                                </button>
+                                            </div>
                                         </div>
                                     </article>
                                 );
@@ -150,7 +158,7 @@ export default function Index({ roles, permissionGroups }) {
                                                     <Icon name="edit" size="text-[18px]" />
                                                 </button>
                                                 <button
-                                                    onClick={() => setDeleteTarget(role)}
+                                                    onClick={() => requestDelete(role)}
                                                     className="p-2 text-outline hover:text-error transition-colors rounded-lg hover:bg-error-container"
                                                     title={t('admin.roles.delete_title')}
                                                 >
@@ -167,20 +175,27 @@ export default function Index({ roles, permissionGroups }) {
                 )}
             </div>
 
-            <DeleteConfirmModal
-                show={!!deleteTarget}
-                onClose={() => setDeleteTarget(null)}
-                onConfirm={confirmDelete}
-                title={t('admin.roles.delete_confirm_title')}
-                message={deleteTarget ? t('admin.roles.delete_confirm_message', { name: deleteTarget.name }) : ''}
-            />
+            {deleteTarget ? (
+                <DeleteConfirmModal
+                    show
+                    onClose={() => setDeleteTarget(null)}
+                    onConfirm={confirmDelete}
+                    title={t('admin.roles.delete_confirm_title')}
+                    message={t('admin.roles.delete_confirm_message', { name: deleteTarget.name })}
+                />
+            ) : null}
 
-            <RoleModal
-                show={showModal}
-                onClose={() => setShowModal(false)}
-                editing={editing}
-                permissionGroups={permissionGroups}
-            />
+            {showModal ? (
+                <RoleModal
+                    show
+                    onClose={() => {
+                        setShowModal(false);
+                        setEditing(null);
+                    }}
+                    editing={editing}
+                    permissionGroups={permissionGroups}
+                />
+            ) : null}
         </AdminLayout>
     );
 }

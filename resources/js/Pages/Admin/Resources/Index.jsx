@@ -22,6 +22,12 @@ export default function Index({ resources }) {
         setShowModal(true);
     };
 
+    const requestDelete = (r) => {
+        setShowModal(false);
+        setEditing(null);
+        setDeleteTarget(r);
+    };
+
     const confirmDelete = () => {
         router.delete(route('admin.shared-resources.destroy', deleteTarget.id));
         setDeleteTarget(null);
@@ -103,7 +109,7 @@ export default function Index({ resources }) {
                                                 </button>
                                                 <button
                                                     type="button"
-                                                    onClick={() => setDeleteTarget(r)}
+                                                    onClick={() => requestDelete(r)}
                                                     className="p-2 text-outline hover:text-error transition-colors rounded-lg hover:bg-error-container"
                                                     title={t('admin.shared_resources.delete_title')}
                                                 >
@@ -119,15 +125,26 @@ export default function Index({ resources }) {
                 )}
             </div>
 
-            <DeleteConfirmModal
-                show={!!deleteTarget}
-                onClose={() => setDeleteTarget(null)}
-                onConfirm={confirmDelete}
-                title={t('admin.shared_resources.delete_confirm_title')}
-                message={deleteTarget ? t('admin.shared_resources.delete_confirm_message', { name: deleteTarget.name }) : ''}
-            />
+            {deleteTarget ? (
+                <DeleteConfirmModal
+                    show
+                    onClose={() => setDeleteTarget(null)}
+                    onConfirm={confirmDelete}
+                    title={t('admin.shared_resources.delete_confirm_title')}
+                    message={t('admin.shared_resources.delete_confirm_message', { name: deleteTarget.name })}
+                />
+            ) : null}
 
-            <ResourceModal show={showModal} onClose={() => setShowModal(false)} editing={editing} />
+            {showModal ? (
+                <ResourceModal
+                    show
+                    onClose={() => {
+                        setShowModal(false);
+                        setEditing(null);
+                    }}
+                    editing={editing}
+                />
+            ) : null}
         </AdminLayout>
     );
 }

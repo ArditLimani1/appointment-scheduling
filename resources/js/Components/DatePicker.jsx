@@ -59,7 +59,7 @@ export default function DatePicker({
     minDate = '',
     maxDate = '',
     /** 'monday' | 'sunday' — calendar column order and header labels */
-    weekStartsOn = 'sunday',
+    weekStartsOn = 'monday',
     /** When set, "Today" highlight and Today button use this Y-m-d (e.g. business timezone day from server). */
     todayDateString = '',
 }) {
