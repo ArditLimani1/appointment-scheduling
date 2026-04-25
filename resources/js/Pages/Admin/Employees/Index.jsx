@@ -133,7 +133,7 @@ export default function Index({ employees, services, businessRoles = [], busines
                                                 />
                                             </button>
                                         </div>
-                                        <div className="mt-3 ml-auto w-full max-w-[19rem] border-t border-outline-variant/25 pt-3">
+                                        <div className="mt-3 mx-auto w-full max-w-[19rem] border-t border-outline-variant/25 pt-3">
                                             {!isOwner ? (
                                                 <div className="grid grid-cols-2 gap-2">
                                                     <button
@@ -154,7 +154,7 @@ export default function Index({ employees, services, businessRoles = [], busines
                                                     </button>
                                                 </div>
                                             ) : (
-                                                <div className="flex justify-end">
+                                                <div className="flex justify-center">
                                                     <button
                                                         type="button"
                                                         onClick={() => openEdit(emp)}

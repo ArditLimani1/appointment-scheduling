@@ -59,21 +59,8 @@ function ConfirmSaveModal({ section, onConfirm, onCancel }) {
     );
 }
 
-function ReadOnlyField({ label, value, icon }) {
-    return (
-        <div>
-            <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">{label}</label>
-            <div className="flex items-center gap-2 w-full bg-surface-container-highest border-0 rounded-lg py-3 px-4 text-sm text-on-surface-variant font-medium opacity-70 cursor-not-allowed select-none">
-                {icon && <Icon name={icon} size="text-base" className="shrink-0 text-on-surface-variant" />}
-                <span className="truncate">{value || '—'}</span>
-            </div>
-        </div>
-    );
-}
-
 export default function Index({
     settings,
-    owner_email,
     show_owner_staff_toggle = false,
     owner_also_works_as_staff = false,
 }) {
@@ -247,9 +234,6 @@ export default function Index({
                                 {identity.errors.name && <p className="text-xs text-error mt-1">{identity.errors.name}</p>}
                             </div>
 
-                            {/* Account Email — always read-only */}
-                            <ReadOnlyField label={t('admin.settings.label_account_email')} value={owner_email} icon="mail" />
-
                             {/* Phone */}
                             <div>
                                 <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">{t('admin.settings.label_phone')}</label>
@@ -275,7 +259,7 @@ export default function Index({
                             </div>
 
                             {/* Booking URL (slug editable) */}
-                            <div className="sm:col-span-2">
+                            <div>
                                 <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">{t('admin.settings.label_booking_url')}</label>
                                 <div className={bookingSlugRowCls}>
                                     <span className="shrink-0 px-3 py-3 text-xs text-on-surface-variant border-r border-outline-variant/30 bg-surface-container whitespace-nowrap">{t('admin.settings.booking_path_prefix')}</span>
@@ -346,7 +330,12 @@ export default function Index({
                         </div>
 
                         {/* Save Identity button */}
-                        <div className="pt-6 mt-6 border-t border-outline-variant/40 flex items-center gap-6">
+                        <div className="pt-6 mt-6 border-t border-outline-variant/40 flex items-center justify-end gap-4">
+                            {identity.recentlySuccessful && (
+                                <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">
+                                    <Icon name="check_circle" size="text-sm" className="text-on-primary-container" /> {t('admin.settings.saved_success')}
+                                </p>
+                            )}
                             <button
                                 type="submit"
                                 disabled={identity.processing}
@@ -354,11 +343,6 @@ export default function Index({
                             >
                                 {identity.processing ? t('admin.settings.saving') : t('admin.settings.save_configuration')}
                             </button>
-                            {identity.recentlySuccessful && (
-                                <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">
-                                    <Icon name="check_circle" size="text-sm" className="text-on-primary-container" /> {t('admin.settings.saved_success')}
-                                </p>
-                            )}
                         </div>
                     </section>
                 </form>
@@ -480,7 +464,7 @@ export default function Index({
                                 </button>
                             </div>
 
-                            <div className="bg-surface rounded-xl p-6 flex items-center justify-between gap-4 sm:col-span-2">
+                            <div className={`bg-surface rounded-xl p-6 flex items-center justify-between gap-4 ${show_owner_staff_toggle ? '' : 'sm:col-span-2'}`}>
                                 <div>
                                     <p className="text-sm font-bold text-on-surface">{t('admin.settings.uses_shared_resources_title')}</p>
                                     <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">
@@ -527,7 +511,12 @@ export default function Index({
                         </div>
 
                         {/* Save button */}
-                        <div className="pt-6 border-t border-outline-variant/40 flex items-center gap-6">
+                        <div className="mt-6 pt-6 border-t border-outline-variant/40 flex items-center justify-end gap-4">
+                            {recentlySuccessful && (
+                                <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">
+                                    <Icon name="check_circle" size="text-sm" className="text-on-primary-container" /> {t('admin.settings.saved_success')}
+                                </p>
+                            )}
                             <button
                                 type="submit"
                                 disabled={processing}
@@ -535,11 +524,6 @@ export default function Index({
                             >
                                 {processing ? t('admin.settings.saving') : t('admin.settings.save_configuration')}
                             </button>
-                            {recentlySuccessful && (
-                                <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">
-                                    <Icon name="check_circle" size="text-sm" className="text-on-primary-container" /> {t('admin.settings.saved_success')}
-                                </p>
-                            )}
                         </div>
                     </section>
                 </form>

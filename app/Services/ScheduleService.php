@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Appointment;
 use App\Models\Business;
 use App\Models\User;
 use App\Repositories\Interfaces\ScheduleOverrideRepositoryInterface;
@@ -116,6 +117,30 @@ class ScheduleService implements ScheduleServiceInterface
             }
 
             $cursor->addDay();
+        }
+
+        $appointmentsByDate = Appointment::query()
+            ->where('employee_id', $user->id)
+            ->whereDate('date', '>=', $dateFrom)
+            ->whereDate('date', '<=', $dateTo)
+            ->with(['service'])
+            ->orderBy('start_time')
+            ->get()
+            ->groupBy(fn (Appointment $a) => $a->date->format('Y-m-d'));
+
+        foreach ($days as $i => $day) {
+            $dateKey = $day['date'];
+            $items = $appointmentsByDate->get($dateKey, collect());
+            $days[$i]['appointments'] = $items
+                ->map(fn (Appointment $a) => [
+                    'id' => $a->id,
+                    'client_name' => trim($a->client_first_name.' '.$a->client_last_name),
+                    'service_name' => $a->service?->name ?? '',
+                    'status' => $a->status->value,
+                    'start_time' => $normalize($a->start_time),
+                ])
+                ->values()
+                ->all();
         }
 
         return $days;

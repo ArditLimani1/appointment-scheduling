@@ -135,7 +135,7 @@ export default function Index({ services, sharedResources = [] }) {
                                             />
                                         </button>
                                     </div>
-                                    <div className="mt-3 ml-auto w-full max-w-[19rem] border-t border-outline-variant/25 pt-3">
+                                    <div className="mt-3 mx-auto w-full max-w-[19rem] border-t border-outline-variant/25 pt-3">
                                         <div className="grid grid-cols-2 gap-2">
                                             <button
                                                 type="button"

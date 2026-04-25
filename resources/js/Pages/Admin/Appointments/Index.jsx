@@ -325,8 +325,6 @@ export default function Index({
         [services, t],
     );
 
-    const isRange = localFilters.date_from !== localFilters.date_to;
-
     return (
         <AdminLayout>
             <Head title={t('admin.appointments.head_title')} />
@@ -432,38 +430,60 @@ export default function Index({
                                             }`}
                                         >
                                             <div className="min-w-0">
-                                                {isRange ? (
-                                                    <p className="mb-1 text-xs font-semibold text-on-surface-variant">
-                                                        {formatAppointmentDate(apt.date, {
-                                                            day: 'numeric',
-                                                            month: 'short',
-                                                            year: 'numeric',
-                                                        })}
-                                                    </p>
-                                                ) : null}
                                                 <p className="font-headline text-sm font-bold leading-snug text-on-surface">
-                                                    {apt.client_first_name} {apt.client_last_name}
-                                                </p>
-                                                <div className="mt-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                                                    <p className="text-sm text-on-surface-variant">{apt.service?.name || '—'}</p>
-                                                    <p className="whitespace-nowrap text-sm font-semibold tabular-nums text-on-surface">
-                                                        {Number(apt.price).toFixed(2)}
-                                                        {'\u00a0'}
-                                                        {currencySymbol}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                                                <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-on-surface">
-                                                    <Icon name="schedule" size="text-sm" className="text-on-surface-variant" />
-                                                    {formatTimeHm(apt.start_time)} – {formatTimeHm(apt.end_time)}
-                                                </span>
-                                                <span className="text-xs text-on-surface-variant">
                                                     {apt.employee?.name ?? '—'}
-                                                </span>
-                                            </div>
-                                            <div className="mt-2 break-words text-sm text-on-surface-variant">
-                                                {apt.client_email || apt.client_phone || '—'}
+                                                </p>
+
+                                                <dl className="mt-3 space-y-2 text-xs">
+                                                    <div className="rounded-xl border border-outline-variant/25 bg-surface-container-lowest/70 px-3 py-2">
+                                                        <dt className="text-[10px] font-bold uppercase tracking-wider text-outline">
+                                                            {t('admin.appointments.service')}
+                                                        </dt>
+                                                        <dd className="mt-1 flex items-baseline justify-between gap-2">
+                                                            <span className="min-w-0 truncate text-sm text-on-surface-variant">
+                                                                {apt.service?.name || '—'}
+                                                            </span>
+                                                            <span className="shrink-0 whitespace-nowrap text-sm font-semibold tabular-nums text-on-surface">
+                                                                {Number(apt.price).toFixed(2)}
+                                                                {'\u00a0'}
+                                                                {currencySymbol}
+                                                            </span>
+                                                        </dd>
+                                                    </div>
+
+                                                    <div className="rounded-xl border border-outline-variant/25 bg-surface-container-lowest/70 px-3 py-2">
+                                                        <dt className="text-[10px] font-bold uppercase tracking-wider text-outline">
+                                                            {t('admin.dashboard.th_date')} & {t('admin.dashboard.th_time')}
+                                                        </dt>
+                                                        <dd className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-on-surface-variant">
+                                                            <span>
+                                                                {formatAppointmentDate(apt.date, {
+                                                                    day: 'numeric',
+                                                                    month: 'short',
+                                                                    year: 'numeric',
+                                                                })}
+                                                            </span>
+                                                            <span className="inline-flex items-center gap-1 font-semibold text-on-surface">
+                                                                <Icon name="schedule" size="text-sm" className="text-on-surface-variant" />
+                                                                {formatTimeHm(apt.start_time)} - {formatTimeHm(apt.end_time)}
+                                                            </span>
+                                                        </dd>
+                                                    </div>
+
+                                                    <div className="rounded-xl border border-outline-variant/25 bg-surface-container-lowest/70 px-3 py-2">
+                                                        <dt className="text-[10px] font-bold uppercase tracking-wider text-outline">
+                                                            {t('admin.appointments.th_client')}
+                                                        </dt>
+                                                        <dd className="mt-1">
+                                                            <p className="text-sm font-semibold text-on-surface">
+                                                                {apt.client_first_name} {apt.client_last_name}
+                                                            </p>
+                                                            <p className="mt-0.5 break-words text-xs text-on-surface-variant">
+                                                                {apt.client_email || apt.client_phone || '—'}
+                                                            </p>
+                                                        </dd>
+                                                    </div>
+                                                </dl>
                                             </div>
                                             <div className="mt-3 w-full min-w-0 max-w-full">
                                                 <AppointmentStatusMenu
@@ -472,23 +492,25 @@ export default function Index({
                                                     onChange={(s) => updateStatus(apt, s)}
                                                 />
                                             </div>
-                                            <div className="mt-3 flex flex-wrap items-center justify-end gap-2 border-t border-outline-variant/25 pt-3">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setEditingAppointment(apt)}
-                                                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-surface-container-high px-4 py-2.5 text-sm font-bold text-on-surface transition-colors hover:bg-surface-container-highest sm:flex-none"
-                                                >
-                                                    <Icon name="edit" size="text-lg" />
-                                                    {t('admin.appointments.edit')}
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setDeletingAppointment(apt)}
-                                                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-bold text-red-950 transition-colors hover:bg-red-100/90"
-                                                >
-                                                    <Icon name="delete" size="text-lg" />
-                                                    {t('admin.appointments.delete')}
-                                                </button>
+                                            <div className="mt-3 mx-auto w-full max-w-[19rem] border-t border-outline-variant/25 pt-3">
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setEditingAppointment(apt)}
+                                                        className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-surface-container-high px-3 py-2.5 text-xs font-bold text-on-surface transition-colors hover:bg-surface-container-highest sm:text-sm"
+                                                    >
+                                                        <Icon name="edit" size="text-lg" className="shrink-0" />
+                                                        <span className="truncate">{t('admin.appointments.edit')}</span>
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setDeletingAppointment(apt)}
+                                                        className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-xs font-bold text-red-950 transition-colors hover:bg-red-100/90 sm:text-sm"
+                                                    >
+                                                        <Icon name="delete" size="text-lg" className="shrink-0" />
+                                                        <span className="truncate">{t('admin.appointments.delete')}</span>
+                                                    </button>
+                                                </div>
                                             </div>
                                         </article>
                                     );

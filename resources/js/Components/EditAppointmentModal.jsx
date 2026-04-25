@@ -30,6 +30,8 @@ export default function EditAppointmentModal({
     );
     const { auth } = usePage().props;
     const currencySymbol = CURRENCY_SYMBOLS[auth?.business?.currency] ?? auth?.business?.currency_symbol ?? '€';
+    const clientIdentifierType = auth?.business?.client_identifier_type === 'email' ? 'email' : 'phone';
+    const usesEmailIdentifier = clientIdentifierType === 'email';
     const employeeCanEditService = (auth?.business?.allow_employee_service_edit ?? true) === true;
     const lockServiceForEmployee = employeeMode && !employeeCanEditService;
     /** Employee modal: when service editing is disabled, do not show service or price anywhere. */
@@ -226,8 +228,8 @@ export default function EditAppointmentModal({
             {
                 client_first_name: form.client_first_name,
                 client_last_name:  form.client_last_name,
-                client_phone:      trimToNull(form.client_phone),
-                client_email:      trimToNull(form.client_email),
+                client_phone:      usesEmailIdentifier ? null : trimToNull(form.client_phone),
+                client_email:      usesEmailIdentifier ? trimToNull(form.client_email) : null,
                 client_notes:      form.client_notes,
                 service_id:        Number(form.service_id),
                 status:            form.status,
@@ -256,7 +258,8 @@ export default function EditAppointmentModal({
 
     // Count errors per tab for badge
     const scheduleErrors = ['service_id', 'employee_id', 'date', 'start_time'].filter((f) => errors[f]).length;
-    const clientErrors   = ['client_first_name', 'client_last_name', 'client_phone', 'client_email'].filter((f) => errors[f]).length;
+    const clientErrors   = ['client_first_name', 'client_last_name', usesEmailIdentifier ? 'client_email' : 'client_phone']
+        .filter((f) => errors[f]).length;
 
     const employeeName =
         employees.find((e) => String(e.id) === String(appointment.employee_id))?.name ?? '—';
@@ -293,8 +296,8 @@ export default function EditAppointmentModal({
 
                 {/* Past-date warning */}
                 {!effectiveReadOnly && isPast && (
-                    <div className="mx-4 mt-2 flex shrink-0 items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 sm:mx-5">
-                        <Icon name="warning" size="text-base" className="mt-0.5 shrink-0 text-amber-500" />
+                    <div className="mx-4 mt-2 flex shrink-0 items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 sm:mx-5">
+                        <Icon name="warning" size="text-base" className="shrink-0 text-amber-500" />
                         <p className="text-xs text-amber-900 sm:text-sm">
                             <span className="font-bold">{t('components.edit_appointment.past_date_title')}</span>{' '}
                             {t('components.edit_appointment.past_date_body')}
@@ -371,8 +374,9 @@ export default function EditAppointmentModal({
                                     t('components.edit_appointment.client'),
                                     `${appointment.client_first_name ?? ''} ${appointment.client_last_name ?? ''}`.trim(),
                                 )}
-                                {readOnlyRow(t('components.edit_appointment.phone'), appointment.client_phone || '—')}
-                                {readOnlyRow(t('components.edit_appointment.email'), appointment.client_email || '—')}
+                                {usesEmailIdentifier
+                                    ? readOnlyRow(t('components.edit_appointment.email'), appointment.client_email || '—')
+                                    : readOnlyRow(t('components.edit_appointment.phone'), appointment.client_phone || '—')}
                                 {appointment.client_notes
                                     ? readOnlyRow(t('components.edit_appointment.notes'), appointment.client_notes)
                                     : null}
@@ -530,29 +534,32 @@ export default function EditAppointmentModal({
                                         />
                                         {errors.client_last_name && <p className="text-xs text-error mt-1">{errors.client_last_name}</p>}
                                     </div>
-                                    <div className="sm:col-span-2">
-                                        <label className={labelCls}>{t('components.edit_appointment.phone')}</label>
-                                        <input
-                                            type="tel"
-                                            value={form.client_phone}
-                                            onChange={(e) => patch('client_phone', e.target.value)}
-                                            className={inputCls}
-                                        />
-                                        {errors.client_phone && <p className="text-xs text-error mt-1">{errors.client_phone}</p>}
-                                    </div>
-                                    <div className="sm:col-span-2">
-                                        <label className={labelCls}>{t('components.edit_appointment.email')}</label>
-                                        <input
-                                            type="email"
-                                            value={form.client_email}
-                                            onChange={(e) => patch('client_email', e.target.value)}
-                                            className={inputCls}
-                                        />
-                                        {errors.client_email && <p className="text-xs text-error mt-1">{errors.client_email}</p>}
-                                        <p className="mt-1 text-[11px] text-on-surface-variant">
-                                            Appointment update emails are sent only when an email address is saved.
-                                        </p>
-                                    </div>
+                                    {usesEmailIdentifier ? (
+                                        <div className="sm:col-span-2">
+                                            <label className={labelCls}>{t('components.edit_appointment.email')}</label>
+                                            <input
+                                                type="email"
+                                                value={form.client_email}
+                                                onChange={(e) => patch('client_email', e.target.value)}
+                                                className={inputCls}
+                                            />
+                                            {errors.client_email && <p className="text-xs text-error mt-1">{errors.client_email}</p>}
+                                            <p className="mt-1 text-[11px] text-on-surface-variant">
+                                                Appointment update emails are sent only when an email address is saved.
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className="sm:col-span-2">
+                                            <label className={labelCls}>{t('components.edit_appointment.phone')}</label>
+                                            <input
+                                                type="tel"
+                                                value={form.client_phone}
+                                                onChange={(e) => patch('client_phone', e.target.value)}
+                                                className={inputCls}
+                                            />
+                                            {errors.client_phone && <p className="text-xs text-error mt-1">{errors.client_phone}</p>}
+                                        </div>
+                                    )}
                                     <div className="sm:col-span-2">
                                         <label className={labelCls}>
                                             {t('components.edit_appointment.notes')}{' '}

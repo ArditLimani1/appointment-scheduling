@@ -21,7 +21,8 @@ class DashboardService implements DashboardServiceInterface
 
     public function getAdminDashboardData(Business $business): array
     {
-        $today = now()->toDateString();
+        $timezone = $business->timezone ?: config('app.timezone');
+        $today = now($timezone)->toDateString();
 
         $recentAppointments = $this->appointmentRepository
             ->getRecent($business->id, 10, $today)
@@ -33,6 +34,7 @@ class DashboardService implements DashboardServiceInterface
                 'employee_name' => $apt->employee?->name,
                 'date' => $apt->date->toDateString(),
                 'start_time' => $apt->start_time,
+                'end_time' => $apt->end_time,
                 'status' => $apt->status->value,
             ]);
 

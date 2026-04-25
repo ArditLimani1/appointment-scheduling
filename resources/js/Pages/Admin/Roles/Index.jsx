@@ -96,7 +96,7 @@ export default function Index({ roles, permissionGroups }) {
                                             <p className="text-[10px] font-bold uppercase tracking-wider text-outline">{t('admin.roles.th_permissions')}</p>
                                             <p className="mt-1 line-clamp-6 text-xs leading-relaxed text-on-surface-variant">{permText}</p>
                                         </div>
-                                        <div className="mt-3 ml-auto w-full max-w-[19rem] border-t border-outline-variant/25 pt-3">
+                                        <div className="mt-3 mx-auto w-full max-w-[19rem] border-t border-outline-variant/25 pt-3">
                                             <div className="grid grid-cols-2 gap-2">
                                                 <button
                                                     type="button"

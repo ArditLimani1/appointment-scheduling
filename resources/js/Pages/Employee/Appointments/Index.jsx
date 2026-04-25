@@ -392,7 +392,12 @@ export default function EmployeeAppointmentsIndex({
         router.patch(route('employee.appointments.update', apt.id), { status: 'cancelled' }, { preserveScroll: true });
     };
 
-    /** Same pattern as `Employee/Dashboard.jsx` — approval buttons grouped; reschedule is icon-only. */
+    const renderMobileStatusRow = (apt) => (
+        <div className="mb-3 flex justify-end">
+            <AppointmentStatusBadge status={apt.status} />
+        </div>
+    );
+
     const renderMobileActions = (apt) => {
         const st = appointmentStatusValue(apt.status);
         const isCancelled = st === 'cancelled';
@@ -400,7 +405,7 @@ export default function EmployeeAppointmentsIndex({
         const isConfirmed = st === 'confirmed';
 
         return (
-            <div className="mt-3 flex flex-wrap items-center gap-2 pt-3 border-t border-outline-variant/25">
+            <div className="mt-3 flex flex-wrap items-center justify-end gap-2 border-t border-outline-variant/25 pt-3">
                 {isPending && (
                     <button
                         type="button"
@@ -581,40 +586,68 @@ export default function EmployeeAppointmentsIndex({
                                                 isCancelled ? 'bg-error-container/15' : 'bg-surface-container-low/50'
                                             }`}
                                         >
-                                            <div className="flex items-start justify-between gap-3">
-                                                <div className="min-w-0 flex-1">
-                                                    {isRange ? (
-                                                        <p className="text-xs font-semibold text-on-surface-variant mb-1">
+                                            {renderMobileStatusRow(apt)}
+
+                                            <dl className="space-y-2 text-xs">
+                                                <div className="rounded-xl border border-outline-variant/25 bg-surface-container-lowest/70 px-3 py-2">
+                                                    <dt className="text-[10px] font-bold uppercase tracking-wider text-outline">
+                                                        {t('employee.appointments.th_client')}
+                                                    </dt>
+                                                    <dd className="mt-1">
+                                                        <p className="text-sm font-semibold text-on-surface">
+                                                            {apt.client_first_name} {apt.client_last_name}
+                                                        </p>
+                                                        {apt.client_notes ? (
+                                                            <p className="mt-0.5 text-xs text-on-surface-variant italic line-clamp-2">
+                                                                &ldquo;{apt.client_notes}&rdquo;
+                                                            </p>
+                                                        ) : null}
+                                                    </dd>
+                                                </div>
+
+                                                <div className="rounded-xl border border-outline-variant/25 bg-surface-container-lowest/70 px-3 py-2">
+                                                    <dt className="text-[10px] font-bold uppercase tracking-wider text-outline">
+                                                        {t('employee.appointments.th_service')}
+                                                    </dt>
+                                                    <dd className="mt-1 flex items-baseline justify-between gap-2">
+                                                        <span className="min-w-0 truncate text-sm text-on-surface-variant">
+                                                            {apt.service?.name ?? t('employee.appointments.appointment_fallback')}
+                                                        </span>
+                                                        <span className="shrink-0 whitespace-nowrap text-sm font-semibold tabular-nums text-on-surface">
+                                                            {formatPrice(apt.price, currencySymbol)}
+                                                        </span>
+                                                    </dd>
+                                                </div>
+
+                                                <div className="rounded-xl border border-outline-variant/25 bg-surface-container-lowest/70 px-3 py-2">
+                                                    <dt className="text-[10px] font-bold uppercase tracking-wider text-outline">
+                                                        {t('employee.appointments.th_date')} & {t('employee.appointments.th_time')}
+                                                    </dt>
+                                                    <dd className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-on-surface-variant">
+                                                        <span>
                                                             {formatAppointmentDate(apt.date, {
                                                                 day: 'numeric',
                                                                 month: 'short',
                                                                 year: 'numeric',
                                                             })}
-                                                        </p>
-                                                    ) : null}
-                                                    <p className="font-bold text-on-surface leading-snug">
-                                                        {apt.client_first_name} {apt.client_last_name}
-                                                    </p>
-                                                    <div className="mt-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                                                        <p className="text-sm text-on-surface-variant">
-                                                            {apt.service?.name ?? t('employee.appointments.appointment_fallback')}
-                                                        </p>
-                                                        <p className="text-sm font-semibold tabular-nums text-on-surface">
-                                                            {formatPrice(apt.price, currencySymbol)}
-                                                        </p>
-                                                    </div>
+                                                        </span>
+                                                        <span className="inline-flex items-center gap-1 font-semibold text-on-surface">
+                                                            <Icon name="schedule" size="text-sm" className="text-on-surface-variant" />
+                                                            {formatTimeHm(apt.start_time)} – {formatTimeHm(apt.end_time)}
+                                                        </span>
+                                                    </dd>
                                                 </div>
-                                                <AppointmentStatusBadge status={apt.status} />
-                                            </div>
-                                            <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                                                <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-on-surface">
-                                                    <Icon name="schedule" size="text-sm" className="text-on-surface-variant" />
-                                                    {formatTimeHm(apt.start_time)} – {formatTimeHm(apt.end_time)}
-                                                </span>
-                                            </div>
-                                            <div className="mt-2 text-sm text-on-surface-variant break-words">
-                                                {apt.client_email || apt.client_phone || '—'}
-                                            </div>
+
+                                                <div className="rounded-xl border border-outline-variant/25 bg-surface-container-lowest/70 px-3 py-2">
+                                                    <dt className="text-[10px] font-bold uppercase tracking-wider text-outline">
+                                                        {t('employee.appointments.th_contact')}
+                                                    </dt>
+                                                    <dd className="mt-1 break-words text-sm text-on-surface-variant">
+                                                        {apt.client_email || apt.client_phone || '—'}
+                                                    </dd>
+                                                </div>
+                                            </dl>
+
                                             {renderMobileActions(apt)}
                                         </article>
                                     );

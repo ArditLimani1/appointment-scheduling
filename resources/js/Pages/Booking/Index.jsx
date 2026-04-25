@@ -109,9 +109,11 @@ function BookingAccordionStep({
     onHeaderClick,
     headerDisabled,
     children,
+    containerRef,
 }) {
     return (
         <div
+            ref={containerRef}
             className={`rounded-2xl border transition-shadow ${
                 expanded
                     ? 'border-outline-variant shadow-sm bg-surface-container-lowest overflow-visible'
@@ -185,10 +187,25 @@ export default function Index({
     const [email, setEmail] = useState('');
     const [notes, setNotes] = useState('');
     const [expandedSection, setExpandedSection] = useState(1);
+    const step2Ref = useRef(null);
+    const step3Ref = useRef(null);
+    const step4Ref = useRef(null);
     const isEmployeePreselected = !!preselected_employee_id && !!preselectedEmployee;
 
     const toggleAccordionSection = useCallback((id) => {
         setExpandedSection((current) => (current === id ? null : id));
+    }, []);
+
+    const openStepAndScroll = useCallback((id, ref) => {
+        setExpandedSection(id);
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                const el = ref?.current;
+                if (!el) return;
+                const top = el.getBoundingClientRect().top + window.scrollY - 16;
+                window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+            }, 40);
+        });
     }, []);
 
     const identifierType = business?.client_identifier_type ?? 'phone';
@@ -235,13 +252,6 @@ export default function Index({
         }
         return fullDateRange.filter((d) => employeeWorksOnLocalDate(selectedEmployee, d));
     }, [fullDateRange, selectedEmployee]);
-
-    const selectedDateIsBookable = useMemo(() => {
-        if (!selectedDate || bookableDates.length === 0) {
-            return true;
-        }
-        return bookableDates.some((d) => toDateString(d) === selectedDate);
-    }, [selectedDate, bookableDates]);
 
     const selectedServiceIdsKey = useMemo(
         () => selectedServices.map((s) => s.id).sort((a, b) => a - b).join(','),
@@ -315,17 +325,6 @@ export default function Index({
             return;
         }
 
-        const dateAllowed = bookableDates.length === 0
-            || bookableDates.some((d) => toDateString(d) === selectedDate);
-        if (!dateAllowed) {
-            prevEmployeeDateKeyRef.current = '';
-            setSlots([]);
-            setSlotsError(null);
-            setSelectedSlot(null);
-            setLoadingSlots(false);
-            return;
-        }
-
         const employeeDateKey = `${selectedEmployee.id}|${selectedDate}`;
         const employeeOrDateChanged = prevEmployeeDateKeyRef.current !== employeeDateKey;
         if (employeeOrDateChanged) {
@@ -382,22 +381,18 @@ export default function Index({
                 }
             })
             .finally(() => setLoadingSlots(false));
-    }, [selectedEmployee?.id, selectedDate, selectedServiceIdsKey, slug, bookableDates, bookingToday, business?.timezone]);
+    }, [selectedEmployee?.id, selectedDate, selectedServiceIdsKey, slug, bookingToday, business?.timezone]);
 
     useEffect(() => {
         if (!selectedEmployee) {
             return;
         }
-        if (bookableDates.length === 0) {
-            setSelectedDate(null);
-            setSelectedSlot(null);
-            return;
-        }
         if (!selectedDate) {
-            setSelectedDate(toDateString(bookableDates[0]));
+            // Always default to business "today"; backend availability decides slots.
+            setSelectedDate(bookingToday);
             setSelectedSlot(null);
         }
-    }, [selectedEmployee?.id, bookableDates, selectedDate]);
+    }, [selectedEmployee?.id, selectedDate, bookingToday]);
 
     const canSubmit =
         selectedServices.length > 0
@@ -524,7 +519,7 @@ export default function Index({
                     <h1 className="font-headline text-5xl font-extrabold tracking-tight mb-4 text-on-surface">{t('booking_ui.hero.title')}</h1>
                     {isEmployeePreselected ? (
                         <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-container text-on-primary-container text-base font-bold font-headline shrink-0">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-on-surface text-surface text-base font-bold font-headline shrink-0">
                                 {preselectedEmployee.name.charAt(0).toUpperCase()}
                             </div>
                             <p className="text-on-surface-variant text-lg">
@@ -601,7 +596,13 @@ export default function Index({
                                 {selectedServices.length > 0 && (
                                     <button
                                         type="button"
-                                        onClick={() => setExpandedSection(isEmployeePreselected ? 3 : 2)}
+                                        onClick={() => {
+                                            if (isEmployeePreselected) {
+                                                openStepAndScroll(3, step3Ref);
+                                            } else {
+                                                openStepAndScroll(2, step2Ref);
+                                            }
+                                        }}
                                         className="w-full h-14 rounded-xl bg-on-surface text-surface font-headline font-bold text-sm sm:text-base flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
                                     >
                                         {t('booking_ui.steps.continue')}
@@ -624,6 +625,7 @@ export default function Index({
                             expanded={expandedSection === 2}
                             headerDisabled={selectedServices.length === 0}
                             onHeaderClick={toggleAccordionSection}
+                            containerRef={step2Ref}
                         >
                             <div className="pt-2 space-y-4">
                                 {selectedServices.length > 0 && employeesForSelectedServices.length === 0 && (
@@ -639,7 +641,7 @@ export default function Index({
                                             onClick={() => {
                                                 setSelectedEmployee(emp);
                                                 setSelectedSlot(null);
-                                                setExpandedSection(3);
+                                                openStepAndScroll(3, step3Ref);
                                             }}
                                             className={`p-6 rounded-xl text-left flex items-center gap-4 transition-all duration-200 ${
                                                 selectedEmployee?.id === emp.id
@@ -647,7 +649,7 @@ export default function Index({
                                                     : 'bg-surface-container-low hover:bg-surface-container-high'
                                             }`}
                                         >
-                                            <div className="w-16 h-16 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container text-2xl font-bold font-headline shrink-0">
+                                            <div className="w-16 h-16 rounded-full bg-on-surface flex items-center justify-center text-surface text-2xl font-bold font-headline shrink-0">
                                                 {emp.name.charAt(0).toUpperCase()}
                                             </div>
                                             <div className="flex-1 min-w-0">
@@ -672,11 +674,12 @@ export default function Index({
                             expanded={expandedSection === 3}
                             headerDisabled={selectedServices.length === 0 || !selectedEmployee}
                             onHeaderClick={toggleAccordionSection}
+                            containerRef={step3Ref}
                         >
                             <div className="bg-surface-container-low p-6 sm:p-8 rounded-2xl space-y-8 mt-2">
-                                {selectedServices.length > 0 && selectedEmployee && bookableDates.length > 0 && (
+                                {selectedServices.length > 0 && selectedEmployee && (
                                     <div className="rounded-2xl bg-surface-container-lowest p-4 ring-1 ring-slate-100 shadow-sm">
-                                        <div className="flex flex-wrap gap-3 items-end">
+                                        <div className="flex w-full justify-center">
                                             <DatePicker
                                                 label={t('booking_ui.steps.date_label')}
                                                 value={selectedDate ?? ''}
@@ -688,23 +691,14 @@ export default function Index({
                                                 minDate={bookingToday}
                                                 maxDate={bookingMaxDate}
                                                 todayDateString={bookingToday}
+                                                className="w-full max-w-md"
+                                                buttonClassName="w-full"
                                             />
                                         </div>
-                                        {selectedDate && !selectedDateIsBookable ? (
-                                            <p className="mt-3 text-sm text-on-surface-variant">
-                                                {t('booking_ui.steps.unavailable_weekday')}
-                                            </p>
-                                        ) : null}
                                     </div>
                                 )}
 
-                                {selectedServices.length > 0 && selectedEmployee && bookableDates.length === 0 && (
-                                    <p className="text-sm text-on-surface-variant text-center py-4">
-                                        {t('booking_ui.steps.no_bookable_days')}
-                                    </p>
-                                )}
-
-                                {selectedServices.length > 0 && selectedEmployee && selectedDate && selectedDateIsBookable && (
+                                {selectedServices.length > 0 && selectedEmployee && selectedDate && (
                                     loadingSlots ? (
                                         <div className="flex items-center justify-center py-8">
                                             <Icon name="sync" size="text-3xl" className="text-outline animate-spin" />
@@ -730,7 +724,7 @@ export default function Index({
                                                         type="button"
                                                         onClick={() => {
                                                             setSelectedSlot(slot);
-                                                            setExpandedSection(4);
+                                                            openStepAndScroll(4, step4Ref);
                                                         }}
                                                         className={`min-h-14 rounded-xl flex items-center justify-center px-2 py-2 font-bold text-sm whitespace-nowrap transition-all duration-200 ${
                                                             selectedSlot === slot
@@ -761,6 +755,7 @@ export default function Index({
                                 || !selectedSlot
                             }
                             onHeaderClick={toggleAccordionSection}
+                            containerRef={step4Ref}
                         >
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
                                 <div className="sm:col-span-2 space-y-2">

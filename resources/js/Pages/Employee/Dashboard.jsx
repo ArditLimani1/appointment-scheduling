@@ -106,13 +106,25 @@ export default function Dashboard({
         router.patch(route('employee.appointments.update', apt.id), { status: 'cancelled' }, { preserveScroll: true });
     };
 
+    const renderMobileStatusRow = (apt) => {
+        const st = appointmentStatusValue(apt.status);
+        const bg = STATUS_BADGE_BG[st] || STATUS_BADGE_BG.pending;
+        return (
+            <div className="mb-3 flex justify-end">
+                <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase ${bg}`}>
+                    {t(`common.status.${st}`)}
+                </span>
+            </div>
+        );
+    };
+
     const renderMobileActions = (apt) => {
         const isCancelled = apt.status === 'cancelled';
         const isPending = apt.status === 'pending';
         const isConfirmed = apt.status === 'confirmed';
 
         return (
-            <div className="mt-3 flex flex-wrap items-center gap-2 pt-3 border-t border-outline-variant/25">
+            <div className="mt-3 flex flex-wrap items-center justify-end gap-2 border-t border-outline-variant/25 pt-3">
                 {isPending && (
                     <button
                         type="button"
@@ -221,8 +233,6 @@ export default function Dashboard({
                             <div className="md:hidden space-y-3">
                                 {appointments.map((apt) => {
                                     const isCancelled = apt.status === 'cancelled';
-                                    const st = appointmentStatusValue(apt.status);
-                                    const bg = STATUS_BADGE_BG[st] || STATUS_BADGE_BG.pending;
                                     return (
                                         <article
                                             key={apt.id}
@@ -230,41 +240,69 @@ export default function Dashboard({
                                                 isCancelled ? 'bg-error-container/15' : 'bg-surface-container-low/50'
                                             }`}
                                         >
-                                            <div className="flex items-start justify-between gap-3">
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="font-bold text-on-surface leading-snug">
-                                                        {apt.client_first_name} {apt.client_last_name}
-                                                    </p>
-                                                    <div className="mt-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                                                        <p className="text-sm text-on-surface-variant">
-                                                            {apt.service?.name ?? t('employee.appointments.appointment_fallback')}
+                                            {renderMobileStatusRow(apt)}
+
+                                            <dl className="space-y-2 text-xs">
+                                                <div className="rounded-xl border border-outline-variant/25 bg-surface-container-lowest/70 px-3 py-2">
+                                                    <dt className="text-[10px] font-bold uppercase tracking-wider text-outline">
+                                                        {t('employee.appointments.th_client')}
+                                                    </dt>
+                                                    <dd className="mt-1">
+                                                        <p className="text-sm font-semibold text-on-surface">
+                                                            {apt.client_first_name} {apt.client_last_name}
                                                         </p>
-                                                        <p className="text-sm font-semibold tabular-nums text-on-surface">
-                                                            {Number(apt.price).toFixed(2)} {currencySymbol}
-                                                        </p>
-                                                    </div>
+                                                        {apt.client_notes ? (
+                                                            <p className="mt-0.5 text-xs text-on-surface-variant italic line-clamp-2">
+                                                                &ldquo;{apt.client_notes}&rdquo;
+                                                            </p>
+                                                        ) : null}
+                                                    </dd>
                                                 </div>
-                                                <span className={`shrink-0 px-2.5 py-0.5 text-[10px] font-extrabold uppercase rounded-full ${bg}`}>
-                                                    {t(`common.status.${st}`)}
-                                                </span>
-                                            </div>
 
-                                            <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                                                <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-on-surface">
-                                                    <Icon name="schedule" size="text-sm" className="text-on-surface-variant" />
-                                                    {formatTimeHm(apt.start_time)} – {formatTimeHm(apt.end_time)}
-                                                </span>
-                                            </div>
+                                                <div className="rounded-xl border border-outline-variant/25 bg-surface-container-lowest/70 px-3 py-2">
+                                                    <dt className="text-[10px] font-bold uppercase tracking-wider text-outline">
+                                                        {t('employee.appointments.th_service')}
+                                                    </dt>
+                                                    <dd className="mt-1 flex items-baseline justify-between gap-2">
+                                                        <span className="min-w-0 truncate text-sm text-on-surface-variant">
+                                                            {apt.service?.name ?? t('employee.appointments.appointment_fallback')}
+                                                        </span>
+                                                        <span className="shrink-0 whitespace-nowrap text-sm font-semibold tabular-nums text-on-surface">
+                                                            {Number(apt.price).toFixed(2)}
+                                                            {'\u00a0'}
+                                                            {currencySymbol}
+                                                        </span>
+                                                    </dd>
+                                                </div>
 
-                                            <div className="mt-2 text-sm text-on-surface-variant break-words">
-                                                {apt.client_email || apt.client_phone || '—'}
-                                            </div>
+                                                <div className="rounded-xl border border-outline-variant/25 bg-surface-container-lowest/70 px-3 py-2">
+                                                    <dt className="text-[10px] font-bold uppercase tracking-wider text-outline">
+                                                        {t('employee.appointments.th_date')} & {t('employee.appointments.th_time')}
+                                                    </dt>
+                                                    <dd className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-on-surface-variant">
+                                                        <span>
+                                                            {formatAppointmentDate(apt.date, {
+                                                                day: 'numeric',
+                                                                month: 'short',
+                                                                year: 'numeric',
+                                                            })}
+                                                        </span>
+                                                        <span className="inline-flex items-center gap-1 font-semibold text-on-surface">
+                                                            <Icon name="schedule" size="text-sm" className="text-on-surface-variant" />
+                                                            {formatTimeHm(apt.start_time)} – {formatTimeHm(apt.end_time)}
+                                                        </span>
+                                                    </dd>
+                                                </div>
 
-                                            {apt.client_notes ? (
-                                                <p className="mt-2 text-xs text-on-surface-variant italic line-clamp-2">
-                                                    &ldquo;{apt.client_notes}&rdquo;
-                                                </p>
-                                            ) : null}
+                                                <div className="rounded-xl border border-outline-variant/25 bg-surface-container-lowest/70 px-3 py-2">
+                                                    <dt className="text-[10px] font-bold uppercase tracking-wider text-outline">
+                                                        {t('employee.appointments.th_contact')}
+                                                    </dt>
+                                                    <dd className="mt-1 break-words text-sm text-on-surface-variant">
+                                                        {apt.client_email || apt.client_phone || '—'}
+                                                    </dd>
+                                                </div>
+                                            </dl>
 
                                             {renderMobileActions(apt)}
                                         </article>

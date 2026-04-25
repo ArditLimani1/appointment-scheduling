@@ -179,7 +179,7 @@ export default function ServiceModal({ show, onClose, editing, currencySymbol, s
                         </label>
                         <input
                             type="number"
-                            step="0.01"
+                            step="0.50"
                             min="0"
                             value={data.price}
                             onChange={(e) => setData('price', e.target.value)}
