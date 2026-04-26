@@ -128,7 +128,7 @@ export default function Index({
         max_booking_window: settings.max_booking_window || 30,
         client_identifier_type: settings.client_identifier_type || 'phone',
         allow_employee_service_edit: settings.allow_employee_service_edit ?? true,
-        uses_shared_resources: settings.uses_shared_resources ?? true,
+        uses_shared_resources: settings.uses_shared_resources ?? false,
         ...(show_owner_staff_toggle ? { owner_also_works_as_staff: !!owner_also_works_as_staff } : {}),
     });
 

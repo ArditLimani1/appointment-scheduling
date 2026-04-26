@@ -42,7 +42,6 @@ export default function AuthenticatedLayout({ header, children }) {
                     </div>
 
                     <div className="hidden items-center gap-3 lg:flex">
-                        <LanguageSwitcher />
                         <Dropdown>
                             <Dropdown.Trigger>
                                 <button className="flex items-center rounded-full p-0.5 transition-colors hover:bg-surface-container">
@@ -60,6 +59,10 @@ export default function AuthenticatedLayout({ header, children }) {
                                 <Dropdown.Link href={route('logout')} method="post" as="button">
                                     {t('layout.authenticated.log_out')}
                                 </Dropdown.Link>
+                                <div className="mt-1 flex items-center justify-between gap-2 border-t border-outline-variant/40 px-4 py-2.5">
+                                    <span className="text-xs font-medium text-on-surface-variant">{t('common.language')}</span>
+                                    <LanguageSwitcher />
+                                </div>
                             </Dropdown.Content>
                         </Dropdown>
                     </div>
@@ -100,6 +103,11 @@ export default function AuthenticatedLayout({ header, children }) {
                                 <Icon name="logout" size="text-lg" />
                                 {t('layout.authenticated.log_out')}
                             </Link>
+
+                            <div className="flex items-center justify-between gap-3 rounded-2xl border border-outline-variant/40 bg-surface-container-lowest px-4 py-3">
+                                <span className="text-sm font-medium text-on-surface-variant">{t('common.language')}</span>
+                                <LanguageSwitcher />
+                            </div>
                         </div>
                     </div>
                 )}

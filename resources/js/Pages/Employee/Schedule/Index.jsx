@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import EmployeeLayout from '@/Layouts/EmployeeLayout';
 import Icon from '@/Components/Icon';
 import { useT } from '@/i18n/useT';
-import { appointmentStatusValue, formatAppointmentDate, formatTimeHm } from '@/utils/appointmentDate';
+import { appointmentStatusValue, formatAppointmentDate, formatTimeHm, patchSqMonthName } from '@/utils/appointmentDate';
 
 const DAY_OFF_MODAL_STATUS_BG = {
     pending: 'bg-surface-container-highest text-on-surface-variant',
@@ -35,10 +35,18 @@ function shiftWeek(ymd, weeks) {
 }
 
 function formatWeekRange(dateFrom, dateTo, locale) {
-    const opts = { month: 'short', day: 'numeric' };
+    const isSq = String(locale || '').toLowerCase().startsWith('sq');
+    const monthStyle = isSq ? 'long' : 'short';
+    const opts = { month: monthStyle, day: 'numeric' };
     const from = new Date(dateFrom + 'T00:00:00');
     const to = new Date(dateTo + 'T00:00:00');
-    return `${from.toLocaleDateString(locale, opts)} – ${to.toLocaleDateString(locale, { ...opts, year: 'numeric' })}`;
+    let fromStr = from.toLocaleDateString(locale, opts);
+    let toStr = to.toLocaleDateString(locale, { ...opts, year: 'numeric' });
+    if (isSq) {
+        fromStr = patchSqMonthName(fromStr, from, monthStyle);
+        toStr = patchSqMonthName(toStr, to, monthStyle);
+    }
+    return `${fromStr} – ${toStr}`;
 }
 
 function formatDayHeader(dateStr, dayLabel, locale) {
@@ -58,10 +66,15 @@ function formatTimeShort(hm) {
 
 // ─── Add Break Modal ──────────────────────────────────────────────────────────
 
-function AddBreakModal({ dayLabel, onSave, onClose }) {
+function AddBreakModal({ dayLabel, onSave, onClose, initialBreak = null }) {
     const t = useT();
-    const [form, setForm] = useState({ start_time: '12:00', end_time: '13:00' });
+    const [form, setForm] = useState(initialBreak ?? { start_time: '12:00', end_time: '13:00' });
     const [error, setError] = useState('');
+    useEffect(() => {
+        setForm(initialBreak ?? { start_time: '12:00', end_time: '13:00' });
+        setError('');
+    }, [initialBreak]);
+
 
     const inputClass = 'rounded-xl border-0 bg-surface-container-low px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-surface-tint';
 
@@ -221,7 +234,7 @@ function DayOffBlockingModal({ dayLabel, appointments, onConfirm, onClose }) {
 
 // ─── Day Card ─────────────────────────────────────────────────────────────────
 
-function DayCard({ day, locale, onToggle, onUpdateDay, onOpenBreakModal, onRemoveBreak }) {
+function DayCard({ day, locale, onToggle, onUpdateDay, onOpenBreakModal, onEditBreak, onRemoveBreak }) {
     const t = useT();
     const inputClass = 'w-full rounded-xl border-0 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:ring-2 focus:ring-surface-tint md:w-auto md:py-2';
 
@@ -299,11 +312,19 @@ function DayCard({ day, locale, onToggle, onUpdateDay, onOpenBreakModal, onRemov
                                     <div className="flex min-w-0 flex-1 basis-0 items-center justify-end md:contents">
                                         <button
                                             type="button"
+                                            onClick={() => onEditBreak(day.date, bi)}
+                                            className="shrink-0 rounded-xl bg-surface-container p-2 text-on-surface transition-colors hover:bg-surface-container-high"
+                                            aria-label="Edit break"
+                                        >
+                                            <Icon name="edit" size="text-sm" />
+                                        </button>
+                                        <button
+                                            type="button"
                                             onClick={() => onRemoveBreak(day.date, bi)}
-                                            className="shrink-0 rounded-xl bg-error-container p-2 text-on-error-container transition-opacity hover:opacity-80"
+                                            className="shrink-0 rounded-xl bg-surface-container p-2 text-on-surface transition-colors hover:bg-surface-container-high"
                                             aria-label={t('employee.schedule.remove_break')}
                                         >
-                                            <Icon name="close" size="text-sm" />
+                                            <Icon name="delete" size="text-sm" />
                                         </button>
                                     </div>
                                 </div>
@@ -337,6 +358,7 @@ export default function Index({ days: initialDays, dateFrom, dateTo }) {
 
     const [days, setDays] = useState(initialDays);
     const [breakModalDate, setBreakModalDate] = useState(null); // date string of the day being edited
+    const [editingBreakIndex, setEditingBreakIndex] = useState(null);
     const [dayOffModal, setDayOffModal] = useState(null); // { date, dayLabel, appointments }
 
     useEffect(() => { setDays(initialDays); }, [initialDays]);
@@ -413,14 +435,27 @@ export default function Index({ days: initialDays, dateFrom, dateTo }) {
     // ── Add break (via modal) ─────────────────────────────────────────────
 
     const handleSaveBreak = useCallback((brk) => {
+        if (!breakModalDate) return;
         const updated = days.map((d) =>
             (d.date === breakModalDate
-                ? { ...d, breaks: [...(d.breaks ?? []), brk], is_overridden: true }
+                ? {
+                    ...d,
+                    breaks: editingBreakIndex === null
+                        ? [...(d.breaks ?? []), brk]
+                        : (d.breaks ?? []).map((existing, i) => (i === editingBreakIndex ? brk : existing)),
+                    is_overridden: true,
+                }
                 : d),
         );
         setBreakModalDate(null);
-        autoSave(updated, 'break_added');
-    }, [days, breakModalDate, autoSave]);
+        setEditingBreakIndex(null);
+        autoSave(updated, editingBreakIndex === null ? 'break_added' : 'break_updated');
+    }, [days, breakModalDate, editingBreakIndex, autoSave]);
+    const handleEditBreak = useCallback((date, breakIndex) => {
+        setBreakModalDate(date);
+        setEditingBreakIndex(breakIndex);
+    }, []);
+
 
     // ── Remove break ──────────────────────────────────────────────────────
 
@@ -436,6 +471,9 @@ export default function Index({ days: initialDays, dateFrom, dateTo }) {
     // ─────────────────────────────────────────────────────────────────────
 
     const breakModalDay = breakModalDate ? days.find((d) => d.date === breakModalDate) : null;
+    const modalInitialBreak = breakModalDay && editingBreakIndex !== null
+        ? (breakModalDay.breaks ?? [])[editingBreakIndex] ?? null
+        : null;
 
     return (
         <EmployeeLayout>
@@ -506,7 +544,11 @@ export default function Index({ days: initialDays, dateFrom, dateTo }) {
                         locale={dateLocale}
                         onToggle={handleToggle}
                         onUpdateDay={handleUpdateDay}
-                        onOpenBreakModal={setBreakModalDate}
+                        onOpenBreakModal={(date) => {
+                            setBreakModalDate(date);
+                            setEditingBreakIndex(null);
+                        }}
+                        onEditBreak={handleEditBreak}
                         onRemoveBreak={handleRemoveBreak}
                     />
                 ))}
@@ -517,7 +559,11 @@ export default function Index({ days: initialDays, dateFrom, dateTo }) {
                 <AddBreakModal
                     dayLabel={formatDayHeader(breakModalDay.date, breakModalDay.day_label, dateLocale)}
                     onSave={handleSaveBreak}
-                    onClose={() => setBreakModalDate(null)}
+                    onClose={() => {
+                        setBreakModalDate(null);
+                        setEditingBreakIndex(null);
+                    }}
+                    initialBreak={modalInitialBreak}
                 />
             )}
 

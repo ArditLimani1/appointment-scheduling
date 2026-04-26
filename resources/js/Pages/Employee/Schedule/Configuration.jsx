@@ -160,10 +160,15 @@ function PersonalBookingUrlField({ label, businessSlug, value, onChange, error }
 }
 
 // ─── Add Break Modal (same as Schedule / Availability view) ──────────────────
-function AddBreakModal({ dayLabel, onSave, onClose }) {
+function AddBreakModal({ dayLabel, onSave, onClose, initialBreak = null }) {
     const t = useT();
-    const [form, setForm] = useState({ start_time: '12:00', end_time: '13:00' });
+    const [form, setForm] = useState(initialBreak ?? { start_time: '12:00', end_time: '13:00' });
     const [error, setError] = useState('');
+    useEffect(() => {
+        setForm(initialBreak ?? { start_time: '12:00', end_time: '13:00' });
+        setError('');
+    }, [initialBreak]);
+
 
     const inputClass = 'rounded-xl border-0 bg-surface-container-low px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-surface-tint';
 
@@ -242,7 +247,7 @@ function AddBreakModal({ dayLabel, onSave, onClose }) {
 }
 
 // ─── Day card (layout matches Schedule / Availability `DayCard`) ─────────────
-function ConfigurationDayCard({ day, locale, onChange, onOpenBreakModal, onRemoveBreak }) {
+function ConfigurationDayCard({ day, locale, onChange, onOpenBreakModal, onEditBreak, onRemoveBreak }) {
     const t = useT();
     const inputClass =
         'w-full rounded-xl border-0 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:ring-2 focus:ring-surface-tint md:w-auto md:py-2';
@@ -321,11 +326,19 @@ function ConfigurationDayCard({ day, locale, onChange, onOpenBreakModal, onRemov
                                     <div className="flex min-w-0 flex-1 basis-0 items-center justify-end md:contents">
                                         <button
                                             type="button"
+                                            onClick={() => onEditBreak(bi)}
+                                            className="shrink-0 rounded-xl bg-surface-container p-2 text-on-surface transition-colors hover:bg-surface-container-high"
+                                            aria-label="Edit break"
+                                        >
+                                            <Icon name="edit" size="text-sm" />
+                                        </button>
+                                        <button
+                                            type="button"
                                             onClick={() => onRemoveBreak(bi)}
-                                            className="shrink-0 rounded-xl bg-error-container p-2 text-on-error-container transition-opacity hover:opacity-80"
+                                            className="shrink-0 rounded-xl bg-surface-container p-2 text-on-surface transition-colors hover:bg-surface-container-high"
                                             aria-label={t('employee.schedule.remove_break')}
                                         >
-                                            <Icon name="close" size="text-sm" />
+                                            <Icon name="delete" size="text-sm" />
                                         </button>
                                     </div>
                                 </div>
@@ -386,6 +399,7 @@ export default function Configuration({
     const [activeTab, setActiveTab] = useState('info');
     const [days, setDays] = useState(() => buildDays(initialSchedules));
     const [breakModalDayIndex, setBreakModalDayIndex] = useState(null);
+    const [editingBreakIndex, setEditingBreakIndex] = useState(null);
     const [bookingSlug, setBookingSlug] = useState(initialBookingSlug ?? '');
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [savingInfo, setSavingInfo] = useState(false);
@@ -396,26 +410,58 @@ export default function Configuration({
         }
     }, [bookingSlugError]);
 
+    const persistSchedules = (nextDays) => {
+        setSaving(true);
+        router.put(
+            route('employee.schedule.update'),
+            { schedules: nextDays },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onFinish: () => setSaving(false),
+            }
+        );
+    };
+
+    const applyAndPersistDays = (updater) => {
+        setDays((prev) => {
+            const next = updater(prev);
+            persistSchedules(next);
+            return next;
+        });
+    };
+
     const updateDay = (index, updated) => {
-        setDays((prev) => prev.map((d, i) => (i === index ? updated : d)));
+        applyAndPersistDays((prev) => prev.map((d, i) => (i === index ? updated : d)));
     };
 
     const handleSaveBreak = (brk) => {
         if (breakModalDayIndex === null) return;
-        setDays((prev) => prev.map((d, i) => (
+        applyAndPersistDays((prev) => prev.map((d, i) => (
             i === breakModalDayIndex
-                ? { ...d, breaks: [...(d.breaks ?? []), brk] }
+                ? {
+                    ...d,
+                    breaks: editingBreakIndex === null
+                        ? [...(d.breaks ?? []), brk]
+                        : (d.breaks ?? []).map((existing, j) => (j === editingBreakIndex ? brk : existing)),
+                }
                 : d
         )));
         setBreakModalDayIndex(null);
+        setEditingBreakIndex(null);
     };
 
     const handleRemoveBreak = (dayIndex, breakIndex) => {
-        setDays((prev) => prev.map((d, i) => (
+        applyAndPersistDays((prev) => prev.map((d, i) => (
             i === dayIndex
                 ? { ...d, breaks: (d.breaks ?? []).filter((_, j) => j !== breakIndex) }
                 : d
         )));
+    };
+
+    const handleEditBreak = (dayIndex, breakIndex) => {
+        setBreakModalDayIndex(dayIndex);
+        setEditingBreakIndex(breakIndex);
     };
 
     const handleSaveInfo = (e) => {
@@ -433,19 +479,6 @@ export default function Configuration({
             {
                 preserveScroll: true,
                 onFinish: () => setSavingInfo(false),
-            }
-        );
-    };
-
-    const handleSave = (e) => {
-        e.preventDefault();
-        setSaving(true);
-        router.put(
-            route('employee.schedule.update'),
-            { schedules: days },
-            {
-                preserveScroll: true,
-                onFinish: () => setSaving(false),
             }
         );
     };
@@ -538,13 +571,20 @@ export default function Configuration({
 
             {/* ── Schedule tab (same card layout as Schedule / Availability view) ─ */}
             {activeTab === 'schedule' && (
-                <form onSubmit={handleSave}>
+                <section>
                     <div className="mb-6">
                         <h2 className="text-3xl font-black font-headline tracking-tight text-on-surface">{t('employee.schedule.default_hours')}</h2>
                         <p className="mt-1 text-sm text-on-surface-variant">
                             {t('employee.schedule.default_hours_sub')}
                         </p>
                     </div>
+
+                    {saving && (
+                        <div className="mb-4 inline-flex items-center gap-2 rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2 text-xs font-semibold text-on-surface-variant">
+                            <Icon name="sync" size="text-sm" className="animate-spin" />
+                            {t('employee.schedule.saving')}
+                        </div>
+                    )}
 
                     <div className="space-y-3">
                         {days.map((day, i) => (
@@ -553,27 +593,16 @@ export default function Configuration({
                                 day={day}
                                 locale={dateLocale}
                                 onChange={(updated) => updateDay(i, updated)}
-                                onOpenBreakModal={() => setBreakModalDayIndex(i)}
+                                onOpenBreakModal={() => {
+                                    setBreakModalDayIndex(i);
+                                    setEditingBreakIndex(null);
+                                }}
+                                onEditBreak={(bi) => handleEditBreak(i, bi)}
                                 onRemoveBreak={(bi) => handleRemoveBreak(i, bi)}
                             />
                         ))}
                     </div>
-
-                    <div className="mt-6 flex items-center gap-4 border-t border-outline-variant/30 pt-6">
-                        <button
-                            type="submit"
-                            disabled={saving}
-                            className="inline-flex items-center gap-2 rounded-xl bg-on-surface px-6 py-3 text-sm font-bold text-surface hover:opacity-90 active:-translate-y-px transition-all disabled:opacity-50"
-                        >
-                            {saving ? (
-                                <Icon name="sync" size="text-base" className="animate-spin" />
-                            ) : (
-                                <Icon name="save" size="text-base" />
-                            )}
-                            {saving ? t('employee.schedule.saving') : t('employee.schedule.save_schedule')}
-                        </button>
-                    </div>
-                </form>
+                </section>
             )}
 
             {breakModalDayIndex !== null && days[breakModalDayIndex] && (
@@ -584,7 +613,15 @@ export default function Configuration({
                         dateLocale,
                     )}
                     onSave={handleSaveBreak}
-                    onClose={() => setBreakModalDayIndex(null)}
+                    onClose={() => {
+                        setBreakModalDayIndex(null);
+                        setEditingBreakIndex(null);
+                    }}
+                    initialBreak={
+                        editingBreakIndex !== null
+                            ? ((days[breakModalDayIndex].breaks ?? [])[editingBreakIndex] ?? null)
+                            : null
+                    }
                 />
             )}
 

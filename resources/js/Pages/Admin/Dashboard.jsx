@@ -33,8 +33,9 @@ export default function Dashboard({
     const displayAppointments = recent_appointments
         .filter(apt => ALLOWED_STATUSES.includes(apt.status?.toLowerCase()));
 
+    const isSq = String(localeBcp47 || '').toLowerCase().startsWith('sq');
     const formatDate = (dateStr) =>
-        formatAppointmentDate(dateStr, { day: 'numeric', month: 'short', year: 'numeric' }, localeBcp47);
+        formatAppointmentDate(dateStr, { day: 'numeric', month: isSq ? 'long' : 'short', year: 'numeric' }, localeBcp47);
 
     const statusClass = (status) => {
         switch (status?.toLowerCase()) {

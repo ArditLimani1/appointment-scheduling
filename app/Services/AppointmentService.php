@@ -533,7 +533,7 @@ class AppointmentService implements AppointmentServiceInterface
     {
         $exportFilters = array_merge($filters, ['business_id' => $business->id]);
 
-        return Excel::download(new AppointmentsExport($exportFilters), 'appointments.xlsx');
+        return Excel::download(new AppointmentsExport($exportFilters), __('exports.files.appointments').'.xlsx');
     }
 
     /**

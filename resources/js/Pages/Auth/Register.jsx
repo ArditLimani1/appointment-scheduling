@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import FilterListbox from '@/Components/FilterListbox';
 import Icon from '@/Components/Icon';
 import InputError from '@/Components/InputError';
+import LanguageSwitcher from '@/i18n/LanguageSwitcher';
 import { useT } from '@/i18n/useT';
 
 function slugify(value) {
@@ -191,7 +192,10 @@ export default function Register({ businessTypeCategories = [] }) {
                 <p className="relative text-xs text-white/50">{t('auth_pages.register.copyright')}</p>
             </div>
 
-            <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 lg:px-12">
+            <div className="relative flex flex-1 flex-col items-center justify-center px-6 py-12 lg:px-12">
+                <div className="absolute right-4 top-4 sm:right-6 sm:top-6 lg:right-8 lg:top-8">
+                    <LanguageSwitcher />
+                </div>
                 <div className="w-full max-w-md">
                     <Link href="/" className="flex items-center gap-2 mb-8 lg:hidden">
                         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-container">

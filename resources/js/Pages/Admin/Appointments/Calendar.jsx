@@ -1,4 +1,4 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import EmployeeLayout from '@/Layouts/EmployeeLayout';
@@ -11,7 +11,7 @@ import EditAppointmentModal from '@/Components/EditAppointmentModal';
 import CalendarWeekGrid from '@/Components/Calendar/CalendarWeekGrid';
 import { buildEmployeeColorMap, getEmployeeSlotStyles } from '@/utils/employeeCalendarColor';
 import { buildAdminAppointmentPutPayload, buildEmployeeAppointmentPutPayload } from '@/utils/appointmentPutPayload';
-import { formatAppointmentDate } from '@/utils/appointmentDate';
+import { formatAppointmentDate, patchSqMonthName } from '@/utils/appointmentDate';
 import {
     appendAppointmentStatusParams,
     DEFAULT_APPOINTMENT_STATUS_FILTER,
@@ -59,27 +59,32 @@ function buildCalendarUrl(employeeCalendar, date, view, filters) {
     return path + (qs ? `?${qs}` : '');
 }
 
-function formatRangeTitle(rangeStart, rangeEnd, view) {
+function formatRangeTitle(rangeStart, rangeEnd, view, localeBcp47) {
     const a = parseYmd(rangeStart);
+    const isSq = String(localeBcp47 || '').toLowerCase().startsWith('sq');
+    const monthStyle = isSq ? 'long' : 'short';
     if (view === 'day') {
-        return a.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        let result = a.toLocaleDateString(localeBcp47 || undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        if (isSq) result = patchSqMonthName(result, a, 'long');
+        return result;
     }
-    return `${formatAppointmentDate(rangeStart, { day: 'numeric', month: 'short' })} – ${formatAppointmentDate(rangeEnd, {
+    return `${formatAppointmentDate(rangeStart, { day: 'numeric', month: monthStyle }, localeBcp47)} – ${formatAppointmentDate(rangeEnd, {
         day: 'numeric',
-        month: 'short',
+        month: monthStyle,
         year: 'numeric',
-    })}`;
+    }, localeBcp47)}`;
 }
 
-function formatRangeSubtitle(rangeStart, rangeEnd, view) {
+function formatRangeSubtitle(rangeStart, rangeEnd, view, localeBcp47) {
+    const monthStyle = String(localeBcp47 || '').toLowerCase().startsWith('sq') ? 'long' : 'short';
     if (view === 'day') {
-        return formatAppointmentDate(rangeStart, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+        return formatAppointmentDate(rangeStart, { weekday: 'short', month: monthStyle, day: 'numeric', year: 'numeric' }, localeBcp47);
     }
-    return `${formatAppointmentDate(rangeStart, { day: 'numeric', month: 'short' })} – ${formatAppointmentDate(rangeEnd, {
+    return `${formatAppointmentDate(rangeStart, { day: 'numeric', month: monthStyle }, localeBcp47)} – ${formatAppointmentDate(rangeEnd, {
         day: 'numeric',
-        month: 'short',
+        month: monthStyle,
         year: 'numeric',
-    })}`;
+    }, localeBcp47)}`;
 }
 
 export default function Calendar({
@@ -101,6 +106,7 @@ export default function Calendar({
     calendar_employee_day_offs: calendarEmployeeDayOffs = {},
 }) {
     const t = useT();
+    const { localeBcp47 } = usePage().props;
     const [selected, setSelected] = useState(null);
     const [dragSavingId, setDragSavingId] = useState(null);
     const [moveError, setMoveError] = useState(null);
@@ -242,13 +248,13 @@ export default function Calendar({
     );
 
     const titleMain = useMemo(
-        () => formatRangeTitle(range_start, range_end, localFilters.view),
-        [range_start, range_end, localFilters.view],
+        () => formatRangeTitle(range_start, range_end, localFilters.view, localeBcp47),
+        [range_start, range_end, localFilters.view, localeBcp47],
     );
 
     const titleSub = useMemo(
-        () => formatRangeSubtitle(range_start, range_end, localFilters.view),
-        [range_start, range_end, localFilters.view],
+        () => formatRangeSubtitle(range_start, range_end, localFilters.view, localeBcp47),
+        [range_start, range_end, localFilters.view, localeBcp47],
     );
 
     const employeeColorMap = useMemo(() => buildEmployeeColorMap(employees), [employees]);

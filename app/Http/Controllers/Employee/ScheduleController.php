@@ -69,7 +69,9 @@ class ScheduleController extends Controller
             'day_on' => 'Day set to on successfully.',
             'day_off' => 'Day set to off successfully.',
             'break_added' => 'Break added successfully.',
+            'break_updated' => 'Break updated successfully.',
             'break_removed' => 'Break removed successfully.',
+            'day_time_updated' => 'Day hours updated successfully.',
         };
 
         return redirect()->back()

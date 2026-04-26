@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="UTF-8">
-    <title>Analytics Report</title>
+    <title>{{ __('exports.pdf.analytics.title') }}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -161,19 +161,19 @@
     {{-- Header --}}
     <div class="header">
         <div class="header-left">
-            <h1>Analytics Report</h1>
-            <p>Appointment statistics by employee</p>
+            <h1>{{ __('exports.pdf.analytics.title') }}</h1>
+            <p>{{ __('exports.pdf.analytics.subtitle') }}</p>
         </div>
         <div class="header-right">
             <div class="business-name">{{ $businessName }}</div>
-            <div class="generated">Generated: {{ $generatedAt }}</div>
+            <div class="generated">{{ __('exports.common.generated') }}: {{ $generatedAt }}</div>
         </div>
     </div>
 
     {{-- Period --}}
     <div class="period-bar">
-        Period: <strong>{{ $dateFrom }}</strong> &mdash; <strong>{{ $dateTo }}</strong>
-        @if($employeeFilter) &nbsp;&bull;&nbsp; Employee: <strong>{{ $employeeFilter }}</strong> @endif
+        {{ __('exports.common.period') }}: <strong>{{ $dateFrom }}</strong> &mdash; <strong>{{ $dateTo }}</strong>
+        @if($employeeFilter) &nbsp;&bull;&nbsp; {{ __('exports.common.employee') }}: <strong>{{ $employeeFilter }}</strong> @endif
     </div>
 
     {{-- Summary widgets (dompdf doesn't support CSS flex well — use a table for layout) --}}
@@ -181,33 +181,33 @@
         <tr>
             <td style="width:25%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px 16px; text-align:center;">
                 <div style="font-size:20px; font-weight:700; color:#1e293b;">{{ $totalAppointments }}</div>
-                <div style="font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:#94a3b8; margin-top:4px;">Total Appointments</div>
+                <div style="font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:#94a3b8; margin-top:4px;">{{ __('exports.pdf.analytics.total_appointments') }}</div>
             </td>
             <td style="width:25%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px 16px; text-align:center;">
                 <div style="font-size:20px; font-weight:700; color:#1e293b;">{{ $totalConfirmed }}</div>
-                <div style="font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:#94a3b8; margin-top:4px;">Confirmed</div>
+                <div style="font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:#94a3b8; margin-top:4px;">{{ __('exports.pdf.analytics.confirmed') }}</div>
             </td>
             <td style="width:25%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px 16px; text-align:center;">
                 <div style="font-size:20px; font-weight:700; color:#1e293b;">{{ $totalCancelled }}</div>
-                <div style="font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:#94a3b8; margin-top:4px;">Cancelled</div>
+                <div style="font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:#94a3b8; margin-top:4px;">{{ __('exports.pdf.analytics.cancelled') }}</div>
             </td>
             <td style="width:25%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px 16px; text-align:center;">
                 <div style="font-size:20px; font-weight:700; color:#1e293b;">{{ number_format($totalRevenue, 2) }} {{ $currencySymbol }}</div>
-                <div style="font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:#94a3b8; margin-top:4px;">Total Revenue</div>
+                <div style="font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:#94a3b8; margin-top:4px;">{{ __('exports.pdf.analytics.total_revenue') }}</div>
             </td>
         </tr>
     </table>
 
     {{-- Table --}}
-    <p class="section-title">Employee Breakdown</p>
+    <p class="section-title">{{ __('exports.common.employee_breakdown') }}</p>
     <table>
         <thead>
             <tr>
-                <th style="text-align:left;">Employee</th>
-                <th style="text-align:center;">Cancelled</th>
-                <th style="text-align:center;">Pending</th>
-                <th style="text-align:center;">Confirmed</th>
-                <th style="text-align:center;">Revenue</th>
+                <th style="text-align:left;">{{ __('exports.pdf.analytics.employee') }}</th>
+                <th style="text-align:center;">{{ __('exports.pdf.analytics.cancelled') }}</th>
+                <th style="text-align:center;">{{ __('exports.pdf.analytics.pending') }}</th>
+                <th style="text-align:center;">{{ __('exports.pdf.analytics.confirmed') }}</th>
+                <th style="text-align:center;">{{ __('exports.pdf.analytics.revenue') }}</th>
             </tr>
         </thead>
         <tbody>
@@ -223,7 +223,7 @@
         </tbody>
         <tfoot>
             <tr>
-                <td style="text-align:left;">TOTAL</td>
+                <td style="text-align:left;">{{ __('exports.common.total_row') }}</td>
                 <td style="text-align:center;">{{ (int) array_sum(array_column($employeeStats, 'cancelled_count')) }}</td>
                 <td style="text-align:center;">{{ (int) array_sum(array_column($employeeStats, 'pending_count')) }}</td>
                 <td style="text-align:center;">{{ (int) array_sum(array_column($employeeStats, 'confirmed_count')) }}</td>
@@ -232,16 +232,16 @@
         </tfoot>
     </table>
 
-    <p class="section-title" style="margin-top:22px;">Monthly overview</p>
-    <p style="font-size:10px; color:#64748b; margin-bottom:8px;">Each calendar month in the selected range (based on current filters).</p>
+    <p class="section-title" style="margin-top:22px;">{{ __('exports.common.monthly_overview') }}</p>
+    <p style="font-size:10px; color:#64748b; margin-bottom:8px;">{{ __('exports.common.monthly_overview_hint') }}</p>
     <table>
         <thead>
             <tr>
-                <th style="text-align:left;">Month</th>
-                <th style="text-align:center;">Cancelled</th>
-                <th style="text-align:center;">Pending</th>
-                <th style="text-align:center;">Confirmed</th>
-                <th style="text-align:center;">Revenue</th>
+                <th style="text-align:left;">{{ __('exports.common.month') }}</th>
+                <th style="text-align:center;">{{ __('exports.pdf.analytics.cancelled') }}</th>
+                <th style="text-align:center;">{{ __('exports.pdf.analytics.pending') }}</th>
+                <th style="text-align:center;">{{ __('exports.pdf.analytics.confirmed') }}</th>
+                <th style="text-align:center;">{{ __('exports.pdf.analytics.revenue') }}</th>
             </tr>
         </thead>
         <tbody>
@@ -259,7 +259,7 @@
 
     {{-- Footer --}}
     <div class="footer">
-        This report was automatically generated by the appointment scheduling system.
+        {{ __('exports.common.footer_auto') }}
     </div>
 
 </body>

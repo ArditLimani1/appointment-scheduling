@@ -1,4 +1,4 @@
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import DatePicker from '@/Components/DatePicker';
 import Icon from '@/Components/Icon';
@@ -19,7 +19,20 @@ function isDateInPast(dateStr) {
     return dateStr < today;
 }
 
+function addMinutesToTimeString(hm, minutesToAdd) {
+    if (!hm || !Number.isFinite(minutesToAdd) || minutesToAdd <= 0) return null;
+    const [hRaw, mRaw] = String(hm).split(':');
+    const h = Number.parseInt(hRaw, 10);
+    const m = Number.parseInt(mRaw, 10);
+    if (Number.isNaN(h) || Number.isNaN(m)) return null;
+    const totalMinutes = ((h * 60 + m + minutesToAdd) % (24 * 60) + (24 * 60)) % (24 * 60);
+    const hh = Math.floor(totalMinutes / 60);
+    const mm = totalMinutes % 60;
+    return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+}
+
 export default function EmployeeRescheduleModal({ appointment, onClose }) {
+    const { localeBcp47 } = usePage().props;
     const currentDate = normalizeDate(appointment.date);
     const currentTime = normalizeTime(appointment.start_time);
 
@@ -29,6 +42,7 @@ export default function EmployeeRescheduleModal({ appointment, onClose }) {
     const [loadingSlots, setLoadingSlots] = useState(false);
     const [saving, setSaving]         = useState(false);
     const [error, setError]           = useState('');
+    const serviceDurationMinutes = Number(appointment?.service?.duration) || 0;
 
     // Fetch available slots whenever date changes
     useEffect(() => {
@@ -104,7 +118,15 @@ export default function EmployeeRescheduleModal({ appointment, onClose }) {
                     <Icon name="event" size="text-base" className="text-on-surface-variant shrink-0" />
                     <span className="text-on-surface-variant">Currently:</span>
                     <span className="font-semibold text-on-surface">
-                        {formatAppointmentDate(appointment.date, { weekday: 'short', day: 'numeric', month: 'short' })}
+                        {formatAppointmentDate(
+                            appointment.date,
+                            {
+                                weekday: 'short',
+                                day: 'numeric',
+                                month: String(localeBcp47 || '').toLowerCase().startsWith('sq') ? 'long' : 'short',
+                            },
+                            localeBcp47,
+                        )}
                         &nbsp;·&nbsp;{formatTimeHm(appointment.start_time)}
                     </span>
                 </div>
@@ -148,6 +170,8 @@ export default function EmployeeRescheduleModal({ appointment, onClose }) {
                                 {slots.map((slot) => {
                                     const isSelected = selectedTime === slot;
                                     const isCurrent  = slot === currentTime && date === currentDate;
+                                    const endHm = addMinutesToTimeString(slot, serviceDurationMinutes);
+                                    const label = endHm ? `${slot} - ${endHm}` : slot;
                                     return (
                                         <button
                                             key={slot}
@@ -159,7 +183,7 @@ export default function EmployeeRescheduleModal({ appointment, onClose }) {
                                                     : 'bg-surface-container-low text-on-surface hover:bg-surface-container-high'
                                             }`}
                                         >
-                                            {slot}
+                                            {label}
                                             {isCurrent && !isSelected && (
                                                 <span className="ml-1 text-[10px] text-on-surface-variant">(current)</span>
                                             )}

@@ -299,7 +299,7 @@ return [
     'settings' => [
         'head_title' => 'Konfigurimi',
         'title' => 'Konfigurimi',
-        'breadcrumb_settings' => 'Cilësimet',
+        'breadcrumb_settings' => 'Konfigurimet',
         'breadcrumb_current' => 'Konfigurimi i biznesit',
         'page_title' => 'Konfigurimi i biznesit',
         'page_subtitle' => 'Menaxhoni identitetin e biznesit dhe rregullat e rezervimit për klientët.',

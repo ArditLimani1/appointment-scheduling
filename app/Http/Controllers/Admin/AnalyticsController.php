@@ -39,7 +39,7 @@ class AnalyticsController extends Controller
 
         return Excel::download(
             new AnalyticsExport($data['employee_stats']->toArray(), $data['currency_symbol']),
-            'analytics.xlsx'
+            __('exports.files.analytics').'.xlsx'
         );
     }
 
@@ -67,7 +67,7 @@ class AnalyticsController extends Controller
 
         $pdf = Pdf::loadView('exports.analytics-pdf', [
             'businessName' => $business->name,
-            'generatedAt' => Carbon::now()->format('d M Y, H:i'),
+            'generatedAt' => Carbon::now()->locale(app()->getLocale())->translatedFormat('d F Y, H:i'),
             'dateFrom' => $filters['date_from'],
             'dateTo' => $filters['date_to'],
             'employeeFilter' => $employeeFilter,
@@ -81,7 +81,9 @@ class AnalyticsController extends Controller
             'totalRevenue' => $totalRevenue,
         ])->setPaper('a4', 'landscape');
 
-        return $pdf->download('analytics-'.$filters['date_from'].'_'.$filters['date_to'].'.pdf');
+        return $pdf->download(
+            __('exports.files.analytics').'-'.$filters['date_from'].'_'.$filters['date_to'].'.pdf'
+        );
     }
 
     private function filtersFromRequest(Request $request): array

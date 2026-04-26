@@ -249,13 +249,17 @@ class AppointmentController extends Controller
 
         $pdf = Pdf::loadView('exports.appointments-pdf', [
             'businessName' => $business->name,
-            'generatedAt' => Carbon::now()->format('d M Y, H:i'),
+            'generatedAt' => Carbon::now()->locale(app()->getLocale())->translatedFormat('d F Y, H:i'),
             'dateFrom' => $filters['date_from'],
             'dateTo' => $filters['date_to'],
             'employeeFilter' => $employeeFilter,
             'serviceFilter' => $serviceFilter,
             'statusFilter' => ! empty($filters['statuses']) && is_array($filters['statuses'])
-                ? implode(', ', array_map(fn ($s) => ucfirst((string) $s), $filters['statuses']))
+                ? implode(', ', array_values(array_filter(array_map(function ($s) {
+                    $status = AppointmentStatus::tryFrom((string) $s);
+
+                    return $status ? __('exports.common.'.$status->value) : null;
+                }, $filters['statuses']))))
                 : null,
             'appointments' => $appointments,
             'totalCount' => $appointments->count(),
@@ -266,7 +270,9 @@ class AppointmentController extends Controller
             'currencySymbol' => $currencySymbol,
         ])->setPaper('a4', 'landscape');
 
-        return $pdf->download('appointments-'.$filters['date_from'].'_'.$filters['date_to'].'.pdf');
+        return $pdf->download(
+            __('exports.files.appointments').'-'.$filters['date_from'].'_'.$filters['date_to'].'.pdf'
+        );
     }
 
     /**

@@ -76,7 +76,7 @@ class AppointmentController extends Controller
         $filters = $this->employeeAppointmentsFiltersFromRequest($request, $user);
         $exportFilters = array_merge($filters, ['business_id' => $business->id]);
 
-        return Excel::download(new EmployeeAppointmentsExport($exportFilters), 'my-appointments.xlsx');
+        return Excel::download(new EmployeeAppointmentsExport($exportFilters), __('exports.files.my_appointments').'.xlsx');
     }
 
     public function exportPdf(Request $request): HttpResponse
@@ -140,12 +140,16 @@ class AppointmentController extends Controller
         $pdf = Pdf::loadView('exports.employee-appointments-pdf', [
             'businessName' => $business->name,
             'employeeName' => $user->name,
-            'generatedAt' => Carbon::now()->format('d M Y, H:i'),
+            'generatedAt' => Carbon::now()->locale(app()->getLocale())->translatedFormat('d F Y, H:i'),
             'dateFrom' => $filters['date_from'],
             'dateTo' => $filters['date_to'],
             'serviceFilter' => $serviceFilter,
             'statusFilter' => ! empty($filters['statuses']) && is_array($filters['statuses'])
-                ? implode(', ', array_map(fn ($s) => ucfirst((string) $s), $filters['statuses']))
+                ? implode(', ', array_values(array_filter(array_map(function ($s) {
+                    $status = AppointmentStatus::tryFrom((string) $s);
+
+                    return $status ? __('exports.common.'.$status->value) : null;
+                }, $filters['statuses']))))
                 : null,
             'appointments' => $appointments,
             'totalCount' => $appointments->count(),
@@ -156,7 +160,9 @@ class AppointmentController extends Controller
             'currencySymbol' => $currencySymbol,
         ])->setPaper('a4', 'landscape');
 
-        return $pdf->download('my-appointments-'.$filters['date_from'].'_'.$filters['date_to'].'.pdf');
+        return $pdf->download(
+            __('exports.files.my_appointments').'-'.$filters['date_from'].'_'.$filters['date_to'].'.pdf'
+        );
     }
 
     public function calendar(Request $request): Response

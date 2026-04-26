@@ -55,6 +55,13 @@ class ScheduleOverrideRepository implements ScheduleOverrideRepositoryInterface
             ->delete();
     }
 
+    public function deleteForUserFromDate(int $userId, string $dateFrom): void
+    {
+        ScheduleOverride::where('user_id', $userId)
+            ->whereDate('date', '>=', $dateFrom)
+            ->delete();
+    }
+
     public function deleteBreaks(ScheduleOverride $override): void
     {
         $override->breaks()->delete();
