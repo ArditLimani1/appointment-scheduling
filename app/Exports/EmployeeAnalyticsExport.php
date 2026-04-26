@@ -21,11 +21,11 @@ class EmployeeAnalyticsExport implements FromArray, WithHeadings, WithStrictNull
     public function headings(): array
     {
         return [
-            'Service',
-            'Cancelled',
-            'Pending',
-            'Confirmed',
-            'Revenue',
+            __('exports.excel.analytics.service'),
+            __('exports.excel.analytics.cancelled'),
+            __('exports.excel.analytics.pending'),
+            __('exports.excel.analytics.confirmed'),
+            __('exports.excel.analytics.revenue'),
         ];
     }
 
@@ -49,7 +49,7 @@ class EmployeeAnalyticsExport implements FromArray, WithHeadings, WithStrictNull
         $totalRevenue = (float) array_sum(array_column($this->serviceStats, 'revenue'));
 
         $rows[] = [
-            'TOTAL',
+            __('exports.excel.analytics.total'),
             $totalCancelled,
             $totalPending,
             $totalConfirmed,

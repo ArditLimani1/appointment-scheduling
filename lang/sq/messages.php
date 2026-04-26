@@ -37,13 +37,14 @@ return [
 
     'settings' => [
         'setup_completed' => 'Konfigurimi i biznesit përfundoi. Mirë se erdhe në panelin tënd.',
-        'saved' => 'Cilësimet u ruajtën me sukses.',
+        'saved' => 'Konfigurimet u ruajtën me sukses.',
     ],
 
     'schedule' => [
         'day_on' => 'Dita u aktivizua me sukses.',
         'day_off' => 'Dita u çaktivizua me sukses.',
         'break_added' => 'Pushimi u shtua me sukses.',
+        'break_updated' => 'Pushimi u përditësua me sukses.',
         'break_removed' => 'Pushimi u hoq me sukses.',
     ],
 

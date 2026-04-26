@@ -7,12 +7,12 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Default true preserves behaviour for existing businesses that may already use shared resources.
+     * Default false — shared resources is an opt-in feature that admins enable explicitly.
      */
     public function up(): void
     {
         Schema::table('businesses', function (Blueprint $table) {
-            $table->boolean('uses_shared_resources')->default(true)->after('allow_employee_service_edit');
+            $table->boolean('uses_shared_resources')->default(false)->after('allow_employee_service_edit');
         });
     }
 

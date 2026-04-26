@@ -10,6 +10,7 @@ import {
     sanitizeBookingPlainText,
     validateBookingDetails,
 } from '@/utils/bookingClientDetails';
+import { patchSqMonthName } from '@/utils/appointmentDate';
 
 function toDateString(d) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -77,11 +78,17 @@ function formatDateLabel(ds, locale) {
     if (!ds) return null;
     try {
         const d = new Date(ds + 'T00:00:00');
-        return new Intl.DateTimeFormat(locale || 'sq-AL', {
+        const isSq = String(locale || '').toLowerCase().startsWith('sq');
+        const monthStyle = isSq ? 'long' : 'short';
+        let result = new Intl.DateTimeFormat(locale || 'sq-AL', {
             weekday: 'short',
-            month: 'short',
+            month: monthStyle,
             day: 'numeric',
         }).format(d);
+        if (isSq) {
+            result = patchSqMonthName(result, d, monthStyle);
+        }
+        return result;
     } catch {
         return ds;
     }
@@ -681,6 +688,8 @@ export default function Index({
                                     <div className="rounded-2xl bg-surface-container-lowest p-4 ring-1 ring-slate-100 shadow-sm">
                                         <div className="flex w-full justify-center">
                                             <DatePicker
+                                                labelClassName="text-center w-full ml-0"
+                                                showClear={false}
                                                 label={t('booking_ui.steps.date_label')}
                                                 value={selectedDate ?? ''}
                                                 onChange={(value) => {

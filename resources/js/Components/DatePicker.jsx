@@ -1,14 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { usePage } from '@inertiajs/react';
 import Icon from '@/Components/Icon';
-
-const MONTHS = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
-];
-
-const WEEKDAY_LABELS_SUNDAY_FIRST = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-const WEEKDAY_LABELS_MONDAY_FIRST = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+import { sqMonthName, patchSqMonthName } from '@/utils/appointmentDate';
 
 function buildDateString(year, month, day) {
     return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -22,12 +16,31 @@ function parseYmd(ymd) {
     return { y, m0: m - 1, d };
 }
 
-function formatDisplayDate(dateString) {
+function capitalizeFirst(s) {
+    if (!s) return s;
+    return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function resolveLocale(localeBcp47, localeCode) {
+    if (localeBcp47 && String(localeBcp47).trim() !== '') {
+        return String(localeBcp47);
+    }
+    return String(localeCode || '').toLowerCase().startsWith('sq') ? 'sq-AL' : 'en-GB';
+}
+
+function formatDisplayDate(dateString, localeBcp47, localeCode) {
     if (!dateString) return null;
     const clean = String(dateString).slice(0, 10);
     const [year, month, day] = clean.split('-').map(Number);
     if (!year || !month || !day || isNaN(day)) return null;
-    return `${MONTHS[month - 1].slice(0, 3)} ${day}, ${year}`;
+    const d = new Date(year, month - 1, day);
+    const effectiveLocale = resolveLocale(localeBcp47, localeCode);
+    const isSq = String(effectiveLocale).toLowerCase().startsWith('sq');
+    if (isSq) {
+        return `${day} ${sqMonthName(d, 'long')} ${year}`;
+    }
+    const monthShort = d.toLocaleDateString(effectiveLocale, { month: 'short' });
+    return `${monthShort} ${day}, ${year}`;
 }
 
 function getTodayStringLocal() {
@@ -62,7 +75,13 @@ export default function DatePicker({
     weekStartsOn = 'monday',
     /** When set, "Today" highlight and Today button use this Y-m-d (e.g. business timezone day from server). */
     todayDateString = '',
+    /** When false, hide the inline clear (X) control; chevron still opens the calendar. */
+    showClear = true,
+    labelClassName = 'ml-1',
 }) {
+    const { localeBcp47, locale } = usePage().props;
+    const effectiveLocale = resolveLocale(localeBcp47, locale);
+    const isSqLocale = String(effectiveLocale).toLowerCase().startsWith('sq');
     const todayLocal = new Date();
     const todayStringResolved = normalizeDate(todayDateString) || getTodayStringLocal();
 
@@ -84,7 +103,15 @@ export default function DatePicker({
     const containerRef = useRef(null);
     const dropdownRef = useRef(null);
 
-    const weekdayLabels = weekStartsOn === 'monday' ? WEEKDAY_LABELS_MONDAY_FIRST : WEEKDAY_LABELS_SUNDAY_FIRST;
+    const weekdayLabels = Array.from({ length: 7 }, (_, index) => {
+        const weekdayShift = weekStartsOn === 'monday' ? 1 : 0;
+        const reference = new Date(2024, 0, 7 + ((index + weekdayShift) % 7)); // 2024-01-07 is Sunday.
+        return reference.toLocaleDateString(effectiveLocale, { weekday: 'short' });
+    });
+    const monthHeaderDate = new Date(viewYear, viewMonth, 1);
+    const monthHeaderLabel = isSqLocale
+        ? `${sqMonthName(monthHeaderDate, 'long')} ${viewYear}`
+        : monthHeaderDate.toLocaleDateString(effectiveLocale, { month: 'long', year: 'numeric' });
 
     useEffect(() => {
         if (normalizedValue) {
@@ -212,7 +239,7 @@ export default function DatePicker({
                     <Icon name="chevron_left" size="text-base" className="text-on-surface-variant" />
                 </button>
                 <span className="text-xs font-bold text-on-surface select-none">
-                    {MONTHS[viewMonth]} {viewYear}
+                    {monthHeaderLabel}
                 </span>
                 <button
                     type="button"
@@ -277,7 +304,7 @@ export default function DatePicker({
                     }}
                     className="text-xs font-bold text-outline hover:text-on-surface transition-colors px-1 py-1"
                 >
-                    Clear
+                    {isSqLocale ? 'Pastro' : 'Clear'}
                 </button>
                 <button
                     type="button"
@@ -285,7 +312,7 @@ export default function DatePicker({
                     disabled={isYmdDisabled(todayStringResolved, minNorm, maxNorm)}
                     className="text-xs font-bold text-on-surface hover:opacity-60 transition-opacity px-1 py-1 disabled:opacity-30 disabled:pointer-events-none"
                 >
-                    Today
+                    {isSqLocale ? 'Sot' : 'Today'}
                 </button>
             </div>
         </div>
@@ -294,7 +321,9 @@ export default function DatePicker({
     return (
         <div className={`flex flex-col gap-1.5 ${className}`.trim()} ref={containerRef}>
             {label && (
-                <label className="text-[10px] font-bold uppercase tracking-widest text-outline ml-1">
+                <label
+                    className={`text-[10px] font-bold uppercase tracking-widest text-outline ${labelClassName}`.trim()}
+                >
                     {label}
                 </label>
             )}
@@ -311,9 +340,9 @@ export default function DatePicker({
                 >
                     <Icon name="calendar_month" size="text-base" className="text-outline shrink-0" />
                     <span className={`flex-1 truncate ${normalizedValue ? 'text-on-surface font-medium' : 'text-outline'}`}>
-                        {normalizedValue ? formatDisplayDate(normalizedValue) : placeholder}
+                        {normalizedValue ? formatDisplayDate(normalizedValue, localeBcp47, locale) : placeholder}
                     </span>
-                    {normalizedValue ? (
+                    {normalizedValue && showClear ? (
                         <span
                             role="button"
                             tabIndex={0}

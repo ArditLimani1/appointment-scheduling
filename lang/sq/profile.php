@@ -5,7 +5,7 @@ return [
     'edit' => [
         'head_title' => 'Profili',
         'section_kicker' => 'Llogaria',
-        'title' => 'Cilësimet e profilit',
+        'title' => 'Konfigurimet e profilit',
         'subtitle' => 'Menaxhoni të dhënat personale dhe sigurinë e llogarisë, me të njëjtën pamje si në pjesën tjetër të aplikacionit.',
         'language' => 'Gjuha',
         'language_hint' => 'Përdoret në gjithë aplikacionin dhe ruhet në llogarinë tënde.',

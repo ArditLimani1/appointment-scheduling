@@ -18,11 +18,11 @@ class AnalyticsExport implements FromArray, WithHeadings, WithStrictNullComparis
     public function headings(): array
     {
         return [
-            'Employee',
-            'Cancelled',
-            'Pending',
-            'Confirmed',
-            'Revenue',
+            __('exports.excel.analytics.employee'),
+            __('exports.excel.analytics.cancelled'),
+            __('exports.excel.analytics.pending'),
+            __('exports.excel.analytics.confirmed'),
+            __('exports.excel.analytics.revenue'),
         ];
     }
 
@@ -42,7 +42,7 @@ class AnalyticsExport implements FromArray, WithHeadings, WithStrictNullComparis
 
         // Summary row
         $rows[] = [
-            'TOTAL',
+            __('exports.excel.analytics.total'),
             (int) array_sum(array_column($this->employeeStats, 'cancelled_count')),
             (int) array_sum(array_column($this->employeeStats, 'pending_count')),
             (int) array_sum(array_column($this->employeeStats, 'confirmed_count')),

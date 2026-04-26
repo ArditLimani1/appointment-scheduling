@@ -172,6 +172,8 @@ export default function Index({
     const t = useT();
     const page = usePage();
     const { auth } = page.props;
+    const localeBcp47 = page.props?.localeBcp47;
+    const monthStyle = String(localeBcp47 || '').toLowerCase().startsWith('sq') ? 'long' : 'short';
     const inertiaUrl = typeof page.url === 'string' ? page.url : `${window.location.pathname}${window.location.search}`;
     const CURRENCY_SYMBOLS = { EUR: '€', USD: '$', GBP: '£', CHF: 'CHF' };
     const currencySymbol = CURRENCY_SYMBOLS[auth?.business?.currency] ?? auth?.business?.currency_symbol ?? '€';
@@ -562,7 +564,7 @@ export default function Index({
                                             <td className="px-4 py-5 text-sm text-on-surface-variant sm:px-6 lg:px-8">{apt.service?.name || '—'}</td>
                                             <td className="px-4 py-5 sm:px-6 lg:px-8">
                                                 <p className="text-sm font-semibold text-on-surface">
-                                                    {formatAppointmentDate(apt.date, { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                    {formatAppointmentDate(apt.date, { day: 'numeric', month: monthStyle, year: 'numeric' }, localeBcp47)}
                                                 </p>
                                                 <p className="text-xs text-on-surface-variant">
                                                     {formatTimeHm(apt.start_time)} – {formatTimeHm(apt.end_time)}

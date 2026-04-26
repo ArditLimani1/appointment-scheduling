@@ -53,6 +53,7 @@ class DatabaseSeeder extends Seeder
             'is_active' => true,
             'client_identifier_type' => 'phone',
             'allow_employee_service_edit' => true,
+            'uses_shared_resources' => false,
         ]);
 
         $john = User::create([

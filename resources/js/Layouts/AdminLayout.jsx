@@ -228,7 +228,6 @@ export default function AdminLayout({ children }) {
                                 {t('layout.admin.booking_page')}
                             </a>
                         )}
-                        <LanguageSwitcher className="hidden sm:block" />
                         <Dropdown>
                             <Dropdown.Trigger>
                                 <button className="flex items-center rounded-full p-0.5 hover:bg-surface-container transition-colors">
@@ -243,6 +242,10 @@ export default function AdminLayout({ children }) {
                                     <Dropdown.Link href={route('admin.settings.index')}>{t('layout.admin.configuration')}</Dropdown.Link>
                                 )}
                                 <Dropdown.Link href={route('logout')} method="post" as="button">{t('layout.admin.log_out')}</Dropdown.Link>
+                                <div className="mt-1 flex items-center justify-between gap-2 border-t border-outline-variant/40 px-4 py-2.5">
+                                    <span className="text-xs font-medium text-on-surface-variant">{t('common.language')}</span>
+                                    <LanguageSwitcher />
+                                </div>
                             </Dropdown.Content>
                         </Dropdown>
                     </div>

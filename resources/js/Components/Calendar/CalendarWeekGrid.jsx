@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { usePage } from '@inertiajs/react';
 import {
     DndContext,
     PointerSensor,
@@ -10,7 +11,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import Icon from '@/Components/Icon';
 import { getEmployeeSlotStyles } from '@/utils/employeeCalendarColor';
-import { appointmentStatusValue, formatTimeHm, minutesToTimeHm, timeToMinutes } from '@/utils/appointmentDate';
+import { appointmentStatusValue, formatTimeHm, minutesToTimeHm, sqWeekdayName, timeToMinutes } from '@/utils/appointmentDate';
 
 /** Busy / invalid slot while dragging — same for column bands and drop preview (matches hover feedback). */
 const BUSY_CONFLICT_OVERLAY_CLASS =
@@ -143,8 +144,12 @@ function dragSnapMinutes(gridLineMinutes, serviceDurationMinutes) {
     return Math.min(g, svc);
 }
 
-function dayLabel(d) {
-    return d.toLocaleDateString('en-GB', { weekday: 'short' });
+function dayLabel(d, localeBcp47) {
+    const isSq = String(localeBcp47 || '').toLowerCase().startsWith('sq');
+    if (isSq) {
+        return sqWeekdayName(d, 'long');
+    }
+    return d.toLocaleDateString(localeBcp47 || undefined, { weekday: 'short' });
 }
 
 function dayNum(d) {
@@ -535,6 +540,7 @@ function DayColumn({
      * semi-transparent red markers; use ring-only drop feedback instead.
      */
     droppableHoverOutlineOnly = false,
+    localeBcp47 = undefined,
 }) {
     const { setNodeRef, isOver } = useDroppable({
         id: `calendar-day-${dateStr}`,
@@ -560,8 +566,12 @@ function DayColumn({
                     isToday ? 'bg-red-50/40' : 'bg-white'
                 }`}
             >
-                <span className="max-w-full truncate text-[9px] font-bold uppercase leading-tight tracking-tight text-on-surface-variant sm:text-[11px] sm:tracking-wide">
-                    {dayLabel(dateObj)}
+                <span
+                    className={`max-w-full truncate text-[9px] font-bold leading-tight tracking-tight text-on-surface-variant sm:text-[11px] sm:tracking-wide ${
+                        String(localeBcp47 || '').toLowerCase().startsWith('sq') ? '' : 'uppercase'
+                    }`}
+                >
+                    {dayLabel(dateObj, localeBcp47)}
                 </span>
                 <span
                     className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center text-[11px] font-extrabold sm:mt-1 sm:h-8 sm:w-8 sm:text-sm ${
@@ -632,6 +642,7 @@ export default function CalendarWeekGrid({
     /** Logged-in employee id in employee calendar — resolves per-employee break/day-off map when not dragging. */
     selfViewEmployeeId = null,
 }) {
+    const { localeBcp47 } = usePage().props;
     const { rangeStartMin, rangeEndMin, minutesInView, gridMinHeight, gridWithHeaderMinHeight, segments, gridLineMinutes } = useMemo(
         () => resolveCalendarRange(calendarHours, slotDurationMinutes),
         [calendarHours?.start, calendarHours?.end, slotDurationMinutes],
@@ -1017,6 +1028,7 @@ export default function CalendarWeekGrid({
                                     rangeEndMin={rangeEndMin}
                                     minutesInView={minutesInView}
                                     droppableHoverOutlineOnly={droppableHoverOutlineOnly}
+                                    localeBcp47={localeBcp47}
                                 >
                                     <div className="pointer-events-none absolute inset-0">
                                         {nowLinePct != null && isToday && (

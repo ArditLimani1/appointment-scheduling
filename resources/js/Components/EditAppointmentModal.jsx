@@ -10,6 +10,18 @@ function toDateString(d) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+function addMinutesToTimeString(hm, minutesToAdd) {
+    if (!hm || !Number.isFinite(minutesToAdd) || minutesToAdd <= 0) return null;
+    const [hRaw, mRaw] = String(hm).split(':');
+    const h = Number.parseInt(hRaw, 10);
+    const m = Number.parseInt(mRaw, 10);
+    if (Number.isNaN(h) || Number.isNaN(m)) return null;
+    const totalMinutes = ((h * 60 + m + minutesToAdd) % (24 * 60) + (24 * 60)) % (24 * 60);
+    const hh = Math.floor(totalMinutes / 60);
+    const mm = totalMinutes % 60;
+    return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+}
+
 const CURRENCY_SYMBOLS = { EUR: '€', USD: '$', GBP: '£', CHF: 'CHF' };
 
 export default function EditAppointmentModal({
@@ -169,6 +181,12 @@ export default function EditAppointmentModal({
         }
         return [...set].sort();
     }, [slots, form.start_time, form.date, apptDate, appointment.start_time, sameServiceAsRecord]);
+
+    const selectedServiceDuration = useMemo(() => {
+        if (!form.service_id) return 0;
+        const selected = services.find((s) => String(s.id) === String(form.service_id));
+        return Number(selected?.duration) || 0;
+    }, [services, form.service_id]);
 
     // Drop invalid time when slots update: keep selection only if it appears in API slots, or (same service only)
     // if it is the saved time missing from the list (break edge case). Changing service re-validates against new slots.
@@ -501,7 +519,10 @@ export default function EditAppointmentModal({
                                                             : 'bg-slate-100 text-on-surface hover:bg-slate-200'
                                                     }`}
                                                 >
-                                                    {slotHm}
+                                                    {(() => {
+                                                        const endHm = addMinutesToTimeString(slotHm, selectedServiceDuration);
+                                                        return endHm ? `${slotHm} - ${endHm}` : slotHm;
+                                                    })()}
                                                 </button>
                                             ))}
                                         </div>

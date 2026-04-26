@@ -7,7 +7,7 @@ import FilterListbox from '@/Components/FilterListbox';
 import FilterStatusMulti from '@/Components/FilterStatusMulti';
 import PageHeader from '@/Components/PageHeader';
 import EditAppointmentModal from '@/Components/EditAppointmentModal';
-import { appointmentStatusValue, formatAppointmentDate, formatTimeHm } from '@/utils/appointmentDate';
+import { appointmentStatusValue, formatAppointmentDate, formatTimeHm, patchSqMonthName } from '@/utils/appointmentDate';
 import {
     appendAppointmentStatusParams,
     DEFAULT_APPOINTMENT_STATUS_FILTER,
@@ -90,10 +90,14 @@ function normalizeAppointments(appointments) {
     return { rows, meta: appointments };
 }
 
-function fmt(d, opts) {
+function fmt(d, opts, localeBcp47) {
     try {
         if (!d || Number.isNaN(d.getTime())) return '—';
-        return new Intl.DateTimeFormat('en-GB', opts).format(d);
+        let result = new Intl.DateTimeFormat(localeBcp47 || undefined, opts).format(d);
+        if (opts?.month && String(localeBcp47 || '').toLowerCase().startsWith('sq')) {
+            result = patchSqMonthName(result, d, opts.month);
+        }
+        return result;
     } catch {
         return '—';
     }
@@ -226,7 +230,7 @@ export default function EmployeeAppointmentsIndex({
 }) {
     const filters = filtersProp ?? {};
     const t = useT();
-    const { auth } = usePage().props;
+    const { auth, localeBcp47 } = usePage().props;
     const business = auth?.business;
     const permissions = Array.isArray(auth?.permissions) ? auth.permissions : [];
     const canAppointments = permissions.includes('employee.appointments');
@@ -365,6 +369,7 @@ export default function EmployeeAppointmentsIndex({
     const isRange = localFilters.date_from !== localFilters.date_to;
 
     const rangeLabel = useMemo(() => {
+        const monthStyle = String(localeBcp47 || '').toLowerCase().startsWith('sq') ? 'long' : 'short';
         const from = localFilters.date_from ?? currentMonthStart();
         const to = localFilters.date_to ?? currentMonthEnd();
         const d1 = new Date(`${from}T12:00:00`);
@@ -373,10 +378,10 @@ export default function EmployeeAppointmentsIndex({
             return '—';
         }
         if (!isRange) {
-            return fmt(d1, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            return fmt(d1, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }, localeBcp47);
         }
-        return `${fmt(d1, { day: 'numeric', month: 'short', year: 'numeric' })} – ${fmt(d2, { day: 'numeric', month: 'short', year: 'numeric' })}`;
-    }, [localFilters.date_from, localFilters.date_to, isRange]);
+        return `${fmt(d1, { day: 'numeric', month: monthStyle, year: 'numeric' }, localeBcp47)} – ${fmt(d2, { day: 'numeric', month: monthStyle, year: 'numeric' }, localeBcp47)}`;
+    }, [localFilters.date_from, localFilters.date_to, isRange, localeBcp47]);
 
     const handleConfirm = (apt) => {
         router.patch(route('employee.appointments.update', apt.id), { status: 'confirmed' }, { preserveScroll: true });
@@ -627,9 +632,9 @@ export default function EmployeeAppointmentsIndex({
                                                         <span>
                                                             {formatAppointmentDate(apt.date, {
                                                                 day: 'numeric',
-                                                                month: 'short',
+                                                                month: String(localeBcp47 || '').toLowerCase().startsWith('sq') ? 'long' : 'short',
                                                                 year: 'numeric',
-                                                            })}
+                                                            }, localeBcp47)}
                                                         </span>
                                                         <span className="inline-flex items-center gap-1 font-semibold text-on-surface">
                                                             <Icon name="schedule" size="text-sm" className="text-on-surface-variant" />
@@ -726,9 +731,9 @@ export default function EmployeeAppointmentsIndex({
                                                     <p className="text-on-surface text-sm font-semibold">
                                                         {formatAppointmentDate(apt.date, {
                                                             day: 'numeric',
-                                                            month: 'short',
+                                                            month: String(localeBcp47 || '').toLowerCase().startsWith('sq') ? 'long' : 'short',
                                                             year: 'numeric',
-                                                        })}
+                                                        }, localeBcp47)}
                                                     </p>
                                                 </td>
                                                 <td className="py-4 pr-3 whitespace-nowrap">

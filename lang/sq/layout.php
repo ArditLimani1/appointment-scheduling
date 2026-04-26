@@ -12,7 +12,7 @@ return [
         'admin_user' => 'Administrator',
         'logout' => 'Dil',
         'profile' => 'Profili',
-        'configuration' => 'Cilësimet',
+        'configuration' => 'Konfigurimet',
         'log_out' => 'Dil nga llogaria',
         'nav' => [
             'dashboard' => 'Paneli',
@@ -54,7 +54,7 @@ return [
             'roles' => 'Rolet',
             'admin_appointments' => 'Terminet',
             'admin_analytics' => 'Statistika',
-            'admin_configuration' => 'Cilësimet',
+            'admin_configuration' => 'Konfigurimet',
         ],
         'mobile' => [
             'appts' => 'Termin.',

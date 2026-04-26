@@ -74,13 +74,13 @@ class EmployeeAppointmentsExport implements FromQuery, WithHeadings, WithMapping
     public function headings(): array
     {
         return [
-            'Client Name',
-            'Contact',
-            'Service',
-            'Date',
-            'Time',
-            'Status',
-            'Price',
+            __('exports.excel.my_appointments.client_name'),
+            __('exports.excel.my_appointments.contact'),
+            __('exports.excel.my_appointments.service'),
+            __('exports.excel.my_appointments.date'),
+            __('exports.excel.my_appointments.time'),
+            __('exports.excel.my_appointments.status'),
+            __('exports.excel.my_appointments.price'),
         ];
     }
 
@@ -89,15 +89,15 @@ class EmployeeAppointmentsExport implements FromQuery, WithHeadings, WithMapping
      */
     public function map($appointment): array
     {
-        $contact = $appointment->client_email ?: $appointment->client_phone ?: '—';
+        $contact = $appointment->client_email ?: $appointment->client_phone ?: __('exports.common.none');
 
         return [
             $appointment->client_first_name.' '.$appointment->client_last_name,
             $contact,
-            $appointment->service?->name ?? 'N/A',
-            $appointment->date->format('Y-m-d'),
+            $appointment->service?->name ?? __('exports.common.not_available'),
+            $appointment->date->locale(app()->getLocale())->translatedFormat('d F Y'),
             $appointment->start_time.' - '.$appointment->end_time,
-            $appointment->status->label(),
+            __('exports.common.'.$appointment->status->value),
             $appointment->price,
         ];
     }

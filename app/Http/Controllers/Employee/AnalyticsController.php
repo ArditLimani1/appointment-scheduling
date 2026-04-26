@@ -38,7 +38,7 @@ class AnalyticsController extends Controller
                 $data['service_stats'],
                 $data['currency_symbol'],
             ),
-            'employee-analytics-'.$filters['date_from'].'_'.$filters['date_to'].'.xlsx'
+            __('exports.files.employee_analytics').'-'.$filters['date_from'].'_'.$filters['date_to'].'.xlsx'
         );
     }
 
@@ -53,17 +53,19 @@ class AnalyticsController extends Controller
         $pdf = Pdf::loadView('exports.employee-analytics-pdf', [
             'employeeName' => $user->name,
             'businessName' => $business?->name ?? '',
-            'generatedAt' => Carbon::now()->format('d M Y, H:i'),
+            'generatedAt' => Carbon::now()->locale(app()->getLocale())->translatedFormat('d F Y, H:i'),
             'dateFrom' => $filters['date_from'],
             'dateTo' => $filters['date_to'],
-            'serviceFilter' => $data['selected_service_name'] ?? 'All services',
+            'serviceFilter' => $data['selected_service_name'] ?? __('exports.common.all_services'),
             'summary' => $data['summary'],
             'serviceStats' => $data['service_stats'],
             'monthlyPerformance' => $data['monthly_performance'],
             'currencySymbol' => $data['currency_symbol'],
         ])->setPaper('a4', 'landscape');
 
-        return $pdf->download('employee-analytics-'.$filters['date_from'].'_'.$filters['date_to'].'.pdf');
+        return $pdf->download(
+            __('exports.files.employee_analytics').'-'.$filters['date_from'].'_'.$filters['date_to'].'.pdf'
+        );
     }
 
     /**
