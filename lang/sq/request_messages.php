@@ -31,4 +31,14 @@ return [
         'slug_unique' => 'Kjo adresë rezervimi përdoret tashmë nga një biznes tjetër i regjistruar.',
     ],
 
+    'schedule' => [
+        'end_time_after_start' => 'Ora e mbarimit duhet të jetë pas orës së fillimit.',
+        'break_end_after_start' => 'Ora e mbarimit të pushimit duhet të jetë pas orës së fillimit të pushimit.',
+        'booking_slug_taken' => 'Kjo adresë rezervimi përdoret tashmë nga një anëtar tjetër i ekipit.',
+    ],
+
+    'auth' => [
+        'email_not_verified' => 'Ju lutemi, verifikoni emailin përpara se të hyni. Ju kemi dërguar një lidhje të re verifikimi.',
+    ],
+
 ];

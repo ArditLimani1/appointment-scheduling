@@ -58,7 +58,7 @@ class LoginRequest extends FormRequest
             $this->session()->regenerateToken();
 
             throw ValidationException::withMessages([
-                'email' => 'Please verify your email before logging in. We sent you a fresh verification link.',
+                'email' => __('request_messages.auth.email_not_verified'),
             ]);
         }
     }

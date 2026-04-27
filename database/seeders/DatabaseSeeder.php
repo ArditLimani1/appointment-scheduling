@@ -33,7 +33,10 @@ class DatabaseSeeder extends Seeder
             'role' => UserRole::Admin,
             'is_active' => true,
         ]);
-        $admin->forceFill(['email_verified_at' => now()])->save();
+        $admin->forceFill([
+            'email_verified_at' => now(),
+            'onboarding_completed_at' => now(),
+        ])->save();
 
         $barbershopTypeId = BusinessType::query()->where('name', 'Barbershop')->value('id');
 
@@ -101,6 +104,10 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $employees = [$john, $sarah, $marcus, $elena];
+
+        foreach ($employees as $employee) {
+            $employee->forceFill(['onboarding_completed_at' => now()])->save();
+        }
 
         $limitedAdminPermissions = array_values(array_unique(array_merge(
             [

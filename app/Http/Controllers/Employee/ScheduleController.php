@@ -66,12 +66,12 @@ class ScheduleController extends Controller
         $this->scheduleService->saveOverrides(auth()->user(), Arr::only($validated, ['days']));
 
         $message = match ($context) {
-            'day_on' => 'Day set to on successfully.',
-            'day_off' => 'Day set to off successfully.',
-            'break_added' => 'Break added successfully.',
-            'break_updated' => 'Break updated successfully.',
-            'break_removed' => 'Break removed successfully.',
-            'day_time_updated' => 'Day hours updated successfully.',
+            'day_on' => __('messages.schedule.day_on'),
+            'day_off' => __('messages.schedule.day_off'),
+            'break_added' => __('messages.schedule.break_added'),
+            'break_updated' => __('messages.schedule.break_updated'),
+            'break_removed' => __('messages.schedule.break_removed'),
+            'day_time_updated' => __('messages.schedule.day_time_updated'),
         };
 
         return redirect()->back()
@@ -124,7 +124,7 @@ class ScheduleController extends Controller
                         return;
                     }
                     if ($this->bookingSlugTakenByOtherStaff((int) $user->business_id, (int) $user->id, (string) $value)) {
-                        $fail('This booking URL is already being used by another team member.');
+                        $fail(__('errors.schedule.booking_slug_taken'));
                     }
                 },
             ],
@@ -133,7 +133,7 @@ class ScheduleController extends Controller
         $user->update(['booking_slug' => $request->validated('booking_slug')]);
 
         return redirect()->back()
-            ->with('success', 'Configuration saved successfully.')
+            ->with('success', __('messages.settings.saved'))
             ->with('flash_nonce', uniqid('', true));
     }
 
@@ -170,7 +170,7 @@ class ScheduleController extends Controller
         $this->scheduleService->updateSchedules(auth()->user(), $request->validated());
 
         return redirect()->back()
-            ->with('success', 'Configuration saved successfully.')
+            ->with('success', __('messages.settings.saved'))
             ->with('flash_nonce', uniqid('', true));
     }
 

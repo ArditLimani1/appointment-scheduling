@@ -23,7 +23,7 @@ class User extends Authenticatable implements MustVerifyEmailContract
     use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
-        'name', 'email', 'password', 'role', 'user_type', 'phone', 'title', 'avatar', 'is_active', 'business_id', 'business_role_id', 'also_works_as_staff', 'booking_slug', 'locale',
+        'name', 'email', 'password', 'role', 'user_type', 'phone', 'title', 'avatar', 'is_active', 'business_id', 'business_role_id', 'also_works_as_staff', 'booking_slug', 'locale', 'onboarding_completed_at',
     ];
 
     protected $hidden = [
@@ -34,12 +34,34 @@ class User extends Authenticatable implements MustVerifyEmailContract
     {
         return [
             'email_verified_at' => 'datetime',
+            'onboarding_completed_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
             'also_works_as_staff' => 'boolean',
             'role' => UserRole::class,
             'user_type' => UserType::class,
         ];
+    }
+
+    public function hasCompletedOnboarding(): bool
+    {
+        return $this->onboarding_completed_at !== null;
+    }
+
+    /**
+     * Super admins skip onboarding entirely; only role-based admins/employees go through it.
+     */
+    public function requiresOnboarding(): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return false;
+        }
+
+        if (! ($this->isAdmin() || $this->isEmployee())) {
+            return false;
+        }
+
+        return ! $this->hasCompletedOnboarding();
     }
 
     public function isOwnerOf(Business $business): bool

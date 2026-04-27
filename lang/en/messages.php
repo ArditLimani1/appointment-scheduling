@@ -46,10 +46,19 @@ return [
         'break_added' => 'Break added successfully.',
         'break_updated' => 'Break updated successfully.',
         'break_removed' => 'Break removed successfully.',
+        'day_time_updated' => 'Day hours updated successfully.',
     ],
 
     'business' => [
         'setup_required' => 'Please complete your business setup before continuing.',
+    ],
+
+    'onboarding' => [
+        'completed' => 'Initial setup completed successfully. Welcome aboard!',
+    ],
+
+    'auth' => [
+        'verification_link_sent' => 'We sent you a verification link. Please verify your email before signing in.',
     ],
 
 ];
