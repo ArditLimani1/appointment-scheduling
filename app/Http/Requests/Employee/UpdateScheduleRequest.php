@@ -25,7 +25,7 @@ class UpdateScheduleRequest extends FormRequest
                     $startTime = data_get($this->all(), $startPath);
 
                     if ($startTime && $value && $value <= $startTime) {
-                        $fail('The end time must be after the start time.');
+                        $fail(__('request_messages.schedule.end_time_after_start'));
                     }
                 },
             ],
@@ -40,7 +40,7 @@ class UpdateScheduleRequest extends FormRequest
                     $startTime = data_get($this->all(), $startPath);
 
                     if ($startTime && $value && $value <= $startTime) {
-                        $fail('The break end time must be after the break start time.');
+                        $fail(__('request_messages.schedule.break_end_after_start'));
                     }
                 },
             ],

@@ -46,10 +46,19 @@ return [
         'break_added' => 'Pushimi u shtua me sukses.',
         'break_updated' => 'Pushimi u përditësua me sukses.',
         'break_removed' => 'Pushimi u hoq me sukses.',
+        'day_time_updated' => 'Orët e ditës u përditësuan me sukses.',
     ],
 
     'business' => [
         'setup_required' => 'Ju lutemi, përfundoni konfigurimin e biznesit përpara se të vazhdoni.',
+    ],
+
+    'onboarding' => [
+        'completed' => 'Konfigurimi fillestar përfundoi me sukses. Mirë se erdhe!',
+    ],
+
+    'auth' => [
+        'verification_link_sent' => 'Ju kemi dërguar një lidhje verifikimi. Ju lutemi, verifikoni emailin përpara se të hyni.',
     ],
 
 ];

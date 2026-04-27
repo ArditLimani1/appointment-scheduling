@@ -5,6 +5,7 @@ use App\Http\Middleware\EnsureAdminPanelAccess;
 use App\Http\Middleware\EnsureBusinessExists;
 use App\Http\Middleware\EnsureBusinessUsesSharedResources;
 use App\Http\Middleware\EnsureEmployeeOrAdmin;
+use App\Http\Middleware\EnsureOnboardingCompleted;
 use App\Http\Middleware\EnsurePermission;
 use App\Http\Middleware\EnsureSuperAdmin;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -38,6 +39,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => EnsurePermission::class,
             'super_admin' => EnsureSuperAdmin::class,
             'business_uses_shared_resources' => EnsureBusinessUsesSharedResources::class,
+            'onboarding_completed' => EnsureOnboardingCompleted::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

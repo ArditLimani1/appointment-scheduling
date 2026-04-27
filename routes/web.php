@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Booking\BookingController;
 use App\Http\Controllers\Employee;
 use App\Http\Controllers\LocaleController;
+use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SuperAdmin;
 use Illuminate\Support\Facades\Route;
@@ -26,6 +27,10 @@ Route::get('/dashboard', function () {
         return redirect()->route('super-admin.dashboard');
     }
 
+    if ($user->requiresOnboarding()) {
+        return redirect()->route('onboarding.show');
+    }
+
     if ($user->hasAdminPanelAccess()) {
         return redirect()->route('admin.dashboard');
     }
@@ -39,13 +44,21 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+Route::middleware(['auth', 'verified', 'employee_area'])->prefix('onboarding')->name('onboarding.')->group(function () {
+    Route::get('/', [OnboardingController::class, 'show'])->name('show');
+    Route::patch('/business-settings', [OnboardingController::class, 'updateBusinessSettings'])->name('business_settings');
+    Route::patch('/booking-slug', [OnboardingController::class, 'updateBookingSlug'])->name('booking_slug');
+    Route::put('/schedule', [OnboardingController::class, 'updateSchedule'])->name('schedule');
+    Route::post('/complete', [OnboardingController::class, 'complete'])->name('complete');
+});
+
 Route::get('/book/confirmation/{appointment}', [BookingController::class, 'confirmation'])->name('booking.confirmation');
 Route::get('/book/{slug}', [BookingController::class, 'index'])->name('booking.index');
 Route::get('/book/{slug}/slots', [BookingController::class, 'getAvailableSlots'])->middleware('throttle:60,1')->name('booking.slots');
 Route::get('/book/{slug}/{employeeSlug}', [BookingController::class, 'indexEmployee'])->name('booking.employee');
 Route::post('/book/{slug}', [BookingController::class, 'store'])->middleware('throttle:10,1')->name('booking.store');
 
-Route::middleware(['auth', 'admin_panel', 'has_business'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'admin_panel', 'onboarding_completed', 'has_business'])->prefix('admin')->name('admin.')->group(function () {
     Route::middleware('permission:admin.dashboard')->group(function () {
         Route::get('/dashboard', [Admin\DashboardController::class, 'index'])->name('dashboard');
     });
@@ -119,7 +132,7 @@ Route::post('/super-admin/stop-impersonating', [SuperAdmin\UserController::class
     ->middleware('auth')
     ->name('super-admin.stop-impersonating');
 
-Route::middleware(['auth', 'employee_area'])->prefix('employee')->name('employee.')->group(function () {
+Route::middleware(['auth', 'employee_area', 'onboarding_completed'])->prefix('employee')->name('employee.')->group(function () {
     Route::middleware('permission:employee.dashboard')->group(function () {
         Route::get('/dashboard', [Employee\DashboardController::class, 'index'])->name('dashboard');
         Route::get('/appointments', [Employee\AppointmentController::class, 'index'])->name('appointments.index');

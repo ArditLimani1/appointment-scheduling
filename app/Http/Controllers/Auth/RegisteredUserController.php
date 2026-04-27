@@ -70,7 +70,6 @@ class RegisteredUserController extends Controller
                 'regex:/^\+?[1-9]\d{7,14}$/',
             ],
             'logo' => 'nullable|image|max:2048',
-            'also_works_as_staff' => ['sometimes', 'boolean'],
             'business_type_id' => [
                 'required',
                 'integer',
@@ -97,7 +96,7 @@ class RegisteredUserController extends Controller
                     'role' => UserRole::Admin,
                 ]);
 
-                $business = Business::create([
+                Business::create([
                     'owner_id' => $user->id,
                     'business_type_id' => (int) $validated['business_type_id'],
                     'name' => $validated['business_name'],
@@ -109,13 +108,6 @@ class RegisteredUserController extends Controller
                     'currency' => 'EUR',
                     'currency_symbol' => '€',
                 ]);
-
-                if (! empty($validated['also_works_as_staff'])) {
-                    $user->update([
-                        'also_works_as_staff' => true,
-                        'business_id' => $business->id,
-                    ]);
-                }
             });
         } catch (\Throwable $exception) {
             if ($logoPath !== null) {
@@ -128,6 +120,6 @@ class RegisteredUserController extends Controller
         event(new Registered($user));
 
         return redirect()->route('login')
-            ->with('status', 'We sent you a verification link. Please verify your email before signing in.');
+            ->with('status', __('messages.auth.verification_link_sent'));
     }
 }

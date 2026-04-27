@@ -31,4 +31,14 @@ return [
         'slug_unique' => 'This booking URL is already used by another registered business.',
     ],
 
+    'schedule' => [
+        'end_time_after_start' => 'The end time must be after the start time.',
+        'break_end_after_start' => 'The break end time must be after the break start time.',
+        'booking_slug_taken' => 'This booking URL is already being used by another team member.',
+    ],
+
+    'auth' => [
+        'email_not_verified' => 'Please verify your email before logging in. We sent you a fresh verification link.',
+    ],
+
 ];

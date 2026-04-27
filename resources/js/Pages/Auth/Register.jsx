@@ -38,7 +38,6 @@ export default function Register({ businessTypeCategories = [] }) {
         location: '',
         phone: '',
         logo: null,
-        also_works_as_staff: false,
     });
 
     const handleBusinessName = (value) => {
@@ -68,7 +67,7 @@ export default function Register({ businessTypeCategories = [] }) {
 
         const stepFieldMap = {
             0: ['name', 'email', 'password', 'password_confirmation'],
-            1: ['business_name', 'business_type_id', 'slug', 'location', 'phone', 'logo', 'also_works_as_staff'],
+            1: ['business_name', 'business_type_id', 'slug', 'location', 'phone', 'logo'],
         };
 
         const firstStepWithError = [0, 1].find((stepNumber) =>
@@ -409,23 +408,6 @@ export default function Register({ businessTypeCategories = [] }) {
                                         <InputError message={errors.logo} className="mt-1" />
                                     </div>
 
-                                    <label className="flex items-start gap-3 rounded-2xl border border-outline-variant/60 bg-surface-container-low/50 px-4 py-3 cursor-pointer hover:bg-surface-container-low transition-colors">
-                                        <input
-                                            type="checkbox"
-                                            className="mt-0.5 rounded border-outline-variant text-on-surface focus:ring-primary/40"
-                                            checked={data.also_works_as_staff}
-                                            onChange={(e) => {
-                                                setData('also_works_as_staff', e.target.checked);
-                                                clearErrors('also_works_as_staff');
-                                            }}
-                                        />
-                                        <span className="text-sm text-on-surface leading-snug">
-                                            <span className="font-semibold">{t('auth_pages.register.also_staff_title')}</span>
-                                            <span className="block text-xs text-on-surface-variant mt-0.5">
-                                                {t('auth_pages.register.also_staff_help')}
-                                            </span>
-                                        </span>
-                                    </label>
                                 </div>
 
                                 <div className="pt-6 flex items-center gap-3">
