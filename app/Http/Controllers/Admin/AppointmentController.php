@@ -8,13 +8,17 @@ use App\Http\Controllers\Concerns\ResolvesAppointmentCalendarQuery;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateAppointmentRequest;
 use App\Http\Requests\Admin\UpdateAppointmentStatusRequest;
+use App\Http\Requests\Appointment\InternalStoreAppointmentRequest;
 use App\Models\Appointment;
 use App\Models\Service;
 use App\Models\User;
 use App\Models\UserAppointmentViewPreference;
+use App\Repositories\Interfaces\EmployeeRepositoryInterface;
+use App\Repositories\Interfaces\ServiceRepositoryInterface;
 use App\Services\Interfaces\AppointmentServiceInterface;
 use App\Services\Interfaces\BookingServiceInterface;
 use App\Services\Interfaces\ScheduleServiceInterface;
+use App\Support\InternalRedirect;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -33,6 +37,8 @@ class AppointmentController extends Controller
         private AppointmentServiceInterface $appointmentService,
         private BookingServiceInterface $bookingService,
         private ScheduleServiceInterface $scheduleService,
+        private EmployeeRepositoryInterface $employeeRepository,
+        private ServiceRepositoryInterface $serviceRepository,
     ) {}
 
     public function index(Request $request): Response|RedirectResponse
@@ -169,6 +175,72 @@ class AppointmentController extends Controller
         $slots = $this->bookingService->getAdminAvailableSlots($business, $request->only([
             'employee_id', 'service_id', 'date', 'exclude_id',
         ]));
+
+        return response()->json(['slots' => $slots]);
+    }
+
+    /** GET — Inertia page that hosts the internal "Krijo termin" form. */
+    public function create(Request $request): Response
+    {
+        $business = $request->user()->panelBusiness();
+        abort_unless($business, 403);
+
+        $employees = $this->employeeRepository->getActiveByBusiness($business->id, [
+            'services' => fn ($q) => $q->where('is_active', true),
+            'schedules',
+        ]);
+
+        $services = $this->serviceRepository->getActiveByBusiness($business->id);
+
+        $timezone = $business->timezone ?: config('app.timezone');
+
+        return Inertia::render('Admin/Appointments/Create', [
+            'business' => $business,
+            'employees' => $employees,
+            'services' => $services,
+            'preselected_employee_id' => null,
+            'return_to' => $this->resolveReturnTo($request),
+            'booking_today' => Carbon::now($timezone)->toDateString(),
+            'context' => 'admin',
+        ]);
+    }
+
+    /** POST — create one or more appointments via the internal admin flow. */
+    public function store(InternalStoreAppointmentRequest $request): RedirectResponse
+    {
+        $business = $request->user()->panelBusiness();
+        abort_unless($business, 403);
+
+        $validated = $request->validated();
+
+        $this->bookingService->createInternalBooking($business, $validated, 'admin');
+
+        return redirect()->to(InternalRedirect::resolve(
+            $validated['return_to'] ?? null,
+            route('admin.appointments.index'),
+        ))
+            ->with('success', __('messages.appointment.created'))
+            ->with('flash_nonce', uniqid('', true));
+    }
+
+    /** GET — slot times for the internal create flow (multi-service aware). */
+    public function internalSlots(Request $request): JsonResponse
+    {
+        $request->validate([
+            'employee_id' => ['required', 'integer', 'exists:users,id'],
+            'service_ids' => ['required', 'array', 'min:1'],
+            'service_ids.*' => ['integer', 'exists:services,id'],
+            'date' => ['required', 'date_format:Y-m-d'],
+        ]);
+
+        $business = auth()->user()->panelBusiness();
+        abort_unless($business, 403);
+
+        $slots = $this->bookingService->getInternalAvailableSlots(
+            $business,
+            $request->only(['employee_id', 'service_ids', 'date']),
+            'admin',
+        );
 
         return response()->json(['slots' => $slots]);
     }
@@ -324,5 +396,21 @@ class AppointmentController extends Controller
         }
 
         return $filters;
+    }
+
+    /**
+     * Reads ?return_to= from the GET request, validates it via InternalRedirect
+     * and forwards a safe value to the Inertia page so the form can echo it back.
+     */
+    private function resolveReturnTo(Request $request): ?string
+    {
+        $raw = $request->query('return_to');
+        if (! is_string($raw) || $raw === '') {
+            return null;
+        }
+
+        $resolved = InternalRedirect::resolve($raw, '');
+
+        return $resolved !== '' ? $resolved : null;
     }
 }

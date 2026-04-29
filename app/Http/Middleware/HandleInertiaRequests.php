@@ -49,6 +49,7 @@ class HandleInertiaRequests extends Middleware
                 'profile' => trans('profile'),
                 'components' => trans('components'),
                 'onboarding' => trans('onboarding'),
+                'welcome' => trans('welcome'),
             ],
             'auth' => [
                 'user' => $user,

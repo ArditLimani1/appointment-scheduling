@@ -16,7 +16,7 @@ class ScheduleOverride extends Model
     {
         return [
             'is_active' => 'boolean',
-            'date'      => 'date:Y-m-d',
+            'date' => 'date:Y-m-d',
         ];
     }
 

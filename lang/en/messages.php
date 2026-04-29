@@ -27,6 +27,7 @@ return [
     ],
 
     'appointment' => [
+        'created' => 'Appointment created successfully.',
         'updated' => 'Appointment updated successfully.',
         'deleted' => 'Appointment deleted successfully.',
     ],

@@ -78,6 +78,9 @@ Route::middleware(['auth', 'admin_panel', 'onboarding_completed', 'has_business'
     Route::middleware('permission:admin.appointments')->group(function () {
         Route::get('/appointments', [Admin\AppointmentController::class, 'index'])->name('appointments.index');
         Route::get('/appointments/calendar', [Admin\AppointmentController::class, 'calendar'])->name('appointments.calendar');
+        Route::get('/appointments/create', [Admin\AppointmentController::class, 'create'])->name('appointments.create');
+        Route::post('/appointments', [Admin\AppointmentController::class, 'store'])->name('appointments.store');
+        Route::get('/appointments/internal-slots', [Admin\AppointmentController::class, 'internalSlots'])->name('appointments.internal-slots');
         Route::get('/appointments/slots', [Admin\AppointmentController::class, 'slots'])->name('appointments.slots');
         Route::get('/appointments/export', [Admin\AppointmentController::class, 'export'])->name('appointments.export');
         Route::get('/appointments/export-pdf', [Admin\AppointmentController::class, 'exportPdf'])->name('appointments.export-pdf');
@@ -159,6 +162,9 @@ Route::middleware(['auth', 'employee_area', 'onboarding_completed'])->prefix('em
 
     Route::middleware('permission:employee.appointments')->group(function () {
         Route::get('/appointments/calendar', [Employee\AppointmentController::class, 'calendar'])->name('appointments.calendar');
+        Route::get('/appointments/create', [Employee\AppointmentController::class, 'create'])->name('appointments.create');
+        Route::post('/appointments', [Employee\AppointmentController::class, 'store'])->name('appointments.store');
+        Route::get('/appointments/internal-slots', [Employee\AppointmentController::class, 'internalSlots'])->name('appointments.internal-slots');
         Route::patch('/appointments/{appointment}', [Employee\AppointmentController::class, 'update'])->name('appointments.update');
         Route::get('/appointments/{appointment}/slots', [Employee\AppointmentController::class, 'slots'])->name('appointments.slots');
         Route::put('/appointments/{appointment}/reschedule', [Employee\AppointmentController::class, 'reschedule'])->name('appointments.reschedule');

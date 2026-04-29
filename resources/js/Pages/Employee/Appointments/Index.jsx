@@ -230,7 +230,8 @@ export default function EmployeeAppointmentsIndex({
 }) {
     const filters = filtersProp ?? {};
     const t = useT();
-    const { auth, localeBcp47 } = usePage().props;
+    const page = usePage();
+    const { auth, localeBcp47 } = page.props;
     const business = auth?.business;
     const permissions = Array.isArray(auth?.permissions) ? auth.permissions : [];
     const canAppointments = permissions.includes('employee.appointments');

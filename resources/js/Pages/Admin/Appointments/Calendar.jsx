@@ -273,6 +273,39 @@ export default function Calendar({
         return null;
     }, [employeeCalendar, normalizedFilters.employee_id, employees]);
 
+    /** Match Employee Appointments Index (xl) vs Admin Appointments Index (lg) filter bar breakpoints. */
+    const calendarFilterBarClasses = useMemo(
+        () =>
+            employeeCalendar
+                ? {
+                      row: 'mt-4 flex flex-col gap-4 border-t border-slate-100 pt-4 xl:flex-row xl:flex-wrap xl:items-end',
+                      employeeWrap: 'flex w-full min-w-0 flex-col gap-1.5 xl:min-w-[180px] xl:flex-1',
+                      dateGrow: 'w-full min-w-0 xl:w-auto',
+                      dateBtnPad: 'max-xl:!min-w-0',
+                      serviceWrap: 'flex w-full min-w-0 shrink-0 flex-col gap-1.5 xl:w-[220px]',
+                      statusMin: 'w-full min-w-0 max-w-full xl:min-w-[200px] xl:w-[220px]',
+                      clearWrap: 'flex w-full shrink-0 items-end justify-end xl:ml-auto xl:w-auto xl:justify-end',
+                      clearBtn:
+                          'w-full rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-slate-50 max-xl:min-h-[2.75rem] xl:mr-2 xl:w-auto',
+                      navWrap: 'flex flex-wrap items-center gap-2 xl:hidden',
+                      clearControlsWrap: 'hidden xl:flex xl:items-center xl:gap-2',
+                  }
+                : {
+                      row: 'mt-4 flex flex-col gap-4 border-t border-slate-100 pt-4 lg:flex-row lg:flex-wrap lg:items-end',
+                      employeeWrap: 'flex w-full min-w-0 flex-col gap-1.5 lg:min-w-[180px] lg:flex-1',
+                      dateGrow: 'w-full min-w-0 lg:w-auto',
+                      dateBtnPad: 'max-lg:!min-w-0',
+                      serviceWrap: 'flex w-full min-w-0 shrink-0 flex-col gap-1.5 lg:w-[220px]',
+                      statusMin: 'w-full min-w-0 max-w-full lg:min-w-[200px] lg:w-[220px]',
+                      clearWrap: 'flex w-full shrink-0 items-end justify-end lg:ml-auto lg:w-auto lg:justify-end',
+                      clearBtn:
+                          'w-full rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-slate-50 max-lg:min-h-[2.75rem] lg:mr-2 lg:w-auto',
+                      navWrap: 'flex flex-wrap items-center gap-2 lg:hidden',
+                      clearControlsWrap: 'hidden lg:flex lg:items-center lg:gap-2',
+                  },
+        [employeeCalendar],
+    );
+
     const Layout = employeeCalendar ? EmployeeLayout : AdminLayout;
 
     return (
@@ -284,11 +317,11 @@ export default function Calendar({
                     <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
                         <div className="min-w-0 flex-1">
                             <h1 className="mb-2 font-headline text-4xl font-extrabold tracking-tight text-on-surface">{t('admin.appointments.title')}</h1>
-                            <p className="text-lg text-on-surface-variant">
+                            <p className="mt-1.5 max-w-none text-sm leading-relaxed text-on-surface-variant sm:max-w-lg">
                                 {t('admin.calendar.employee_description')}
                             </p>
                         </div>
-                        <div className="flex w-full shrink-0 justify-end sm:w-auto">
+                        <div className="flex w-full shrink-0 flex-wrap justify-end gap-2 sm:w-auto">
                             <Link
                                 href={`${route('employee.appointments.index', {}, false)}?list=1`}
                                 className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-on-surface hover:bg-slate-50"
@@ -314,60 +347,58 @@ export default function Calendar({
                 )}
 
                 <div className="mb-6 rounded-2xl bg-surface-container-lowest p-4 ring-1 ring-slate-100 shadow-sm">
-                    <div className="flex flex-wrap items-center justify-between gap-4">
-                        <div className="min-w-0">
-                            <p className="font-headline text-xl font-extrabold text-on-surface sm:text-2xl">{titleMain}</p>
-                            <p className="text-sm text-on-surface-variant">{titleSub}</p>
+                    <div className={calendarFilterBarClasses.navWrap}>
+                        <button
+                            type="button"
+                            onClick={goPrev}
+                            className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50"
+                            aria-label={t('admin.calendar.previous_period')}
+                        >
+                            <Icon name="chevron_left" />
+                        </button>
+                        <div className="flex h-11 items-stretch">
+                            <FilterListbox
+                                value={localFilters.view}
+                                onChange={(v) => patchFilters({ view: v, date: localFilters.date })}
+                                options={viewOptions}
+                                minWidthClass="min-w-[104px]"
+                                compact
+                                showLabel={false}
+                            />
                         </div>
-                        <div className="flex flex-wrap items-center gap-2">
-                            <button
-                                type="button"
-                                onClick={goPrev}
-                                className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50"
-                                aria-label={t('admin.calendar.previous_period')}
-                            >
-                                <Icon name="chevron_left" />
-                            </button>
-                            <div className="flex h-11 items-stretch">
-                                <FilterListbox
-                                    value={localFilters.view}
-                                    onChange={(v) => patchFilters({ view: v, date: localFilters.date })}
-                                    options={viewOptions}
-                                    minWidthClass="min-w-[104px]"
-                                    compact
-                                    showLabel={false}
-                                />
-                            </div>
-                            <button
-                                type="button"
-                                onClick={goNext}
-                                className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50"
-                                aria-label={t('admin.calendar.next_period')}
-                            >
-                                <Icon name="chevron_right" />
-                            </button>
-                            <button
-                                type="button"
-                                onClick={goToday}
-                                className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50"
-                                title={t('admin.calendar.today')}
-                                aria-label={t('admin.calendar.today')}
-                            >
-                                <Icon name="calendar_today" />
-                            </button>
-                        </div>
+                        <button
+                            type="button"
+                            onClick={goNext}
+                            className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50"
+                            aria-label={t('admin.calendar.next_period')}
+                        >
+                            <Icon name="chevron_right" />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={goToday}
+                            className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50"
+                            title={t('admin.calendar.today')}
+                            aria-label={t('admin.calendar.today')}
+                        >
+                            <Icon name="calendar_today" />
+                        </button>
                     </div>
 
-                    <div className="mt-4 flex flex-wrap gap-3 border-t border-slate-100 pt-4 items-end">
+                    <div className={calendarFilterBarClasses.row}>
                         {!employeeCalendar && (
                             <FilterListbox
                                 label={t('admin.calendar.employee')}
                                 value={localFilters.employee_id}
                                 onChange={(v) => patchFilters({ employee_id: v })}
                                 options={employeeOptions}
+                                minWidthClass="min-w-0"
+                                wrapperClassName={calendarFilterBarClasses.employeeWrap}
                             />
                         )}
                         <DatePicker
+                            className={calendarFilterBarClasses.dateGrow}
+                            buttonClassName={calendarFilterBarClasses.dateBtnPad}
                             label={t('admin.calendar.date')}
                             value={localFilters.date}
                             onChange={(value) => patchFilters({ date: value || todayYmd() })}
@@ -379,22 +410,57 @@ export default function Calendar({
                             value={localFilters.service_id}
                             onChange={(v) => patchFilters({ service_id: v })}
                             options={serviceOptions}
+                            minWidthClass="min-w-0"
+                            wrapperClassName={calendarFilterBarClasses.serviceWrap}
                         />
                         <FilterStatusMulti
                             label={t('admin.calendar.status')}
                             value={localFilters.status}
                             onChange={(v) => patchFilters({ status: v })}
                             options={statusOptions}
-                            minWidthClass="min-w-[200px]"
+                            minWidthClass={calendarFilterBarClasses.statusMin}
                         />
-                        <div className="flex items-end">
-                            <button
-                                type="button"
-                                onClick={clearFilters}
-                                className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-slate-50"
-                            >
+                        <div className={calendarFilterBarClasses.clearWrap}>
+                            <button type="button" onClick={clearFilters} className={calendarFilterBarClasses.clearBtn}>
                                 {t('admin.calendar.clear')}
                             </button>
+                            <div className={calendarFilterBarClasses.clearControlsWrap}>
+                                <button
+                                    type="button"
+                                    onClick={goPrev}
+                                    className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50"
+                                    aria-label={t('admin.calendar.previous_period')}
+                                >
+                                    <Icon name="chevron_left" />
+                                </button>
+                                <div className="flex h-11 items-stretch">
+                                    <FilterListbox
+                                        value={localFilters.view}
+                                        onChange={(v) => patchFilters({ view: v, date: localFilters.date })}
+                                        options={viewOptions}
+                                        minWidthClass="min-w-[104px]"
+                                        compact
+                                        showLabel={false}
+                                    />
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={goNext}
+                                    className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50"
+                                    aria-label={t('admin.calendar.next_period')}
+                                >
+                                    <Icon name="chevron_right" />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={goToday}
+                                    className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50"
+                                    title={t('admin.calendar.today')}
+                                    aria-label={t('admin.calendar.today')}
+                                >
+                                    <Icon name="calendar_today" />
+                                </button>
+                            </div>
                         </div>
                     </div>
 

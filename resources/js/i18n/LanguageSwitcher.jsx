@@ -23,7 +23,7 @@ export default function LanguageSwitcher({ className = '' }) {
         <div
             role="tablist"
             aria-label={t('common.language')}
-            className={`inline-flex items-center gap-1 rounded-full border border-outline-variant bg-surface-container-lowest px-2 py-1 shadow-sm ${className}`}
+            className={`inline-flex items-center gap-1 rounded-full border border-outline-variant bg-surface-container-lowest px-2 py-1 shadow-sm sm:px-2 sm:py-1 ${className}`}
         >
             {options.map((opt, idx) => {
                 const isActive = locale === opt.code;
@@ -32,7 +32,7 @@ export default function LanguageSwitcher({ className = '' }) {
                         {idx > 0 && (
                             <span
                                 aria-hidden="true"
-                                className="mx-1 h-3.5 w-px bg-outline-variant"
+                                className="mx-1 h-3 w-px bg-outline-variant sm:h-3.5"
                             />
                         )}
                         <button
@@ -40,7 +40,7 @@ export default function LanguageSwitcher({ className = '' }) {
                             role="tab"
                             aria-selected={isActive}
                             onClick={() => switchTo(opt.code)}
-                            className={`relative px-2 py-0.5 text-xs font-bold tracking-wide transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-surface-tint/40 rounded ${
+                            className={`relative rounded px-2 py-0.5 text-[10px] font-bold tracking-wide transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-surface-tint/40 sm:text-xs ${
                                 isActive
                                     ? 'text-surface-tint'
                                     : 'text-on-surface-variant hover:text-on-surface'

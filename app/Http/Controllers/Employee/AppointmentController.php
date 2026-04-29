@@ -7,6 +7,7 @@ use App\Enums\Permission;
 use App\Exports\EmployeeAppointmentsExport;
 use App\Http\Controllers\Concerns\ResolvesAppointmentCalendarQuery;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Appointment\InternalStoreAppointmentRequest;
 use App\Http\Requests\Employee\UpdateAppointmentRescheduleRequest;
 use App\Http\Requests\Employee\UpdateAppointmentStatusRequest;
 use App\Http\Requests\Employee\UpdateEmployeeAppointmentRequest;
@@ -17,6 +18,7 @@ use App\Models\UserAppointmentViewPreference;
 use App\Services\Interfaces\AppointmentServiceInterface;
 use App\Services\Interfaces\BookingServiceInterface;
 use App\Services\Interfaces\ScheduleServiceInterface;
+use App\Support\InternalRedirect;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -289,6 +291,76 @@ class AppointmentController extends Controller
             ->with('flash_nonce', uniqid('', true));
     }
 
+    /** GET — Inertia page that hosts the internal "Krijo termin" form for the auth employee. */
+    public function create(Request $request): Response
+    {
+        $user = $request->user();
+        $business = $user->panelBusiness();
+        abort_unless($business, 403);
+
+        $services = $user->services()->where('is_active', true)->get();
+
+        $self = User::with(['schedules', 'services' => fn ($q) => $q->where('is_active', true)])
+            ->find($user->id);
+
+        $timezone = $business->timezone ?: config('app.timezone');
+
+        return Inertia::render('Employee/Appointments/Create', [
+            'business' => $business,
+            'employees' => $self ? collect([$self])->values() : collect([]),
+            'services' => $services,
+            'preselected_employee_id' => (int) $user->id,
+            'return_to' => $this->resolveReturnTo($request),
+            'booking_today' => Carbon::now($timezone)->toDateString(),
+            'context' => 'employee',
+        ]);
+    }
+
+    /** POST — create one appointment for the authenticated employee themselves. */
+    public function store(InternalStoreAppointmentRequest $request): RedirectResponse
+    {
+        $business = $request->user()->panelBusiness();
+        abort_unless($business, 403);
+
+        $validated = $request->validated();
+        // Defensive: BookingService also forces this for 'employee' context.
+        $validated['employee_id'] = (int) $request->user()->id;
+
+        $this->bookingService->createInternalBooking($business, $validated, 'employee');
+
+        return redirect()->to(InternalRedirect::resolve(
+            $validated['return_to'] ?? null,
+            route('employee.appointments.index'),
+        ))
+            ->with('success', __('messages.appointment.created'))
+            ->with('flash_nonce', uniqid('', true));
+    }
+
+    /** GET — slot times for the internal create flow (employee_id forced server-side). */
+    public function internalSlots(Request $request): JsonResponse
+    {
+        $request->validate([
+            'service_ids' => ['required', 'array', 'min:1'],
+            'service_ids.*' => ['integer', 'exists:services,id'],
+            'date' => ['required', 'date_format:Y-m-d'],
+        ]);
+
+        $business = $request->user()->panelBusiness();
+        abort_unless($business, 403);
+
+        $slots = $this->bookingService->getInternalAvailableSlots(
+            $business,
+            [
+                'employee_id' => (int) $request->user()->id,
+                'service_ids' => $request->input('service_ids'),
+                'date' => $request->input('date'),
+            ],
+            'employee',
+        );
+
+        return response()->json(['slots' => $slots]);
+    }
+
     /**
      * Return available time slots for the authenticated employee on a given date,
      * excluding the current appointment from conflict checks.
@@ -421,5 +493,21 @@ class AppointmentController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * Reads ?return_to= from the GET request, validates it via InternalRedirect
+     * and forwards a safe value to the Inertia page so the form can echo it back.
+     */
+    private function resolveReturnTo(Request $request): ?string
+    {
+        $raw = $request->query('return_to');
+        if (! is_string($raw) || $raw === '') {
+            return null;
+        }
+
+        $resolved = InternalRedirect::resolve($raw, '');
+
+        return $resolved !== '' ? $resolved : null;
     }
 }

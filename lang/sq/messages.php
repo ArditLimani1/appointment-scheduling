@@ -27,6 +27,7 @@ return [
     ],
 
     'appointment' => [
+        'created' => 'Termini u krijua me sukses.',
         'updated' => 'Termini u përditësua me sukses.',
         'deleted' => 'Termini u anulua / u fshi nga lista.',
     ],

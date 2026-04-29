@@ -11,18 +11,43 @@ class ScheduleRepository implements ScheduleRepositoryInterface
 {
     public function getByUser(int $userId): Collection
     {
-        return Schedule::where('user_id', $userId)
+        $latestPerDay = Schedule::query()
+            ->selectRaw('day_of_week, MAX(effective_from) as effective_from')
+            ->where('user_id', $userId)
+            ->groupBy('day_of_week');
+
+        return Schedule::query()
+            ->joinSub($latestPerDay, 'latest_per_day', function ($join) {
+                $join->on('schedules.day_of_week', '=', 'latest_per_day.day_of_week')
+                    ->on('schedules.effective_from', '=', 'latest_per_day.effective_from');
+            })
+            ->where('schedules.user_id', $userId)
+            ->select('schedules.*')
             ->with('breaks')
-            ->orderBy('day_of_week')
+            ->orderBy('schedules.day_of_week')
             ->get();
     }
 
-    public function findActiveByUserAndDay(int $userId, int $dayOfWeek): ?Schedule
+    public function findByUserAndDayForDate(int $userId, int $dayOfWeek, string $date): ?Schedule
     {
-        return Schedule::where('user_id', $userId)
+        return Schedule::query()
+            ->where('user_id', $userId)
             ->where('day_of_week', $dayOfWeek)
+            ->whereDate('effective_from', '<=', $date)
+            ->with('breaks')
+            ->orderByDesc('effective_from')
+            ->first();
+    }
+
+    public function findActiveByUserAndDayForDate(int $userId, int $dayOfWeek, string $date): ?Schedule
+    {
+        return Schedule::query()
+            ->where('user_id', $userId)
+            ->where('day_of_week', $dayOfWeek)
+            ->whereDate('effective_from', '<=', $date)
             ->where('is_active', true)
             ->with('breaks')
+            ->orderByDesc('effective_from')
             ->first();
     }
 

@@ -25,30 +25,21 @@ class ScheduleService implements ScheduleServiceInterface
 
     public function updateSchedules(User $user, array $data): void
     {
-        $existingByDay = $this->scheduleRepository->getByUser($user->id)->keyBy('day_of_week');
-        $oldSchedules = [];
-        foreach (range(0, 6) as $day) {
-            $oldSchedules[$day] = $this->toComparableSchedule($existingByDay->get($day));
-        }
-
-        $newSchedules = [];
-        foreach ($data['schedules'] as $scheduleData) {
-            $day = (int) $scheduleData['day_of_week'];
-            $newSchedules[$day] = $this->toComparableScheduleFromPayload($scheduleData);
-        }
+        $timezone = $user->business?->timezone ?: config('app.timezone');
+        $tomorrow = Carbon::now($timezone)->addDay()->toDateString();
 
         foreach ($data['schedules'] as $scheduleData) {
-            $schedule = $this->scheduleRepository->updateOrCreate(
-                [
-                    'user_id' => $user->id,
-                    'day_of_week' => $scheduleData['day_of_week'],
-                ],
-                [
-                    'start_time' => $scheduleData['start_time'] ?? '09:00',
-                    'end_time' => $scheduleData['end_time'] ?? '17:00',
-                    'is_active' => $scheduleData['is_active'],
-                ]
-            );
+            $attributes = [
+                'user_id' => $user->id,
+                'day_of_week' => $scheduleData['day_of_week'],
+                'effective_from' => $tomorrow,
+            ];
+
+            $schedule = $this->scheduleRepository->updateOrCreate($attributes, [
+                'start_time' => $scheduleData['start_time'] ?? '09:00',
+                'end_time' => $scheduleData['end_time'] ?? '17:00',
+                'is_active' => $scheduleData['is_active'],
+            ]);
 
             $this->scheduleRepository->deleteBreaks($schedule);
 
@@ -62,142 +53,8 @@ class ScheduleService implements ScheduleServiceInterface
             }
         }
 
-        // Base schedule changed: future availability should follow it, not stale date overrides.
-        $timezone = $user->business?->timezone ?: config('app.timezone');
-        $now = Carbon::now($timezone);
-        $today = $now->toDateString();
-        $tomorrow = $now->copy()->addDay()->toDateString();
-        $todayDayOfWeek = $now->dayOfWeekIso - 1; // 0=Mon … 6=Sun
-
         // Never touch past/today here: clear only from tomorrow forward.
         $this->scheduleOverrideRepository->deleteForUserFromDate($user->id, $tomorrow);
-
-        $oldToday = $oldSchedules[$todayDayOfWeek] ?? $this->emptyComparableSchedule();
-        $newToday = $newSchedules[$todayDayOfWeek] ?? $this->emptyComparableSchedule();
-
-        if (! $this->schedulesAreEqual($oldToday, $newToday)) {
-            $applyToday = $this->shouldApplyTodayFromCurrentTime($oldToday, $newToday, $now->format('H:i'));
-
-            if (! $applyToday) {
-                // Freeze today's availability to old values; new config starts tomorrow.
-                $this->persistOverrideForDate($user, $today, $oldToday);
-            }
-        }
-    }
-
-    private function toComparableSchedule(?object $schedule): array
-    {
-        if (! $schedule) {
-            return $this->emptyComparableSchedule();
-        }
-
-        $breaks = $schedule->breaks
-            ->map(fn ($b) => [
-                'start_time' => substr((string) $b->start_time, 0, 5),
-                'end_time' => substr((string) $b->end_time, 0, 5),
-            ])
-            ->sortBy(fn ($b) => $b['start_time'].'-'.$b['end_time'])
-            ->values()
-            ->all();
-
-        return [
-            'is_active' => (bool) $schedule->is_active,
-            'start_time' => substr((string) $schedule->start_time, 0, 5),
-            'end_time' => substr((string) $schedule->end_time, 0, 5),
-            'breaks' => $breaks,
-        ];
-    }
-
-    private function toComparableScheduleFromPayload(array $payload): array
-    {
-        $breaks = collect($payload['breaks'] ?? [])
-            ->map(fn ($b) => [
-                'start_time' => substr((string) ($b['start_time'] ?? ''), 0, 5),
-                'end_time' => substr((string) ($b['end_time'] ?? ''), 0, 5),
-            ])
-            ->sortBy(fn ($b) => $b['start_time'].'-'.$b['end_time'])
-            ->values()
-            ->all();
-
-        return [
-            'is_active' => (bool) ($payload['is_active'] ?? false),
-            'start_time' => substr((string) ($payload['start_time'] ?? '09:00'), 0, 5),
-            'end_time' => substr((string) ($payload['end_time'] ?? '17:00'), 0, 5),
-            'breaks' => $breaks,
-        ];
-    }
-
-    private function emptyComparableSchedule(): array
-    {
-        return [
-            'is_active' => false,
-            'start_time' => '09:00',
-            'end_time' => '17:00',
-            'breaks' => [],
-        ];
-    }
-
-    private function schedulesAreEqual(array $a, array $b): bool
-    {
-        return $a['is_active'] === $b['is_active']
-            && $a['start_time'] === $b['start_time']
-            && $a['end_time'] === $b['end_time']
-            && $a['breaks'] === $b['breaks'];
-    }
-
-    private function shouldApplyTodayFromCurrentTime(array $old, array $new, string $nowHm): bool
-    {
-        $times = [];
-
-        if (($old['is_active'] ?? false) !== ($new['is_active'] ?? false)
-            || ($old['start_time'] ?? null) !== ($new['start_time'] ?? null)
-            || ($old['end_time'] ?? null) !== ($new['end_time'] ?? null)) {
-            $times[] = $old['start_time'] ?? '09:00';
-            $times[] = $new['start_time'] ?? '09:00';
-        }
-
-        $oldBreakSet = collect($old['breaks'] ?? [])->map(fn ($b) => $b['start_time'].'-'.$b['end_time'])->all();
-        $newBreakSet = collect($new['breaks'] ?? [])->map(fn ($b) => $b['start_time'].'-'.$b['end_time'])->all();
-
-        $addedOrChanged = array_values(array_diff($newBreakSet, $oldBreakSet));
-        $removedOrChanged = array_values(array_diff($oldBreakSet, $newBreakSet));
-
-        foreach (array_merge($addedOrChanged, $removedOrChanged) as $range) {
-            [$start] = explode('-', (string) $range);
-            if ($start) {
-                $times[] = $start;
-            }
-        }
-
-        if ($times === []) {
-            return true;
-        }
-
-        sort($times);
-        $earliestAffectedTime = $times[0];
-
-        return $nowHm < $earliestAffectedTime;
-    }
-
-    private function persistOverrideForDate(User $user, string $date, array $schedule): void
-    {
-        $override = $this->scheduleOverrideRepository->upsertForDate(
-            $user->id,
-            $date,
-            [
-                'is_active' => (bool) ($schedule['is_active'] ?? false),
-                'start_time' => $schedule['start_time'] ?? '09:00',
-                'end_time' => $schedule['end_time'] ?? '17:00',
-            ]
-        );
-
-        $this->scheduleOverrideRepository->deleteBreaks($override);
-        foreach ($schedule['breaks'] ?? [] as $breakData) {
-            $this->scheduleOverrideRepository->createBreak($override, [
-                'start_time' => $breakData['start_time'],
-                'end_time' => $breakData['end_time'],
-            ]);
-        }
     }
 
     /**
@@ -207,8 +64,6 @@ class ScheduleService implements ScheduleServiceInterface
     public function getDaysForRange(User $user, string $dateFrom, string $dateTo): array
     {
         $normalize = fn ($t) => $t ? substr((string) $t, 0, 5) : '09:00';
-
-        $baseSchedules = $this->scheduleRepository->getByUser($user->id)->keyBy('day_of_week');
 
         $overrides = $this->scheduleOverrideRepository
             ->getByUserAndDateRange($user->id, $dateFrom, $dateTo)
@@ -237,32 +92,35 @@ class ScheduleService implements ScheduleServiceInterface
                     ])->values()->all(),
                     'is_overridden' => true,
                 ];
-            } elseif (isset($baseSchedules[$dayOfWeek])) {
-                $base = $baseSchedules[$dayOfWeek];
-                $days[] = [
-                    'date' => $dateStr,
-                    'day_of_week' => $dayOfWeek,
-                    'day_label' => $cursor->format('l'),
-                    'is_active' => $base->is_active,
-                    'start_time' => $normalize($base->start_time),
-                    'end_time' => $normalize($base->end_time),
-                    'breaks' => $base->breaks->map(fn ($b) => [
-                        'start_time' => $normalize($b->start_time),
-                        'end_time' => $normalize($b->end_time),
-                    ])->values()->all(),
-                    'is_overridden' => false,
-                ];
             } else {
-                $days[] = [
-                    'date' => $dateStr,
-                    'day_of_week' => $dayOfWeek,
-                    'day_label' => $cursor->format('l'),
-                    'is_active' => false,
-                    'start_time' => '09:00',
-                    'end_time' => '17:00',
-                    'breaks' => [],
-                    'is_overridden' => false,
-                ];
+                $base = $this->scheduleRepository->findByUserAndDayForDate($user->id, $dayOfWeek, $dateStr);
+
+                if ($base) {
+                    $days[] = [
+                        'date' => $dateStr,
+                        'day_of_week' => $dayOfWeek,
+                        'day_label' => $cursor->format('l'),
+                        'is_active' => $base->is_active,
+                        'start_time' => $normalize($base->start_time),
+                        'end_time' => $normalize($base->end_time),
+                        'breaks' => $base->breaks->map(fn ($b) => [
+                            'start_time' => $normalize($b->start_time),
+                            'end_time' => $normalize($b->end_time),
+                        ])->values()->all(),
+                        'is_overridden' => false,
+                    ];
+                } else {
+                    $days[] = [
+                        'date' => $dateStr,
+                        'day_of_week' => $dayOfWeek,
+                        'day_label' => $cursor->format('l'),
+                        'is_active' => false,
+                        'start_time' => '09:00',
+                        'end_time' => '17:00',
+                        'breaks' => [],
+                        'is_overridden' => false,
+                    ];
+                }
             }
 
             $cursor->addDay();

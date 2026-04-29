@@ -10,7 +10,9 @@ interface ScheduleRepositoryInterface
 {
     public function getByUser(int $userId): Collection;
 
-    public function findActiveByUserAndDay(int $userId, int $dayOfWeek): ?Schedule;
+    public function findByUserAndDayForDate(int $userId, int $dayOfWeek, string $date): ?Schedule;
+
+    public function findActiveByUserAndDayForDate(int $userId, int $dayOfWeek, string $date): ?Schedule;
 
     public function updateOrCreate(array $attributes, array $values): Schedule;
 

@@ -124,9 +124,24 @@ export default function AdminLayout({ children }) {
     const effectiveWorkspace = showTabs ? workspace : 'admin';
     const sidebarItems = effectiveWorkspace === 'employee' ? visibleEmployeeNav : visibleNav;
 
-    const bookingUrl = business?.slug
-        ? (() => { try { return route('booking.index', { slug: business.slug }); } catch { return '#'; } })()
-        : '#';
+    const currentUrl = usePage().url;
+    const createAppointmentHref = can('admin.appointments')
+        ? (() => {
+            try {
+                return route('admin.appointments.create', { return_to: currentUrl });
+            } catch {
+                return '#';
+            }
+        })()
+        : null;
+    const onAdminAppointmentCreate = (() => {
+        try {
+            return Boolean(route().current('admin.appointments.create'));
+        } catch {
+            return false;
+        }
+    })();
+    const showCreateAppointmentButton = Boolean(createAppointmentHref) && !onAdminAppointmentCreate;
 
     return (
         <SuccessToastProvider>
@@ -203,16 +218,15 @@ export default function AdminLayout({ children }) {
                     </nav>
 
                     <div className="pt-8 border-t border-outline-variant/40 space-y-5">
-                        {business?.slug && (
-                            <a
-                                href={bookingUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 px-2 text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-colors uppercase tracking-widest"
+                        {showCreateAppointmentButton && (
+                            <Link
+                                href={createAppointmentHref}
+                                className="flex items-center justify-center gap-2 rounded-xl bg-on-surface px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-surface transition-opacity hover:opacity-90"
+                                aria-label={t('layout.admin.add_appointment')}
                             >
-                                <Icon name="open_in_new" size="text-sm" />
-                                {t('layout.admin.view_booking_page')}
-                            </a>
+                                <Icon name="add" size="text-base" />
+                                <span className="hidden sm:inline">{t('layout.admin.add_appointment')}</span>
+                            </Link>
                         )}
 
                         <div className="flex items-center gap-3 px-2">
@@ -254,16 +268,15 @@ export default function AdminLayout({ children }) {
                     </div>
 
                     <div className="ml-2 flex shrink-0 items-center gap-2 sm:gap-3">
-                        {business?.slug && (
-                            <a
-                                href={bookingUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="hidden sm:flex items-center gap-1.5 rounded-xl border border-outline-variant px-3 py-1.5 text-xs font-medium text-on-surface-variant hover:bg-surface-container transition-colors"
+                        {showCreateAppointmentButton && (
+                            <Link
+                                href={createAppointmentHref}
+                                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-on-surface px-2.5 py-2 text-xs font-bold text-surface transition-opacity hover:opacity-90 sm:px-3 sm:py-1.5"
+                                aria-label={t('layout.admin.add_appointment')}
                             >
-                                <Icon name="open_in_new" size="text-sm" />
-                                {t('layout.admin.booking_page')}
-                            </a>
+                                <Icon name="add" size="text-lg sm:text-sm" />
+                                <span className="hidden sm:inline">{t('layout.admin.add_appointment')}</span>
+                            </Link>
                         )}
                         <Dropdown>
                             <Dropdown.Trigger>
