@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from 'react';
 import EmployeeLayout from '@/Layouts/EmployeeLayout';
 import Icon from '@/Components/Icon';
 import { useT } from '@/i18n/useT';
-import { formatAppointmentDate } from '@/utils/appointmentDate';
 
 /** Next calendar date (including today) that falls on this weekday; `dayOfWeek` 0 = Monday … 6 = Sunday. */
 function representativeDateForWeekday(dayOfWeek) {
@@ -20,9 +19,8 @@ function representativeDateForWeekday(dayOfWeek) {
     return `${y}-${m}-${dd}`;
 }
 
-function formatDayHeader(dateStr, dayLabel, locale) {
-    const datePart = formatAppointmentDate(dateStr, { day: 'numeric', month: 'long' }, locale);
-    return `${dayLabel}, ${datePart}`;
+function formatDayHeader(_dateStr, dayLabel, _locale) {
+    return dayLabel;
 }
 
 /** "09:30" → "9:30" for compact break display (read-only). */

@@ -3,20 +3,57 @@
  * Palette order = nicest first; assignment uses roster order so small teams get the best colors.
  */
 
-const PALETTE = [
-    { swatch: '#2563eb', bg: '#dbeafe', border: '#1d4ed8', text: '#1e3a8a' },
-    { swatch: '#0891b2', bg: '#cffafe', border: '#0e7490', text: '#164e63' },
-    { swatch: '#4f46e5', bg: '#e0e7ff', border: '#4338ca', text: '#312e81' },
-    { swatch: '#059669', bg: '#d1fae5', border: '#047857', text: '#064e3b' },
-    { swatch: '#0d9488', bg: '#ccfbf1', border: '#0f766e', text: '#134e4a' },
-    { swatch: '#7c3aed', bg: '#ede9fe', border: '#5b21b6', text: '#4c1d95' },
-    { swatch: '#d97706', bg: '#fef3c7', border: '#b45309', text: '#78350f' },
-    { swatch: '#ca8a04', bg: '#fef9c3', border: '#a16207', text: '#713f12' },
-    { swatch: '#ea580c', bg: '#ffedd5', border: '#c2410c', text: '#7c2d12' },
-    { swatch: '#dc2626', bg: '#fee2e2', border: '#b91c1c', text: '#7f1d1d' },
-    { swatch: '#c026d3', bg: '#fae8ff', border: '#a21caf', text: '#701a75' },
-    { swatch: '#db2777', bg: '#fce7f3', border: '#be185d', text: '#831843' },
+const CORE_COLORS = [
+    '#4F46E5', // Indigo
+    '#059669', // Green
+    '#DC2626', // Red
+    '#D97706', // Orange
+    '#0284C7', // Blue
+    '#7C3AED', // Purple
+    '#DB2777', // Pink
+    '#0F766E', // Teal
+    '#65A30D', // Lime
+    '#92400E', // Brown
 ];
+
+const EXTRA_COLORS = [
+    '#6366F1', // Soft indigo
+    '#10B981', // Soft green
+    '#F43F5E', // Rose
+    '#F59E0B', // Amber
+    '#38BDF8', // Light blue
+    '#A78BFA', // Light purple
+    '#F472B6', // Soft pink
+    '#2DD4BF', // Light teal
+    '#A3E635', // Light lime
+    '#B45309', // Soft brown
+];
+
+function hexToRgb(hex) {
+    const normalized = String(hex).replace('#', '');
+    if (!/^[0-9a-fA-F]{6}$/.test(normalized)) {
+        return { r: 79, g: 70, b: 229 };
+    }
+    const value = parseInt(normalized, 16);
+    return {
+        r: (value >> 16) & 255,
+        g: (value >> 8) & 255,
+        b: value & 255,
+    };
+}
+
+function rgbaFromHex(hex, alpha) {
+    const { r, g, b } = hexToRgb(hex);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+const PALETTE = [...CORE_COLORS, ...EXTRA_COLORS].map((hex) => ({
+    swatch: hex,
+    // Same color family with a light tint: clean UI + stronger category recognition.
+    bg: rgbaFromHex(hex, 0.18),
+    border: hex,
+    text: '#111827',
+}));
 
 /**
  * @param {Array<{ id: number }>} employees

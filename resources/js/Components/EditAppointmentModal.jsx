@@ -22,6 +22,12 @@ function addMinutesToTimeString(hm, minutesToAdd) {
     return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
 }
 
+function trimToNull(value) {
+    if (value == null) return null;
+    const trimmed = String(value).trim();
+    return trimmed === '' ? null : trimmed;
+}
+
 const CURRENCY_SYMBOLS = { EUR: '€', USD: '$', GBP: '£', CHF: 'CHF' };
 
 export default function EditAppointmentModal({
@@ -507,13 +513,13 @@ export default function EditAppointmentModal({
                                     ) : slotOptions.length === 0 ? (
                                         <p className="py-1 text-xs text-on-surface-variant">{t('components.edit_appointment.no_slots')}</p>
                                     ) : (
-                                        <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-8">
+                                        <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4">
                                             {slotOptions.map((slotHm) => (
                                                 <button
                                                     key={slotHm}
                                                     type="button"
                                                     onClick={() => patch('start_time', slotHm)}
-                                                    className={`h-8 rounded-lg text-[11px] font-bold transition-all ${
+                                                    className={`h-8 rounded-lg text-sm font-bold transition-all ${
                                                         formatTimeHm(form.start_time) === slotHm
                                                             ? 'bg-on-surface text-surface'
                                                             : 'bg-slate-100 text-on-surface hover:bg-slate-200'

@@ -21,18 +21,18 @@ enum Permission: string
     public function label(): string
     {
         return match ($this) {
-            self::AdminDashboard => 'Admin: Dashboard',
-            self::AdminServices => 'Admin: Services',
-            self::AdminEmployees => 'Admin: Employees',
-            self::AdminAppointments => 'Admin: Appointments',
-            self::AdminAnalytics => 'Admin: Analytics',
-            self::AdminSettings => 'Admin: Configuration',
-            self::AdminRoles => 'Admin: Roles & permissions',
-            self::AdminSharedResources => 'Admin: Shared resources',
-            self::EmployeeDashboard => 'Employee: Appointments overview',
-            self::EmployeeAnalytics => 'Employee: Analytics',
-            self::EmployeeSchedule => 'Employee: Schedule',
-            self::EmployeeAppointments => 'Employee: Update appointment status',
+            self::AdminDashboard => __('admin.roles.permission_labels.admin_dashboard'),
+            self::AdminServices => __('admin.roles.permission_labels.admin_services'),
+            self::AdminEmployees => __('admin.roles.permission_labels.admin_employees'),
+            self::AdminAppointments => __('admin.roles.permission_labels.admin_appointments'),
+            self::AdminAnalytics => __('admin.roles.permission_labels.admin_analytics'),
+            self::AdminSettings => __('admin.roles.permission_labels.admin_settings'),
+            self::AdminRoles => __('admin.roles.permission_labels.admin_roles'),
+            self::AdminSharedResources => __('admin.roles.permission_labels.admin_shared_resources'),
+            self::EmployeeDashboard => __('admin.roles.permission_labels.employee_dashboard'),
+            self::EmployeeAnalytics => __('admin.roles.permission_labels.employee_analytics'),
+            self::EmployeeSchedule => __('admin.roles.permission_labels.employee_schedule'),
+            self::EmployeeAppointments => __('admin.roles.permission_labels.employee_appointments'),
         };
     }
 

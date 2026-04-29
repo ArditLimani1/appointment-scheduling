@@ -33,6 +33,7 @@ return [
         'employee_invalid' => 'Punonjësi i zgjedhur nuk është i disponueshëm për këtë biznes.',
         'select_service' => 'Zgjidhni të paktën një shërbim.',
         'service_invalid' => 'Shërbimi i zgjedhur nuk është i disponueshëm për këtë biznes.',
+        'services_mismatch' => 'Punonjësi i zgjedhur nuk i ofron të gjitha shërbimet e zgjedhura.',
     ],
 
 ];

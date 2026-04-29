@@ -33,6 +33,7 @@ return [
         'employee_invalid' => 'The selected employee is not available for this business.',
         'select_service' => 'Select at least one service.',
         'service_invalid' => 'The selected service is not available for this business.',
+        'services_mismatch' => 'The selected staff member does not offer all of the chosen services.',
     ],
 
 ];

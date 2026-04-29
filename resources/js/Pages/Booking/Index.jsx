@@ -1,3 +1,4 @@
+import BookingAccordionStep from '@/Components/BookingAccordionStep';
 import LanguageSwitcher from '@/i18n/LanguageSwitcher';
 import { useT } from '@/i18n/useT';
 import { Head, router, usePage } from '@inertiajs/react';
@@ -105,63 +106,6 @@ function addMinutesToTimeString(hm, addMins) {
     const hh = Math.floor(total / 60);
     const mm = total % 60;
     return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
-}
-
-function BookingAccordionStep({
-    id,
-    number,
-    title,
-    summary,
-    expanded,
-    onHeaderClick,
-    headerDisabled,
-    children,
-    containerRef,
-}) {
-    return (
-        <div
-            ref={containerRef}
-            className={`rounded-2xl border transition-shadow ${
-                expanded
-                    ? 'border-outline-variant shadow-sm bg-surface-container-lowest overflow-visible'
-                    : 'border-outline-variant/50 bg-surface-container-lowest/70 overflow-hidden'
-            }`}
-        >
-            <button
-                type="button"
-                aria-expanded={expanded}
-                disabled={headerDisabled}
-                onClick={() => {
-                    if (!headerDisabled) {
-                        onHeaderClick(id);
-                    }
-                }}
-                className={`w-full flex items-center gap-4 px-5 py-4 sm:px-6 sm:py-5 text-left min-h-[4.5rem] ${
-                    headerDisabled ? 'opacity-45 cursor-not-allowed' : 'hover:bg-surface-container-low/50'
-                }`}
-            >
-                <span className="w-9 h-9 rounded-full bg-on-surface text-surface flex items-center justify-center font-bold text-sm shrink-0">
-                    {number}
-                </span>
-                <div className="flex-1 min-w-0">
-                    <h2 className="font-headline text-lg sm:text-xl font-bold tracking-tight text-on-surface">{title}</h2>
-                    {!expanded && summary ? (
-                        <p className="text-sm text-on-surface-variant mt-1 truncate">{summary}</p>
-                    ) : null}
-                </div>
-                <Icon
-                    name={expanded ? 'expand_less' : 'expand_more'}
-                    className={headerDisabled ? 'text-outline shrink-0' : 'text-on-surface-variant shrink-0'}
-                    size="text-2xl"
-                />
-            </button>
-            {expanded ? (
-                <div className="px-5 pb-5 sm:px-6 sm:pb-6 pt-1 border-t border-outline-variant/25">
-                    {children}
-                </div>
-            ) : null}
-        </div>
-    );
 }
 
 export default function Index({

@@ -4,7 +4,7 @@ import EmployeeLayout from '@/Layouts/EmployeeLayout';
 import MetricCard from '@/Components/MetricCard';
 import Icon from '@/Components/Icon';
 import EditAppointmentModal from '@/Components/EditAppointmentModal';
-import { appointmentStatusValue, formatAppointmentDate, formatTimeHm } from '@/utils/appointmentDate';
+import { appointmentStatusValue, formatAppointmentDate, formatTimeHm, sqMonthName, sqWeekdayName } from '@/utils/appointmentDate';
 import { useT } from '@/i18n/useT';
 
 const STATUS_BADGE_BG = {
@@ -83,12 +83,23 @@ export default function Dashboard({
     const dateFrom = dateFromProp ?? todayStr;
 
     const dayLabel = useMemo(
-        () =>
-            formatAppointmentDate(
-                dateFrom,
-                { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' },
-                dateLocale,
-            ),
+        () => {
+            const isSq = String(dateLocale || '').toLowerCase().startsWith('sq');
+            if (!isSq) {
+                return formatAppointmentDate(
+                    dateFrom,
+                    { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' },
+                    dateLocale,
+                );
+            }
+
+            const parsed = new Date(`${dateFrom}T12:00:00`);
+            if (Number.isNaN(parsed.getTime())) {
+                return '—';
+            }
+
+            return `${sqWeekdayName(parsed, 'long')}, ${parsed.getDate()} ${sqMonthName(parsed, 'long')} ${parsed.getFullYear()}`;
+        },
         [dateFrom, dateLocale],
     );
 

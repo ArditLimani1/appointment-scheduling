@@ -7,6 +7,7 @@ use App\Models\Appointment;
 use App\Models\Business;
 use App\Models\Service;
 use App\Models\SharedResource;
+use App\Models\User;
 use App\Repositories\Interfaces\AppointmentRepositoryInterface;
 use App\Repositories\Interfaces\BusinessRepositoryInterface;
 use App\Repositories\Interfaces\EmployeeRepositoryInterface;
@@ -313,6 +314,211 @@ class BookingService implements BookingServiceInterface
         );
     }
 
+    public function createInternalBooking(Business $business, array $data, string $context): Collection
+    {
+        abort_unless(in_array($context, ['admin', 'employee'], true), 500, 'Invalid internal booking context.');
+
+        if ($context === 'employee') {
+            $authId = auth()->id();
+            abort_if($authId === null, 401);
+            $data['employee_id'] = (int) $authId;
+        }
+
+        $employeeId = (int) ($data['employee_id'] ?? 0);
+        abort_if(
+            ! $this->employeeRepository->getActiveByBusiness($business->id)->contains('id', $employeeId),
+            422,
+            __('errors.booking_flow.employee_invalid')
+        );
+
+        $rawIds = $data['service_ids'] ?? [];
+        if (! is_array($rawIds)) {
+            $rawIds = [];
+        }
+        $ids = array_values(array_unique(array_map('intval', $rawIds)));
+        abort_if(count($ids) === 0, 422, __('errors.booking_flow.select_service'));
+
+        $services = collect();
+        foreach ($ids as $serviceId) {
+            $service = $this->serviceRepository->findById($serviceId);
+            abort_if(
+                ! $service || $service->business_id !== $business->id,
+                422,
+                __('errors.booking_flow.service_invalid')
+            );
+            $service->loadMissing('sharedResources');
+            $services->push($service);
+        }
+
+        $employeeOffersAll = User::query()
+            ->whereKey($employeeId)
+            ->with(['services' => fn ($q) => $q->where('is_active', true)])
+            ->first();
+
+        foreach ($ids as $sid) {
+            abort_if(
+                ! $employeeOffersAll || ! $employeeOffersAll->services->contains('id', $sid),
+                422,
+                __('errors.booking_flow.services_mismatch')
+            );
+        }
+
+        $timezone = $business->timezone ?: config('app.timezone');
+        $startTime = Carbon::parse($data['date'].' '.$data['start_time'], $timezone);
+        $totalMinutes = (int) $services->sum('duration');
+        $blockEnd = $startTime->copy()->addMinutes($totalMinutes);
+
+        $this->assertInternalTimeBlockIsBookable(
+            $employeeId,
+            $data['date'],
+            $startTime,
+            $blockEnd,
+            $timezone
+        );
+
+        $defaultStatus = $context === 'employee'
+            ? AppointmentStatus::Confirmed
+            : AppointmentStatus::Pending;
+
+        $bookingReference = Str::uuid()->toString();
+        $updatedBy = auth()->id();
+
+        return DB::transaction(function () use ($business, $employeeId, $data, $services, $timezone, $bookingReference, $defaultStatus, $updatedBy) {
+            $segments = $this->buildOrderedServiceSegments(
+                $business,
+                $services,
+                $data['date'],
+                $data['start_time'],
+                $timezone
+            );
+
+            if ($business->uses_shared_resources) {
+                $resourceIds = $this->collectResourceIdsFromSegments($segments);
+                if ($resourceIds !== []) {
+                    SharedResource::query()
+                        ->whereIn('id', $resourceIds)
+                        ->orderBy('id')
+                        ->lockForUpdate()
+                        ->get();
+                }
+            }
+
+            $created = collect();
+            $cursor = Carbon::parse($data['date'].' '.$data['start_time'], $timezone);
+
+            foreach ($services as $service) {
+                $segmentEnd = $cursor->copy()->addMinutes($service->duration);
+                $segment = [
+                    'start' => $cursor->copy(),
+                    'end' => $segmentEnd->copy(),
+                    'service' => $service,
+                ];
+                if ($business->uses_shared_resources) {
+                    $this->assertSegmentResourcesAvailable(
+                        $business,
+                        $data['date'],
+                        $segment,
+                        null,
+                        $timezone
+                    );
+                }
+                $appointment = $this->appointmentRepository->create([
+                    'booking_reference' => $bookingReference,
+                    'business_id' => $business->id,
+                    'employee_id' => $employeeId,
+                    'service_id' => $service->id,
+                    'client_first_name' => $data['client_first_name'],
+                    'client_last_name' => $data['client_last_name'],
+                    'client_phone' => $data['client_phone'] ?? null,
+                    'client_email' => $data['client_email'] ?? null,
+                    'client_notes' => $data['client_notes'] ?? null,
+                    'date' => $data['date'],
+                    'start_time' => $cursor->format('H:i'),
+                    'end_time' => $segmentEnd->format('H:i'),
+                    'price' => $service->price,
+                    'status' => $defaultStatus,
+                    'updated_by' => $updatedBy,
+                ]);
+                $this->syncAppointmentSharedResources($appointment, $service, $business);
+                $created->push($appointment);
+                $cursor = $segmentEnd;
+            }
+
+            return $created;
+        });
+    }
+
+    public function getInternalAvailableSlots(Business $business, array $data, string $context): array
+    {
+        abort_unless(in_array($context, ['admin', 'employee'], true), 500, 'Invalid internal booking context.');
+
+        if ($context === 'employee') {
+            $authId = auth()->id();
+            abort_if($authId === null, 401);
+            $data['employee_id'] = (int) $authId;
+        }
+
+        $timezone = $business->timezone ?: config('app.timezone');
+        $date = Carbon::parse($data['date'], $timezone)->startOfDay();
+
+        $employeeId = (int) ($data['employee_id'] ?? 0);
+        abort_if(
+            ! $this->employeeRepository->getActiveByBusiness($business->id)->contains('id', $employeeId),
+            422,
+            __('errors.booking_flow.employee_invalid')
+        );
+
+        $schedule = $this->resolveEffectiveSchedule($employeeId, $date);
+        if (! $schedule) {
+            return [];
+        }
+
+        $slotDuration = $this->resolveSlotDurationMinutes($business, $data);
+        $businessSlot = (int) ($business->slot_duration ?? 30);
+        $stepMinutes = $this->resolveStepMinutesForSlotBlock($businessSlot, $slotDuration);
+
+        $existingAppointments = $this->appointmentRepository->getByEmployeeAndDate(
+            $employeeId,
+            $date->toDateString()
+        );
+
+        // Internal flow bypasses min_booking_notice (epoch) and max_booking_window (no max_date check).
+        $minNoticeTime = Carbon::createFromTimestamp(0);
+
+        $slots = $this->calculateSlots(
+            $date,
+            $schedule,
+            $slotDuration,
+            $stepMinutes,
+            $minNoticeTime,
+            $existingAppointments,
+            $timezone,
+            false,
+        );
+
+        $rawIds = $data['service_ids'] ?? [];
+        if (! is_array($rawIds)) {
+            $rawIds = [];
+        }
+        $ids = array_values(array_unique(array_map('intval', $rawIds)));
+        if ($ids === []) {
+            return $slots;
+        }
+
+        if (! $business->uses_shared_resources) {
+            return $slots;
+        }
+
+        return $this->filterSlotTimesForSharedResources(
+            $business,
+            $date->toDateString(),
+            $slots,
+            $ids,
+            $timezone,
+            null
+        );
+    }
+
     public function getConfirmation(Appointment $appointment): array
     {
         $appointment->load(['employee', 'service', 'business']);
@@ -358,6 +564,48 @@ class BookingService implements BookingServiceInterface
         }
 
         return $total > 0 ? $total : $default;
+    }
+
+    /**
+     * Schedule + breaks + overlap checks for the internal admin/employee
+     * create flow. Skips min_booking_notice and max_booking_window — those
+     * are intentional for the public flow only.
+     */
+    private function assertInternalTimeBlockIsBookable(
+        int $employeeId,
+        string $dateYmd,
+        Carbon $blockStart,
+        Carbon $blockEnd,
+        string $timezone
+    ): void {
+        $date = Carbon::parse($dateYmd, $timezone)->startOfDay();
+        $schedule = $this->resolveEffectiveSchedule($employeeId, $date);
+        abort_if(! $schedule, 422, __('errors.booking.time_not_available'));
+
+        $scheduleStart = Carbon::parse($dateYmd.' '.$schedule->start_time, $timezone);
+        $scheduleEnd = Carbon::parse($dateYmd.' '.$schedule->end_time, $timezone);
+        abort_if(
+            $blockStart->lt($scheduleStart) || $blockEnd->gt($scheduleEnd),
+            422,
+            __('errors.booking.time_not_available')
+        );
+
+        foreach ($schedule->breaks as $break) {
+            $breakStart = Carbon::parse($dateYmd.' '.$break->start_time, $timezone);
+            $breakEnd = Carbon::parse($dateYmd.' '.$break->end_time, $timezone);
+            if ($blockStart->lt($breakEnd) && $blockEnd->gt($breakStart)) {
+                abort(422, __('errors.booking.time_not_available'));
+            }
+        }
+
+        $existingAppointments = $this->appointmentRepository->getByEmployeeAndDate($employeeId, $dateYmd);
+        foreach ($existingAppointments as $appt) {
+            $apptStart = Carbon::parse($dateYmd.' '.$appt->start_time, $timezone);
+            $apptEnd = Carbon::parse($dateYmd.' '.$appt->end_time, $timezone);
+            if ($blockStart->lt($apptEnd) && $blockEnd->gt($apptStart)) {
+                abort(422, __('errors.booking.time_no_longer_available'));
+            }
+        }
     }
 
     private function assertTimeBlockIsBookable(
@@ -416,7 +664,7 @@ class BookingService implements BookingServiceInterface
 
         $dayOfWeek = $date->dayOfWeekIso - 1;
 
-        return $this->scheduleRepository->findActiveByUserAndDay($employeeId, $dayOfWeek);
+        return $this->scheduleRepository->findActiveByUserAndDayForDate($employeeId, $dayOfWeek, $date->toDateString());
     }
 
     /**

@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import EmployeeLayout from '@/Layouts/EmployeeLayout';
 import Icon from '@/Components/Icon';
 import { useT } from '@/i18n/useT';
-import { appointmentStatusValue, formatAppointmentDate, formatTimeHm, patchSqMonthName } from '@/utils/appointmentDate';
+import { appointmentStatusValue, formatAppointmentDate, formatTimeHm, patchSqMonthName, sqWeekdayName } from '@/utils/appointmentDate';
 
 const DAY_OFF_MODAL_STATUS_BG = {
     pending: 'bg-surface-container-highest text-on-surface-variant',
@@ -50,8 +50,13 @@ function formatWeekRange(dateFrom, dateTo, locale) {
 }
 
 function formatDayHeader(dateStr, dayLabel, locale) {
+    const isSq = String(locale || '').toLowerCase().startsWith('sq');
+    const date = new Date(`${dateStr}T12:00:00`);
+    const weekdayPart = isSq
+        ? sqWeekdayName(date, 'long')
+        : (dayLabel || formatAppointmentDate(dateStr, { weekday: 'long' }, locale));
     const datePart = formatAppointmentDate(dateStr, { day: 'numeric', month: 'long' }, locale);
-    return `${dayLabel}, ${datePart}`;
+    return `${weekdayPart}, ${datePart}`;
 }
 
 /** "09:30" → "9:30" for compact break display (read-only). */

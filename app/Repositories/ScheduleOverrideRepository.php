@@ -39,7 +39,7 @@ class ScheduleOverrideRepository implements ScheduleOverrideRepositoryInterface
     {
         $override = ScheduleOverride::firstOrNew([
             'user_id' => $userId,
-            'date'    => $date,
+            'date' => $date,
         ]);
 
         $override->fill($values);

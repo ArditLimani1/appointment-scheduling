@@ -72,6 +72,25 @@ export default function EmployeeLayout({ children }) {
         ? (() => { try { return route('booking.employee', { slug: business.slug, employeeSlug: employeeSlug }); } catch { return `/book/${business.slug}/${employeeSlug}`; } })()
         : '#';
 
+    const currentUrl = usePage().url;
+    const createAppointmentHref = can('employee.appointments')
+        ? (() => {
+            try {
+                return route('employee.appointments.create', { return_to: currentUrl });
+            } catch {
+                return '#';
+            }
+        })()
+        : null;
+    const onEmployeeAppointmentCreate = (() => {
+        try {
+            return Boolean(route().current('employee.appointments.create'));
+        } catch {
+            return false;
+        }
+    })();
+    const showCreateAppointmentButton = Boolean(createAppointmentHref) && !onEmployeeAppointmentCreate;
+
     const isActive = (routeName) => {
         try {
             if (routeName === 'employee.dashboard') {
@@ -178,16 +197,15 @@ export default function EmployeeLayout({ children }) {
                     </nav>
 
                     <div className="pt-8 border-t border-outline-variant/40 space-y-5">
-                        {business?.slug && (
-                            <a
-                                href={employeeBookingUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 px-2 text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-colors uppercase tracking-widest"
+                        {showCreateAppointmentButton && (
+                            <Link
+                                href={createAppointmentHref}
+                                className="flex items-center justify-center gap-2 rounded-xl bg-on-surface px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-surface transition-opacity hover:opacity-90"
+                                aria-label={t('layout.employee.add_appointment')}
                             >
-                                <Icon name="open_in_new" size="text-sm" />
-                                {t('layout.employee.view_booking_page')}
-                            </a>
+                                <Icon name="add" size="text-base" />
+                                <span className="hidden sm:inline">{t('layout.employee.add_appointment')}</span>
+                            </Link>
                         )}
 
                         <div className="flex items-center gap-3 px-2">
@@ -228,16 +246,15 @@ export default function EmployeeLayout({ children }) {
                     </div>
 
                     <div className="flex items-center gap-3">
-                        {business?.slug && (
-                            <a
-                                href={employeeBookingUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="hidden sm:flex items-center gap-1.5 rounded-xl border border-outline-variant px-3 py-1.5 text-xs font-medium text-on-surface-variant hover:bg-surface-container transition-colors"
+                        {showCreateAppointmentButton && (
+                            <Link
+                                href={createAppointmentHref}
+                                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-on-surface px-2.5 py-2 text-xs font-bold text-surface transition-opacity hover:opacity-90 sm:px-3 sm:py-1.5"
+                                aria-label={t('layout.employee.add_appointment')}
                             >
-                                <Icon name="open_in_new" size="text-sm" />
-                                {t('layout.employee.booking_page')}
-                            </a>
+                                <Icon name="add" size="text-lg sm:text-sm" />
+                                <span className="hidden sm:inline">{t('layout.employee.add_appointment')}</span>
+                            </Link>
                         )}
                         <Dropdown>
                             <Dropdown.Trigger>

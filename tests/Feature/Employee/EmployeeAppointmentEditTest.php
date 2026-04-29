@@ -189,7 +189,7 @@ class EmployeeAppointmentEditTest extends TestCase
             [],
         );
 
-        $job->tries = (new SendCustomerAppointmentUpdateEmail())->tries();
+        $job->tries = (new SendCustomerAppointmentUpdateEmail)->tries();
 
         $this->assertSame(5, $job->tries);
     }

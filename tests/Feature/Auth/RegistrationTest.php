@@ -2,9 +2,9 @@
 
 namespace Tests\Feature\Auth;
 
-use App\Notifications\VerifyBusinessEmail;
 use App\Models\BusinessType;
 use App\Models\User;
+use App\Notifications\VerifyBusinessEmail;
 use Database\Seeders\BusinessTypeSeeder;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Testing\RefreshDatabase;

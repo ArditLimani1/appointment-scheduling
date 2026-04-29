@@ -2,130 +2,99 @@ import { Head, Link } from '@inertiajs/react';
 import Icon from '@/Components/Icon';
 import NiterminLogo from '@/Components/NiterminLogo';
 import LanguageSwitcher from '@/i18n/LanguageSwitcher';
+import { useT } from '@/i18n/useT';
 
-const highlights = [
-    {
-        icon: 'public',
-        title: 'Faqe Publike Për Termine',
-        description: 'Jepi biznesit tënd një link të thjeshtë rezervimi që klientët mund ta hapin nga telefoni ose shfletuesi.',
-    },
-    {
-        icon: 'group',
-        title: 'Orari I Ekipit',
-        description: 'Konfiguro punëtorët, shërbimet, orarin e punës, pushimet dhe disponueshmërinë individuale.',
-    },
-    {
-        icon: 'dashboard',
-        title: 'Panel Operativ',
-        description: 'Përcill terminet, aktivitetin dhe performancën ditore të biznesit nga një vend i vetëm.',
-    },
-    {
-        icon: 'event_available',
-        title: 'Disponueshmëri Inteligjente',
-        description: 'Orët e lira llogariten sipas orarit të punës, ndryshimeve, pushimeve, njoftimit minimal dhe kohëzgjatjes së shërbimit.',
-    },
-    {
-        icon: 'monitoring',
-        title: 'Analitika Dhe Eksporte',
-        description: 'Shiko trendet, të ardhurat dhe historikun e termineve, pastaj eksporto raportet kur të duhen.',
-    },
-    {
-        icon: 'admin_panel_settings',
-        title: 'Role Dhe Leje',
-        description: 'Ndaje qartë çfarë shohin administratorët dhe çfarë shohin punëtorët, që puna të mbetet e organizuar dhe e sigurt.',
-    },
-];
-
-const steps = [
-    {
-        number: '1',
-        title: 'Krijo biznesin tënd',
-        description: 'Vendos emrin, identitetin, zonën kohore, valutën dhe rregullat e rezervimit për pak minuta.',
-    },
-    {
-        number: '2',
-        title: 'Shto ekipin dhe shërbimet',
-        description: 'Përcakto çfarë ofron secili punëtor dhe vendos kohëzgjatjen, çmimin dhe disponueshmërinë.',
-    },
-    {
-        number: '3',
-        title: 'Fillo të pranosh termine',
-        description: 'Ndaje faqen tënde të NiTermin dhe lejo klientët të rezervojnë pa telefonata dhe pa pritje.',
-    },
-];
-
-const dashboardMetrics = [
-    { label: 'Punëtorë', value: '4' },
-    { label: 'Shërbime', value: '5' },
-    { label: 'Hapje rezervimi', value: '30 ditë' },
-    { label: 'Njoftim minimal', value: '60 min' },
-];
-
-const bookingMoments = [
-    'Zgjedh shërbimin',
-    'Zgjedh punëtorin',
-    'Përzgjedh orën e lirë',
-    'Konfirmon për sekonda',
-];
-
-const analyticsBars = [
-    { label: 'Hën', height: 'h-20' },
-    { label: 'Mar', height: 'h-28' },
-    { label: 'Mër', height: 'h-24' },
-    { label: 'Enj', height: 'h-36' },
-    { label: 'Pre', height: 'h-32' },
-    { label: 'Sht', height: 'h-16' },
-];
-
-const adminShowcase = [
-    {
-        icon: 'dashboard',
-        eyebrow: 'Dashboard',
-        title: 'Pamje e plotë e biznesit në një ekran.',
-        description: 'Dashboard-i i adminit përmbledh performancën e ekipit, shërbimet aktive, terminet e ditës dhe të ardhurat e momentit, që menaxhimi të jetë i shpejtë dhe i qartë.',
-        accent: 'Nga ekipi te të ardhurat',
-    },
-    {
-        icon: 'inventory_2',
-        eyebrow: 'Services',
-        title: 'Kontroll i plotë mbi shërbimet e kompanisë.',
-        description: 'Shto, përditëso, fshi ose çaktivizo shërbimet. Admini kontrollon emrin, përshkrimin, kohëzgjatjen, çmimin dhe disponueshmërinë e çdo oferte.',
-        accent: 'CRUD + status aktiv',
-    },
-    {
-        icon: 'badge',
-        eyebrow: 'Employees',
-        title: 'Menaxho punëtorët, rolet dhe shërbimet e tyre.',
-        description: 'Faqja e punëtorëve e bën të lehtë administrimin e stafit, caktimin e shërbimeve, kontrollin e qasjes dhe aktivizimin ose çaktivizimin e anëtarëve të ekipit.',
-        accent: 'Staf i organizuar',
-    },
-    {
-        icon: 'key',
-        eyebrow: 'Roles',
-        title: 'Role dhe leje të personalizuara për çdo biznes.',
-        description: 'Çdo kompani mund të krijojë role të ndryshme sipas nevojës së vet dhe të përcaktojë çfarë mund të shohë apo bëjë secili punëtor brenda sistemit.',
-        accent: 'Fleksibil për çdo kompani',
-    },
-    {
-        icon: 'calendar_month',
-        eyebrow: 'Appointments',
-        title: 'Menaxhim i termineve në listë ose kalendar.',
-        description: 'Admini mund të filtrojë terminet sipas punëtorit, datës dhe statusit, të editojë ose fshijë rezervime, si dhe të eksportojë të dhënat në Excel ose PDF.',
-        accent: 'Listë + Calendar view',
-    },
-    {
-        icon: 'monitoring',
-        eyebrow: 'Analytics',
-        title: 'Analitikë e detajuar për performancën dhe të ardhurat.',
-        description: 'NiTermin shfaq statistika për terminet, të ardhurat, performancën e secilit punëtor dhe pasqyrën mujore, me filtra për analizë më të saktë.',
-        accent: 'Revenue + performance',
-    },
-];
+const analyticsBarsHeights = ['h-20', 'h-28', 'h-24', 'h-36', 'h-32', 'h-16'];
 
 export default function Welcome({ auth, canLogin, canRegister }) {
+    const t = useT();
+
+    const highlights = [
+        { icon: 'public',              title: t('welcome.highlight_1_title'), description: t('welcome.highlight_1_desc') },
+        { icon: 'group',               title: t('welcome.highlight_2_title'), description: t('welcome.highlight_2_desc') },
+        { icon: 'dashboard',           title: t('welcome.highlight_3_title'), description: t('welcome.highlight_3_desc') },
+        { icon: 'event_available',     title: t('welcome.highlight_4_title'), description: t('welcome.highlight_4_desc') },
+        { icon: 'monitoring',          title: t('welcome.highlight_5_title'), description: t('welcome.highlight_5_desc') },
+        { icon: 'admin_panel_settings',title: t('welcome.highlight_6_title'), description: t('welcome.highlight_6_desc') },
+    ];
+
+    const steps = [
+        { number: '1', title: t('welcome.step_1_title'), description: t('welcome.step_1_desc') },
+        { number: '2', title: t('welcome.step_2_title'), description: t('welcome.step_2_desc') },
+        { number: '3', title: t('welcome.step_3_title'), description: t('welcome.step_3_desc') },
+    ];
+
+    const dashboardMetrics = [
+        { label: t('welcome.metric_workers'),  value: '4' },
+        { label: t('welcome.metric_services'), value: '5' },
+        { label: t('welcome.metric_window'),   value: t('welcome.metric_window_value') },
+        { label: t('welcome.metric_notice'),   value: t('welcome.metric_notice_value') },
+    ];
+
+    const bookingMoments = [
+        t('welcome.booking_step_1'),
+        t('welcome.booking_step_2'),
+        t('welcome.booking_step_3'),
+        t('welcome.booking_step_4'),
+    ];
+
+    const analyticsBars = [
+        { label: t('welcome.day_mon'), height: analyticsBarsHeights[0] },
+        { label: t('welcome.day_tue'), height: analyticsBarsHeights[1] },
+        { label: t('welcome.day_wed'), height: analyticsBarsHeights[2] },
+        { label: t('welcome.day_thu'), height: analyticsBarsHeights[3] },
+        { label: t('welcome.day_fri'), height: analyticsBarsHeights[4] },
+        { label: t('welcome.day_sat'), height: analyticsBarsHeights[5] },
+    ];
+
+    const adminShowcase = [
+        {
+            icon: 'dashboard',
+            eyebrow: 'Dashboard',
+            title: t('welcome.showcase_1_title'),
+            description: t('welcome.showcase_1_desc'),
+            accent: t('welcome.showcase_1_accent'),
+        },
+        {
+            icon: 'inventory_2',
+            eyebrow: 'Services',
+            title: t('welcome.showcase_2_title'),
+            description: t('welcome.showcase_2_desc'),
+            accent: t('welcome.showcase_2_accent'),
+        },
+        {
+            icon: 'badge',
+            eyebrow: 'Employees',
+            title: t('welcome.showcase_3_title'),
+            description: t('welcome.showcase_3_desc'),
+            accent: t('welcome.showcase_3_accent'),
+        },
+        {
+            icon: 'key',
+            eyebrow: 'Roles',
+            title: t('welcome.showcase_4_title'),
+            description: t('welcome.showcase_4_desc'),
+            accent: t('welcome.showcase_4_accent'),
+        },
+        {
+            icon: 'calendar_month',
+            eyebrow: 'Appointments',
+            title: t('welcome.showcase_5_title'),
+            description: t('welcome.showcase_5_desc'),
+            accent: t('welcome.showcase_5_accent'),
+        },
+        {
+            icon: 'monitoring',
+            eyebrow: 'Analytics',
+            title: t('welcome.showcase_6_title'),
+            description: t('welcome.showcase_6_desc'),
+            accent: t('welcome.showcase_6_accent'),
+        },
+    ];
+
     return (
         <div className="min-h-screen bg-surface font-body">
-            <Head title="NiTermin - Platformë Për Menaxhimin E Termineve" />
+            <Head title={t('welcome.meta_title')} />
 
             <header className="glass-header sticky top-0 z-30 border-b border-outline-variant">
                 <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
@@ -137,32 +106,32 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                         />
                     </Link>
 
-                    <nav className="flex items-center gap-2">
-                        <LanguageSwitcher />
+                    <nav className="flex items-center gap-1.5 sm:gap-2">
+                        <LanguageSwitcher className="ml-2 sm:ml-0" />
                         {auth?.user ? (
                             <Link
                                 href={route('dashboard')}
-                                className="primary-gradient flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-sm"
+                                className="primary-gradient flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-1.5 text-xs font-semibold text-white shadow-sm sm:px-4 sm:py-2 sm:text-sm"
                             >
                                 <Icon name="dashboard" size="text-base" />
-                                Paneli
+                                {t('welcome.nav_dashboard')}
                             </Link>
                         ) : (
                             <>
                                 {canLogin && (
                                     <Link
                                         href={route('login')}
-                                        className="rounded-xl px-4 py-2 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container-low"
+                                        className="rounded-xl px-3 py-1.5 text-xs font-medium text-on-surface-variant transition-colors hover:bg-surface-container-low sm:px-4 sm:py-2 sm:text-sm"
                                     >
-                                        Kyçu
+                                        {t('welcome.nav_login')}
                                     </Link>
                                 )}
                                 {canRegister && (
                                     <Link
                                         href={route('register')}
-                                        className="primary-gradient rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-sm"
+                                        className="primary-gradient -ml-1 whitespace-nowrap rounded-xl px-3 py-1.5 text-xs font-semibold text-white shadow-sm sm:ml-0 sm:px-4 sm:py-2 sm:text-sm"
                                     >
-                                        Fillo me NiTermin
+                                        {t('welcome.nav_register')}
                                     </Link>
                                 )}
                             </>
@@ -182,20 +151,21 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                     <div>
                         <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-outline-variant bg-surface-container-lowest px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-on-surface-variant">
                             <Icon name="bolt" size="text-sm" className="text-primary" />
-                            Ndërtuar Për Rezervime Reale
+                            {t('welcome.hero_badge')}
                         </span>
 
                         <h1 className="max-w-3xl text-5xl font-black font-headline leading-[1.02] tracking-tight text-on-surface sm:text-6xl lg:text-7xl">
-                            NiTermin mban
-                            <span className="block text-primary">çdo termin</span>
-                            në lëvizje.
+                            {t('welcome.hero_h1_line1')}
+                            <span className="block text-primary">{t('welcome.hero_h1_highlight')}</span>
+                            {t('welcome.hero_h1_line2')}
                         </h1>
 
                         <p className="mt-6 max-w-2xl text-lg leading-relaxed text-on-surface-variant sm:text-xl">
-                            <span className="font-semibold text-on-surface">Ni</span> do të thotë një.{' '}
-                            <span className="font-semibold text-on-surface">Termin</span> do të thotë takim apo rezervim.
-                            Së bashku, NiTermin u jep bizneseve shërbyese një vend të qartë për të menaxhuar rezervimet,
-                            oraret, stafin dhe rrjedhën e klientëve nga klikimi i parë deri te vizita e fundit.
+                            <span className="font-semibold text-on-surface">Ni</span>{' '}
+                            {t('welcome.hero_desc_ni_meaning')}{' '}
+                            <span className="font-semibold text-on-surface">Termin</span>{' '}
+                            {t('welcome.hero_desc_termin_meaning')}{' '}
+                            {t('welcome.hero_desc_rest')}
                         </p>
 
                         <div className="mt-10 flex flex-col gap-3 sm:flex-row">
@@ -204,7 +174,7 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                                     href={route('register')}
                                     className="primary-gradient inline-flex items-center justify-center gap-2 rounded-2xl px-8 py-4 text-base font-semibold text-white shadow-lg transition-transform hover:scale-[1.02]"
                                 >
-                                    Krijo biznesin tënd
+                                    {t('welcome.hero_cta_register')}
                                     <Icon name="arrow_forward" size="text-lg" />
                                 </Link>
                             )}
@@ -214,7 +184,7 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                                     href={route('login')}
                                     className="inline-flex items-center justify-center gap-2 rounded-2xl border border-outline-variant px-8 py-4 text-base font-medium text-on-surface transition-colors hover:bg-surface-container-low"
                                 >
-                                    Hape panelin
+                                    {t('welcome.hero_cta_login')}
                                 </Link>
                             )}
                         </div>
@@ -222,17 +192,17 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                         <div className="mt-4 flex flex-wrap items-center gap-3">
                             <span className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary">
                                 <Icon name="redeem" size="text-sm" />
-                                1 muaj falas për testim
+                                {t('welcome.hero_trial_badge')}
                             </span>
                             <span className="text-sm text-on-surface-variant">
-                                Provoje NiTermin pa obligim dhe shih si përshtatet me ritmin e biznesit tënd.
+                                {t('welcome.hero_trial_text')}
                             </span>
                         </div>
 
                         <div className="mt-8 flex flex-wrap gap-3 text-sm text-on-surface-variant">
-                            <span className="rounded-full bg-surface-container-low px-4 py-2">Faqe publike për rezervime</span>
-                            <span className="rounded-full bg-surface-container-low px-4 py-2">Role për admin dhe punëtorë</span>
-                            <span className="rounded-full bg-surface-container-low px-4 py-2">Analitika dhe eksporte</span>
+                            <span className="rounded-full bg-surface-container-low px-4 py-2">{t('welcome.hero_tag_1')}</span>
+                            <span className="rounded-full bg-surface-container-low px-4 py-2">{t('welcome.hero_tag_2')}</span>
+                            <span className="rounded-full bg-surface-container-low px-4 py-2">{t('welcome.hero_tag_3')}</span>
                         </div>
                     </div>
 
@@ -249,13 +219,13 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                                             className="h-10 w-10 rounded-2xl bg-surface p-2 text-on-surface"
                                         />
                                         <div>
-                                            <p className="text-sm font-bold font-headline text-on-surface">NiTermin Admin</p>
-                                            <p className="text-xs text-on-surface-variant">Pamje e shpejtë për sot</p>
+                                            <p className="text-sm font-bold font-headline text-on-surface">{t('welcome.card_admin_title')}</p>
+                                            <p className="text-xs text-on-surface-variant">{t('welcome.card_admin_subtitle')}</p>
                                         </div>
                                     </div>
                                     <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
                                         <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                                        Rezervime live
+                                        {t('welcome.card_live_badge')}
                                     </span>
                                 </div>
                             </div>
@@ -273,8 +243,8 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                                 <div className="rounded-3xl border border-outline-variant bg-surface p-5">
                                     <div className="mb-4 flex items-center justify-between">
                                         <div>
-                                            <p className="text-sm font-bold font-headline text-on-surface">Rrjedha e rezervimit</p>
-                                            <p className="text-xs text-on-surface-variant">E menduar për veprim të shpejtë nga klienti</p>
+                                            <p className="text-sm font-bold font-headline text-on-surface">{t('welcome.card_flow_title')}</p>
+                                            <p className="text-xs text-on-surface-variant">{t('welcome.card_flow_subtitle')}</p>
                                         </div>
                                         <Icon name="north_east" size="text-lg" className="text-primary" />
                                     </div>
@@ -292,9 +262,9 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                                 </div>
 
                                 <div className="rounded-3xl bg-primary p-5 text-white">
-                                    <p className="text-xs uppercase tracking-[0.22em] text-white/70">Pse funksionon</p>
+                                    <p className="text-xs uppercase tracking-[0.22em] text-white/70">{t('welcome.card_why_eyebrow')}</p>
                                     <p className="mt-2 text-base font-semibold leading-relaxed">
-                                        NiTermin i ul telefonatat, i mban oraret e ekipit të organizuara dhe e kthen disponueshmërinë në një përvojë të pastër rezervimi.
+                                        {t('welcome.card_why_text')}
                                     </p>
                                 </div>
                             </div>
@@ -305,14 +275,12 @@ export default function Welcome({ auth, canLogin, canRegister }) {
 
             <section className="mx-auto max-w-6xl px-6 py-16">
                 <div className="mb-12 max-w-3xl">
-                    <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">Çfarë Bën NiTermin</p>
+                    <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">{t('welcome.features_eyebrow')}</p>
                     <h2 className="mt-3 text-3xl font-black font-headline tracking-tight text-on-surface sm:text-4xl">
-                        Një platformë për operacione, rezervime dhe koordinim të ekipit.
+                        {t('welcome.features_heading')}
                     </h2>
                     <p className="mt-4 text-base leading-relaxed text-on-surface-variant sm:text-lg">
-                        Aplikacioni është ndërtuar për biznese që punojnë me termine dhe që kanë nevojë për më shumë se një formë të bukur.
-                        Ai mbështet rrjedhën reale të punës: konfigurimin e shërbimeve, oraret e punëtorëve, rezervimet publike,
-                        menaxhimin e termineve, analitikën dhe cilësimet e biznesit.
+                        {t('welcome.features_desc')}
                     </p>
                 </div>
 
@@ -334,13 +302,12 @@ export default function Welcome({ auth, canLogin, canRegister }) {
 
             <section className="mx-auto max-w-6xl px-6 py-16">
                 <div className="mb-12 max-w-3xl">
-                    <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">Nga Perspektiva E Adminit</p>
+                    <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">{t('welcome.admin_eyebrow')}</p>
                     <h2 className="mt-3 text-3xl font-black font-headline tracking-tight text-on-surface sm:text-4xl">
-                        Çdo faqe e panelit është ndërtuar për kontroll të qartë dhe punë të shpejtë.
+                        {t('welcome.admin_heading')}
                     </h2>
                     <p className="mt-4 text-base leading-relaxed text-on-surface-variant sm:text-lg">
-                        Bazuar në ekranet reale që ndave nga admin paneli, NiTermin ofron një përvojë të pastër menaxhimi për dashboard-in,
-                        shërbimet, punëtorët, rolet, terminet dhe analitikën.
+                        {t('welcome.admin_desc')}
                     </p>
                 </div>
 
@@ -378,8 +345,8 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                                             ))}
                                         </div>
                                         <div className="rounded-2xl bg-surface-container-low px-4 py-4">
-                                            <p className="text-sm font-semibold text-on-surface">Pasqyrë për sot</p>
-                                            <p className="mt-1 text-xs text-on-surface-variant">Punëtorë aktivë, shërbime aktive, terminet e ditës dhe të ardhurat në një vend.</p>
+                                            <p className="text-sm font-semibold text-on-surface">{t('welcome.metric_overview_title')}</p>
+                                            <p className="mt-1 text-xs text-on-surface-variant">{t('welcome.metric_overview_desc')}</p>
                                         </div>
                                     </div>
                                 )}
@@ -416,7 +383,7 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                                                 </div>
                                                 <span className="inline-flex items-center gap-1.5 rounded-full border border-on-primary-container/20 bg-on-primary-container/10 px-3 py-1 text-xs font-semibold text-on-primary-container">
                                                     <span className="h-1.5 w-1.5 rounded-full bg-on-primary-container" />
-                                                    Aktiv
+                                                    {t('welcome.showcase_3_active')}
                                                 </span>
                                             </div>
                                         ))}
@@ -426,8 +393,8 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                                 {index === 3 && (
                                     <div className="space-y-3">
                                         <div className="rounded-2xl bg-surface-container-low px-4 py-4">
-                                            <p className="text-sm font-semibold text-on-surface">Role të personalizuara</p>
-                                            <p className="mt-1 text-xs leading-relaxed text-on-surface-variant">Krijo role si menaxher, recepsionist ose staf operativ dhe cakto qasje të ndryshme sipas nevojës së kompanisë.</p>
+                                            <p className="text-sm font-semibold text-on-surface">{t('welcome.showcase_4_roles_title')}</p>
+                                            <p className="mt-1 text-xs leading-relaxed text-on-surface-variant">{t('welcome.showcase_4_roles_desc')}</p>
                                         </div>
                                         <div className="flex flex-wrap gap-2">
                                             {['Dashboard', 'Appointments', 'Services', 'Employees', 'Analytics'].map((pill) => (
@@ -442,7 +409,11 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                                 {index === 4 && (
                                     <div className="space-y-3">
                                         <div className="grid grid-cols-3 gap-2">
-                                            {['Punëtori', 'Data', 'Statusi'].map((filter) => (
+                                            {[
+                                                t('welcome.showcase_5_filter_worker'),
+                                                t('welcome.showcase_5_filter_date'),
+                                                t('welcome.showcase_5_filter_status'),
+                                            ].map((filter) => (
                                                 <div key={filter} className="rounded-2xl bg-surface-container-low px-3 py-3 text-center text-xs font-semibold text-on-surface">
                                                     {filter}
                                                 </div>
@@ -487,12 +458,12 @@ export default function Welcome({ auth, canLogin, canRegister }) {
             <section className="mx-auto max-w-6xl px-6 py-16">
                 <div className="grid gap-8 rounded-[2rem] border border-outline-variant bg-surface-container-lowest p-8 lg:grid-cols-[0.95fr_1.05fr] lg:p-10">
                     <div>
-                        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">Si Funksionon</p>
+                        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">{t('welcome.howto_eyebrow')}</p>
                         <h2 className="mt-3 text-3xl font-black font-headline tracking-tight text-on-surface sm:text-4xl">
-                            Nga konfigurimi deri te termini i konfirmuar.
+                            {t('welcome.howto_heading')}
                         </h2>
                         <p className="mt-4 max-w-xl text-base leading-relaxed text-on-surface-variant">
-                            NiTermin i ndihmon bizneset të kalojnë nga koordinimi manual në një sistem të qartë dhe të përsëritshëm rezervimi, pa shtuar kompleksitet.
+                            {t('welcome.howto_desc')}
                         </p>
                     </div>
 
@@ -524,17 +495,17 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                     />
 
                     <div className="relative">
-                        <p className="text-sm font-semibold uppercase tracking-[0.22em] text-white/75">Gati Për Nisje</p>
+                        <p className="text-sm font-semibold uppercase tracking-[0.22em] text-white/75">{t('welcome.cta_eyebrow')}</p>
                         <h2 className="mt-3 text-3xl font-black font-headline tracking-tight text-white sm:text-4xl">
-                            Le të bëhet NiTermin dera kryesore e termineve të tua.
+                            {t('welcome.cta_heading')}
                         </h2>
                         <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-white/80 sm:text-lg">
-                            Jepu klientëve një mënyrë të thjeshtë për rezervim. Jepi ekipit një orar të strukturuar. Jepi biznesit një ritëm më të mirë të përditshëm.
+                            {t('welcome.cta_desc')}
                         </p>
                         <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-5">
                             <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white">
                                 <Icon name="redeem" size="text-sm" />
-                                1 muaj falas për testim
+                                {t('welcome.cta_trial')}
                             </span>
 
                             {canRegister && (
@@ -542,7 +513,7 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                                     href={route('register')}
                                     className="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white px-8 py-4 text-base font-semibold text-slate-900 shadow-lg transition-transform hover:scale-[1.02]"
                                 >
-                                    Fillo me NiTermin
+                                    {t('welcome.cta_register')}
                                     <Icon name="arrow_forward" size="text-lg" />
                                 </Link>
                             )}
@@ -559,10 +530,10 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                             wordClassName="text-sm font-semibold tracking-tight text-on-surface"
                             dotClassName="text-on-surface-variant"
                         />
-                        <p className="text-xs text-on-surface-variant">Një termin, i menaxhuar më mirë.</p>
+                        <p className="text-xs text-on-surface-variant">{t('welcome.footer_tagline')}</p>
                     </div>
 
-                    <p className="text-xs text-on-surface-variant">© 2026 nitermin. Ndërtuar për biznese që punojnë me termine.</p>
+                    <p className="text-xs text-on-surface-variant">{t('welcome.footer_copy')}</p>
                 </div>
             </footer>
         </div>

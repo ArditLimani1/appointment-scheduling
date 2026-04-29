@@ -163,16 +163,11 @@ function statusIconName(status) {
     return 'schedule';
 }
 
-/** Outer slot outline: confirmed / cancelled use CSS keyword colors and a thick border (no tinted padding). */
-function statusOuterBorderStyle(status) {
+function statusIconClassName(status) {
     const s = appointmentStatusValue(status);
-    if (s === 'confirmed') {
-        return { border: '2px solid green' };
-    }
-    if (s === 'cancelled') {
-        return { border: '2px solid red' };
-    }
-    return { border: '2px solid rgb(203 213 225)' };
+    if (s === 'confirmed') return 'text-green-600';
+    if (s === 'cancelled') return 'text-red-600';
+    return 'text-slate-500';
 }
 
 /**
@@ -251,11 +246,11 @@ function DraggableEvent({
         zIndex: isDragging ? 50 : 1,
         opacity: isDragging ? 0.92 : 1,
         boxSizing: 'border-box',
-        ...statusOuterBorderStyle(apt.status),
     };
 
     const colors = getEmployeeSlotStyles(employeeColorMap, apt.employee_id);
-    const title = apt.service?.name || 'Appointment';
+    const employeeName = apt.employee?.name || apt.employee_name || 'Staff';
+    const serviceName = apt.service?.name || 'Appointment';
 
     return (
         <button
@@ -271,17 +266,22 @@ function DraggableEvent({
             }}
         >
             <span
-                className="pointer-events-none flex h-full min-h-0 flex-col justify-between rounded-md border-l-[3px] px-1.5 py-1.5 sm:py-2"
+                className="pointer-events-none flex h-full min-h-0 flex-col rounded-md border-l-[3px] px-1.5 py-1.5 sm:py-2"
                 style={{
                     backgroundColor: colors.bg,
                     borderLeftColor: colors.border,
                     color: colors.text,
                 }}
             >
-                <span className="flex items-start justify-between gap-0.5">
-                    <span className="min-w-0 truncate text-[8px] font-bold leading-tight sm:text-[10px]">{title}</span>
-                    <Icon name={statusIconName(apt.status)} size="text-[10px]" className="shrink-0 opacity-90 sm:text-xs" />
+                <span className="flex items-start justify-between gap-1">
+                    <span className="min-w-0 truncate text-[8px] font-extrabold leading-tight sm:text-[10px]">{employeeName}</span>
+                    <Icon
+                        name={statusIconName(apt.status)}
+                        size="text-sm"
+                        className={`shrink-0 sm:text-base ${statusIconClassName(apt.status)}`}
+                    />
                 </span>
+                <span className="mt-0.5 min-w-0 truncate text-[8px] font-semibold leading-tight opacity-95 sm:text-[10px]">{serviceName}</span>
             </span>
         </button>
     );
