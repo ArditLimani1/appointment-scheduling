@@ -4,7 +4,9 @@ import Icon from '@/Components/Icon';
 import LanguageSwitcher from '@/i18n/LanguageSwitcher';
 import { useT } from '@/i18n/useT';
 import { Link, usePage } from '@inertiajs/react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+
+const WORKSPACE_STORAGE_KEY = 'admin-layout:workspace';
 
 const navItems = [
     { labelKey: 'layout.admin.nav.dashboard', icon: 'dashboard', route: 'admin.dashboard', permission: 'admin.dashboard' },
@@ -18,9 +20,11 @@ const navItems = [
 ];
 
 const employeeNavItems = [
+    { labelKey: 'layout.admin.nav.my_dashboard', icon: 'dashboard', route: 'employee.dashboard', permission: 'employee.dashboard' },
     { labelKey: 'layout.admin.nav.my_appointments', icon: 'calendar_today', route: 'employee.appointments.index', permission: 'employee.dashboard' },
     { labelKey: 'layout.admin.nav.my_schedule', icon: 'calendar_view_week', route: 'employee.schedule.index', permission: 'employee.schedule' },
     { labelKey: 'layout.admin.nav.my_analytics', icon: 'analytics', route: 'employee.analytics.index', permission: 'employee.analytics' },
+    { labelKey: 'layout.admin.nav.my_configuration', icon: 'tune', route: 'employee.schedule.configuration', permission: 'employee.schedule' },
 ];
 
 const mobileNavItems = [
@@ -75,15 +79,50 @@ export default function AdminLayout({ children }) {
 
     const isActive = (routeName) => {
         try {
-            // Calendar is only linked from Appointments; highlight Appointments in nav on calendar too.
             if (routeName === 'admin.appointments.index') {
                 return route().current('admin.appointments.index') || route().current('admin.appointments.calendar');
+            }
+            if (routeName === 'employee.appointments.index') {
+                return route().current('employee.appointments.index') || route().current('employee.appointments.calendar');
+            }
+            if (routeName === 'employee.schedule.index') {
+                return route().current('employee.schedule.index');
             }
             return route().current(routeName) || route().current(routeName + '.*');
         } catch {
             return false;
         }
     };
+
+    const currentRouteIsEmployee = (() => {
+        try {
+            return route().current()?.startsWith('employee.') ?? false;
+        } catch {
+            return false;
+        }
+    })();
+
+    const [workspace, setWorkspace] = useState(() => {
+        if (typeof window === 'undefined') return 'admin';
+        if (currentRouteIsEmployee) return 'employee';
+        const stored = window.localStorage.getItem(WORKSPACE_STORAGE_KEY);
+        return stored === 'employee' ? 'employee' : 'admin';
+    });
+
+    useEffect(() => {
+        if (currentRouteIsEmployee && workspace !== 'employee') {
+            setWorkspace('employee');
+        }
+    }, [currentRouteIsEmployee, workspace]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        window.localStorage.setItem(WORKSPACE_STORAGE_KEY, workspace);
+    }, [workspace]);
+
+    const showTabs = visibleEmployeeNav.length > 0;
+    const effectiveWorkspace = showTabs ? workspace : 'admin';
+    const sidebarItems = effectiveWorkspace === 'employee' ? visibleEmployeeNav : visibleNav;
 
     const bookingUrl = business?.slug
         ? (() => { try { return route('booking.index', { slug: business.slug }); } catch { return '#'; } })()
@@ -112,8 +151,34 @@ export default function AdminLayout({ children }) {
                         </p>
                     </div>
 
+                    {showTabs && (
+                        <div className="mb-4 grid grid-cols-2 gap-1 rounded-2xl border border-outline-variant/60 bg-surface-container-low p-1">
+                            {[
+                                { value: 'admin', label: t('layout.admin.tab_admin'), icon: 'admin_panel_settings' },
+                                { value: 'employee', label: t('layout.admin.tab_employee'), icon: 'badge' },
+                            ].map((tab) => {
+                                const isSelected = effectiveWorkspace === tab.value;
+                                return (
+                                    <button
+                                        key={tab.value}
+                                        type="button"
+                                        onClick={() => setWorkspace(tab.value)}
+                                        className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-wider transition-all ${
+                                            isSelected
+                                                ? 'bg-primary-container text-white shadow-md'
+                                                : 'text-on-surface-variant hover:bg-surface hover:text-on-surface'
+                                        }`}
+                                    >
+                                        <Icon name={tab.icon} filled={isSelected} size="text-base" />
+                                        {tab.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    )}
+
                     <nav className="flex-1 space-y-1 overflow-y-auto">
-                        {visibleNav.map((item) => {
+                        {sidebarItems.map((item) => {
                             const active = isActive(item.route);
                             return (
                                 <Link
@@ -135,34 +200,6 @@ export default function AdminLayout({ children }) {
                                 </Link>
                             );
                         })}
-
-                        {visibleEmployeeNav.length > 0 && (
-                            <div className="pt-4">
-                                <p className="px-4 text-[10px] font-bold uppercase tracking-widest text-outline mb-2">{t('layout.admin.employee_workspace')}</p>
-                                {visibleEmployeeNav.map((item) => {
-                                    const active = isActive(item.route);
-                                    return (
-                                        <Link
-                                            key={item.route}
-                                            href={(() => { try { return route(item.route); } catch { return '#'; } })()}
-                                            className={`flex items-center gap-4 py-3 pl-4 text-sm transition-all duration-200 ${
-                                                active
-                                                    ? 'bg-surface-container-low text-on-surface font-bold border-l-2 border-on-surface rounded-r-lg'
-                                                    : 'text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface rounded-lg'
-                                            }`}
-                                        >
-                                            <Icon
-                                                name={item.icon}
-                                                filled={active}
-                                                size="text-[20px]"
-                                                className={active ? 'text-on-surface' : 'text-outline'}
-                                            />
-                                            <span className="font-medium">{item.label}</span>
-                                        </Link>
-                                    );
-                                })}
-                            </div>
-                        )}
                     </nav>
 
                     <div className="pt-8 border-t border-outline-variant/40 space-y-5">
