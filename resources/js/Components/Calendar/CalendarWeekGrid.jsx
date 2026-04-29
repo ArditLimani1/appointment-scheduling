@@ -212,6 +212,7 @@ function DraggableEvent({
     readOnly,
     employeeColorMap,
     gridLineMinutes,
+    hideEmployeeName = false,
 }) {
     const cancelled = appointmentStatusValue(apt.status) === 'cancelled';
     const id = `appt-${apt.id}`;
@@ -274,14 +275,18 @@ function DraggableEvent({
                 }}
             >
                 <span className="flex items-start justify-between gap-1">
-                    <span className="min-w-0 truncate text-[8px] font-extrabold leading-tight sm:text-[10px]">{employeeName}</span>
+                    <span className="min-w-0 truncate text-[8px] font-extrabold leading-tight sm:text-[10px]">
+                        {hideEmployeeName ? serviceName : employeeName}
+                    </span>
                     <Icon
                         name={statusIconName(apt.status)}
                         size="text-sm"
                         className={`shrink-0 sm:text-base ${statusIconClassName(apt.status)}`}
                     />
                 </span>
-                <span className="mt-0.5 min-w-0 truncate text-[8px] font-semibold leading-tight opacity-95 sm:text-[10px]">{serviceName}</span>
+                {!hideEmployeeName && (
+                    <span className="mt-0.5 min-w-0 truncate text-[8px] font-semibold leading-tight opacity-95 sm:text-[10px]">{serviceName}</span>
+                )}
             </span>
         </button>
     );
@@ -619,6 +624,8 @@ export default function CalendarWeekGrid({
     columnDates = [],
     appointments,
     employeeColorMap,
+    /** Employee self-view: only their appointments — hide redundant staff name on cards. */
+    hideEmployeeName = false,
     onEventClick,
     onAppointmentMove,
     dragSavingId,
@@ -1087,6 +1094,7 @@ export default function CalendarWeekGrid({
                                                 readOnly={readOnly}
                                                 disabled={dragSavingId === item.apt.id}
                                                 gridLineMinutes={gridLineMinutes}
+                                                hideEmployeeName={hideEmployeeName}
                                             />
                                         ))}
                                     </div>

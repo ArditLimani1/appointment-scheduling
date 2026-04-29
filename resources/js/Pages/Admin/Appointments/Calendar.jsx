@@ -497,6 +497,7 @@ export default function Calendar({
                     columnDates={column_dates}
                     appointments={appointments}
                     employeeColorMap={employeeColorMap}
+                    hideEmployeeName={employeeCalendar}
                     onEventClick={(apt) => setSelected(apt)}
                     onAppointmentMove={onAppointmentMove}
                     dragSavingId={dragSavingId}
