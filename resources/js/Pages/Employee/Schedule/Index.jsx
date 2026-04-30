@@ -2,6 +2,7 @@ import { Head, router, usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useState } from 'react';
 import EmployeeLayout from '@/Layouts/EmployeeLayout';
 import Icon from '@/Components/Icon';
+import TimeInputPicker from '@/Components/TimeInputPicker';
 import { useT } from '@/i18n/useT';
 import { appointmentStatusValue, formatAppointmentDate, formatTimeHm, patchSqMonthName, sqWeekdayName } from '@/utils/appointmentDate';
 
@@ -59,6 +60,11 @@ function formatDayHeader(dateStr, dayLabel, locale) {
     return `${weekdayPart}, ${datePart}`;
 }
 
+function isEndAfterStart(start, end) {
+    if (!start || !end) return false;
+    return String(end) > String(start);
+}
+
 /** "09:30" → "9:30" for compact break display (read-only). */
 function formatTimeShort(hm) {
     if (!hm || typeof hm !== 'string') return '';
@@ -71,14 +77,14 @@ function formatTimeShort(hm) {
 
 // ─── Add Break Modal ──────────────────────────────────────────────────────────
 
-function AddBreakModal({ dayLabel, onSave, onClose, initialBreak = null }) {
+function AddBreakModal({ dayLabel, onSave, onClose }) {
     const t = useT();
-    const [form, setForm] = useState(initialBreak ?? { start_time: '12:00', end_time: '13:00' });
+    const [form, setForm] = useState({ start_time: '12:00', end_time: '13:00' });
     const [error, setError] = useState('');
     useEffect(() => {
-        setForm(initialBreak ?? { start_time: '12:00', end_time: '13:00' });
+        setForm({ start_time: '12:00', end_time: '13:00' });
         setError('');
-    }, [initialBreak]);
+    }, [dayLabel]);
 
 
     const inputClass = 'rounded-xl border-0 bg-surface-container-low px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-surface-tint';
@@ -112,27 +118,27 @@ function AddBreakModal({ dayLabel, onSave, onClose, initialBreak = null }) {
                     <div className="flex items-center gap-3">
                         <div className="flex-1">
                             <label className="mb-1 block text-xs font-medium text-on-surface-variant">{t('employee.schedule.start_time')}</label>
-                            <input
-                                type="time"
+                            <TimeInputPicker
                                 value={form.start_time}
-                                onChange={(e) => {
-                                    setForm((f) => ({ ...f, start_time: e.target.value }));
+                                onChange={(next) => {
+                                    setForm((f) => ({ ...f, start_time: next }));
                                     setError('');
                                 }}
                                 className={`w-full ${inputClass}`}
+                                ariaLabel={t('employee.schedule.start_time')}
                             />
                         </div>
                         <span className="mt-5 text-on-surface-variant">–</span>
                         <div className="flex-1">
                             <label className="mb-1 block text-xs font-medium text-on-surface-variant">{t('employee.schedule.end_time')}</label>
-                            <input
-                                type="time"
+                            <TimeInputPicker
                                 value={form.end_time}
-                                onChange={(e) => {
-                                    setForm((f) => ({ ...f, end_time: e.target.value }));
+                                onChange={(next) => {
+                                    setForm((f) => ({ ...f, end_time: next }));
                                     setError('');
                                 }}
                                 className={`w-full ${inputClass}`}
+                                ariaLabel={t('employee.schedule.end_time')}
                             />
                         </div>
                     </div>
@@ -178,6 +184,7 @@ function DayOffBlockingModal({ dayLabel, appointments, onConfirm, onClose }) {
                         <h3 className="font-headline text-lg font-bold text-on-surface">{t('employee.schedule.day_off_blocking_title')}</h3>
                         <p className="mt-0.5 text-xs font-medium text-on-surface-variant">{dayLabel}</p>
                         <p className="mt-2 text-sm leading-relaxed text-on-surface-variant">{t('employee.schedule.day_off_blocking_intro')}</p>
+                        <p className="mt-2 text-sm font-semibold text-error">{t('employee.schedule.day_off_blocking_auto_cancel')}</p>
                     </div>
                     <button
                         type="button"
@@ -237,9 +244,38 @@ function DayOffBlockingModal({ dayLabel, appointments, onConfirm, onClose }) {
     );
 }
 
+function ValidationNoticeModal({ message, onClose }) {
+    const t = useT();
+    return (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 px-4">
+            <div className="w-full max-w-md rounded-2xl bg-surface p-6 shadow-2xl">
+                <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100">
+                        <Icon name="error" size="text-lg" className="text-red-600" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                        <h3 className="font-headline text-lg font-bold text-on-surface">{t('employee.schedule.invalid_time_title')}</h3>
+                        <p className="mt-1 text-sm text-on-surface-variant">{t('employee.schedule.invalid_time_intro')}</p>
+                        <p className="mt-2 text-sm font-semibold text-error">{message}</p>
+                    </div>
+                </div>
+                <div className="mt-6 flex justify-end">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="rounded-xl bg-on-surface px-5 py-2.5 text-sm font-bold text-surface transition-opacity hover:opacity-90"
+                    >
+                        {t('common.actions.close')}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // ─── Day Card ─────────────────────────────────────────────────────────────────
 
-function DayCard({ day, locale, onToggle, onUpdateDay, onOpenBreakModal, onEditBreak, onRemoveBreak }) {
+function DayCard({ day, locale, dayError, onToggle, onUpdateDay, onUpdateBreak, onOpenBreakModal, onRemoveBreak }) {
     const t = useT();
     const inputClass = 'w-full rounded-xl border-0 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:ring-2 focus:ring-surface-tint md:w-auto md:py-2';
 
@@ -276,62 +312,58 @@ function DayCard({ day, locale, onToggle, onUpdateDay, onOpenBreakModal, onEditB
                         <div className="grid w-full grid-cols-2 gap-3 md:flex md:flex-wrap md:justify-center md:gap-2">
                             <div className="min-w-0">
                                 <label className="mb-1 block text-xs text-on-surface-variant">{t('employee.schedule.from')}</label>
-                                <input
-                                    type="time"
+                                <TimeInputPicker
                                     value={day.start_time}
-                                    onChange={(e) => onUpdateDay(day.date, { start_time: e.target.value })}
+                                    onChange={(next) => onUpdateDay(day.date, { start_time: next })}
                                     className={inputClass}
+                                    ariaLabel={t('employee.schedule.from')}
                                 />
                             </div>
                             <div className="min-w-0">
                                 <label className="mb-1 block text-xs text-on-surface-variant">{t('employee.schedule.to')}</label>
-                                <input
-                                    type="time"
+                                <TimeInputPicker
                                     value={day.end_time}
-                                    onChange={(e) => onUpdateDay(day.date, { end_time: e.target.value })}
+                                    onChange={(next) => onUpdateDay(day.date, { end_time: next })}
                                     className={inputClass}
+                                    ariaLabel={t('employee.schedule.to')}
                                 />
                             </div>
                         </div>
                     )}
 
                     {day.is_active && (day.breaks ?? []).length > 0 && (
-                        <div className="flex w-full flex-col gap-2 md:items-center">
+                        <div className="flex w-full flex-col gap-2 md:w-auto md:max-w-[560px] md:items-center">
                             {day.breaks.map((brk, bi) => (
                                 <div
                                     key={bi}
-                                    className="flex min-w-0 w-full items-center gap-1 overflow-x-auto rounded-xl border border-outline-variant/40 bg-surface-container-low/90 px-3 py-2.5 md:w-auto md:max-w-full md:flex-nowrap md:items-center md:justify-center md:gap-2 md:overflow-visible md:border-0 md:bg-transparent md:px-0 md:py-0 md:shadow-none"
+                                    className="flex w-full items-center gap-2 rounded-xl border border-outline-variant/25 bg-surface-container-low/50 px-2 py-1.5 md:w-auto"
                                 >
-                                    {/* Mobile: flex-1 sides center the time; desktop (md): flat row like before */}
-                                    <div className="flex min-w-0 flex-1 basis-0 items-center justify-start md:contents">
-                                        <div className="flex shrink-0 items-center gap-1.5 text-on-surface-variant">
-                                            <Icon name="free_breakfast" size="text-sm" />
-                                            <span className="whitespace-nowrap text-xs font-semibold">{t('employee.schedule.break')}</span>
-                                        </div>
+                                    <div className="flex shrink-0 items-center gap-1.5 px-1 text-on-surface-variant">
+                                        <Icon name="free_breakfast" size="text-sm" />
+                                        <span className="whitespace-nowrap text-xs font-semibold">{t('employee.schedule.break')}</span>
                                     </div>
-                                    <span className="shrink-0 whitespace-nowrap px-1 text-center text-sm font-semibold tabular-nums text-on-surface md:rounded-xl md:border-0 md:bg-surface-container-low md:px-3 md:py-2 md:text-left md:text-on-surface">
-                                        {formatTimeShort(brk.start_time)}
-                                        <span className="mx-0.5 font-normal text-on-surface-variant">–</span>
-                                        {formatTimeShort(brk.end_time)}
-                                    </span>
-                                    <div className="flex min-w-0 flex-1 basis-0 items-center justify-end md:contents">
-                                        <button
-                                            type="button"
-                                            onClick={() => onEditBreak(day.date, bi)}
-                                            className="shrink-0 rounded-xl bg-surface-container p-2 text-on-surface transition-colors hover:bg-surface-container-high"
-                                            aria-label="Edit break"
-                                        >
-                                            <Icon name="edit" size="text-sm" />
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => onRemoveBreak(day.date, bi)}
-                                            className="shrink-0 rounded-xl bg-surface-container p-2 text-on-surface transition-colors hover:bg-surface-container-high"
-                                            aria-label={t('employee.schedule.remove_break')}
-                                        >
-                                            <Icon name="delete" size="text-sm" />
-                                        </button>
+                                    <div className="grid min-w-0 flex-1 grid-cols-2 gap-2">
+                                        <TimeInputPicker
+                                            value={brk.start_time}
+                                            onChange={(next) => onUpdateBreak(day.date, bi, { start_time: next })}
+                                            className={inputClass}
+                                            ariaLabel={t('employee.schedule.break_from')}
+                                        />
+                                        <TimeInputPicker
+                                            value={brk.end_time}
+                                            onChange={(next) => onUpdateBreak(day.date, bi, { end_time: next })}
+                                            className={inputClass}
+                                            ariaLabel={t('employee.schedule.break_to')}
+                                        />
                                     </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => onRemoveBreak(day.date, bi)}
+                                        className="shrink-0 rounded-xl bg-surface-container p-2 text-on-surface transition-colors hover:bg-surface-container-high"
+                                        aria-label={t('employee.schedule.remove_break')}
+                                    >
+                                        <Icon name="delete" size="text-sm" />
+                                    </button>
                                 </div>
                             ))}
                         </div>
@@ -350,6 +382,9 @@ function DayCard({ day, locale, onToggle, onUpdateDay, onOpenBreakModal, onEditB
                     )}
                 </div>
             </div>
+            {dayError ? (
+                <p className="mt-2 text-xs font-semibold text-error">{dayError}</p>
+            ) : null}
         </div>
     );
 }
@@ -363,8 +398,9 @@ export default function Index({ days: initialDays, dateFrom, dateTo }) {
 
     const [days, setDays] = useState(initialDays);
     const [breakModalDate, setBreakModalDate] = useState(null); // date string of the day being edited
-    const [editingBreakIndex, setEditingBreakIndex] = useState(null);
     const [dayOffModal, setDayOffModal] = useState(null); // { date, dayLabel, appointments }
+    const [dayErrors, setDayErrors] = useState({});
+    const [validationModalMessage, setValidationModalMessage] = useState('');
 
     useEffect(() => { setDays(initialDays); }, [initialDays]);
 
@@ -434,8 +470,20 @@ export default function Index({ days: initialDays, dateFrom, dateTo }) {
         const updated = days.map((d) =>
             (d.date === date ? { ...d, ...patch, is_overridden: true } : d),
         );
+        const target = updated.find((d) => d.date === date);
+        if (target && !isEndAfterStart(target.start_time, target.end_time)) {
+            const message = t('employee.schedule.end_after_start');
+            setDayErrors((prev) => ({ ...prev, [date]: message }));
+            setValidationModalMessage(message);
+            return;
+        }
+        setDayErrors((prev) => {
+            const next = { ...prev };
+            delete next[date];
+            return next;
+        });
         autoSave(updated, 'day_time_updated');
-    }, [days, autoSave]);
+    }, [days, autoSave, t]);
 
     // ── Add break (via modal) ─────────────────────────────────────────────
 
@@ -445,21 +493,36 @@ export default function Index({ days: initialDays, dateFrom, dateTo }) {
             (d.date === breakModalDate
                 ? {
                     ...d,
-                    breaks: editingBreakIndex === null
-                        ? [...(d.breaks ?? []), brk]
-                        : (d.breaks ?? []).map((existing, i) => (i === editingBreakIndex ? brk : existing)),
+                    breaks: [...(d.breaks ?? []), brk],
                     is_overridden: true,
                 }
                 : d),
         );
         setBreakModalDate(null);
-        setEditingBreakIndex(null);
-        autoSave(updated, editingBreakIndex === null ? 'break_added' : 'break_updated');
-    }, [days, breakModalDate, editingBreakIndex, autoSave]);
-    const handleEditBreak = useCallback((date, breakIndex) => {
-        setBreakModalDate(date);
-        setEditingBreakIndex(breakIndex);
-    }, []);
+        autoSave(updated, 'break_added');
+    }, [days, breakModalDate, autoSave]);
+
+    const handleUpdateBreak = useCallback((date, breakIndex, patch) => {
+        const updated = days.map((d) => {
+            if (d.date !== date) return d;
+            const breaks = (d.breaks ?? []).map((existing, i) => (i === breakIndex ? { ...existing, ...patch } : existing));
+            return { ...d, breaks, is_overridden: true };
+        });
+        const target = updated.find((d) => d.date === date);
+        const invalidBreak = (target?.breaks ?? []).some((b) => !isEndAfterStart(b.start_time, b.end_time));
+        if (invalidBreak) {
+            const message = t('employee.schedule.break_end_after_start');
+            setDayErrors((prev) => ({ ...prev, [date]: message }));
+            setValidationModalMessage(message);
+            return;
+        }
+        setDayErrors((prev) => {
+            const next = { ...prev };
+            delete next[date];
+            return next;
+        });
+        autoSave(updated, 'break_updated');
+    }, [days, autoSave, t]);
 
 
     // ── Remove break ──────────────────────────────────────────────────────
@@ -476,9 +539,6 @@ export default function Index({ days: initialDays, dateFrom, dateTo }) {
     // ─────────────────────────────────────────────────────────────────────
 
     const breakModalDay = breakModalDate ? days.find((d) => d.date === breakModalDate) : null;
-    const modalInitialBreak = breakModalDay && editingBreakIndex !== null
-        ? (breakModalDay.breaks ?? [])[editingBreakIndex] ?? null
-        : null;
 
     return (
         <EmployeeLayout>
@@ -547,13 +607,13 @@ export default function Index({ days: initialDays, dateFrom, dateTo }) {
                         key={day.date}
                         day={day}
                         locale={dateLocale}
+                        dayError={dayErrors[day.date]}
                         onToggle={handleToggle}
                         onUpdateDay={handleUpdateDay}
+                        onUpdateBreak={handleUpdateBreak}
                         onOpenBreakModal={(date) => {
                             setBreakModalDate(date);
-                            setEditingBreakIndex(null);
                         }}
-                        onEditBreak={handleEditBreak}
                         onRemoveBreak={handleRemoveBreak}
                     />
                 ))}
@@ -566,9 +626,7 @@ export default function Index({ days: initialDays, dateFrom, dateTo }) {
                     onSave={handleSaveBreak}
                     onClose={() => {
                         setBreakModalDate(null);
-                        setEditingBreakIndex(null);
                     }}
-                    initialBreak={modalInitialBreak}
                 />
             )}
 
@@ -578,6 +636,12 @@ export default function Index({ days: initialDays, dateFrom, dateTo }) {
                     appointments={dayOffModal.appointments}
                     onConfirm={confirmDayOffDespiteAppointments}
                     onClose={() => setDayOffModal(null)}
+                />
+            ) : null}
+            {validationModalMessage ? (
+                <ValidationNoticeModal
+                    message={validationModalMessage}
+                    onClose={() => setValidationModalMessage('')}
                 />
             ) : null}
 

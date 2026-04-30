@@ -114,6 +114,7 @@ export default function Index({
         date_to: filters.date_to ?? currentMonthEnd(),
         service_id: filters.service_id != null ? String(filters.service_id) : '',
     });
+    const [showMobileFilters, setShowMobileFilters] = useState(false);
 
     const visitOpts = useMemo(() => ({ preserveState: false, replace: true, preserveScroll: true }), []);
 
@@ -162,7 +163,18 @@ export default function Index({
 
             {/* Filters — same stacked / full-width pattern as admin analytics */}
             <section className="mb-8 rounded-2xl bg-surface-container-lowest p-4 ring-1 ring-slate-100 shadow-sm sm:p-6">
-                <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:flex-nowrap lg:items-end lg:gap-3 lg:w-full">
+                <div className="mb-3 lg:hidden">
+                    <button
+                        type="button"
+                        onClick={() => setShowMobileFilters((v) => !v)}
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-slate-50"
+                    >
+                        <Icon name="tune" size="text-base" />
+                        {showMobileFilters ? t('employee.analytics.hide_filters') : t('employee.analytics.show_filters')}
+                        <Icon name={showMobileFilters ? 'expand_less' : 'expand_more'} size="text-base" />
+                    </button>
+                </div>
+                <div className={`${showMobileFilters ? 'flex' : 'hidden'} min-w-0 flex-col gap-4 lg:flex lg:flex-row lg:flex-nowrap lg:items-end lg:gap-3 lg:w-full`}>
                     <DatePicker
                         className="w-full min-w-0 lg:flex-1 lg:min-w-0"
                         label={t('employee.analytics.from')}

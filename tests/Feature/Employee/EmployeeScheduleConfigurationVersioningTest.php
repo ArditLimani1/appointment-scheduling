@@ -2,7 +2,9 @@
 
 namespace Tests\Feature\Employee;
 
+use App\Enums\AppointmentStatus;
 use App\Enums\UserRole;
+use App\Models\Appointment;
 use App\Models\Business;
 use App\Models\BusinessType;
 use App\Models\Schedule;
@@ -161,6 +163,122 @@ class EmployeeScheduleConfigurationVersioningTest extends TestCase
             $futureMonday['breaks'],
             'The latest break edit should be reflected on future Mondays'
         );
+
+        Carbon::setTestNow();
+    }
+
+    public function test_day_off_modal_and_auto_cancel_consider_only_future_pending_or_confirmed_appointments(): void
+    {
+        $this->seed(BusinessTypeSeeder::class);
+
+        $owner = User::factory()->create(['role' => UserRole::Admin]);
+        $business = Business::create([
+            'owner_id' => $owner->id,
+            'business_type_id' => BusinessType::query()->value('id'),
+            'name' => 'Day Off Rules Biz',
+            'slug' => 'day-off-rules-biz',
+            'timezone' => 'UTC',
+            'currency' => 'EUR',
+            'currency_symbol' => 'EUR',
+            'is_active' => true,
+            'slot_duration' => 30,
+        ]);
+
+        $employee = User::factory()->create([
+            'role' => UserRole::Employee,
+            'business_id' => $business->id,
+        ]);
+
+        Carbon::setTestNow(Carbon::parse('2026-05-01 09:00:00', 'UTC'));
+
+        $today = '2026-05-01';
+        $future = '2026-05-02';
+
+        Appointment::create([
+            'booking_reference' => 'A1',
+            'business_id' => $business->id,
+            'employee_id' => $employee->id,
+            'client_first_name' => 'Past',
+            'client_last_name' => 'Today',
+            'date' => $today,
+            'start_time' => '08:00:00',
+            'end_time' => '08:30:00',
+            'price' => 10,
+            'status' => AppointmentStatus::Confirmed,
+        ]);
+        Appointment::create([
+            'booking_reference' => 'A2',
+            'business_id' => $business->id,
+            'employee_id' => $employee->id,
+            'client_first_name' => 'Future',
+            'client_last_name' => 'Today',
+            'date' => $today,
+            'start_time' => '09:00:00',
+            'end_time' => '09:30:00',
+            'price' => 10,
+            'status' => AppointmentStatus::Pending,
+        ]);
+        Appointment::create([
+            'booking_reference' => 'A3',
+            'business_id' => $business->id,
+            'employee_id' => $employee->id,
+            'client_first_name' => 'Cancelled',
+            'client_last_name' => 'Future',
+            'date' => $future,
+            'start_time' => '10:00:00',
+            'end_time' => '10:30:00',
+            'price' => 10,
+            'status' => AppointmentStatus::Cancelled,
+        ]);
+        Appointment::create([
+            'booking_reference' => 'A4',
+            'business_id' => $business->id,
+            'employee_id' => $employee->id,
+            'client_first_name' => 'Confirmed',
+            'client_last_name' => 'Future',
+            'date' => $future,
+            'start_time' => '11:00:00',
+            'end_time' => '11:30:00',
+            'price' => 10,
+            'status' => AppointmentStatus::Confirmed,
+        ]);
+
+        $service = app(ScheduleServiceInterface::class);
+
+        $days = $service->getDaysForRange($employee, $today, $future);
+        $todayRow = collect($days)->firstWhere('date', $today);
+        $futureRow = collect($days)->firstWhere('date', $future);
+
+        $this->assertNotNull($todayRow);
+        $this->assertNotNull($futureRow);
+        $this->assertSame(['09:00'], collect($todayRow['appointments'])->pluck('start_time')->all());
+        $this->assertSame(['11:00'], collect($futureRow['appointments'])->pluck('start_time')->all());
+
+        $service->saveOverrides($employee, [
+            'days' => [
+                [
+                    'date' => $today,
+                    'is_active' => false,
+                    'is_overridden' => true,
+                    'start_time' => '09:00',
+                    'end_time' => '17:00',
+                    'breaks' => [],
+                ],
+                [
+                    'date' => $future,
+                    'is_active' => false,
+                    'is_overridden' => true,
+                    'start_time' => '09:00',
+                    'end_time' => '17:00',
+                    'breaks' => [],
+                ],
+            ],
+        ]);
+
+        $this->assertSame(AppointmentStatus::Confirmed, Appointment::query()->where('booking_reference', 'A1')->firstOrFail()->status);
+        $this->assertSame(AppointmentStatus::Cancelled, Appointment::query()->where('booking_reference', 'A2')->firstOrFail()->status);
+        $this->assertSame(AppointmentStatus::Cancelled, Appointment::query()->where('booking_reference', 'A3')->firstOrFail()->status);
+        $this->assertSame(AppointmentStatus::Cancelled, Appointment::query()->where('booking_reference', 'A4')->firstOrFail()->status);
 
         Carbon::setTestNow();
     }

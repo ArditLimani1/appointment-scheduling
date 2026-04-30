@@ -130,11 +130,11 @@ function ExportDropdown({ excelUrl, pdfUrl }) {
     }, [open]);
 
     return (
-        <div ref={ref} className="relative w-full shrink-0 sm:w-auto">
+        <div ref={ref} className="relative shrink-0">
             <button
                 type="button"
                 onClick={() => setOpen((v) => !v)}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-on-surface px-6 py-3 text-sm font-bold text-surface transition-opacity hover:opacity-90 sm:w-auto"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-on-surface px-6 py-3 text-sm font-bold text-surface transition-opacity hover:opacity-90"
             >
                 <Icon name="download" size="text-lg" />
                 {t('common.actions.export')}
@@ -192,6 +192,7 @@ export default function Index({
         status: normalizeAppointmentStatusFilter(filters.status),
         service_id: normalizeServiceFilterForState(filters.service_id),
     });
+    const [showMobileFilters, setShowMobileFilters] = useState(false);
 
     useEffect(() => {
         setLocalFilters({
@@ -337,7 +338,7 @@ export default function Index({
             >
                 <Link
                     href={route('admin.appointments.calendar')}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-on-surface transition-colors hover:bg-slate-50 sm:w-auto"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-on-surface transition-colors hover:bg-slate-50"
                 >
                     <Icon name="calendar_view_week" size="text-lg" />
                     {t('admin.appointments.calendar')}
@@ -349,7 +350,18 @@ export default function Index({
             </PageHeader>
 
             <div className="mb-6 rounded-2xl bg-surface-container-lowest p-4 ring-1 ring-slate-100 shadow-sm">
-                <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:flex-nowrap lg:items-end lg:gap-3 lg:w-full">
+                <div className="mb-3 lg:hidden">
+                    <button
+                        type="button"
+                        onClick={() => setShowMobileFilters((v) => !v)}
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-slate-50"
+                    >
+                        <Icon name="tune" size="text-base" />
+                        {showMobileFilters ? t('admin.appointments.hide_filters') : t('admin.appointments.show_filters')}
+                        <Icon name={showMobileFilters ? 'expand_less' : 'expand_more'} size="text-base" />
+                    </button>
+                </div>
+                <div className={`${showMobileFilters ? 'flex' : 'hidden'} min-w-0 flex-col gap-4 lg:flex lg:flex-row lg:flex-nowrap lg:items-end lg:gap-3 lg:w-full`}>
                     <FilterListbox
                         label={t('admin.appointments.employee')}
                         value={localFilters.employee_id}
