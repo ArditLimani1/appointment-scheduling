@@ -2,6 +2,7 @@ import { Head, router, usePage } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
 import EmployeeLayout from '@/Layouts/EmployeeLayout';
 import Icon from '@/Components/Icon';
+import TimeInputPicker from '@/Components/TimeInputPicker';
 import { useT } from '@/i18n/useT';
 
 /** Next calendar date (including today) that falls on this weekday; `dayOfWeek` 0 = Monday … 6 = Sunday. */
@@ -21,6 +22,11 @@ function representativeDateForWeekday(dayOfWeek) {
 
 function formatDayHeader(_dateStr, dayLabel, _locale) {
     return dayLabel;
+}
+
+function isEndAfterStart(start, end) {
+    if (!start || !end) return false;
+    return String(end) > String(start);
 }
 
 /** "09:30" → "9:30" for compact break display (read-only). */
@@ -117,6 +123,35 @@ function ConfirmSaveModal({ onConfirm, onCancel }) {
     );
 }
 
+function ValidationNoticeModal({ message, onClose }) {
+    const t = useT();
+    return (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/40 px-4">
+            <div className="w-full max-w-md rounded-2xl bg-surface p-6 shadow-2xl">
+                <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100">
+                        <Icon name="error" size="text-lg" className="text-red-600" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                        <h3 className="font-headline text-lg font-bold text-on-surface">{t('employee.schedule.invalid_time_title')}</h3>
+                        <p className="mt-1 text-sm text-on-surface-variant">{t('employee.schedule.invalid_time_intro')}</p>
+                        <p className="mt-2 text-sm font-semibold text-error">{message}</p>
+                    </div>
+                </div>
+                <div className="mt-6 flex justify-end">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="rounded-xl bg-on-surface px-5 py-2.5 text-sm font-bold text-surface transition-opacity hover:opacity-90"
+                    >
+                        {t('common.actions.close')}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // ─── Editable personal booking URL field ─────────────────────────────────────
 function PersonalBookingUrlField({ label, businessSlug, value, onChange, error }) {
     const t = useT();
@@ -158,14 +193,14 @@ function PersonalBookingUrlField({ label, businessSlug, value, onChange, error }
 }
 
 // ─── Add Break Modal (same as Schedule / Availability view) ──────────────────
-function AddBreakModal({ dayLabel, onSave, onClose, initialBreak = null }) {
+function AddBreakModal({ dayLabel, onSave, onClose }) {
     const t = useT();
-    const [form, setForm] = useState(initialBreak ?? { start_time: '12:00', end_time: '13:00' });
+    const [form, setForm] = useState({ start_time: '12:00', end_time: '13:00' });
     const [error, setError] = useState('');
     useEffect(() => {
-        setForm(initialBreak ?? { start_time: '12:00', end_time: '13:00' });
+        setForm({ start_time: '12:00', end_time: '13:00' });
         setError('');
-    }, [initialBreak]);
+    }, [dayLabel]);
 
 
     const inputClass = 'rounded-xl border-0 bg-surface-container-low px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-surface-tint';
@@ -199,21 +234,21 @@ function AddBreakModal({ dayLabel, onSave, onClose, initialBreak = null }) {
                     <div className="flex items-center gap-3">
                         <div className="flex-1">
                             <label className="mb-1 block text-xs font-medium text-on-surface-variant">{t('employee.schedule.start_time')}</label>
-                            <input
-                                type="time"
+                            <TimeInputPicker
                                 value={form.start_time}
-                                onChange={(e) => { setForm((f) => ({ ...f, start_time: e.target.value })); setError(''); }}
+                                onChange={(next) => { setForm((f) => ({ ...f, start_time: next })); setError(''); }}
                                 className={`w-full ${inputClass}`}
+                                ariaLabel={t('employee.schedule.start_time')}
                             />
                         </div>
                         <span className="mt-5 text-on-surface-variant">–</span>
                         <div className="flex-1">
                             <label className="mb-1 block text-xs font-medium text-on-surface-variant">{t('employee.schedule.end_time')}</label>
-                            <input
-                                type="time"
+                            <TimeInputPicker
                                 value={form.end_time}
-                                onChange={(e) => { setForm((f) => ({ ...f, end_time: e.target.value })); setError(''); }}
+                                onChange={(next) => { setForm((f) => ({ ...f, end_time: next })); setError(''); }}
                                 className={`w-full ${inputClass}`}
+                                ariaLabel={t('employee.schedule.end_time')}
                             />
                         </div>
                     </div>
@@ -245,7 +280,7 @@ function AddBreakModal({ dayLabel, onSave, onClose, initialBreak = null }) {
 }
 
 // ─── Day card (layout matches Schedule / Availability `DayCard`) ─────────────
-function ConfigurationDayCard({ day, locale, onChange, onOpenBreakModal, onEditBreak, onRemoveBreak }) {
+function ConfigurationDayCard({ day, locale, dayError, onChange, onUpdateBreak, onOpenBreakModal, onRemoveBreak }) {
     const t = useT();
     const inputClass =
         'w-full rounded-xl border-0 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:ring-2 focus:ring-surface-tint md:w-auto md:py-2';
@@ -284,61 +319,58 @@ function ConfigurationDayCard({ day, locale, onChange, onOpenBreakModal, onEditB
                         <div className="grid w-full grid-cols-2 gap-3 md:flex md:flex-wrap md:justify-center md:gap-2">
                             <div className="min-w-0">
                                 <label className="mb-1 block text-xs text-on-surface-variant">{t('employee.schedule.from')}</label>
-                                <input
-                                    type="time"
+                                <TimeInputPicker
                                     value={day.start_time}
-                                    onChange={(e) => onChange({ ...day, start_time: e.target.value })}
+                                    onChange={(next) => onChange({ ...day, start_time: next })}
                                     className={inputClass}
+                                    ariaLabel={t('employee.schedule.from')}
                                 />
                             </div>
                             <div className="min-w-0">
                                 <label className="mb-1 block text-xs text-on-surface-variant">{t('employee.schedule.to')}</label>
-                                <input
-                                    type="time"
+                                <TimeInputPicker
                                     value={day.end_time}
-                                    onChange={(e) => onChange({ ...day, end_time: e.target.value })}
+                                    onChange={(next) => onChange({ ...day, end_time: next })}
                                     className={inputClass}
+                                    ariaLabel={t('employee.schedule.to')}
                                 />
                             </div>
                         </div>
                     )}
 
                     {day.is_active && (day.breaks ?? []).length > 0 && (
-                        <div className="flex w-full flex-col gap-2 md:items-center">
+                        <div className="flex w-full flex-col gap-2 md:w-auto md:max-w-[560px] md:items-center">
                             {(day.breaks ?? []).map((brk, bi) => (
                                 <div
                                     key={bi}
-                                    className="flex min-w-0 w-full items-center gap-1 overflow-x-auto rounded-xl border border-outline-variant/40 bg-surface-container-low/90 px-3 py-2.5 md:w-auto md:max-w-full md:flex-nowrap md:items-center md:justify-center md:gap-2 md:overflow-visible md:border-0 md:bg-transparent md:px-0 md:py-0"
+                                    className="flex w-full items-center gap-2 rounded-xl border border-outline-variant/25 bg-surface-container-low/50 px-2 py-1.5 md:w-auto"
                                 >
-                                    <div className="flex min-w-0 flex-1 basis-0 items-center justify-start md:contents">
-                                        <div className="flex shrink-0 items-center gap-1.5 text-on-surface-variant">
-                                            <Icon name="free_breakfast" size="text-sm" />
-                                            <span className="whitespace-nowrap text-xs font-semibold">{t('employee.schedule.break')}</span>
-                                        </div>
+                                    <div className="flex shrink-0 items-center gap-1.5 px-1 text-on-surface-variant">
+                                        <Icon name="free_breakfast" size="text-sm" />
+                                        <span className="whitespace-nowrap text-xs font-semibold">{t('employee.schedule.break')}</span>
                                     </div>
-                                    <span className="shrink-0 whitespace-nowrap px-1 text-center text-sm font-semibold tabular-nums text-on-surface md:rounded-xl md:border-0 md:bg-surface-container-low md:px-3 md:py-2 md:text-left md:text-on-surface">
-                                        {formatTimeShort(brk.start_time)}
-                                        <span className="mx-0.5 font-normal text-on-surface-variant">–</span>
-                                        {formatTimeShort(brk.end_time)}
-                                    </span>
-                                    <div className="flex min-w-0 flex-1 basis-0 items-center justify-end md:contents">
-                                        <button
-                                            type="button"
-                                            onClick={() => onEditBreak(bi)}
-                                            className="shrink-0 rounded-xl bg-surface-container p-2 text-on-surface transition-colors hover:bg-surface-container-high"
-                                            aria-label="Edit break"
-                                        >
-                                            <Icon name="edit" size="text-sm" />
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => onRemoveBreak(bi)}
-                                            className="shrink-0 rounded-xl bg-surface-container p-2 text-on-surface transition-colors hover:bg-surface-container-high"
-                                            aria-label={t('employee.schedule.remove_break')}
-                                        >
-                                            <Icon name="delete" size="text-sm" />
-                                        </button>
+                                    <div className="grid min-w-0 flex-1 grid-cols-2 gap-2">
+                                        <TimeInputPicker
+                                            value={brk.start_time}
+                                            onChange={(next) => onUpdateBreak(bi, { start_time: next })}
+                                            className={inputClass}
+                                            ariaLabel={t('employee.schedule.break_from')}
+                                        />
+                                        <TimeInputPicker
+                                            value={brk.end_time}
+                                            onChange={(next) => onUpdateBreak(bi, { end_time: next })}
+                                            className={inputClass}
+                                            ariaLabel={t('employee.schedule.break_to')}
+                                        />
                                     </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => onRemoveBreak(bi)}
+                                        className="shrink-0 rounded-xl bg-surface-container p-2 text-on-surface transition-colors hover:bg-surface-container-high"
+                                        aria-label={t('employee.schedule.remove_break')}
+                                    >
+                                        <Icon name="delete" size="text-sm" />
+                                    </button>
                                 </div>
                             ))}
                         </div>
@@ -357,6 +389,9 @@ function ConfigurationDayCard({ day, locale, onChange, onOpenBreakModal, onEditB
                     )}
                 </div>
             </div>
+            {dayError ? (
+                <p className="mt-2 text-xs font-semibold text-error">{dayError}</p>
+            ) : null}
         </div>
     );
 }
@@ -397,11 +432,12 @@ export default function Configuration({
     const [activeTab, setActiveTab] = useState('info');
     const [days, setDays] = useState(() => buildDays(initialSchedules));
     const [breakModalDayIndex, setBreakModalDayIndex] = useState(null);
-    const [editingBreakIndex, setEditingBreakIndex] = useState(null);
     const [bookingSlug, setBookingSlug] = useState(initialBookingSlug ?? '');
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [savingInfo, setSavingInfo] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [dayErrors, setDayErrors] = useState({});
+    const [validationModalMessage, setValidationModalMessage] = useState('');
     useEffect(() => {
         if (bookingSlugError) {
             setActiveTab('info');
@@ -430,6 +466,17 @@ export default function Configuration({
     };
 
     const updateDay = (index, updated) => {
+        if (!isEndAfterStart(updated.start_time, updated.end_time)) {
+            const message = t('employee.schedule.end_after_start');
+            setDayErrors((prev) => ({ ...prev, [updated.day_of_week]: message }));
+            setValidationModalMessage(message);
+            return;
+        }
+        setDayErrors((prev) => {
+            const next = { ...prev };
+            delete next[updated.day_of_week];
+            return next;
+        });
         applyAndPersistDays((prev) => prev.map((d, i) => (i === index ? updated : d)));
     };
 
@@ -439,14 +486,11 @@ export default function Configuration({
             i === breakModalDayIndex
                 ? {
                     ...d,
-                    breaks: editingBreakIndex === null
-                        ? [...(d.breaks ?? []), brk]
-                        : (d.breaks ?? []).map((existing, j) => (j === editingBreakIndex ? brk : existing)),
+                    breaks: [...(d.breaks ?? []), brk],
                 }
                 : d
         )));
         setBreakModalDayIndex(null);
-        setEditingBreakIndex(null);
     };
 
     const handleRemoveBreak = (dayIndex, breakIndex) => {
@@ -457,9 +501,25 @@ export default function Configuration({
         )));
     };
 
-    const handleEditBreak = (dayIndex, breakIndex) => {
-        setBreakModalDayIndex(dayIndex);
-        setEditingBreakIndex(breakIndex);
+    const handleUpdateBreak = (dayIndex, breakIndex, patch) => {
+        const day = days[dayIndex];
+        if (!day) return;
+        const breaks = (day.breaks ?? []).map((existing, j) => (j === breakIndex ? { ...existing, ...patch } : existing));
+        const invalidBreak = breaks.some((b) => !isEndAfterStart(b.start_time, b.end_time));
+        if (invalidBreak) {
+            const message = t('employee.schedule.break_end_after_start');
+            setDayErrors((prev) => ({ ...prev, [day.day_of_week]: message }));
+            setValidationModalMessage(message);
+            return;
+        }
+        setDayErrors((prev) => {
+            const next = { ...prev };
+            delete next[day.day_of_week];
+            return next;
+        });
+        applyAndPersistDays((prev) =>
+            prev.map((d, i) => (i === dayIndex ? { ...d, breaks } : d)),
+        );
     };
 
     const handleSaveInfo = (e) => {
@@ -590,12 +650,12 @@ export default function Configuration({
                                 key={day.day_of_week}
                                 day={day}
                                 locale={dateLocale}
+                                dayError={dayErrors[day.day_of_week]}
                                 onChange={(updated) => updateDay(i, updated)}
+                                onUpdateBreak={(bi, patch) => handleUpdateBreak(i, bi, patch)}
                                 onOpenBreakModal={() => {
                                     setBreakModalDayIndex(i);
-                                    setEditingBreakIndex(null);
                                 }}
-                                onEditBreak={(bi) => handleEditBreak(i, bi)}
                                 onRemoveBreak={(bi) => handleRemoveBreak(i, bi)}
                             />
                         ))}
@@ -613,13 +673,7 @@ export default function Configuration({
                     onSave={handleSaveBreak}
                     onClose={() => {
                         setBreakModalDayIndex(null);
-                        setEditingBreakIndex(null);
                     }}
-                    initialBreak={
-                        editingBreakIndex !== null
-                            ? ((days[breakModalDayIndex].breaks ?? [])[editingBreakIndex] ?? null)
-                            : null
-                    }
                 />
             )}
 
@@ -629,6 +683,12 @@ export default function Configuration({
                     onCancel={() => setConfirmOpen(false)}
                 />
             )}
+            {validationModalMessage ? (
+                <ValidationNoticeModal
+                    message={validationModalMessage}
+                    onClose={() => setValidationModalMessage('')}
+                />
+            ) : null}
 
         </EmployeeLayout>
     );

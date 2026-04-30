@@ -64,3 +64,69 @@
         animation: onboarding-step-in-back 320ms cubic-bezier(0.22, 1, 0.36, 1);
     }
 }
+
+/* Timepicker-UI app styling overrides */
+.tp-ui-modal.app-timepicker {
+    background-color: rgba(0, 0, 0, 0.4) !important;
+    backdrop-filter: none !important;
+}
+
+.tp-ui-wrapper.app-timepicker,
+.tp-ui-wrapper.mobile.app-timepicker {
+    background-color: #f3f4f6 !important;
+    color: #111827 !important;
+    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.22) !important;
+}
+
+.tp-ui-wrapper.app-timepicker .tp-ui-select-time,
+.tp-ui-wrapper.app-timepicker .tp-ui-hour-text,
+.tp-ui-wrapper.app-timepicker .tp-ui-minute-text,
+.tp-ui-wrapper.app-timepicker .tp-ui-hour.mobile,
+.tp-ui-wrapper.app-timepicker .tp-ui-minutes.mobile {
+    color: #111827 !important;
+}
+
+.tp-ui-wrapper.app-timepicker .tp-ui-hour,
+.tp-ui-wrapper.app-timepicker .tp-ui-minutes,
+.tp-ui-wrapper.app-timepicker .tp-ui-hour.mobile,
+.tp-ui-wrapper.app-timepicker .tp-ui-minutes.mobile {
+    background-color: #e5e7eb !important;
+    color: #111827 !important;
+}
+
+.tp-ui-wrapper.app-timepicker .tp-ui-dots span {
+    background-color: #4b5563 !important;
+}
+
+.app-timepicker .tp-ui-ok-btn,
+.app-timepicker .tp-ui-clear-btn {
+    background-color: #111827 !important;
+    color: #ffffff !important;
+    border-radius: 0.75rem !important;
+    font-size: 0.875rem !important;
+    font-weight: 700 !important;
+    line-height: 1.25rem !important;
+    padding: 0.625rem 1.5rem !important;
+    font-family: inherit !important;
+}
+
+.app-timepicker .tp-ui-ok-btn,
+.app-timepicker .tp-ui-clear-btn {
+    border: 0;
+}
+
+.app-timepicker .tp-ui-cancel-btn {
+    background-color: #ffffff !important;
+    color: #6b7280 !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 0.75rem !important;
+    font-size: 0.875rem !important;
+    font-weight: 500 !important;
+    line-height: 1.25rem !important;
+    padding: 0.625rem 1.25rem !important;
+    font-family: inherit !important;
+}
+
+.app-timepicker .tp-ui-cancel-btn {
+    margin-right: 6px;
+}

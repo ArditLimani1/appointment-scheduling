@@ -253,6 +253,7 @@ export default function EmployeeAppointmentsIndex({
         service_id: normalizeServiceFilterForState(filters.service_id),
         search: searchFromServer,
     });
+    const [showMobileFilters, setShowMobileFilters] = useState(false);
 
     const [clientSearchDraft, setClientSearchDraft] = useState(searchFromServer);
     const searchDebounceRef = useRef(null);
@@ -468,7 +469,18 @@ export default function EmployeeAppointmentsIndex({
             </PageHeader>
 
             <div className="mb-6 rounded-2xl bg-surface-container-lowest p-4 ring-1 ring-slate-100 shadow-sm">
-                <div className="flex flex-col gap-4 xl:flex-row xl:flex-nowrap xl:items-end xl:gap-3">
+                <div className="mb-3 xl:hidden">
+                    <button
+                        type="button"
+                        onClick={() => setShowMobileFilters((v) => !v)}
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-slate-50"
+                    >
+                        <Icon name="tune" size="text-base" />
+                        {showMobileFilters ? t('employee.appointments.hide_filters') : t('employee.appointments.show_filters')}
+                        <Icon name={showMobileFilters ? 'expand_less' : 'expand_more'} size="text-base" />
+                    </button>
+                </div>
+                <div className={`${showMobileFilters ? 'flex' : 'hidden'} flex-col gap-4 xl:flex xl:flex-row xl:flex-nowrap xl:items-end xl:gap-3`}>
                     <DatePicker
                         className="w-full min-w-0 xl:w-auto"
                         label={t('employee.appointments.from')}

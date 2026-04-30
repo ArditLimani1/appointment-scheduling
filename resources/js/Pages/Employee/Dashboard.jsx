@@ -179,7 +179,7 @@ export default function Dashboard({
                 </div>
                 <Link
                     href={route('employee.appointments.index', {}, false)}
-                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-on-surface hover:bg-slate-50"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-on-surface hover:bg-slate-50 sm:w-auto"
                 >
                     <Icon name="calendar_today" size="text-lg" />
                     {t('employee.dashboard.all_appointments')}

@@ -32,6 +32,7 @@ const mobileNavItems = [
     { labelKey: 'layout.admin.nav.services', icon: 'layers', route: 'admin.services.index', permission: 'admin.services' },
     { labelKey: 'layout.admin.nav.employees', icon: 'badge', route: 'admin.employees.index', permission: 'admin.employees' },
     { labelKey: 'layout.admin.nav.appointments', icon: 'calendar_today', route: 'admin.appointments.index', permission: 'admin.appointments' },
+    { labelKey: 'layout.admin.nav.analytics', icon: 'analytics', route: 'admin.analytics.index', permission: 'admin.analytics' },
     { labelKey: 'layout.admin.mobile.config', icon: 'settings', route: 'admin.settings.index', permission: 'admin.settings' },
 ];
 
@@ -306,21 +307,21 @@ export default function AdminLayout({ children }) {
                 </main>
             </div>
 
-            <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-outline-variant/30 bg-surface px-2 py-1.5 lg:hidden">
+            <nav className="fixed bottom-0 left-0 right-0 z-40 grid grid-cols-6 items-center border-t border-outline-variant/30 bg-surface px-1 py-1.5 lg:hidden">
                 {visibleMobileNav.map((item) => {
                     const active = isActive(item.route);
                     return (
                         <Link
                             key={item.route}
                             href={(() => { try { return route(item.route); } catch { return '#'; } })()}
-                            className={`flex flex-col items-center gap-0.5 px-3 py-1.5 text-[10px] font-medium transition-all ${
+                            className={`flex min-w-0 flex-col items-center gap-0.5 px-1 py-1.5 text-[9px] font-medium transition-all ${
                                 active ? 'text-on-surface' : 'text-outline'
                             }`}
                         >
-                            <div className={`rounded-full px-4 py-1 ${active ? 'bg-surface-container' : ''}`}>
+                            <div className={`rounded-full px-2.5 py-1 ${active ? 'bg-surface-container' : ''}`}>
                                 <Icon name={item.icon} filled={active} size="text-xl" />
                             </div>
-                            <span>{item.label}</span>
+                            <span className="max-w-full truncate">{item.label}</span>
                         </Link>
                     );
                 })}

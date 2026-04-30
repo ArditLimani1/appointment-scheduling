@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
 use App\Models\Business;
 use App\Models\User;
@@ -64,6 +65,10 @@ class ScheduleService implements ScheduleServiceInterface
     public function getDaysForRange(User $user, string $dateFrom, string $dateTo): array
     {
         $normalize = fn ($t) => $t ? substr((string) $t, 0, 5) : '09:00';
+        $timezone = $user->business?->timezone ?: config('app.timezone');
+        $now = Carbon::now($timezone);
+        $today = $now->toDateString();
+        $nowTime = $now->format('H:i:s');
 
         $overrides = $this->scheduleOverrideRepository
             ->getByUserAndDateRange($user->id, $dateFrom, $dateTo)
@@ -130,6 +135,14 @@ class ScheduleService implements ScheduleServiceInterface
             ->where('employee_id', $user->id)
             ->whereDate('date', '>=', $dateFrom)
             ->whereDate('date', '<=', $dateTo)
+            ->whereIn('status', [AppointmentStatus::Pending->value, AppointmentStatus::Confirmed->value])
+            ->where(function ($q) use ($today, $nowTime) {
+                $q->whereDate('date', '>', $today)
+                    ->orWhere(function ($qq) use ($today, $nowTime) {
+                        $qq->whereDate('date', $today)
+                            ->whereTime('start_time', '>=', $nowTime);
+                    });
+            })
             ->with(['service'])
             ->orderBy('start_time')
             ->get()
@@ -225,6 +238,11 @@ class ScheduleService implements ScheduleServiceInterface
      */
     public function saveOverrides(User $user, array $data): void
     {
+        $timezone = $user->business?->timezone ?: config('app.timezone');
+        $now = Carbon::now($timezone);
+        $today = $now->toDateString();
+        $nowTime = $now->format('H:i:s');
+
         foreach ($data['days'] as $dayData) {
             if (! ($dayData['is_overridden'] ?? false)) {
                 // Remove any existing override → revert to base schedule
@@ -242,6 +260,22 @@ class ScheduleService implements ScheduleServiceInterface
                     'end_time' => $dayData['end_time'] ?? '17:00',
                 ]
             );
+
+            if (! ($dayData['is_active'] ?? true)) {
+                $cancelQuery = Appointment::query()
+                    ->where('employee_id', $user->id)
+                    ->whereDate('date', $dayData['date'])
+                    ->whereIn('status', [AppointmentStatus::Pending->value, AppointmentStatus::Confirmed->value]);
+
+                if ($dayData['date'] === $today) {
+                    $cancelQuery->whereTime('start_time', '>=', $nowTime);
+                }
+
+                $cancelQuery->update([
+                    'status' => AppointmentStatus::Cancelled->value,
+                    'updated_by' => $user->id,
+                ]);
+            }
 
             $this->scheduleOverrideRepository->deleteBreaks($override);
 

@@ -1,5 +1,5 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import EmployeeLayout from '@/Layouts/EmployeeLayout';
 import PageHeader from '@/Components/PageHeader';
@@ -87,6 +87,51 @@ function formatRangeSubtitle(rangeStart, rangeEnd, view, localeBcp47) {
     }, localeBcp47)}`;
 }
 
+function ExportDropdown({ excelUrl, pdfUrl }) {
+    const t = useT();
+    const [open, setOpen] = useState(false);
+    const ref = useRef(null);
+
+    useEffect(() => {
+        if (!open) return;
+        const handleClick = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+        document.addEventListener('mousedown', handleClick);
+        return () => document.removeEventListener('mousedown', handleClick);
+    }, [open]);
+
+    return (
+        <div ref={ref} className="relative shrink-0">
+            <button
+                type="button"
+                onClick={() => setOpen((v) => !v)}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-on-surface px-6 py-3 text-sm font-bold text-surface transition-opacity hover:opacity-90"
+            >
+                <Icon name="download" size="text-lg" />
+                {t('common.actions.export')}
+                <span className="ml-1 text-xs opacity-70">▾</span>
+            </button>
+            {open && (
+                <div className="absolute right-0 mt-2 w-44 rounded-xl bg-white shadow-lg ring-1 ring-black/10 z-50 overflow-hidden">
+                    <a
+                        href={excelUrl}
+                        onClick={() => setOpen(false)}
+                        className="flex items-center gap-2 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                        <Icon name="table_chart" size="text-base" /> {t('admin.appointments.export_excel')}
+                    </a>
+                    <a
+                        href={pdfUrl}
+                        onClick={() => setOpen(false)}
+                        className="flex items-center gap-2 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                        <Icon name="picture_as_pdf" size="text-base" /> {t('admin.appointments.export_pdf')}
+                    </a>
+                </div>
+            )}
+        </div>
+    );
+}
+
 export default function Calendar({
     appointments = [],
     employees = [],
@@ -130,6 +175,7 @@ export default function Calendar({
     );
 
     const [localFilters, setLocalFilters] = useState(normalizedFilters);
+    const [showMobileFilters, setShowMobileFilters] = useState(false);
 
     useEffect(() => {
         setLocalFilters(normalizedFilters);
@@ -259,6 +305,26 @@ export default function Calendar({
 
     const employeeColorMap = useMemo(() => buildEmployeeColorMap(employees), [employees]);
 
+    const buildExportUrl = useCallback(
+        (routeName) => {
+            const params = new URLSearchParams();
+            params.set('date_from', range_start);
+            params.set('date_to', range_end);
+            appendAppointmentStatusParams(params, localFilters.status);
+            const sid = localFilters.service_id;
+            if (sid != null && sid !== '' && sid !== SERVICE_FILTER_ALL) {
+                params.set('service_id', String(sid));
+            }
+            if (!employeeCalendar && localFilters.employee_id) {
+                params.set('employee_id', String(localFilters.employee_id));
+            }
+            const queryString = params.toString();
+            const pathname = getRoutePathname(routeName);
+            return pathname + (queryString ? `?${queryString}` : '');
+        },
+        [range_start, range_end, localFilters.status, localFilters.service_id, localFilters.employee_id, employeeCalendar],
+    );
+
     const selfViewEmployeeId = useMemo(() => {
         if (!employeeCalendar) {
             return null;
@@ -287,7 +353,7 @@ export default function Calendar({
                       clearWrap: 'flex w-full shrink-0 items-end justify-end xl:ml-auto xl:w-auto xl:justify-end',
                       clearBtn:
                           'w-full rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-slate-50 max-xl:min-h-[2.75rem] xl:mr-2 xl:w-auto',
-                      navWrap: 'flex flex-wrap items-center gap-2 xl:hidden',
+                      navWrap: 'grid w-full grid-cols-[1fr_1.45fr_1fr_1fr] items-center gap-2 xl:hidden',
                       clearControlsWrap: 'hidden xl:flex xl:items-center xl:gap-2',
                   }
                 : {
@@ -300,7 +366,7 @@ export default function Calendar({
                       clearWrap: 'flex w-full shrink-0 items-end justify-end lg:ml-auto lg:w-auto lg:justify-end',
                       clearBtn:
                           'w-full rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-slate-50 max-lg:min-h-[2.75rem] lg:mr-2 lg:w-auto',
-                      navWrap: 'flex flex-wrap items-center gap-2 lg:hidden',
+                      navWrap: 'grid w-full grid-cols-[1fr_1.45fr_1fr_1fr] items-center gap-2 lg:hidden',
                       clearControlsWrap: 'hidden lg:flex lg:items-center lg:gap-2',
                   },
         [employeeCalendar],
@@ -314,23 +380,22 @@ export default function Calendar({
 
             <div className="w-full min-w-0 max-w-full">
                 {employeeCalendar ? (
-                    <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-                        <div className="min-w-0 flex-1">
-                            <h1 className="mb-2 font-headline text-4xl font-extrabold tracking-tight text-on-surface">{t('admin.appointments.title')}</h1>
-                            <p className="mt-1.5 max-w-none text-sm leading-relaxed text-on-surface-variant sm:max-w-lg">
-                                {t('admin.calendar.employee_description')}
-                            </p>
-                        </div>
-                        <div className="flex w-full shrink-0 flex-wrap justify-end gap-2 sm:w-auto">
-                            <Link
-                                href={`${route('employee.appointments.index', {}, false)}?list=1`}
-                                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-on-surface hover:bg-slate-50"
-                            >
-                                <Icon name="view_list" size="text-lg" />
-                                {t('admin.calendar.table_view')}
-                            </Link>
-                        </div>
-                    </div>
+                    <PageHeader
+                        title={t('admin.appointments.title')}
+                        description={t('admin.calendar.employee_description')}
+                    >
+                        <Link
+                            href={`${route('employee.appointments.index', {}, false)}?list=1`}
+                            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-on-surface hover:bg-slate-50"
+                        >
+                            <Icon name="view_list" size="text-lg" />
+                            {t('admin.calendar.table_view')}
+                        </Link>
+                        <ExportDropdown
+                            excelUrl={buildExportUrl('employee.appointments.export')}
+                            pdfUrl={buildExportUrl('employee.appointments.export-pdf')}
+                        />
+                    </PageHeader>
                 ) : (
                     <PageHeader
                         title={t('admin.appointments.title')}
@@ -338,11 +403,15 @@ export default function Calendar({
                     >
                         <Link
                             href={`${route('admin.appointments.index', {}, false)}?list=1`}
-                            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-on-surface hover:bg-slate-50"
+                            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-on-surface hover:bg-slate-50"
                         >
                             <Icon name="view_list" size="text-lg" />
-                            {t('admin.calendar.list_view')}
+                            {t('admin.calendar.table_view')}
                         </Link>
+                        <ExportDropdown
+                            excelUrl={buildExportUrl('admin.appointments.export')}
+                            pdfUrl={buildExportUrl('admin.appointments.export-pdf')}
+                        />
                     </PageHeader>
                 )}
 
@@ -351,17 +420,17 @@ export default function Calendar({
                         <button
                             type="button"
                             onClick={goPrev}
-                            className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50"
+                            className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50"
                             aria-label={t('admin.calendar.previous_period')}
                         >
                             <Icon name="chevron_left" />
                         </button>
-                        <div className="flex h-11 items-stretch">
+                        <div className="flex h-11 w-full items-stretch">
                             <FilterListbox
                                 value={localFilters.view}
                                 onChange={(v) => patchFilters({ view: v, date: localFilters.date })}
                                 options={viewOptions}
-                                minWidthClass="min-w-[104px]"
+                                minWidthClass="w-full min-w-0"
                                 compact
                                 showLabel={false}
                             />
@@ -369,7 +438,7 @@ export default function Calendar({
                         <button
                             type="button"
                             onClick={goNext}
-                            className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50"
+                            className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50"
                             aria-label={t('admin.calendar.next_period')}
                         >
                             <Icon name="chevron_right" />
@@ -377,7 +446,7 @@ export default function Calendar({
                         <button
                             type="button"
                             onClick={goToday}
-                            className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50"
+                            className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50"
                             title={t('admin.calendar.today')}
                             aria-label={t('admin.calendar.today')}
                         >
@@ -385,7 +454,19 @@ export default function Calendar({
                         </button>
                     </div>
 
-                    <div className={calendarFilterBarClasses.row}>
+                    <div className="mt-3 md:hidden">
+                        <button
+                            type="button"
+                            onClick={() => setShowMobileFilters((v) => !v)}
+                            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-slate-50"
+                        >
+                            <Icon name="tune" size="text-base" />
+                            {showMobileFilters ? t('admin.calendar.hide_filters') : t('admin.calendar.show_filters')}
+                            <Icon name={showMobileFilters ? 'expand_less' : 'expand_more'} size="text-base" />
+                        </button>
+                    </div>
+
+                    <div className={`${showMobileFilters ? 'flex' : 'hidden'} md:flex ${calendarFilterBarClasses.row}`}>
                         {!employeeCalendar && (
                             <FilterListbox
                                 label={t('admin.calendar.employee')}
@@ -465,7 +546,7 @@ export default function Calendar({
                     </div>
 
                     {!employeeCalendar && (
-                        <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-slate-100 pt-4">
+                        <div className={`${showMobileFilters ? 'flex' : 'hidden'} mt-4 flex-wrap items-center gap-4 border-t border-slate-100 pt-4 md:flex`}>
                             <span className="text-[10px] font-bold uppercase tracking-widest text-outline">{t('admin.calendar.staff')}</span>
                             <div className="flex flex-wrap gap-4">
                                 {employees.map((e) => (
