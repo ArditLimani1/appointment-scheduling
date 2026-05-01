@@ -24,6 +24,7 @@ class ProfileController extends Controller
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
         $validated = $request->validated();
+        unset($validated['current_password']);
 
         $request->user()->fill($validated);
 

@@ -35,7 +35,10 @@ class StoreEmployeeRequest extends FormRequest
                 Rule::exists('business_roles', 'id')->where('business_id', $businessId),
             ],
             'service_ids' => ['nullable', 'array'],
-            'service_ids.*' => ['exists:services,id'],
+            'service_ids.*' => [
+                'integer',
+                Rule::exists('services', 'id')->where('business_id', $businessId),
+            ],
         ];
     }
 }

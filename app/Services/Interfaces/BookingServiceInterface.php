@@ -17,7 +17,7 @@ interface BookingServiceInterface
      */
     public function createBooking(string $slug, array $data): Collection;
 
-    public function getConfirmation(Appointment $appointment): array;
+    public function getConfirmationByReference(string $reference): array;
 
     /**
      * @param  array<string, mixed>  $data  `employee_id`, `service_id`, `date`, optional `exclude_id`, optional `ignore_schedule_breaks` (bool, default false: when true, scheduled breaks are ignored for slot generation).

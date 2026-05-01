@@ -10,7 +10,15 @@ class UpdateAppointmentStatusRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        $user = $this->user();
+        if (! $user || ! $user->hasPermission('admin.appointments')) {
+            return false;
+        }
+
+        $business = $user->panelBusiness();
+        $appointment = $this->route('appointment');
+
+        return $business && $appointment && (int) $appointment->business_id === (int) $business->id;
     }
 
     public function rules(): array

@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Repositories\Interfaces\EmployeeRepositoryInterface;
 use App\Repositories\Interfaces\ServiceRepositoryInterface;
 use App\Services\Interfaces\EmployeeServiceInterface;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class EmployeeService implements EmployeeServiceInterface
@@ -54,12 +55,15 @@ class EmployeeService implements EmployeeServiceInterface
             unset($data['business_role_id']);
         }
 
+        $wasActive = (bool) $employee->is_active;
+        $nextActive = array_key_exists('is_active', $data) ? (bool) $data['is_active'] : $wasActive;
+
         $this->employeeRepository->update($employee, [
             'name' => $data['name'],
             'email' => $data['email'],
             'phone' => $data['phone'] ?? null,
             'title' => $data['title'] ?? null,
-            'is_active' => $data['is_active'] ?? $employee->is_active,
+            'is_active' => $nextActive,
             'business_role_id' => array_key_exists('business_role_id', $data)
                 ? $data['business_role_id']
                 : $employee->business_role_id,
@@ -71,7 +75,23 @@ class EmployeeService implements EmployeeServiceInterface
 
         $this->employeeRepository->syncServices($employee, $data['service_ids'] ?? []);
 
+        if ($wasActive && ! $nextActive) {
+            $this->revokeActiveSessions($employee);
+        }
+
         return $employee;
+    }
+
+    private function revokeActiveSessions(User $user): void
+    {
+        if (config('session.driver') !== 'database') {
+            return;
+        }
+
+        $table = config('session.table', 'sessions');
+        DB::table($table)->where('user_id', $user->id)->delete();
+
+        $user->forceFill(['remember_token' => null])->save();
     }
 
     public function delete(Business $business, User $employee): void

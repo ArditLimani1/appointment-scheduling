@@ -614,19 +614,19 @@ class AppointmentService implements AppointmentServiceInterface
         $currentDate = optional($appointment->date)->format('Y-m-d');
 
         if (($before['date'] ?? null) !== $currentDate) {
-            $changes[] = 'Date changed from <strong>'.$this->formatDate($before['date'] ?? null).'</strong> to <strong>'.$this->formatDate($currentDate).'</strong>.';
+            $changes[] = 'Date changed from <strong>'.e($this->formatDate($before['date'] ?? null)).'</strong> to <strong>'.e($this->formatDate($currentDate)).'</strong>.';
         }
 
         if (($before['start_time'] ?? null) !== $appointment->start_time) {
-            $changes[] = 'Time changed from <strong>'.$this->formatTime($before['start_time'] ?? null).'</strong> to <strong>'.$this->formatTime($appointment->start_time).'</strong>.';
+            $changes[] = 'Time changed from <strong>'.e($this->formatTime($before['start_time'] ?? null)).'</strong> to <strong>'.e($this->formatTime($appointment->start_time)).'</strong>.';
         }
 
         if (($before['service_id'] ?? null) !== $appointment->service_id) {
-            $changes[] = 'Service changed from <strong>'.($before['service_name'] ?? '—').'</strong> to <strong>'.($appointment->service?->name ?? '—').'</strong>.';
+            $changes[] = 'Service changed from <strong>'.e($before['service_name'] ?? '—').'</strong> to <strong>'.e($appointment->service?->name ?? '—').'</strong>.';
         }
 
         if (($before['employee_id'] ?? null) !== $appointment->employee_id) {
-            $changes[] = 'Staff member changed from <strong>'.($before['employee_name'] ?? '—').'</strong> to <strong>'.($appointment->employee?->name ?? '—').'</strong>.';
+            $changes[] = 'Staff member changed from <strong>'.e($before['employee_name'] ?? '—').'</strong> to <strong>'.e($appointment->employee?->name ?? '—').'</strong>.';
         }
 
         $beforeStatus = (string) ($before['status'] ?? '');
@@ -634,7 +634,7 @@ class AppointmentService implements AppointmentServiceInterface
             ? $appointment->status->value
             : (string) $appointment->status;
         if ($beforeStatus !== '' && $beforeStatus !== $currentStatus) {
-            $changes[] = 'Status changed from <strong>'.ucfirst($beforeStatus).'</strong> to <strong>'.ucfirst($currentStatus).'</strong>.';
+            $changes[] = 'Status changed from <strong>'.e(ucfirst($beforeStatus)).'</strong> to <strong>'.e(ucfirst($currentStatus)).'</strong>.';
         }
 
         return $changes;

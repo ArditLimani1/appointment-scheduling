@@ -10,7 +10,15 @@ class UpdateServiceRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        $user = $this->user();
+        if (! $user || ! $user->hasPermission('admin.services')) {
+            return false;
+        }
+
+        $business = $user->panelBusiness();
+        $service = $this->route('service');
+
+        return $business && $service && (int) $service->business_id === (int) $business->id;
     }
 
     protected function prepareForValidation(): void

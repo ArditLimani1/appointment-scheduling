@@ -25,6 +25,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -163,15 +164,22 @@ class AppointmentController extends Controller
     /** GET — available time slots for admin edit modal */
     public function slots(Request $request): JsonResponse
     {
+        $business = auth()->user()->panelBusiness();
+        abort_unless($business, 403);
+
         $request->validate([
-            'employee_id' => ['required', 'integer', 'exists:users,id'],
-            'service_id' => ['required', 'integer', 'exists:services,id'],
+            'employee_id' => [
+                'required', 'integer',
+                Rule::exists('users', 'id')->where('business_id', $business->id),
+            ],
+            'service_id' => [
+                'required', 'integer',
+                Rule::exists('services', 'id')->where('business_id', $business->id),
+            ],
             'date' => ['required', 'date_format:Y-m-d'],
             'exclude_id' => ['nullable', 'integer'],
         ]);
 
-        $business = auth()->user()->panelBusiness();
-        abort_unless($business, 403);
         $slots = $this->bookingService->getAdminAvailableSlots($business, $request->only([
             'employee_id', 'service_id', 'date', 'exclude_id',
         ]));
@@ -226,15 +234,21 @@ class AppointmentController extends Controller
     /** GET — slot times for the internal create flow (multi-service aware). */
     public function internalSlots(Request $request): JsonResponse
     {
-        $request->validate([
-            'employee_id' => ['required', 'integer', 'exists:users,id'],
-            'service_ids' => ['required', 'array', 'min:1'],
-            'service_ids.*' => ['integer', 'exists:services,id'],
-            'date' => ['required', 'date_format:Y-m-d'],
-        ]);
-
         $business = auth()->user()->panelBusiness();
         abort_unless($business, 403);
+
+        $request->validate([
+            'employee_id' => [
+                'required', 'integer',
+                Rule::exists('users', 'id')->where('business_id', $business->id),
+            ],
+            'service_ids' => ['required', 'array', 'min:1'],
+            'service_ids.*' => [
+                'integer',
+                Rule::exists('services', 'id')->where('business_id', $business->id),
+            ],
+            'date' => ['required', 'date_format:Y-m-d'],
+        ]);
 
         $slots = $this->bookingService->getInternalAvailableSlots(
             $business,

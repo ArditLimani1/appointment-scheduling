@@ -25,6 +25,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use Maatwebsite\Excel\Facades\Excel;
@@ -339,14 +340,17 @@ class AppointmentController extends Controller
     /** GET — slot times for the internal create flow (employee_id forced server-side). */
     public function internalSlots(Request $request): JsonResponse
     {
-        $request->validate([
-            'service_ids' => ['required', 'array', 'min:1'],
-            'service_ids.*' => ['integer', 'exists:services,id'],
-            'date' => ['required', 'date_format:Y-m-d'],
-        ]);
-
         $business = $request->user()->panelBusiness();
         abort_unless($business, 403);
+
+        $request->validate([
+            'service_ids' => ['required', 'array', 'min:1'],
+            'service_ids.*' => [
+                'integer',
+                Rule::exists('services', 'id')->where('business_id', $business->id),
+            ],
+            'date' => ['required', 'date_format:Y-m-d'],
+        ]);
 
         $slots = $this->bookingService->getInternalAvailableSlots(
             $business,
