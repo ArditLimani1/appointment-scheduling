@@ -193,4 +193,24 @@ return [
         'weekday_6' => 'Sunday',
     ],
 
+    'notifications' => [
+        'title' => 'Notifications',
+        'empty' => 'No notifications yet.',
+        'empty_hint' => 'New booking alerts will appear here.',
+        'mark_all' => 'Mark all read',
+        'unread_subtitle' => ':count unread',
+        'new_booking_title' => 'New appointment',
+        'generic' => 'Notification',
+        'view_cta' => 'View in appointments',
+        'see_all' => 'See all appointments',
+        'link_show_all_notifications' => 'Show all notifications',
+        'link_show_unread_only' => 'Show unread notifications',
+        'empty_unread' => 'No unread notifications.',
+        'loading_more' => 'Loading…',
+        'new_badge' => 'New',
+        'source_public' => 'Online booking',
+        'source_admin' => 'Added by admin',
+        'source_employee' => 'Team panel',
+    ],
+
 ];
