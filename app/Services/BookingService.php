@@ -8,6 +8,7 @@ use App\Models\Business;
 use App\Models\Service;
 use App\Models\SharedResource;
 use App\Models\User;
+use App\Notifications\NewAppointmentsAssignedToEmployee;
 use App\Repositories\Interfaces\AppointmentRepositoryInterface;
 use App\Repositories\Interfaces\BusinessRepositoryInterface;
 use App\Repositories\Interfaces\EmployeeRepositoryInterface;
@@ -301,6 +302,8 @@ class BookingService implements BookingServiceInterface
                 $cursor = $segmentEnd;
             }
 
+            $this->notifyAssignedEmployeeOfNewBookings($created, 'public_booking', null);
+
             return $created;
         });
     }
@@ -436,7 +439,7 @@ class BookingService implements BookingServiceInterface
         $bookingReference = Str::uuid()->toString();
         $updatedBy = auth()->id();
 
-        return DB::transaction(function () use ($business, $employeeId, $data, $services, $timezone, $bookingReference, $defaultStatus, $updatedBy, $startTime, $blockEnd) {
+        return DB::transaction(function () use ($business, $employeeId, $data, $services, $timezone, $bookingReference, $defaultStatus, $updatedBy, $context, $startTime, $blockEnd) {
             Appointment::query()
                 ->where('employee_id', $employeeId)
                 ->whereDate('date', $data['date'])
@@ -511,6 +514,8 @@ class BookingService implements BookingServiceInterface
                 $created->push($appointment);
                 $cursor = $segmentEnd;
             }
+
+            $this->notifyAssignedEmployeeOfNewBookings($created, $context, auth()->id());
 
             return $created;
         });
@@ -1077,5 +1082,56 @@ class BookingService implements BookingServiceInterface
         }
 
         return $out;
+    }
+
+    /**
+     * @param  Collection<int, Appointment>  $appointments
+     * @param  'public_booking'|'admin'|'employee'  $source
+     */
+    private function notifyAssignedEmployeeOfNewBookings(Collection $appointments, string $source, ?int $actorUserId): void
+    {
+        if ($appointments->isEmpty()) {
+            return;
+        }
+
+        $employeeId = (int) $appointments->first()->employee_id;
+        if ($source === 'employee' && $actorUserId !== null && $actorUserId === $employeeId) {
+            return;
+        }
+
+        foreach ($appointments as $appointment) {
+            if ($appointment instanceof Appointment) {
+                $appointment->loadMissing(['service', 'business']);
+            }
+        }
+        $first = $appointments->first();
+        $last = $appointments->last();
+        if (! $first instanceof Appointment) {
+            return;
+        }
+
+        $clientName = trim($first->client_first_name.' '.$first->client_last_name);
+        $payload = [
+            'kind' => 'new_appointments',
+            'booking_reference' => $first->booking_reference,
+            'client_name' => $clientName,
+            'date' => $first->date?->format('Y-m-d'),
+            'start_time' => $first->start_time,
+            'end_time' => $last instanceof Appointment ? $last->end_time : $first->end_time,
+            'services' => $appointments->map(fn (Appointment $a) => [
+                'id' => $a->service_id,
+                'name' => $a->service?->name ?? '',
+            ])->values()->all(),
+            'appointment_ids' => $appointments->map(fn (Appointment $a) => $a->id)->values()->all(),
+            'source' => $source,
+            'business_name' => $first->business?->name,
+        ];
+
+        DB::afterCommit(function () use ($employeeId, $payload): void {
+            $user = User::query()->find($employeeId);
+            if ($user !== null) {
+                $user->notify(new NewAppointmentsAssignedToEmployee($payload));
+            }
+        });
     }
 }

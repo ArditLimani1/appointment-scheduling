@@ -193,4 +193,24 @@ return [
         'weekday_6' => 'E diel',
     ],
 
+    'notifications' => [
+        'title' => 'Njoftimet',
+        'empty' => 'Nuk ka njoftime ende.',
+        'empty_hint' => 'Njoftimet e reja për terminet do të shfaqen këtu.',
+        'mark_all' => 'Shëno të gjitha si të lexuara',
+        'unread_subtitle' => ':count të palexuara',
+        'new_booking_title' => 'Termin i ri',
+        'generic' => 'Njoftim',
+        'view_cta' => 'Shiko te terminet',
+        'see_all' => 'Shiko të gjitha terminet',
+        'link_show_all_notifications' => 'Shfaq të gjitha njoftimet',
+        'link_show_unread_only' => 'Shfaq njoftimet e palexuara',
+        'empty_unread' => 'Nuk ka njoftime të palexuara.',
+        'loading_more' => 'Duke ngarkuar…',
+        'new_badge' => 'E re',
+        'source_public' => 'Rezervim online',
+        'source_admin' => 'Shtuar nga administratori',
+        'source_employee' => 'Paneli i ekipit',
+    ],
+
 ];

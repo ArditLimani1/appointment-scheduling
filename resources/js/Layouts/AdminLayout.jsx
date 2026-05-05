@@ -1,5 +1,6 @@
 import { SuccessToastProvider } from '@/Components/SuccessToastProvider';
 import Dropdown from '@/Components/Dropdown';
+import EmployeeNotificationBell from '@/Components/EmployeeNotificationBell';
 import Icon from '@/Components/Icon';
 import WorkspaceTabs, { useWorkspace } from '@/Components/WorkspaceTabs';
 import LanguageSwitcher from '@/i18n/LanguageSwitcher';
@@ -99,25 +100,6 @@ export default function AdminLayout({ children }) {
     const effectiveWorkspace = showTabs ? workspace : 'admin';
     const sidebarItems = effectiveWorkspace === 'employee' ? visibleEmployeeNav : visibleNav;
 
-    const currentUrl = usePage().url;
-    const createAppointmentHref = can('admin.appointments')
-        ? (() => {
-            try {
-                return route('admin.appointments.create', { return_to: currentUrl });
-            } catch {
-                return '#';
-            }
-        })()
-        : null;
-    const onAdminAppointmentCreate = (() => {
-        try {
-            return Boolean(route().current('admin.appointments.create'));
-        } catch {
-            return false;
-        }
-    })();
-    const showCreateAppointmentButton = Boolean(createAppointmentHref) && !onAdminAppointmentCreate;
-
     return (
         <SuccessToastProvider>
         <div className="min-h-screen bg-surface font-body">
@@ -215,16 +197,7 @@ export default function AdminLayout({ children }) {
                     </div>
 
                     <div className="ml-2 flex shrink-0 items-center gap-2 sm:gap-3">
-                        {showCreateAppointmentButton && (
-                            <Link
-                                href={createAppointmentHref}
-                                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-on-surface px-2.5 py-2 text-xs font-bold text-surface transition-opacity hover:opacity-90 sm:px-3 sm:py-1.5"
-                                aria-label={t('layout.admin.add_appointment')}
-                            >
-                                <Icon name="add" size="text-lg sm:text-sm" />
-                                <span className="hidden sm:inline">{t('layout.admin.add_appointment')}</span>
-                            </Link>
-                        )}
+                        <EmployeeNotificationBell />
                         <Dropdown>
                             <Dropdown.Trigger>
                                 <button className="flex items-center rounded-full p-0.5 hover:bg-surface-container transition-colors">

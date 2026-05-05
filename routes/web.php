@@ -138,6 +138,10 @@ Route::post('/super-admin/stop-impersonating', [SuperAdmin\UserController::class
     ->name('super-admin.stop-impersonating');
 
 Route::middleware(['auth', 'employee_area', 'onboarding_completed'])->prefix('employee')->name('employee.')->group(function () {
+    Route::get('/notifications/feed', [Employee\NotificationController::class, 'feed'])->name('notifications.feed');
+    Route::post('/notifications/read-all', [Employee\NotificationController::class, 'markAllRead'])->name('notifications.read-all');
+    Route::post('/notifications/{id}/read', [Employee\NotificationController::class, 'markRead'])->whereUuid('id')->name('notifications.read');
+
     Route::middleware('permission:employee.dashboard')->group(function () {
         Route::get('/dashboard', [Employee\DashboardController::class, 'index'])->name('dashboard');
         Route::get('/appointments', [Employee\AppointmentController::class, 'index'])->name('appointments.index');

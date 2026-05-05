@@ -1,5 +1,6 @@
 import { SuccessToastProvider } from '@/Components/SuccessToastProvider';
 import Dropdown from '@/Components/Dropdown';
+import EmployeeNotificationBell from '@/Components/EmployeeNotificationBell';
 import Icon from '@/Components/Icon';
 import WorkspaceTabs, { useWorkspace } from '@/Components/WorkspaceTabs';
 import LanguageSwitcher from '@/i18n/LanguageSwitcher';
@@ -77,25 +78,6 @@ export default function EmployeeLayout({ children }) {
     const employeeBookingUrl = business?.slug
         ? (() => { try { return route('booking.employee', { slug: business.slug, employeeSlug: employeeSlug }); } catch { return `/book/${business.slug}/${employeeSlug}`; } })()
         : '#';
-
-    const currentUrl = usePage().url;
-    const createAppointmentHref = can('employee.appointments')
-        ? (() => {
-            try {
-                return route('employee.appointments.create', { return_to: currentUrl });
-            } catch {
-                return '#';
-            }
-        })()
-        : null;
-    const onEmployeeAppointmentCreate = (() => {
-        try {
-            return Boolean(route().current('employee.appointments.create'));
-        } catch {
-            return false;
-        }
-    })();
-    const showCreateAppointmentButton = Boolean(createAppointmentHref) && !onEmployeeAppointmentCreate;
 
     const isActive = (routeName) => {
         try {
@@ -186,17 +168,6 @@ export default function EmployeeLayout({ children }) {
                     </nav>
 
                     <div className="pt-8 border-t border-outline-variant/40 space-y-5">
-                        {showCreateAppointmentButton && (
-                            <Link
-                                href={createAppointmentHref}
-                                className="flex items-center justify-center gap-2 rounded-xl bg-on-surface px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-surface transition-opacity hover:opacity-90"
-                                aria-label={t('layout.employee.add_appointment')}
-                            >
-                                <Icon name="add" size="text-base" />
-                                <span className="hidden sm:inline">{t('layout.employee.add_appointment')}</span>
-                            </Link>
-                        )}
-
                         <div className="flex items-center gap-3 px-2">
                             <div className="w-9 h-9 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container text-xs font-bold shrink-0">
                                 {user?.name?.charAt(0)?.toUpperCase()}
@@ -235,16 +206,7 @@ export default function EmployeeLayout({ children }) {
                     </div>
 
                     <div className="flex items-center gap-3">
-                        {showCreateAppointmentButton && (
-                            <Link
-                                href={createAppointmentHref}
-                                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-on-surface px-2.5 py-2 text-xs font-bold text-surface transition-opacity hover:opacity-90 sm:px-3 sm:py-1.5"
-                                aria-label={t('layout.employee.add_appointment')}
-                            >
-                                <Icon name="add" size="text-lg sm:text-sm" />
-                                <span className="hidden sm:inline">{t('layout.employee.add_appointment')}</span>
-                            </Link>
-                        )}
+                        <EmployeeNotificationBell />
                         <Dropdown>
                             <Dropdown.Trigger>
                                 <button className="flex items-center rounded-full p-0.5 hover:bg-surface-container transition-colors">
