@@ -10,7 +10,15 @@ class UpdateEmployeeRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        $user = $this->user();
+        if (! $user || ! $user->hasPermission('admin.employees')) {
+            return false;
+        }
+
+        $business = $user->panelBusiness();
+        $employee = $this->route('employee');
+
+        return $business && $employee && (int) $employee->business_id === (int) $business->id;
     }
 
     protected function prepareForValidation(): void
@@ -40,7 +48,10 @@ class UpdateEmployeeRequest extends FormRequest
                 Rule::exists('business_roles', 'id')->where('business_id', $businessId),
             ],
             'service_ids' => ['nullable', 'array'],
-            'service_ids.*' => ['exists:services,id'],
+            'service_ids.*' => [
+                'integer',
+                Rule::exists('services', 'id')->where('business_id', $businessId),
+            ],
         ];
     }
 }

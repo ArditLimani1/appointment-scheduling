@@ -65,13 +65,67 @@ class BookingService implements BookingServiceInterface
             ->toDateString();
 
         return [
-            'business' => $business,
-            'employees' => $employees,
-            'services' => $services,
+            'business' => $this->sanitizePublicBusiness($business),
+            'employees' => $employees->map(fn ($e) => $this->sanitizePublicEmployee($e))->values()->all(),
+            'services' => $services->map(fn ($s) => $this->sanitizePublicService($s))->values()->all(),
             'slug' => $slug,
             'preselected_employee_id' => $preselectedEmployeeId,
             'booking_today' => $today,
             'booking_max_date' => $maxBookable,
+        ];
+    }
+
+    private function sanitizePublicBusiness(Business $business): array
+    {
+        return [
+            'id' => $business->id,
+            'name' => $business->name,
+            'slug' => $business->slug,
+            'location' => $business->location,
+            'logo' => $business->logo,
+            'timezone' => $business->timezone,
+            'currency' => $business->currency,
+            'currency_symbol' => $business->currency_symbol,
+            'slot_duration' => $business->slot_duration,
+            'min_booking_notice' => $business->min_booking_notice,
+            'max_booking_window' => $business->max_booking_window,
+            'client_identifier_type' => $business->client_identifier_type,
+            'uses_shared_resources' => $business->uses_shared_resources,
+        ];
+    }
+
+    private function sanitizePublicEmployee(User $employee): array
+    {
+        return [
+            'id' => $employee->id,
+            'name' => $employee->name,
+            'title' => $employee->title,
+            'avatar' => $employee->avatar,
+            'booking_slug' => $employee->booking_slug,
+            'services' => $employee->relationLoaded('services')
+                ? $employee->services->map(fn ($s) => $this->sanitizePublicService($s))->values()->all()
+                : [],
+            'schedules' => $employee->relationLoaded('schedules')
+                ? $employee->schedules->map(fn ($s) => [
+                    'id' => $s->id,
+                    'day_of_week' => $s->day_of_week,
+                    'start_time' => $s->start_time,
+                    'end_time' => $s->end_time,
+                    'is_active' => $s->is_active,
+                ])->values()->all()
+                : [],
+        ];
+    }
+
+    private function sanitizePublicService(Service $service): array
+    {
+        return [
+            'id' => $service->id,
+            'name' => $service->name,
+            'description' => $service->description,
+            'duration' => $service->duration,
+            'price' => $service->price,
+            'is_popular' => $service->is_popular,
         ];
     }
 
@@ -170,18 +224,25 @@ class BookingService implements BookingServiceInterface
         $totalMinutes = (int) $services->sum('duration');
         $blockEnd = $startTime->copy()->addMinutes($totalMinutes);
 
-        $this->assertTimeBlockIsBookable(
-            $business,
-            $employeeId,
-            $data['date'],
-            $startTime,
-            $blockEnd,
-            $timezone
-        );
-
         $bookingReference = Str::uuid()->toString();
 
-        return DB::transaction(function () use ($business, $employeeId, $data, $services, $timezone, $bookingReference) {
+        return DB::transaction(function () use ($business, $employeeId, $data, $services, $timezone, $bookingReference, $startTime, $blockEnd) {
+            Appointment::query()
+                ->where('employee_id', $employeeId)
+                ->whereDate('date', $data['date'])
+                ->where('status', '!=', AppointmentStatus::Cancelled->value)
+                ->lockForUpdate()
+                ->get();
+
+            $this->assertTimeBlockIsBookable(
+                $business,
+                $employeeId,
+                $data['date'],
+                $startTime,
+                $blockEnd,
+                $timezone
+            );
+
             $segments = $this->buildOrderedServiceSegments(
                 $business,
                 $services,
@@ -371,14 +432,6 @@ class BookingService implements BookingServiceInterface
         $totalMinutes = (int) $services->sum('duration');
         $blockEnd = $startTime->copy()->addMinutes($totalMinutes);
 
-        $this->assertInternalTimeBlockIsBookable(
-            $employeeId,
-            $data['date'],
-            $startTime,
-            $blockEnd,
-            $timezone
-        );
-
         $defaultStatus = $context === 'employee'
             ? AppointmentStatus::Confirmed
             : AppointmentStatus::Pending;
@@ -386,7 +439,22 @@ class BookingService implements BookingServiceInterface
         $bookingReference = Str::uuid()->toString();
         $updatedBy = auth()->id();
 
-        return DB::transaction(function () use ($business, $employeeId, $data, $services, $timezone, $bookingReference, $defaultStatus, $updatedBy, $context) {
+        return DB::transaction(function () use ($business, $employeeId, $data, $services, $timezone, $bookingReference, $defaultStatus, $updatedBy, $context, $startTime, $blockEnd) {
+            Appointment::query()
+                ->where('employee_id', $employeeId)
+                ->whereDate('date', $data['date'])
+                ->where('status', '!=', AppointmentStatus::Cancelled->value)
+                ->lockForUpdate()
+                ->get();
+
+            $this->assertInternalTimeBlockIsBookable(
+                $employeeId,
+                $data['date'],
+                $startTime,
+                $blockEnd,
+                $timezone
+            );
+
             $segments = $this->buildOrderedServiceSegments(
                 $business,
                 $services,
@@ -524,21 +592,44 @@ class BookingService implements BookingServiceInterface
         );
     }
 
-    public function getConfirmation(Appointment $appointment): array
+    public function getConfirmationByReference(string $reference): array
     {
-        $appointment->load(['employee', 'service', 'business']);
+        $bundle = Appointment::query()
+            ->where('booking_reference', $reference)
+            ->with([
+                'employee:id,name,title',
+                'service:id,name',
+                'business:id,name,slug,location,currency_symbol',
+            ])
+            ->orderBy('start_time')
+            ->get();
 
-        $bundle = $appointment->booking_reference
-            ? Appointment::query()
-                ->where('booking_reference', $appointment->booking_reference)
-                ->with(['employee', 'service', 'business'])
-                ->orderBy('start_time')
-                ->get()
-            : collect([$appointment]);
+        abort_if($bundle->isEmpty(), 404);
+
+        $sanitize = fn (Appointment $a) => [
+            'id' => $a->id,
+            'date' => optional($a->date)->toDateString(),
+            'start_time' => $a->start_time,
+            'end_time' => $a->end_time,
+            'price' => $a->price,
+            'service' => $a->service ? ['id' => $a->service->id, 'name' => $a->service->name] : null,
+            'employee' => $a->employee ? [
+                'id' => $a->employee->id,
+                'name' => $a->employee->name,
+                'title' => $a->employee->title,
+            ] : null,
+            'business' => $a->business ? [
+                'id' => $a->business->id,
+                'name' => $a->business->name,
+                'slug' => $a->business->slug,
+                'location' => $a->business->location,
+                'currency_symbol' => $a->business->currency_symbol,
+            ] : null,
+        ];
 
         return [
-            'appointment' => $appointment,
-            'bookingBundle' => $bundle->values()->all(),
+            'appointment' => $sanitize($bundle->first()),
+            'bookingBundle' => $bundle->map($sanitize)->values()->all(),
         ];
     }
 

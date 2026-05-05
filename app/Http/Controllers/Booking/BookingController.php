@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Booking;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Booking\GetAvailableSlotsRequest;
 use App\Http\Requests\Booking\StoreBookingRequest;
-use App\Models\Appointment;
 use App\Services\Interfaces\BookingServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -43,12 +42,12 @@ class BookingController extends Controller
     {
         $appointments = $this->bookingService->createBooking($slug, $request->validated());
 
-        return redirect()->route('booking.confirmation', $appointments->first());
+        return redirect()->route('booking.confirmation', ['reference' => $appointments->first()->booking_reference]);
     }
 
-    public function confirmation(Appointment $appointment): Response
+    public function confirmation(string $reference): Response
     {
-        $data = $this->bookingService->getConfirmation($appointment);
+        $data = $this->bookingService->getConfirmationByReference($reference);
 
         return Inertia::render('Booking/Confirmation', [
             'appointment' => $data['appointment'],

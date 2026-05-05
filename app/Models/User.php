@@ -23,7 +23,7 @@ class User extends Authenticatable implements MustVerifyEmailContract
     use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
-        'name', 'email', 'password', 'role', 'user_type', 'phone', 'title', 'avatar', 'is_active', 'business_id', 'business_role_id', 'also_works_as_staff', 'booking_slug', 'locale', 'onboarding_completed_at',
+        'name', 'email', 'password', 'phone', 'title', 'avatar', 'booking_slug', 'locale', 'onboarding_completed_at',
     ];
 
     protected $hidden = [

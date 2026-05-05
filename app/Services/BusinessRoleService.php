@@ -24,6 +24,7 @@ class BusinessRoleService implements BusinessRoleServiceInterface
     public function store(Business $business, array $data): BusinessRole
     {
         $permissions = $this->normalizePermissionsForBusiness($business, $data['permissions']);
+        $this->guardAgainstPrivilegeEscalation($business, $permissions);
 
         return $this->businessRoleRepository->create([
             'business_id' => $business->id,
@@ -37,11 +38,28 @@ class BusinessRoleService implements BusinessRoleServiceInterface
         abort_unless($role->business_id === $business->id, 404);
 
         $permissions = $this->normalizePermissionsForBusiness($business, $data['permissions']);
+        $this->guardAgainstPrivilegeEscalation($business, $permissions);
 
         return $this->businessRoleRepository->update($role, [
             'name' => $data['name'],
             'permissions' => $permissions,
         ]);
+    }
+
+    /**
+     * @param  list<string>  $permissions
+     */
+    private function guardAgainstPrivilegeEscalation(Business $business, array $permissions): void
+    {
+        $actor = auth()->user();
+        if (! $actor || $actor->isOwnerOf($business)) {
+            return;
+        }
+
+        $own = $actor->effectivePermissionKeys();
+        $extra = array_diff($permissions, $own);
+
+        abort_if($extra !== [], 403);
     }
 
     public function delete(Business $business, BusinessRole $role): void

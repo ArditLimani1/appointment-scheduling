@@ -89,12 +89,14 @@ class RegisteredUserController extends Controller
                     $logoPath = $request->file('logo')->store('business-logos', 'public');
                 }
 
-                $user = User::create([
+                $user = new User();
+                $user->forceFill([
                     'name' => $validated['name'],
                     'email' => $validated['email'],
                     'password' => Hash::make($validated['password']),
                     'role' => UserRole::Admin,
                 ]);
+                $user->save();
 
                 Business::create([
                     'owner_id' => $user->id,

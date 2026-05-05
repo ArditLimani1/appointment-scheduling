@@ -52,7 +52,9 @@ Route::middleware(['auth', 'verified', 'employee_area'])->prefix('onboarding')->
     Route::post('/complete', [OnboardingController::class, 'complete'])->name('complete');
 });
 
-Route::get('/book/confirmation/{appointment}', [BookingController::class, 'confirmation'])->name('booking.confirmation');
+Route::get('/book/confirmation/{reference}', [BookingController::class, 'confirmation'])
+    ->where('reference', '[0-9a-fA-F-]{36}')
+    ->name('booking.confirmation');
 Route::get('/book/{slug}', [BookingController::class, 'index'])->name('booking.index');
 Route::get('/book/{slug}/slots', [BookingController::class, 'getAvailableSlots'])->middleware('throttle:60,1')->name('booking.slots');
 Route::get('/book/{slug}/{employeeSlug}', [BookingController::class, 'indexEmployee'])->name('booking.employee');

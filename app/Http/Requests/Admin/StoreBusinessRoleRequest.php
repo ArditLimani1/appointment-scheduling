@@ -15,14 +15,11 @@ class StoreBusinessRoleRequest extends FormRequest
 
     public function rules(): array
     {
-        $businessId = $this->user()->panelBusiness()?->id;
-        $allowedPermissions = Permission::values();
-        if ($this->user()->panelBusiness() && ! $this->user()->panelBusiness()->uses_shared_resources) {
-            $allowedPermissions = array_values(array_filter(
-                $allowedPermissions,
-                fn (string $p) => $p !== Permission::AdminSharedResources->value
-            ));
-        }
+        $actor = $this->user();
+        $business = $actor->panelBusiness();
+        $businessId = $business?->id;
+
+        $allowedPermissions = $this->grantablePermissionsFor($actor, $business);
 
         return [
             'name' => [
@@ -32,5 +29,27 @@ class StoreBusinessRoleRequest extends FormRequest
             'permissions' => ['required', 'array', 'min:1'],
             'permissions.*' => ['string', Rule::in($allowedPermissions)],
         ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function grantablePermissionsFor($actor, $business): array
+    {
+        $base = Permission::values();
+        if ($business && ! $business->uses_shared_resources) {
+            $base = array_values(array_filter(
+                $base,
+                fn (string $p) => $p !== Permission::AdminSharedResources->value
+            ));
+        }
+
+        if ($actor && $business && $actor->isOwnerOf($business)) {
+            return $base;
+        }
+
+        $own = $actor ? $actor->effectivePermissionKeys() : [];
+
+        return array_values(array_intersect($base, $own));
     }
 }

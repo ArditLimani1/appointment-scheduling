@@ -15,6 +15,7 @@ class EnsureEmployeeOrAdmin
     {
         $user = $request->user();
         abort_unless($user && ($user->isAdmin() || $user->isEmployee()), 403);
+        abort_unless((bool) $user->is_active, 403);
 
         return $next($request);
     }

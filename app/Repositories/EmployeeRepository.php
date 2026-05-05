@@ -55,12 +55,17 @@ class EmployeeRepository implements EmployeeRepositoryInterface
 
     public function create(array $data): User
     {
-        return User::create($data);
+        $user = new User();
+        $user->forceFill($data);
+        $user->save();
+
+        return $user;
     }
 
     public function update(User $employee, array $data): User
     {
-        $employee->update($data);
+        $employee->forceFill($data);
+        $employee->save();
 
         return $employee;
     }

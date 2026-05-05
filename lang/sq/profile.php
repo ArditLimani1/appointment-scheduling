@@ -31,6 +31,8 @@ return [
         'resend' => 'Kliko këtu për ta ridërguar emailin e verifikimit.',
         'resend_link' => 'Dërgo një lidhje të re verifikimi',
         'verification_sent_banner' => 'Një lidhje e re verifikimi u dërgua në kutinë tënde.',
+        'current_password_for_email' => 'Fjalëkalimi aktual',
+        'current_password_for_email_hint' => 'Kërkohet për të ndryshuar adresën e emailit.',
     ],
 
     'password' => [

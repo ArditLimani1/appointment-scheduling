@@ -2,12 +2,11 @@ import { SuccessToastProvider } from '@/Components/SuccessToastProvider';
 import Dropdown from '@/Components/Dropdown';
 import EmployeeNotificationBell from '@/Components/EmployeeNotificationBell';
 import Icon from '@/Components/Icon';
+import WorkspaceTabs, { useWorkspace } from '@/Components/WorkspaceTabs';
 import LanguageSwitcher from '@/i18n/LanguageSwitcher';
 import { useT } from '@/i18n/useT';
 import { Link, usePage } from '@inertiajs/react';
-import { useEffect, useMemo, useState } from 'react';
-
-const WORKSPACE_STORAGE_KEY = 'admin-layout:workspace';
+import { useMemo, useState } from 'react';
 
 const navItems = [
     { labelKey: 'layout.admin.nav.dashboard', icon: 'dashboard', route: 'admin.dashboard', permission: 'admin.dashboard' },
@@ -96,32 +95,7 @@ export default function AdminLayout({ children }) {
         }
     };
 
-    const currentRouteIsEmployee = (() => {
-        try {
-            return route().current()?.startsWith('employee.') ?? false;
-        } catch {
-            return false;
-        }
-    })();
-
-    const [workspace, setWorkspace] = useState(() => {
-        if (typeof window === 'undefined') return 'admin';
-        if (currentRouteIsEmployee) return 'employee';
-        const stored = window.localStorage.getItem(WORKSPACE_STORAGE_KEY);
-        return stored === 'employee' ? 'employee' : 'admin';
-    });
-
-    useEffect(() => {
-        if (currentRouteIsEmployee && workspace !== 'employee') {
-            setWorkspace('employee');
-        }
-    }, [currentRouteIsEmployee, workspace]);
-
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        window.localStorage.setItem(WORKSPACE_STORAGE_KEY, workspace);
-    }, [workspace]);
-
+    const [workspace, setWorkspace] = useWorkspace();
     const showTabs = visibleEmployeeNav.length > 0;
     const effectiveWorkspace = showTabs ? workspace : 'admin';
     const sidebarItems = effectiveWorkspace === 'employee' ? visibleEmployeeNav : visibleNav;
@@ -150,29 +124,12 @@ export default function AdminLayout({ children }) {
                     </div>
 
                     {showTabs && (
-                        <div className="mb-4 grid grid-cols-2 gap-1 rounded-2xl border border-outline-variant/60 bg-surface-container-low p-1">
-                            {[
-                                { value: 'admin', label: t('layout.admin.tab_admin'), icon: 'admin_panel_settings' },
-                                { value: 'employee', label: t('layout.admin.tab_employee'), icon: 'badge' },
-                            ].map((tab) => {
-                                const isSelected = effectiveWorkspace === tab.value;
-                                return (
-                                    <button
-                                        key={tab.value}
-                                        type="button"
-                                        onClick={() => setWorkspace(tab.value)}
-                                        className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-wider transition-all ${
-                                            isSelected
-                                                ? 'bg-primary-container text-white shadow-md'
-                                                : 'text-on-surface-variant hover:bg-surface hover:text-on-surface'
-                                        }`}
-                                    >
-                                        <Icon name={tab.icon} filled={isSelected} size="text-base" />
-                                        {tab.label}
-                                    </button>
-                                );
-                            })}
-                        </div>
+                        <WorkspaceTabs
+                            workspace={effectiveWorkspace}
+                            onChange={setWorkspace}
+                            labels={{ admin: t('layout.admin.tab_admin'), employee: t('layout.admin.tab_employee') }}
+                            defaultRoutes={{ admin: 'admin.dashboard', employee: 'employee.dashboard' }}
+                        />
                     )}
 
                     <nav className="flex-1 space-y-1 overflow-y-auto">

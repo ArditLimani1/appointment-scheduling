@@ -2,6 +2,7 @@ import { SuccessToastProvider } from '@/Components/SuccessToastProvider';
 import Dropdown from '@/Components/Dropdown';
 import EmployeeNotificationBell from '@/Components/EmployeeNotificationBell';
 import Icon from '@/Components/Icon';
+import WorkspaceTabs, { useWorkspace } from '@/Components/WorkspaceTabs';
 import LanguageSwitcher from '@/i18n/LanguageSwitcher';
 import { useT } from '@/i18n/useT';
 import { Link, usePage } from '@inertiajs/react';
@@ -68,6 +69,11 @@ export default function EmployeeLayout({ children }) {
         [permissions, t],
     );
 
+    const [workspace, setWorkspace] = useWorkspace();
+    const showTabs = visibleAdminNav.length > 0;
+    const effectiveWorkspace = showTabs ? workspace : 'employee';
+    const sidebarItems = effectiveWorkspace === 'admin' ? visibleAdminNav : visibleNav;
+
     const employeeSlug = user?.booking_slug || toSlug(user?.name);
     const employeeBookingUrl = business?.slug
         ? (() => { try { return route('booking.employee', { slug: business.slug, employeeSlug: employeeSlug }); } catch { return `/book/${business.slug}/${employeeSlug}`; } })()
@@ -119,9 +125,20 @@ export default function EmployeeLayout({ children }) {
                         </p>
                     </div>
 
+                    {showTabs && (
+                        <WorkspaceTabs
+                            workspace={effectiveWorkspace}
+                            onChange={setWorkspace}
+                            labels={{ admin: t('layout.admin.tab_admin'), employee: t('layout.admin.tab_employee') }}
+                            defaultRoutes={{ admin: 'admin.dashboard', employee: 'employee.dashboard' }}
+                        />
+                    )}
+
                     <nav className="flex-1 space-y-1 overflow-y-auto">
-                        {visibleNav.map((item) => {
-                            const active = isActive(item.route);
+                        {sidebarItems.map((item) => {
+                            const active = effectiveWorkspace === 'admin'
+                                ? (() => { try { return route().current(item.route) || route().current(item.route + '.*'); } catch { return false; } })()
+                                : isActive(item.route);
                             return (
                                 <Link
                                     key={item.route}
@@ -148,34 +165,6 @@ export default function EmployeeLayout({ children }) {
                                 </Link>
                             );
                         })}
-
-                        {visibleAdminNav.length > 0 && (
-                            <div className="pt-4">
-                                <p className="px-4 text-[10px] font-bold uppercase tracking-widest text-outline mb-2">{t('layout.admin.nav.admin_panel')}</p>
-                                {visibleAdminNav.map((item) => {
-                                    const active = (() => { try { return route().current(item.route) || route().current(item.route + '.*'); } catch { return false; } })();
-                                    return (
-                                        <Link
-                                            key={item.route}
-                                            href={(() => { try { return route(item.route); } catch { return '#'; } })()}
-                                            className={`flex items-center gap-4 py-3 pl-4 text-sm transition-all duration-200 ${
-                                                active
-                                                    ? 'bg-surface-container-low text-on-surface font-bold border-l-2 border-on-surface rounded-r-lg'
-                                                    : 'text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface rounded-lg'
-                                            }`}
-                                        >
-                                            <Icon
-                                                name={item.icon}
-                                                filled={active}
-                                                size="text-[20px]"
-                                                className={active ? 'text-on-surface' : 'text-outline'}
-                                            />
-                                            <span className="font-medium">{item.label}</span>
-                                        </Link>
-                                    );
-                                })}
-                            </div>
-                        )}
                     </nav>
 
                     <div className="pt-8 border-t border-outline-variant/40 space-y-5">

@@ -23,15 +23,21 @@ export default function UpdateProfileInformation({
         processing,
         recentlySuccessful,
         clearErrors,
+        reset,
     } = useForm({
         name: user.name,
         email: user.email,
         locale: user.locale ?? appLocale ?? 'sq',
+        current_password: '',
     });
+
+    const emailChanged = data.email !== user.email;
 
     const submit = (e) => {
         e.preventDefault();
-        patch(route('profile.update'));
+        patch(route('profile.update'), {
+            onSuccess: () => reset('current_password'),
+        });
     };
 
     return (
@@ -96,6 +102,30 @@ export default function UpdateProfileInformation({
                         />
                         <InputError className="mt-2" message={errors.email} />
                     </div>
+
+                    {emailChanged && (
+                        <div className="sm:col-span-2">
+                            <label
+                                htmlFor="current_password"
+                                className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.18em] text-on-surface-variant"
+                            >
+                                {t('profile.info.current_password_for_email')}
+                            </label>
+                            <p className="mb-2 text-xs text-on-surface-variant">{t('profile.info.current_password_for_email_hint')}</p>
+                            <input
+                                id="current_password"
+                                type="password"
+                                className={inputClass}
+                                value={data.current_password}
+                                onChange={(e) => {
+                                    setData('current_password', e.target.value);
+                                    clearErrors('current_password');
+                                }}
+                                autoComplete="current-password"
+                            />
+                            <InputError className="mt-2" message={errors.current_password} />
+                        </div>
+                    )}
 
                     <div className="sm:col-span-2">
                         <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.18em] text-on-surface-variant">

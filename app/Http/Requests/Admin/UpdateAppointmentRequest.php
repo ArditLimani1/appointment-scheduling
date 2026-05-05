@@ -3,25 +3,42 @@
 namespace App\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateAppointmentRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        $user = $this->user();
+        if (! $user || ! $user->hasPermission('admin.appointments')) {
+            return false;
+        }
+
+        $business = $user->panelBusiness();
+        $appointment = $this->route('appointment');
+
+        return $business && $appointment && (int) $appointment->business_id === (int) $business->id;
     }
 
     public function rules(): array
     {
+        $businessId = $this->user()?->panelBusiness()?->id;
+
         return [
             'client_first_name' => ['required', 'string', 'max:100'],
             'client_last_name' => ['required', 'string', 'max:100'],
             'client_phone' => ['nullable', 'string', 'max:50'],
             'client_email' => ['nullable', 'email', 'max:255'],
             'client_notes' => ['nullable', 'string', 'max:2000'],
-            'service_id' => ['required', 'integer', 'exists:services,id'],
+            'service_id' => [
+                'required', 'integer',
+                Rule::exists('services', 'id')->where('business_id', $businessId),
+            ],
             'status' => ['required', 'in:pending,confirmed,cancelled'],
-            'employee_id' => ['required', 'integer', 'exists:users,id'],
+            'employee_id' => [
+                'required', 'integer',
+                Rule::exists('users', 'id')->where('business_id', $businessId),
+            ],
             'date' => ['required', 'date_format:Y-m-d'],
             'start_time' => ['required', 'date_format:H:i'],
         ];

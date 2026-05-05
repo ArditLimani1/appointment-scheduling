@@ -31,6 +31,8 @@ return [
         'resend' => 'Click here to re-send the verification email.',
         'resend_link' => 'Send a new verification link',
         'verification_sent_banner' => 'A fresh verification link has been sent to your inbox.',
+        'current_password_for_email' => 'Current password',
+        'current_password_for_email_hint' => 'Required to change your email address.',
     ],
 
     'password' => [
