@@ -1,541 +1,1081 @@
 import { Head, Link } from '@inertiajs/react';
-import Icon from '@/Components/Icon';
-import NiterminLogo from '@/Components/NiterminLogo';
+import { useEffect, useRef, useState } from 'react';
 import LanguageSwitcher from '@/i18n/LanguageSwitcher';
 import { useT } from '@/i18n/useT';
+import './Welcome.css';
 
-const analyticsBarsHeights = ['h-20', 'h-28', 'h-24', 'h-36', 'h-32', 'h-16'];
+const Logo = () => (
+    <svg width="18" height="18" viewBox="0 0 64 64" fill="none">
+        <circle cx="32" cy="32" r="24" stroke="currentColor" strokeWidth="5" fill="none" />
+        <line x1="20" y1="44" x2="44" y2="20" stroke="currentColor" strokeWidth="5" strokeLinecap="round" />
+        <line x1="32" y1="12" x2="32" y2="14" stroke="currentColor" strokeWidth="5" strokeLinecap="round" />
+        <line x1="32" y1="50" x2="32" y2="52" stroke="currentColor" strokeWidth="5" strokeLinecap="round" />
+    </svg>
+);
+
+const ArrowRight = () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M5 12h14M13 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+const PlayIcon = () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <polygon points="6 4 20 12 6 20 6 4" fill="currentColor" />
+    </svg>
+);
+
+const WhatsAppGlyph = ({ size = 16 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2A10 10 0 0 0 3.4 17.2L2 22l4.9-1.3A10 10 0 1 0 12 2z" />
+    </svg>
+);
+
+const StarSvg = ({ size = 7 }) => (
+    <svg width={size} height={size} viewBox="0 0 12 12" fill="currentColor">
+        <path d="M6 1l1.5 3 3.3.5-2.4 2.3.6 3.3L6 8.5 3 10.1l.6-3.3L1.2 4.5 4.5 4z" />
+    </svg>
+);
 
 export default function Welcome({ auth, canLogin, canRegister }) {
     const t = useT();
+    const [activeTab, setActiveTab] = useState('services');
+    const [copied, setCopied] = useState(false);
+    const [revText, setRevText] = useState('0');
+    const [counts, setCounts] = useState({ total: 0, confirmed: 0, pending: 0, cancelled: 0, revenue: 0 });
+    const rootRef = useRef(null);
 
-    const highlights = [
-        { icon: 'public',              title: t('welcome.highlight_1_title'), description: t('welcome.highlight_1_desc') },
-        { icon: 'group',               title: t('welcome.highlight_2_title'), description: t('welcome.highlight_2_desc') },
-        { icon: 'dashboard',           title: t('welcome.highlight_3_title'), description: t('welcome.highlight_3_desc') },
-        { icon: 'event_available',     title: t('welcome.highlight_4_title'), description: t('welcome.highlight_4_desc') },
-        { icon: 'monitoring',          title: t('welcome.highlight_5_title'), description: t('welcome.highlight_5_desc') },
-        { icon: 'admin_panel_settings',title: t('welcome.highlight_6_title'), description: t('welcome.highlight_6_desc') },
-    ];
+    // Reveal-on-scroll
+    useEffect(() => {
+        const root = rootRef.current;
+        if (!root) return;
+        const io = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((e) => {
+                    if (e.isIntersecting) {
+                        e.target.classList.add('in');
+                        io.unobserve(e.target);
+                    }
+                });
+            },
+            { threshold: 0.12 },
+        );
+        root.querySelectorAll('.reveal').forEach((el) => io.observe(el));
+        return () => io.disconnect();
+    }, []);
 
-    const steps = [
-        { number: '1', title: t('welcome.step_1_title'), description: t('welcome.step_1_desc') },
-        { number: '2', title: t('welcome.step_2_title'), description: t('welcome.step_2_desc') },
-        { number: '3', title: t('welcome.step_3_title'), description: t('welcome.step_3_desc') },
-    ];
+    // Animate revenue number on mount
+    useEffect(() => {
+        const target = 2486;
+        const start = performance.now();
+        let raf;
+        const tick = (now) => {
+            const t = Math.min(1, (now - start) / 1500);
+            const eased = 1 - Math.pow(1 - t, 3);
+            setRevText(Math.round(target * eased).toLocaleString());
+            if (t < 1) raf = requestAnimationFrame(tick);
+        };
+        raf = requestAnimationFrame(tick);
+        return () => cancelAnimationFrame(raf);
+    }, []);
 
-    const dashboardMetrics = [
-        { label: t('welcome.metric_workers'),  value: '4' },
-        { label: t('welcome.metric_services'), value: '5' },
-        { label: t('welcome.metric_window'),   value: t('welcome.metric_window_value') },
-        { label: t('welcome.metric_notice'),   value: t('welcome.metric_notice_value') },
-    ];
+    // Animate analytics counts when analytics tab activates
+    useEffect(() => {
+        if (activeTab !== 'analytics') return;
+        const targets = { total: 142, confirmed: 98, pending: 36, cancelled: 8, revenue: 2486 };
+        const start = performance.now();
+        let raf;
+        const tick = (now) => {
+            const t = Math.min(1, (now - start) / 1200);
+            const eased = 1 - Math.pow(1 - t, 3);
+            setCounts({
+                total: Math.round(targets.total * eased),
+                confirmed: Math.round(targets.confirmed * eased),
+                pending: Math.round(targets.pending * eased),
+                cancelled: Math.round(targets.cancelled * eased),
+                revenue: Math.round(targets.revenue * eased),
+            });
+            if (t < 1) raf = requestAnimationFrame(tick);
+        };
+        raf = requestAnimationFrame(tick);
+        return () => cancelAnimationFrame(raf);
+    }, [activeTab]);
 
-    const bookingMoments = [
-        t('welcome.booking_step_1'),
-        t('welcome.booking_step_2'),
-        t('welcome.booking_step_3'),
-        t('welcome.booking_step_4'),
-    ];
+    const handleCopy = () => {
+        const url = `https://nitermin.com/${t('welcome.tile_link_slug')}`;
+        if (navigator?.clipboard) navigator.clipboard.writeText(url).catch(() => {});
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1800);
+    };
 
-    const analyticsBars = [
-        { label: t('welcome.day_mon'), height: analyticsBarsHeights[0] },
-        { label: t('welcome.day_tue'), height: analyticsBarsHeights[1] },
-        { label: t('welcome.day_wed'), height: analyticsBarsHeights[2] },
-        { label: t('welcome.day_thu'), height: analyticsBarsHeights[3] },
-        { label: t('welcome.day_fri'), height: analyticsBarsHeights[4] },
-        { label: t('welcome.day_sat'), height: analyticsBarsHeights[5] },
-    ];
-
-    const adminShowcase = [
-        {
-            icon: 'dashboard',
-            eyebrow: 'Dashboard',
-            title: t('welcome.showcase_1_title'),
-            description: t('welcome.showcase_1_desc'),
-            accent: t('welcome.showcase_1_accent'),
-        },
-        {
-            icon: 'inventory_2',
-            eyebrow: 'Services',
-            title: t('welcome.showcase_2_title'),
-            description: t('welcome.showcase_2_desc'),
-            accent: t('welcome.showcase_2_accent'),
-        },
-        {
-            icon: 'badge',
-            eyebrow: 'Employees',
-            title: t('welcome.showcase_3_title'),
-            description: t('welcome.showcase_3_desc'),
-            accent: t('welcome.showcase_3_accent'),
-        },
-        {
-            icon: 'key',
-            eyebrow: 'Roles',
-            title: t('welcome.showcase_4_title'),
-            description: t('welcome.showcase_4_desc'),
-            accent: t('welcome.showcase_4_accent'),
-        },
-        {
-            icon: 'calendar_month',
-            eyebrow: 'Appointments',
-            title: t('welcome.showcase_5_title'),
-            description: t('welcome.showcase_5_desc'),
-            accent: t('welcome.showcase_5_accent'),
-        },
-        {
-            icon: 'monitoring',
-            eyebrow: 'Analytics',
-            title: t('welcome.showcase_6_title'),
-            description: t('welcome.showcase_6_desc'),
-            accent: t('welcome.showcase_6_accent'),
-        },
-    ];
+    const primaryCtaHref = canRegister ? route('register') : '#';
+    const loginHref = canLogin ? route('login') : '#';
+    const dashboardHref = auth?.user ? route('dashboard') : '#';
 
     return (
-        <div className="min-h-screen bg-surface font-body">
+        <>
             <Head title={t('welcome.meta_title')} />
 
-            <header className="glass-header sticky top-0 z-30 border-b border-outline-variant">
-                <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-                    <Link href="/" className="flex items-center gap-3">
-                        <NiterminLogo
-                            markClassName="h-9 w-9 text-on-surface"
-                            wordClassName="text-lg font-semibold tracking-tight text-on-surface"
-                            dotClassName="text-on-surface-variant"
-                        />
-                    </Link>
+            <div className="ntr-landing" ref={rootRef}>
+                {/* NAV */}
+                <header className="nav">
+                    <div className="container nav-inner">
+                        <Link href="/" className="brand">
+                            <span className="logo">
+                                <Logo />
+                            </span>
+                            <span className="word">nitermin<span className="dot">.</span></span>
+                        </Link>
+                        <nav className="nav-links">
+                            <a href="#reminders">{t('welcome.nav_reminders')}</a>
+                            <a href="#notifications">{t('welcome.nav_notifications')}</a>
+                            <a href="#features">{t('welcome.nav_features')}</a>
+                            <a href="#preview">{t('welcome.nav_product')}</a>
+                            <a href="#faq">{t('welcome.nav_faq')}</a>
+                        </nav>
+                        <div className="nav-ctas">
+                            <LanguageSwitcher />
+                            {auth?.user ? (
+                                <Link href={dashboardHref} className="btn btn-ink">
+                                    {t('welcome.nav_dashboard')} <ArrowRight />
+                                </Link>
+                            ) : (
+                                <>
+                                    {canLogin && (
+                                        <Link href={loginHref} className="btn btn-ghost">
+                                            {t('welcome.nav_login')}
+                                        </Link>
+                                    )}
+                                    {canRegister && (
+                                        <Link href={primaryCtaHref} className="btn btn-ink">
+                                            {t('welcome.nav_cta_trial')} <ArrowRight />
+                                        </Link>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </header>
 
-                    <nav className="flex items-center gap-1.5 sm:gap-2">
-                        <LanguageSwitcher className="ml-2 sm:ml-0" />
-                        {auth?.user ? (
-                            <Link
-                                href={route('dashboard')}
-                                className="primary-gradient flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-1.5 text-xs font-semibold text-white shadow-sm sm:px-4 sm:py-2 sm:text-sm"
-                            >
-                                <Icon name="dashboard" size="text-base" />
-                                {t('welcome.nav_dashboard')}
-                            </Link>
-                        ) : (
-                            <>
-                                {canLogin && (
-                                    <Link
-                                        href={route('login')}
-                                        className="rounded-xl px-3 py-1.5 text-xs font-medium text-on-surface-variant transition-colors hover:bg-surface-container-low sm:px-4 sm:py-2 sm:text-sm"
-                                    >
-                                        {t('welcome.nav_login')}
+                {/* HERO */}
+                <section className="hero">
+                    <div className="container hero-grid">
+                        <div>
+                            <h1 className="h1">
+                                {t('welcome.hero_h1_line1')} <em>{t('welcome.hero_h1_em')}</em> {t('welcome.hero_h1_line2')}
+                            </h1>
+                            <p className="lede">{t('welcome.hero_lede')}</p>
+                            <div className="hero-ctas">
+                                <Link href={primaryCtaHref} className="btn btn-ink">
+                                    {t('welcome.hero_cta_primary')} <ArrowRight />
+                                </Link>
+                                <a href="#preview" className="btn btn-light">
+                                    <PlayIcon /> {t('welcome.hero_cta_secondary')}
+                                </a>
+                            </div>
+                            <div className="hero-trust">
+                                <div className="avatars">
+                                    <span>A</span><span>D</span><span>S</span><span>M</span><span>E</span>
+                                </div>
+                                <span>
+                                    <strong>{t('welcome.hero_trust_strong_1')}</strong> {t('welcome.hero_trust_middle')}{' '}
+                                    <strong>{t('welcome.hero_trust_strong_2')}</strong> {t('welcome.hero_trust_tail')}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="hero-mock">
+                            <div className="mock-card">
+                                <div className="mock-head">
+                                    <div className="dots"><span /><span /><span /></div>
+                                    <span>{t('welcome.mock_url')}</span>
+                                    <span>{t('welcome.mock_clinic')}</span>
+                                </div>
+                                <div className="mock-body">
+                                    <div className="mock-filters">
+                                        <span className="chip">{t('welcome.mock_filter_all_doctors')} ▾</span>
+                                        <span className="chip">📅 {t('welcome.mock_filter_date')}</span>
+                                        <span className="chip active">{t('welcome.mock_filter_week')} ▾</span>
+                                        <span className="chip">{t('welcome.mock_filter_status')} ▾</span>
+                                    </div>
+                                    <div className="mock-staff">
+                                        <span className="label">{t('welcome.mock_doctors_label')}</span>
+                                        <span className="s"><span className="d" style={{ background: '#6366F1' }} />Dr. Agim</span>
+                                        <span className="s"><span className="d" style={{ background: '#16A34A' }} />Dr. Sara</span>
+                                        <span className="s"><span className="d" style={{ background: '#F43F5E' }} />Dr. Marko</span>
+                                        <span className="s"><span className="d" style={{ background: '#F97316' }} />Dr. Elena</span>
+                                    </div>
+                                    <div className="mock-calendar">
+                                        <div className="head" />
+                                        <div className="head">HËN <strong>6</strong></div>
+                                        <div className="head">MAR <strong>7</strong></div>
+                                        <div className="head">MËR <strong>8</strong></div>
+                                        <div className="head">ENJ <strong>9</strong></div>
+                                        <div className="head">PRE <strong>10</strong></div>
+                                        <div className="head">SHT <strong>11</strong></div>
+                                        <div className="head">DIE <strong>12</strong></div>
+
+                                        <div className="time">09:00</div>
+                                        <div className="cell"><div className="event green" style={{ height: 46, animationDelay: '.1s' }}>Dr. Sara<small>{t('welcome.mock_event_gynec')}</small></div></div>
+                                        <div className="cell"><div className="event purple" style={{ height: 22, animationDelay: '.2s' }}>Dr. Agim</div></div>
+                                        <div className="cell" />
+                                        <div className="cell"><div className="event green" style={{ height: 22, animationDelay: '.3s' }}>Dr. Sara<small>{t('welcome.mock_event_visit')}</small></div></div>
+                                        <div className="cell"><div className="event coral" style={{ height: 22, animationDelay: '.4s' }}>Dr. Marko</div></div>
+                                        <div className="cell" />
+                                        <div className="cell" />
+
+                                        <div className="time">10:00</div>
+                                        <div className="cell" />
+                                        <div className="cell"><div className="event coral" style={{ height: 46, animationDelay: '.5s' }}>Dr. Marko<small>{t('welcome.mock_event_echo')}</small></div></div>
+                                        <div className="cell"><div className="event orange" style={{ height: 46, animationDelay: '.6s' }}>Dr. Elena<small>{t('welcome.mock_event_pediatric')}</small></div></div>
+                                        <div className="cell" />
+                                        <div className="cell" />
+                                        <div className="cell" />
+                                        <div className="cell" />
+
+                                        <div className="time">11:00</div>
+                                        <div className="cell"><div className="event purple" style={{ height: 46, animationDelay: '.7s' }}>Dr. Agim<small>{t('welcome.mock_event_checkup')}</small></div></div>
+                                        <div className="cell" />
+                                        <div className="cell"><div className="event purple" style={{ height: 22, animationDelay: '.8s' }}>Dr. Agim</div></div>
+                                        <div className="cell" />
+                                        <div className="cell"><div className="event orange" style={{ height: 46, animationDelay: '.9s' }}>Dr. Elena<small>{t('welcome.mock_event_vaccine')}</small></div></div>
+                                        <div className="cell" />
+                                        <div className="cell" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="floater f1">
+                                <span className="icon" style={{ background: '#D1FAE5', color: '#10B981' }}>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                        <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
+                                </span>
+                                <div><strong>{t('welcome.floater_new_appt_title')}</strong><span>{t('welcome.floater_new_appt_body')}</span></div>
+                            </div>
+                            <div className="floater f2">
+                                <span className="icon" style={{ background: '#DCFCE7', color: '#25D366' }}>
+                                    <WhatsAppGlyph />
+                                </span>
+                                <div><strong>{t('welcome.floater_wa_title')}</strong><span>{t('welcome.floater_wa_body')}</span></div>
+                            </div>
+                            <div className="floater f3">
+                                <span className="icon" style={{ background: '#FEF3C7', color: '#D97706' }}>
+                                    <strong style={{ fontSize: 14 }}>€</strong>
+                                </span>
+                                <div><strong>{t('welcome.floater_revenue_amount')}</strong><span>{t('welcome.floater_revenue_body')}</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* LOGO STRIP */}
+                <section className="logos">
+                    <div className="container">
+                        <div className="label">{t('welcome.logos_label')}</div>
+                        <div className="logos-row">
+                            <span className="sans">POLIKLINIKA</span>
+                            <span>Mediq&nbsp;Center</span>
+                            <span className="mono">CLINICA·09</span>
+                            <span>Vita&nbsp;Salus</span>
+                            <span className="sans">NORTHWELL</span>
+                            <span>San&nbsp;Lazar</span>
+                        </div>
+                    </div>
+                </section>
+
+                {/* REMINDERS */}
+                <section className="rem-section" id="reminders">
+                    <div className="container">
+                        <div className="rem-wrap">
+                            <div className="rem-copy reveal">
+                                <span className="kicker">⬢ {t('welcome.rem_kicker')}</span>
+                                <h2>
+                                    {t('welcome.rem_h2_line1')} <em>{t('welcome.rem_h2_em')}</em> {t('welcome.rem_h2_line2')}
+                                </h2>
+                                <p className="lede">{t('welcome.rem_lede')}</p>
+                                <div className="rem-cards">
+                                    <div className="rem-card">
+                                        <span className="rc-ic wa"><WhatsAppGlyph size={15} /></span>
+                                        <b>{t('welcome.rem_card_wa_title')}</b>
+                                        <span>{t('welcome.rem_card_wa_desc')}</span>
+                                    </div>
+                                    <div className="rem-card">
+                                        <span className="rc-ic em">
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 7l9 6 9-6" />
+                                            </svg>
+                                        </span>
+                                        <b>{t('welcome.rem_card_email_title')}</b>
+                                        <span>{t('welcome.rem_card_email_desc')}</span>
+                                    </div>
+                                    <div className="rem-card">
+                                        <span className="rc-ic bell">
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                                            </svg>
+                                        </span>
+                                        <b>{t('welcome.rem_card_bell_title')}</b>
+                                        <span>{t('welcome.rem_card_bell_desc')}</span>
+                                    </div>
+                                    <div className="rem-card">
+                                        <span className="rc-ic lang">
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" />
+                                            </svg>
+                                        </span>
+                                        <b>{t('welcome.rem_card_lang_title')}</b>
+                                        <span>{t('welcome.rem_card_lang_desc')}</span>
+                                    </div>
+                                </div>
+                                <div className="hero-ctas">
+                                    <Link href={primaryCtaHref} className="btn btn-blue">
+                                        {t('welcome.rem_cta_primary')} <ArrowRight />
                                     </Link>
-                                )}
-                                {canRegister && (
-                                    <Link
-                                        href={route('register')}
-                                        className="primary-gradient -ml-1 whitespace-nowrap rounded-xl px-3 py-1.5 text-xs font-semibold text-white shadow-sm sm:ml-0 sm:px-4 sm:py-2 sm:text-sm"
-                                    >
-                                        {t('welcome.nav_register')}
-                                    </Link>
-                                )}
-                            </>
-                        )}
-                    </nav>
-                </div>
-            </header>
+                                    <a href="#features" className="btn btn-light">{t('welcome.rem_cta_secondary')}</a>
+                                </div>
+                            </div>
 
-            <section className="relative overflow-hidden">
-                <div
-                    className="absolute inset-0 -z-10 opacity-[0.05]"
-                    style={{ backgroundImage: 'radial-gradient(circle, #001d31 1px, transparent 1px)', backgroundSize: '28px 28px' }}
-                />
-                <div className="absolute inset-x-0 top-0 -z-10 h-64 bg-gradient-to-b from-primary-container/55 to-transparent" />
+                            <div className="rem-stage reveal">
+                                <div className="phone">
+                                    <div className="phone-screen">
+                                        <div className="phone-statusbar">
+                                            <span>9:41</span>
+                                            <span>••• 5G ⏷</span>
+                                        </div>
+                                        <div className="phone-app">
+                                            <div className="app-head">
+                                                <span className="back">‹</span>
+                                                <div className="who">
+                                                    <span className="av">K</span>
+                                                    <div><b>{t('welcome.mock_clinic')}</b><span>{t('welcome.phone_clinic_status')}</span></div>
+                                                </div>
+                                                <span style={{ color: 'var(--whatsapp)', fontSize: 18 }}>⋮</span>
+                                            </div>
 
-                <div className="mx-auto grid max-w-6xl gap-12 px-6 py-16 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:py-24">
-                    <div>
-                        <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-outline-variant bg-surface-container-lowest px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-on-surface-variant">
-                            <Icon name="bolt" size="text-sm" className="text-primary" />
-                            {t('welcome.hero_badge')}
-                        </span>
-
-                        <h1 className="max-w-3xl text-5xl font-black font-headline leading-[1.02] tracking-tight text-on-surface sm:text-6xl lg:text-7xl">
-                            {t('welcome.hero_h1_line1')}
-                            <span className="block text-primary">{t('welcome.hero_h1_highlight')}</span>
-                            {t('welcome.hero_h1_line2')}
-                        </h1>
-
-                        <p className="mt-6 max-w-2xl text-lg leading-relaxed text-on-surface-variant sm:text-xl">
-                            <span className="font-semibold text-on-surface">Ni</span>{' '}
-                            {t('welcome.hero_desc_ni_meaning')}{' '}
-                            <span className="font-semibold text-on-surface">Termin</span>{' '}
-                            {t('welcome.hero_desc_termin_meaning')}{' '}
-                            {t('welcome.hero_desc_rest')}
-                        </p>
-
-                        <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-                            {canRegister && (
-                                <Link
-                                    href={route('register')}
-                                    className="primary-gradient inline-flex items-center justify-center gap-2 rounded-2xl px-8 py-4 text-base font-semibold text-white shadow-lg transition-transform hover:scale-[1.02]"
-                                >
-                                    {t('welcome.hero_cta_register')}
-                                    <Icon name="arrow_forward" size="text-lg" />
-                                </Link>
-                            )}
-
-                            {canLogin && (
-                                <Link
-                                    href={route('login')}
-                                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-outline-variant px-8 py-4 text-base font-medium text-on-surface transition-colors hover:bg-surface-container-low"
-                                >
-                                    {t('welcome.hero_cta_login')}
-                                </Link>
-                            )}
-                        </div>
-
-                        <div className="mt-4 flex flex-wrap items-center gap-3">
-                            <span className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary">
-                                <Icon name="redeem" size="text-sm" />
-                                {t('welcome.hero_trial_badge')}
-                            </span>
-                            <span className="text-sm text-on-surface-variant">
-                                {t('welcome.hero_trial_text')}
-                            </span>
-                        </div>
-
-                        <div className="mt-8 flex flex-wrap gap-3 text-sm text-on-surface-variant">
-                            <span className="rounded-full bg-surface-container-low px-4 py-2">{t('welcome.hero_tag_1')}</span>
-                            <span className="rounded-full bg-surface-container-low px-4 py-2">{t('welcome.hero_tag_2')}</span>
-                            <span className="rounded-full bg-surface-container-low px-4 py-2">{t('welcome.hero_tag_3')}</span>
-                        </div>
-                    </div>
-
-                    <div className="relative">
-                        <div className="absolute -left-6 top-10 hidden h-24 w-24 rounded-full bg-primary-container/60 blur-2xl lg:block" />
-                        <div className="absolute -right-4 bottom-10 hidden h-28 w-28 rounded-full bg-secondary-container/60 blur-2xl lg:block" />
-
-                        <div className="relative overflow-hidden rounded-[2rem] border border-outline-variant bg-surface-container-lowest shadow-2xl">
-                            <div className="border-b border-outline-variant bg-surface-container px-5 py-4">
-                                <div className="flex items-center justify-between gap-4">
-                                    <div className="flex items-center gap-3">
-                                        <NiterminLogo
-                                            variant="mark"
-                                            className="h-10 w-10 rounded-2xl bg-surface p-2 text-on-surface"
-                                        />
-                                        <div>
-                                            <p className="text-sm font-bold font-headline text-on-surface">{t('welcome.card_admin_title')}</p>
-                                            <p className="text-xs text-on-surface-variant">{t('welcome.card_admin_subtitle')}</p>
+                                            <div className="bubble bot" style={{ animationDelay: '.1s' }}>
+                                                <b>{t('welcome.phone_msg_greeting_strong')}</b><br />
+                                                {t('welcome.phone_msg_booking_intro')}<br />
+                                                <b>{t('welcome.phone_msg_booking_when')}</b><br />
+                                                {t('welcome.phone_msg_booking_who')}<br />
+                                                <span style={{ color: '#6B6B78', fontSize: 11 }}>{t('welcome.phone_msg_booking_addr')}</span>
+                                                <small>{t('welcome.phone_msg_time_1')}</small>
+                                            </div>
+                                            <div className="bubble bot" style={{ animationDelay: '.4s' }}>
+                                                {t('welcome.phone_msg_thanks')}
+                                                <small>{t('welcome.phone_msg_time_1')}</small>
+                                            </div>
+                                            <div style={{ textAlign: 'center', fontSize: 9.5, color: '#9CA3AF', fontWeight: 600, letterSpacing: 1, margin: '6px 0', animation: 'ntr-bubIn .5s ease both', animationDelay: '.9s' }}>
+                                                {t('welcome.phone_msg_24h_label')}
+                                            </div>
+                                            <div className="bubble bot" style={{ animationDelay: '1.1s' }}>
+                                                <b>{t('welcome.phone_msg_reminder_strong')}</b> ⏰<br />
+                                                {t('welcome.phone_msg_reminder_intro')}<br />
+                                                <b>{t('welcome.phone_msg_reminder_when')}</b><br />
+                                                {t('welcome.phone_msg_reminder_who')}
+                                                <small>{t('welcome.phone_msg_time_2')}</small>
+                                            </div>
                                         </div>
                                     </div>
-                                    <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                                        <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                                        {t('welcome.card_live_badge')}
+                                </div>
+
+                                <div className="channels left">
+                                    <div className="chan" style={{ animationDelay: '.4s' }}>
+                                        <span className="ico wa"><WhatsAppGlyph /></span>
+                                        <div><b>{t('welcome.chan_wa_title')}</b><span>{t('welcome.chan_wa_sub')}</span></div>
+                                        <span className="live" />
+                                    </div>
+                                </div>
+                                <div className="channels right">
+                                    <div className="chan" style={{ animationDelay: '.8s' }}>
+                                        <span className="ico bell">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                                            </svg>
+                                        </span>
+                                        <div><b>{t('welcome.chan_bell_title')}</b><span>{t('welcome.chan_bell_sub')}</span></div>
+                                        <span className="live" />
+                                    </div>
+                                </div>
+
+                                <div className="rem-stats">
+                                    <div className="rem-stat"><div className="v">{t('welcome.rem_stat_1_value')}<em>{t('welcome.rem_stat_1_unit')}</em></div><small>{t('welcome.rem_stat_1_label')}</small></div>
+                                    <div className="rem-stat"><div className="v">{t('welcome.rem_stat_2_value')}<em>{t('welcome.rem_stat_2_unit')}</em></div><small>{t('welcome.rem_stat_2_label')}</small></div>
+                                    <div className="rem-stat"><div className="v">{t('welcome.rem_stat_3_value')}<em>{t('welcome.rem_stat_3_unit')}</em></div><small>{t('welcome.rem_stat_3_label')}</small></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* IN-APP NOTIFICATIONS */}
+                <section className="inapp-section" id="notifications">
+                    <div className="container">
+                        <div className="inapp-wrap">
+                            <div className="inapp-mock reveal">
+                                <div className="inapp-bar">
+                                    <div className="ttl">
+                                        <span>{t('welcome.inapp_title')}</span>
+                                        <span className="lv"><span className="pdot" />{t('welcome.inapp_live')}</span>
+                                    </div>
+                                    <div className="acts">
+                                        <span className="iconbtn markall">{t('welcome.inapp_mark_all')}</span>
+                                        <span className="iconbtn">⚙</span>
+                                    </div>
+                                </div>
+                                <div className="inapp-filters">
+                                    <span className="fpill active">{t('welcome.inapp_filter_all')} <span className="cnt">12</span></span>
+                                    <span className="fpill">{t('welcome.inapp_filter_appts')} <span className="cnt">5</span></span>
+                                    <span className="fpill">{t('welcome.inapp_filter_cancels')} <span className="cnt">2</span></span>
+                                    <span className="fpill">{t('welcome.inapp_filter_payments')} <span className="cnt">3</span></span>
+                                    <span className="fpill">{t('welcome.inapp_filter_system')}</span>
+                                </div>
+                                <div className="inapp-body">
+                                    <div className="inapp-day">{t('welcome.inapp_day_today')}</div>
+                                    <div className="toast-list">
+                                        <div className="toast unread" style={{ animationDelay: '.1s' }}>
+                                            <span className="tic book">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                                    <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+                                                </svg>
+                                            </span>
+                                            <div className="t-body">
+                                                <div className="tt"><b>{t('welcome.toast_book_title')}</b><span className="tag book">{t('welcome.toast_book_tag')}</span></div>
+                                                <p><b>{t('welcome.toast_book_who')}</b> {t('welcome.toast_book_body_tail')}</p>
+                                                <div className="meta">
+                                                    <span className="chip">{t('welcome.toast_book_when')}</span>
+                                                    <span className="chip"><span className="dot p" />{t('welcome.toast_book_doctor')}</span>
+                                                    <span className="chip">{t('welcome.toast_book_price')}</span>
+                                                </div>
+                                            </div>
+                                            <div className="t-side">
+                                                <span className="when">{t('welcome.toast_book_meta_when')}</span>
+                                                <span className="qact">{t('welcome.toast_book_action')}</span>
+                                            </div>
+                                        </div>
+                                        <div className="toast unread" style={{ animationDelay: '.25s' }}>
+                                            <span className="tic cancel">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                                    <line x1="6" y1="6" x2="18" y2="18" strokeLinecap="round" />
+                                                    <line x1="6" y1="18" x2="18" y2="6" strokeLinecap="round" />
+                                                </svg>
+                                            </span>
+                                            <div className="t-body">
+                                                <div className="tt"><b>{t('welcome.toast_cancel_title')}</b><span className="tag cancel">{t('welcome.toast_cancel_tag')}</span></div>
+                                                <p><b>{t('welcome.toast_cancel_who')}</b> {t('welcome.toast_cancel_body_tail')}</p>
+                                                <div className="meta">
+                                                    <span className="chip"><span className="dot c" />{t('welcome.toast_cancel_doctor')}</span>
+                                                    <span className="chip">{t('welcome.toast_cancel_slot')}</span>
+                                                </div>
+                                            </div>
+                                            <div className="t-side">
+                                                <span className="when">{t('welcome.toast_cancel_when')}</span>
+                                                <span className="qact">{t('welcome.toast_cancel_action')}</span>
+                                            </div>
+                                        </div>
+                                        <div className="toast" style={{ animationDelay: '.4s' }}>
+                                            <span className="tic pay"><strong>€</strong></span>
+                                            <div className="t-body">
+                                                <div className="tt"><b>{t('welcome.toast_pay_title')}</b><span className="tag pay">{t('welcome.toast_pay_tag')}</span></div>
+                                                <p><b>{t('welcome.toast_pay_who')}</b> {t('welcome.toast_pay_paid')} <b>{t('welcome.toast_pay_amount')}</b> {t('welcome.toast_pay_for')}</p>
+                                            </div>
+                                            <div className="t-side">
+                                                <span className="when">{t('welcome.toast_pay_when')}</span>
+                                            </div>
+                                        </div>
+                                        <div className="toast" style={{ animationDelay: '.55s' }}>
+                                            <span className="tic remind">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                                                </svg>
+                                            </span>
+                                            <div className="t-body">
+                                                <div className="tt"><b>{t('welcome.toast_remind_title')}</b><span className="tag remind">{t('welcome.toast_remind_tag')}</span></div>
+                                                <p>{t('welcome.toast_remind_body')}</p>
+                                            </div>
+                                            <div className="t-side">
+                                                <span className="when">{t('welcome.toast_remind_when')}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="inapp-foot">
+                                    <span>{t('welcome.inapp_foot_count')}</span>
+                                    <a href="#">{t('welcome.inapp_foot_link')}</a>
+                                </div>
+                            </div>
+
+                            <div className="inapp-copy reveal">
+                                <span className="kicker">⬡ {t('welcome.inapp_kicker')}</span>
+                                <h3>
+                                    {t('welcome.inapp_h3_line1')} <em>{t('welcome.inapp_h3_em')}</em>{t('welcome.inapp_h3_line2')}
+                                </h3>
+                                <p>{t('welcome.inapp_lede')}</p>
+                                <ul className="inapp-list">
+                                    <li>
+                                        <span className="ic">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <circle cx="12" cy="12" r="9" /><polyline points="12 6 12 12 16 14" />
+                                            </svg>
+                                        </span>
+                                        <div><b>{t('welcome.inapp_li_1_title')}</b>{t('welcome.inapp_li_1_desc')}</div>
+                                    </li>
+                                    <li>
+                                        <span className="ic">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                                            </svg>
+                                        </span>
+                                        <div><b>{t('welcome.inapp_li_2_title')}</b>{t('welcome.inapp_li_2_desc')}</div>
+                                    </li>
+                                    <li>
+                                        <span className="ic">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M3 6h18M3 12h18M3 18h18" />
+                                            </svg>
+                                        </span>
+                                        <div><b>{t('welcome.inapp_li_3_title')}</b>{t('welcome.inapp_li_3_desc')}</div>
+                                    </li>
+                                    <li>
+                                        <span className="ic">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <rect x="4" y="4" width="16" height="16" rx="2" /><path d="M9 9h6v6H9z" />
+                                            </svg>
+                                        </span>
+                                        <div><b>{t('welcome.inapp_li_4_title')}</b>{t('welcome.inapp_li_4_desc')}</div>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* FEATURES BENTO + PREVIEW */}
+                <section className="section" id="features" style={{ paddingTop: 80 }}>
+                    <div className="container">
+                        <div className="section-head reveal">
+                            <div className="kicker">{t('welcome.features_kicker')}</div>
+                            <h2>
+                                {t('welcome.features_h2_line1')} <em>{t('welcome.features_h2_em')}</em> {t('welcome.features_h2_line2')}
+                            </h2>
+                            <p>{t('welcome.features_desc')}</p>
+                        </div>
+
+                        <div className="bento">
+                            {/* Revenue tile */}
+                            <div className="tile t-1 reveal">
+                                <div className="rev-card">
+                                    <div className="rev-top">
+                                        <div className="rev-meta">
+                                            <span className="rev-dot"><span />{t('welcome.tile_revenue_live')}</span>
+                                            <span className="rev-period">{t('welcome.tile_revenue_period')}</span>
+                                        </div>
+                                        <div className="rev-segs">
+                                            <span>30D</span><span className="on">90D</span><span>1V</span>
+                                        </div>
+                                    </div>
+                                    <div className="rev-label">{t('welcome.tile_revenue_label')}</div>
+                                    <div className="rev-stat">
+                                        <span className="cur">€</span><span>{revText}</span><span className="dec">.00</span>
+                                    </div>
+                                    <div className="rev-row">
+                                        <div className="rev-trend">
+                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                                                <path d="M7 17l5-5 4 4 5-9" strokeLinecap="round" strokeLinejoin="round" />
+                                            </svg>
+                                            <span>+24.3%</span>
+                                        </div>
+                                        <span className="rev-vs">{t('welcome.tile_revenue_vs')}</span>
+                                    </div>
+                                    <svg className="spark" viewBox="0 0 300 70" fill="none" preserveAspectRatio="none">
+                                        <defs>
+                                            <linearGradient id="sparkG" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="0%" stopColor="#87C4FF" stopOpacity="0.45" />
+                                                <stop offset="100%" stopColor="#87C4FF" stopOpacity="0" />
+                                            </linearGradient>
+                                            <linearGradient id="sparkLine" x1="0" y1="0" x2="1" y2="0">
+                                                <stop offset="0%" stopColor="#5BA8FF" />
+                                                <stop offset="100%" stopColor="#87C4FF" />
+                                            </linearGradient>
+                                        </defs>
+                                        <path d="M0,55 L25,50 L50,46 L75,42 L100,36 L125,40 L150,30 L175,33 L200,22 L225,26 L250,16 L275,12 L300,6 L300,70 L0,70 Z" fill="url(#sparkG)" />
+                                        <path d="M0,55 L25,50 L50,46 L75,42 L100,36 L125,40 L150,30 L175,33 L200,22 L225,26 L250,16 L275,12 L300,6" stroke="url(#sparkLine)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                                        <circle cx="300" cy="6" r="4" fill="#87C4FF" />
+                                        <circle cx="300" cy="6" r="8" fill="#87C4FF" opacity="0.25" />
+                                    </svg>
+                                    <div className="rev-foot">
+                                        <span className="rev-foot-dot" />
+                                        <span>{t('welcome.tile_revenue_foot_1')}</span>
+                                        <span className="rev-foot-sep">·</span>
+                                        <span>{t('welcome.tile_revenue_foot_2')}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Services tile */}
+                            <div className="tile t-2 reveal">
+                                <div className="svc-head">
+                                    <span className="t-icon" style={{ background: 'var(--blue-soft)', color: 'var(--blue)' }}>
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                                        </svg>
                                     </span>
-                                </div>
-                            </div>
-
-                            <div className="space-y-6 p-6">
-                                <div className="grid grid-cols-2 gap-3">
-                                    {dashboardMetrics.map((metric) => (
-                                        <div key={metric.label} className="rounded-2xl border border-outline-variant bg-surface p-4">
-                                            <p className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">{metric.label}</p>
-                                            <p className="mt-2 text-2xl font-black font-headline text-on-surface">{metric.value}</p>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <div className="rounded-3xl border border-outline-variant bg-surface p-5">
-                                    <div className="mb-4 flex items-center justify-between">
-                                        <div>
-                                            <p className="text-sm font-bold font-headline text-on-surface">{t('welcome.card_flow_title')}</p>
-                                            <p className="text-xs text-on-surface-variant">{t('welcome.card_flow_subtitle')}</p>
-                                        </div>
-                                        <Icon name="north_east" size="text-lg" className="text-primary" />
-                                    </div>
-
-                                    <div className="space-y-3">
-                                        {bookingMoments.map((moment, index) => (
-                                            <div key={moment} className="flex items-center gap-3 rounded-2xl bg-surface-container-low px-4 py-3">
-                                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-container text-sm font-bold text-white shadow-sm ring-1 ring-primary-container/20">
-                                                    {index + 1}
-                                                </span>
-                                                <span className="text-sm font-medium text-on-surface">{moment}</span>
-                                            </div>
-                                        ))}
+                                    <div>
+                                        <h3>{t('welcome.tile_svc_title')}</h3>
+                                        <small className="svc-sub">{t('welcome.tile_svc_sub')}</small>
                                     </div>
                                 </div>
-
-                                <div className="rounded-3xl bg-primary p-5 text-white">
-                                    <p className="text-xs uppercase tracking-[0.22em] text-white/70">{t('welcome.card_why_eyebrow')}</p>
-                                    <p className="mt-2 text-base font-semibold leading-relaxed">
-                                        {t('welcome.card_why_text')}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section className="mx-auto max-w-6xl px-6 py-16">
-                <div className="mb-12 max-w-3xl">
-                    <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">{t('welcome.features_eyebrow')}</p>
-                    <h2 className="mt-3 text-3xl font-black font-headline tracking-tight text-on-surface sm:text-4xl">
-                        {t('welcome.features_heading')}
-                    </h2>
-                    <p className="mt-4 text-base leading-relaxed text-on-surface-variant sm:text-lg">
-                        {t('welcome.features_desc')}
-                    </p>
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {highlights.map((item) => (
-                        <div
-                            key={item.title}
-                            className="group rounded-3xl border border-outline-variant bg-surface-container-lowest p-6 transition-all hover:-translate-y-0.5 hover:border-on-primary-container/30 hover:shadow-md"
-                        >
-                            <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-on-primary-container/15 bg-on-primary-container/10 text-on-primary-container transition-colors group-hover:bg-on-primary-container/15">
-                                <Icon name={item.icon} size="text-xl" />
-                            </div>
-                            <h3 className="font-bold font-headline text-on-surface">{item.title}</h3>
-                            <p className="mt-2 text-sm leading-relaxed text-on-surface-variant">{item.description}</p>
-                        </div>
-                    ))}
-                </div>
-            </section>
-
-            <section className="mx-auto max-w-6xl px-6 py-16">
-                <div className="mb-12 max-w-3xl">
-                    <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">{t('welcome.admin_eyebrow')}</p>
-                    <h2 className="mt-3 text-3xl font-black font-headline tracking-tight text-on-surface sm:text-4xl">
-                        {t('welcome.admin_heading')}
-                    </h2>
-                    <p className="mt-4 text-base leading-relaxed text-on-surface-variant sm:text-lg">
-                        {t('welcome.admin_desc')}
-                    </p>
-                </div>
-
-                <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-                    {adminShowcase.map((item, index) => (
-                        <div key={item.title} className="rounded-[2rem] border border-outline-variant bg-surface-container-lowest p-6 shadow-sm">
-                            <div className="flex items-start justify-between gap-4">
-                                <div>
-                                    <p className="text-sm font-semibold uppercase tracking-[0.2em] text-on-primary-container">{item.eyebrow}</p>
-                                    <h3 className="mt-3 text-2xl font-black font-headline text-on-surface">{item.title}</h3>
-                                </div>
-                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-on-primary-container/15 bg-on-primary-container/10 text-on-primary-container">
-                                    <Icon name={item.icon} size="text-xl" />
+                                <div className="svc-stack">
+                                    <div className="svc-item">
+                                        <span className="svc-dot" style={{ background: 'var(--blue)' }} />
+                                        <div className="svc-info">
+                                            <div className="svc-name">{t('welcome.svc_item_1_name')} <span className="svc-pop"><StarSvg />{t('welcome.tile_svc_pop')}</span></div>
+                                            <small>{t('welcome.svc_item_1_dur')}</small>
+                                        </div>
+                                        <span className="svc-price">{t('welcome.svc_item_1_price')}</span>
+                                    </div>
+                                    <div className="svc-item">
+                                        <span className="svc-dot" style={{ background: 'var(--purple)' }} />
+                                        <div className="svc-info">
+                                            <div className="svc-name">{t('welcome.svc_item_2_name')}</div>
+                                            <small>{t('welcome.svc_item_2_dur')}</small>
+                                        </div>
+                                        <span className="svc-price">{t('welcome.svc_item_2_price')}</span>
+                                    </div>
+                                    <div className="svc-item">
+                                        <span className="svc-dot" style={{ background: '#F43F5E' }} />
+                                        <div className="svc-info">
+                                            <div className="svc-name">{t('welcome.svc_item_3_name')}</div>
+                                            <small>{t('welcome.svc_item_3_dur')}</small>
+                                        </div>
+                                        <span className="svc-price">{t('welcome.svc_item_3_price')}</span>
+                                    </div>
                                 </div>
                             </div>
 
-                            <p className="mt-4 text-base leading-relaxed text-on-surface-variant">{item.description}</p>
-
-                            <div className="mt-6 rounded-[1.5rem] border border-outline-variant bg-surface p-5">
-                                <div className="mb-4 flex items-center justify-between">
-                                    <p className="text-sm font-bold font-headline text-on-surface">{item.eyebrow}</p>
-                                    <span className="rounded-full bg-surface-container-low px-3 py-1 text-xs font-semibold text-on-surface-variant">
-                                        {item.accent}
+                            {/* Exports tile */}
+                            <div className="tile t-3 reveal">
+                                <div className="exp-head">
+                                    <span className="t-icon" style={{ background: 'var(--mint-soft)', color: 'var(--mint)' }}>
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" strokeLinecap="round" strokeLinejoin="round" />
+                                        </svg>
                                     </span>
+                                    <div>
+                                        <h3>{t('welcome.tile_exp_title')}</h3>
+                                        <small className="svc-sub">{t('welcome.tile_exp_sub')}</small>
+                                    </div>
                                 </div>
+                                <div className="exp-grid">
+                                    <button className="exp-card pdf">
+                                        <span className="exp-ic">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" />
+                                            </svg>
+                                            <em>PDF</em>
+                                        </span>
+                                        <div className="exp-info"><b>{t('welcome.tile_exp_pdf_title')}</b><small>{t('welcome.tile_exp_pdf_sub')}</small></div>
+                                    </button>
+                                    <button className="exp-card xls">
+                                        <span className="exp-ic">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                                                <rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M9 3v18" />
+                                            </svg>
+                                            <em>XLS</em>
+                                        </span>
+                                        <div className="exp-info"><b>{t('welcome.tile_exp_xls_title')}</b><small>{t('welcome.tile_exp_xls_sub')}</small></div>
+                                    </button>
+                                </div>
+                                <div className="exp-foot">
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <circle cx="12" cy="12" r="9" /><polyline points="12 7 12 12 15 14" />
+                                    </svg>
+                                    <span>{t('welcome.tile_exp_foot')}</span>
+                                </div>
+                            </div>
 
-                                {index === 0 && (
-                                    <div className="space-y-3">
-                                        <div className="grid grid-cols-2 gap-3">
-                                            {dashboardMetrics.map((metric) => (
-                                                <div key={metric.label} className="rounded-2xl bg-surface-container-low px-4 py-3">
-                                                    <p className="text-[11px] uppercase tracking-[0.18em] text-on-surface-variant">{metric.label}</p>
-                                                    <p className="mt-1 text-xl font-black font-headline text-on-surface">{metric.value}</p>
-                                                </div>
-                                            ))}
+                            {/* Booking link tile (full-width) */}
+                            <div className="tile t-7 reveal">
+                                <div className="row">
+                                    <div className="lhs">
+                                        <span className="badge2">⬢ {t('welcome.tile_link_badge')}</span>
+                                        <h3>
+                                            {t('welcome.tile_link_h3_line1')} <em>{t('welcome.tile_link_h3_em')}</em> {t('welcome.tile_link_h3_line2')}
+                                        </h3>
+                                        <p>{t('welcome.tile_link_desc')}</p>
+                                    </div>
+                                    <div className="rhs">
+                                        <div className="url-bar">
+                                            <span className="proto">https://</span>
+                                            <span className="host">nitermin.com</span>
+                                            <span className="slash">/</span>
+                                            <span className="slug">{t('welcome.tile_link_slug')}</span>
+                                            <span className={`copy-btn${copied ? ' copied' : ''}`} onClick={handleCopy}>
+                                                {copied ? (
+                                                    <>
+                                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                                            <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+                                                        </svg>
+                                                        {t('welcome.tile_link_copied')}
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                            <rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                                        </svg>
+                                                        {t('welcome.tile_link_copy')}
+                                                    </>
+                                                )}
+                                            </span>
                                         </div>
-                                        <div className="rounded-2xl bg-surface-container-low px-4 py-4">
-                                            <p className="text-sm font-semibold text-on-surface">{t('welcome.metric_overview_title')}</p>
-                                            <p className="mt-1 text-xs text-on-surface-variant">{t('welcome.metric_overview_desc')}</p>
+                                        <div className="url-share">
+                                            <span className="lbl">{t('welcome.tile_link_share_label')}</span>
+                                            <span className="pill"><span className="ic" style={{ color: '#25D366' }}><WhatsAppGlyph size={12} /></span>{t('welcome.tile_link_share_wa')}</span>
+                                            <span className="pill"><span className="ic" style={{ color: '#E1306C' }}>
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="4" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="1" fill="currentColor" /></svg>
+                                            </span>{t('welcome.tile_link_share_ig')}</span>
+                                            <span className="pill"><span className="ic" style={{ color: '#4285F4' }}>
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" /></svg>
+                                            </span>{t('welcome.tile_link_share_g')}</span>
+                                            <span className="pill">
+                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M9 9h6v6H9z" /></svg>
+                                                {t('welcome.tile_link_share_qr')}
+                                            </span>
                                         </div>
                                     </div>
-                                )}
-
-                                {index === 1 && (
-                                    <div className="space-y-2">
-                                        {[
-                                            ['Signature Haircut', '45 min', '45.00 €'],
-                                            ['Beard Sculpt', '30 min', '30.00 €'],
-                                            ['Color Treatment', '60 min', '85.00 €'],
-                                        ].map(([name, duration, price]) => (
-                                            <div key={name} className="flex items-center justify-between rounded-2xl bg-surface-container-low px-4 py-3">
-                                                <div>
-                                                    <p className="text-sm font-semibold text-on-surface">{name}</p>
-                                                    <p className="text-xs text-on-surface-variant">{duration}</p>
-                                                </div>
-                                                <p className="text-sm font-black text-on-surface">{price}</p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-
-                                {index === 2 && (
-                                    <div className="space-y-2">
-                                        {[
-                                            ['John', 'Master Barber'],
-                                            ['Sarah', 'Senior Stylist'],
-                                            ['Elena', 'Color Artist'],
-                                        ].map(([name, role]) => (
-                                            <div key={name} className="flex items-center justify-between rounded-2xl bg-surface-container-low px-4 py-3">
-                                                <div>
-                                                    <p className="text-sm font-semibold text-on-surface">{name}</p>
-                                                    <p className="text-xs text-on-surface-variant">{role}</p>
-                                                </div>
-                                                <span className="inline-flex items-center gap-1.5 rounded-full border border-on-primary-container/20 bg-on-primary-container/10 px-3 py-1 text-xs font-semibold text-on-primary-container">
-                                                    <span className="h-1.5 w-1.5 rounded-full bg-on-primary-container" />
-                                                    {t('welcome.showcase_3_active')}
-                                                </span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-
-                                {index === 3 && (
-                                    <div className="space-y-3">
-                                        <div className="rounded-2xl bg-surface-container-low px-4 py-4">
-                                            <p className="text-sm font-semibold text-on-surface">{t('welcome.showcase_4_roles_title')}</p>
-                                            <p className="mt-1 text-xs leading-relaxed text-on-surface-variant">{t('welcome.showcase_4_roles_desc')}</p>
-                                        </div>
-                                        <div className="flex flex-wrap gap-2">
-                                            {['Dashboard', 'Appointments', 'Services', 'Employees', 'Analytics'].map((pill) => (
-                                                <span key={pill} className="rounded-full bg-surface-container-low px-3 py-2 text-xs font-semibold text-on-surface">
-                                                    {pill}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {index === 4 && (
-                                    <div className="space-y-3">
-                                        <div className="grid grid-cols-3 gap-2">
-                                            {[
-                                                t('welcome.showcase_5_filter_worker'),
-                                                t('welcome.showcase_5_filter_date'),
-                                                t('welcome.showcase_5_filter_status'),
-                                            ].map((filter) => (
-                                                <div key={filter} className="rounded-2xl bg-surface-container-low px-3 py-3 text-center text-xs font-semibold text-on-surface">
-                                                    {filter}
-                                                </div>
-                                            ))}
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="rounded-full bg-primary px-3 py-2 text-xs font-semibold text-on-primary">List view</span>
-                                            <span className="rounded-full bg-surface-container-low px-3 py-2 text-xs font-semibold text-on-surface">Calendar view</span>
-                                            <span className="rounded-full bg-surface-container-low px-3 py-2 text-xs font-semibold text-on-surface">Excel / PDF</span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {index === 5 && (
-                                    <div className="space-y-4">
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div className="rounded-2xl bg-surface-container-low px-4 py-3">
-                                                <p className="text-[11px] uppercase tracking-[0.18em] text-on-surface-variant">Total appointments</p>
-                                                <p className="mt-1 text-xl font-black font-headline text-on-surface">22</p>
-                                            </div>
-                                            <div className="rounded-2xl bg-primary px-4 py-3 text-on-primary">
-                                                <p className="text-[11px] uppercase tracking-[0.18em] text-white/70">Revenue</p>
-                                                <p className="mt-1 text-xl font-black font-headline">255.00 €</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex h-32 items-end justify-between gap-2 rounded-2xl bg-surface-container-low px-4 py-4">
-                                            {analyticsBars.map((bar) => (
-                                                <div key={bar.label} className="flex flex-1 flex-col items-center gap-2">
-                                                    <div className={`w-full rounded-t-xl bg-primary ${bar.height}`} />
-                                                    <p className="text-[11px] text-on-surface-variant">{bar.label}</p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
+                                </div>
                             </div>
                         </div>
-                    ))}
-                </div>
-            </section>
 
-            <section className="mx-auto max-w-6xl px-6 py-16">
-                <div className="grid gap-8 rounded-[2rem] border border-outline-variant bg-surface-container-lowest p-8 lg:grid-cols-[0.95fr_1.05fr] lg:p-10">
-                    <div>
-                        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">{t('welcome.howto_eyebrow')}</p>
-                        <h2 className="mt-3 text-3xl font-black font-headline tracking-tight text-on-surface sm:text-4xl">
-                            {t('welcome.howto_heading')}
-                        </h2>
-                        <p className="mt-4 max-w-xl text-base leading-relaxed text-on-surface-variant">
-                            {t('welcome.howto_desc')}
-                        </p>
-                    </div>
+                        {/* PRODUCT PREVIEW */}
+                        <div className="preview-wrap reveal" id="preview">
+                            <div className="preview-tabs">
+                                <button className={activeTab === 'services' ? 'active' : ''} onClick={() => setActiveTab('services')}>{t('welcome.preview_tab_services')}</button>
+                                <button className={activeTab === 'calendar' ? 'active' : ''} onClick={() => setActiveTab('calendar')}>{t('welcome.preview_tab_calendar')}</button>
+                                <button className={activeTab === 'analytics' ? 'active' : ''} onClick={() => setActiveTab('analytics')}>{t('welcome.preview_tab_analytics')}</button>
+                                <button className={activeTab === 'booking' ? 'active' : ''} onClick={() => setActiveTab('booking')}>{t('welcome.preview_tab_booking')}</button>
+                            </div>
+                            <div className="preview-stage">
 
-                    <div className="space-y-4">
-                        {steps.map((step) => (
-                            <div key={step.number} className="flex items-start gap-4 rounded-3xl border border-outline-variant bg-surface p-5">
-                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary-container text-base font-black text-white shadow-sm">
-                                    {step.number}
+                                {/* Services pane */}
+                                <div className={`preview-pane${activeTab === 'services' ? ' active' : ''}`}>
+                                    <div className="adm">
+                                        <aside className="adm-side">
+                                            <div className="brand-mini">{t('welcome.adm_brand_mini')}</div>
+                                            <div className="brand-sub">{t('welcome.adm_brand_sub')}</div>
+                                            <div className="nav-item"><span className="i">▦</span>{t('welcome.adm_nav_dashboard')}</div>
+                                            <div className="nav-item active"><span className="i">◐</span>{t('welcome.adm_nav_services')}</div>
+                                            <div className="nav-item"><span className="i">◑</span>{t('welcome.adm_nav_doctors')}</div>
+                                            <div className="nav-item"><span className="i">◒</span>{t('welcome.adm_nav_roles')}</div>
+                                            <div className="nav-item"><span className="i">◤</span>{t('welcome.adm_nav_appts')}</div>
+                                            <div className="nav-item"><span className="i">◥</span>{t('welcome.adm_nav_analytics')}</div>
+                                            <div className="nav-item"><span className="i">◧</span>{t('welcome.adm_nav_settings')}</div>
+                                        </aside>
+                                        <div className="adm-main">
+                                            <h4>{t('welcome.svc_page_title')}</h4>
+                                            <div className="sub">{t('welcome.svc_page_sub')}</div>
+                                            <div className="svc-card">
+                                                <div className="svc-card-head"><span>{t('welcome.svc_card_head')}</span><span className="total">{t('welcome.svc_card_total')}</span></div>
+                                                <div className="svc-row">
+                                                    <span>{t('welcome.svc_col_name')}</span>
+                                                    <span style={{ textAlign: 'left' }}>{t('welcome.svc_col_dur')}</span>
+                                                    <span>{t('welcome.svc_col_price')}</span>
+                                                    <span>{t('welcome.svc_col_status')}</span>
+                                                    <span>{t('welcome.svc_col_actions')}</span>
+                                                </div>
+                                                <div className="svc-row">
+                                                    <span className="name"><b>{t('welcome.svc_row_1_name')} <span className="pop"><StarSvg />{t('welcome.svc_pop_label')}</span></b><span>{t('welcome.svc_row_1_desc')}</span></span>
+                                                    <span className="dur">{t('welcome.svc_row_1_dur')}</span>
+                                                    <span className="price">{t('welcome.svc_row_1_price')}</span>
+                                                    <div className="toggle" />
+                                                    <div className="actions">✎ 🗑</div>
+                                                </div>
+                                                <div className="svc-row">
+                                                    <span className="name"><b>{t('welcome.svc_row_2_name')} <span className="pop"><StarSvg />{t('welcome.svc_pop_label')}</span></b><span>{t('welcome.svc_row_2_desc')}</span></span>
+                                                    <span className="dur">{t('welcome.svc_row_2_dur')}</span>
+                                                    <span className="price">{t('welcome.svc_row_2_price')}</span>
+                                                    <div className="toggle" />
+                                                    <div className="actions">✎ 🗑</div>
+                                                </div>
+                                                <div className="svc-row">
+                                                    <span className="name"><b>{t('welcome.svc_row_3_name')}</b><span>{t('welcome.svc_row_3_desc')}</span></span>
+                                                    <span className="dur">{t('welcome.svc_row_3_dur')}</span>
+                                                    <span className="price">{t('welcome.svc_row_3_price')}</span>
+                                                    <div className="toggle" />
+                                                    <div className="actions">✎ 🗑</div>
+                                                </div>
+                                                <div className="svc-row">
+                                                    <span className="name"><b>{t('welcome.svc_row_4_name')}</b><span>{t('welcome.svc_row_4_desc')}</span></span>
+                                                    <span className="dur">{t('welcome.svc_row_4_dur')}</span>
+                                                    <span className="price">{t('welcome.svc_row_4_price')}</span>
+                                                    <div className="toggle" />
+                                                    <div className="actions">✎ 🗑</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
+
+                                {/* Calendar pane */}
+                                <div className={`preview-pane${activeTab === 'calendar' ? ' active' : ''}`}>
+                                    <div className="cal">
+                                        <div className="cal-head">
+                                            <span className="pill">{t('welcome.cal_filter_all_doctors')} ▾</span>
+                                            <span className="pill">📅 {t('welcome.cal_filter_date')}</span>
+                                            <span className="pill">{t('welcome.cal_filter_all_services')} ▾</span>
+                                            <span className="pill">{t('welcome.cal_filter_status')} ▾</span>
+                                            <span className="pill" style={{ flex: 1 }}>{t('welcome.cal_filter_search')}</span>
+                                            <span className="pill">{t('welcome.cal_filter_clear')}</span>
+                                            <span className="pill">‹</span>
+                                            <span className="pill dark">{t('welcome.cal_filter_week')} ▾</span>
+                                            <span className="pill">›</span>
+                                        </div>
+                                        <div className="cal-staff">
+                                            <span style={{ color: 'var(--ink3)', letterSpacing: '1px', fontSize: 10, textTransform: 'uppercase' }}>{t('welcome.cal_doctors_label')}</span>
+                                            <span className="s"><span className="d" style={{ background: '#6366F1' }} />Dr. Agim</span>
+                                            <span className="s"><span className="d" style={{ background: '#16A34A' }} />Dr. Sara</span>
+                                            <span className="s"><span className="d" style={{ background: '#F43F5E' }} />Dr. Marko</span>
+                                            <span className="s"><span className="d" style={{ background: '#F97316' }} />Dr. Elena</span>
+                                        </div>
+                                        <div className="cal-grid">
+                                            <div className="ch" />
+                                            <div className="ch">HËN <strong>6</strong></div>
+                                            <div className="ch">MAR <strong>7</strong></div>
+                                            <div className="ch">MËR <strong>8</strong></div>
+                                            <div className="ch">ENJ <strong>9</strong></div>
+                                            <div className="ch">PRE <strong>10</strong></div>
+                                            <div className="ch">SHT <strong>11</strong></div>
+                                            <div className="ch">DIE <strong>12</strong></div>
+
+                                            <div className="tc">09:00</div>
+                                            <div className="gc"><div className="event green" style={{ position: 'absolute', left: 4, right: 4, top: 4, height: 50, animationDelay: '.1s' }}>Dr. Sara<small>{t('welcome.mock_event_gynec')}</small></div></div>
+                                            <div className="gc"><div className="event purple" style={{ position: 'absolute', left: 4, right: 4, top: 4, height: 24, animationDelay: '.2s' }}>Dr. Agim</div></div>
+                                            <div className="gc" />
+                                            <div className="gc"><div className="event green" style={{ position: 'absolute', left: 4, right: 4, top: 4, height: 24, animationDelay: '.3s' }}>Dr. Sara<small>{t('welcome.mock_event_visit')}</small></div></div>
+                                            <div className="gc"><div className="event coral" style={{ position: 'absolute', left: 4, right: 4, top: 4, height: 24, animationDelay: '.4s' }}>Dr. Marko</div></div>
+                                            <div className="gc" />
+                                            <div className="gc" />
+
+                                            <div className="tc">10:00</div>
+                                            <div className="gc" />
+                                            <div className="gc"><div className="event coral" style={{ position: 'absolute', left: 4, right: 4, top: 4, height: 50, animationDelay: '.6s' }}>Dr. Marko<small>{t('welcome.mock_event_echo')}</small></div></div>
+                                            <div className="gc" /><div className="gc" /><div className="gc" /><div className="gc" /><div className="gc" />
+
+                                            <div className="tc">10:30</div>
+                                            <div className="gc" /><div className="gc" /><div className="gc" /><div className="gc" />
+                                            <div className="gc"><div className="event orange" style={{ position: 'absolute', left: 4, right: 4, top: 4, height: 50, animationDelay: '.7s' }}>Dr. Elena<small>{t('welcome.mock_event_vaccine')}</small></div></div>
+                                            <div className="gc" /><div className="gc" />
+
+                                            <div className="tc">11:00</div>
+                                            <div className="gc" /><div className="gc" />
+                                            <div className="gc"><div className="event purple" style={{ position: 'absolute', left: 4, right: 4, top: 4, height: 50, animationDelay: '.8s' }}>Dr. Agim<small>{t('welcome.mock_event_checkup')}</small></div></div>
+                                            <div className="gc" /><div className="gc" /><div className="gc" /><div className="gc" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Analytics pane */}
+                                <div className={`preview-pane${activeTab === 'analytics' ? ' active' : ''}`}>
+                                    <h4 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.6px', marginBottom: 4 }}>{t('welcome.ana_h4')}</h4>
+                                    <p style={{ color: 'var(--ink3)', fontSize: 13, marginBottom: 20 }}>{t('welcome.ana_sub')}</p>
+                                    <div className="ana-grid">
+                                        <div className="kpi-grid">
+                                            <div className="kpi"><div className="l"><span className="ic" style={{ background: 'var(--blue-soft)', color: 'var(--blue)' }}>📅</span><small>{t('welcome.ana_kpi_total')}</small></div><div className="v">{counts.total.toLocaleString()}</div></div>
+                                            <div className="kpi"><div className="l"><span className="ic" style={{ background: 'var(--mint-soft)', color: 'var(--mint)' }}>✓</span><small>{t('welcome.ana_kpi_confirmed')}</small></div><div className="v">{counts.confirmed.toLocaleString()}</div></div>
+                                            <div className="kpi"><div className="l"><span className="ic" style={{ background: 'var(--amber-soft)', color: 'var(--amber)' }}>⏱</span><small>{t('welcome.ana_kpi_pending')}</small></div><div className="v">{counts.pending.toLocaleString()}</div></div>
+                                            <div className="kpi"><div className="l"><span className="ic" style={{ background: 'var(--red-soft)', color: 'var(--red)' }}>✕</span><small>{t('welcome.ana_kpi_cancelled')}</small></div><div className="v">{counts.cancelled.toLocaleString()}</div></div>
+                                        </div>
+                                        <div className="kpi dark">
+                                            <div className="l">
+                                                <span className="ic">€</span>
+                                                <small>{t('welcome.ana_kpi_revenue')}</small>
+                                            </div>
+                                            <div>
+                                                <div className="v">{counts.revenue.toLocaleString()}<span style={{ fontSize: 18, color: 'rgba(255,255,255,0.55)', fontWeight: 500, marginLeft: 6 }}>.00 €</span></div>
+                                                <p>{t('welcome.ana_kpi_revenue_sub')}</p>
+                                            </div>
+                                            <svg className="spark" viewBox="0 0 300 60" fill="none" preserveAspectRatio="none">
+                                                <path d="M0,50 L40,42 L80,38 L120,32 L160,28 L200,20 L240,16 L300,8" stroke="#87C4FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Booking pane */}
+                                <div className={`preview-pane${activeTab === 'booking' ? ' active' : ''}`}>
+                                    <h4 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.6px', marginBottom: 4 }}>{t('welcome.book_h4')}</h4>
+                                    <p style={{ color: 'var(--ink3)', fontSize: 13, marginBottom: 20 }}>{t('welcome.book_sub')}</p>
+                                    <div className="book-grid">
+                                        <div className="book-card">
+                                            <div className="book-step"><div className="left"><span className="num">1</span>{t('welcome.book_step1')}</div><span style={{ color: 'var(--ink3)', fontSize: 18 }}>⌃</span></div>
+                                            <div className="book-svc"><div className="l"><b>{t('welcome.book_svc_1')}</b><span>{t('welcome.book_svc_1_meta')}</span></div><div className="check" /></div>
+                                            <div className="book-svc"><div className="l"><b>{t('welcome.book_svc_2')}</b><span>{t('welcome.book_svc_2_meta')}</span></div><div className="check" /></div>
+                                            <div className="book-svc sel"><div className="l"><b>{t('welcome.book_svc_3')}</b><span>{t('welcome.book_svc_3_meta')}</span></div><div className="check">✓</div></div>
+                                            <div className="book-step next"><div className="left"><span className="num">2</span>{t('welcome.book_step2')}</div><span style={{ fontSize: 18 }}>▾</span></div>
+                                            <div className="book-step next"><div className="left"><span className="num">3</span>{t('welcome.book_step3')}</div><span style={{ fontSize: 18 }}>▾</span></div>
+                                            <div className="book-step next"><div className="left"><span className="num">4</span>{t('welcome.book_step4')}</div><span style={{ fontSize: 18 }}>▾</span></div>
+                                        </div>
+                                        <div className="summary">
+                                            <h5>{t('welcome.book_summary_title')}</h5>
+                                            <div className="row"><span className="ic">⚕</span><div><b>{t('welcome.book_summary_svc')}</b><span style={{ color: 'var(--ink)', fontWeight: 600, fontSize: 13 }}>{t('welcome.book_svc_3')}</span><span style={{ display: 'block', color: 'var(--ink3)', fontSize: 11, marginTop: 1 }}>{t('welcome.book_summary_svc_meta')}</span></div></div>
+                                            <div className="row"><span className="ic">⚕</span><div><b>{t('welcome.book_summary_doc')}</b><span style={{ color: 'var(--ink3)' }}>{t('welcome.book_summary_none')}</span></div></div>
+                                            <div className="row"><span className="ic">📅</span><div><b>{t('welcome.book_summary_when')}</b><span style={{ color: 'var(--ink3)' }}>{t('welcome.book_summary_none')}</span></div></div>
+                                            <div className="total"><span>{t('welcome.book_summary_total')}</span><span className="v">{t('welcome.book_summary_total_value')}</span></div>
+                                            <span className="conf">{t('welcome.book_summary_confirm')}</span>
+                                            <p style={{ fontSize: 10.5, color: 'var(--ink3)', textAlign: 'center', marginTop: 8 }}>{t('welcome.book_summary_terms')}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* HOW IT WORKS */}
+                <section className="section" style={{ paddingTop: 0 }}>
+                    <div className="container">
+                        <div className="section-head reveal">
+                            <div className="kicker">{t('welcome.steps_kicker')}</div>
+                            <h2>
+                                {t('welcome.steps_h2_line1')} <em>{t('welcome.steps_h2_em')}</em>{t('welcome.steps_h2_line2')}
+                            </h2>
+                        </div>
+                        <div className="steps">
+                            <div className="step reveal"><h4>{t('welcome.step_1_title')}</h4><p>{t('welcome.step_1_desc')}</p></div>
+                            <div className="step reveal"><h4>{t('welcome.step_2_title')}</h4><p>{t('welcome.step_2_desc')}</p></div>
+                            <div className="step reveal"><h4>{t('welcome.step_3_title')}</h4><p>{t('welcome.step_3_desc')}</p></div>
+                            <div className="step reveal"><h4>{t('welcome.step_4_title')}</h4><p>{t('welcome.step_4_desc')}</p></div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* TESTIMONIAL */}
+                <section className="section" style={{ paddingTop: 0 }}>
+                    <div className="container">
+                        <div className="test reveal">
+                            <div className="test-grid">
                                 <div>
-                                    <h3 className="font-bold font-headline text-on-surface">{step.title}</h3>
-                                    <p className="mt-1 text-sm leading-relaxed text-on-surface-variant">{step.description}</p>
+                                    <div className="test-q">
+                                        {t('welcome.test_q_part1')} <em>{t('welcome.test_q_em')}</em>{t('welcome.test_q_part2')}
+                                    </div>
+                                    <div className="test-author">
+                                        <span className="av">EM</span>
+                                        <div><b>{t('welcome.test_author_name')}</b><span>{t('welcome.test_author_role')}</span></div>
+                                    </div>
+                                </div>
+                                <div className="test-stats">
+                                    <div className="test-stat"><div className="v">{t('welcome.test_stat_1_value')}<em>{t('welcome.test_stat_1_unit')}</em></div><small>{t('welcome.test_stat_1_label')}</small></div>
+                                    <div className="test-stat"><div className="v">{t('welcome.test_stat_2_value')}</div><small>{t('welcome.test_stat_2_label')}</small></div>
+                                    <div className="test-stat"><div className="v">{t('welcome.test_stat_3_value')}<em>{t('welcome.test_stat_3_unit')}</em></div><small>{t('welcome.test_stat_3_label')}</small></div>
+                                    <div className="test-stat"><div className="v">{t('welcome.test_stat_4_value')}<em>{t('welcome.test_stat_4_unit')}</em></div><small>{t('welcome.test_stat_4_label')}</small></div>
                                 </div>
                             </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            <section className="mx-auto max-w-4xl px-6 py-20 text-center">
-                <div className="primary-gradient relative overflow-hidden rounded-[2rem] px-8 py-12 shadow-xl sm:px-12">
-                    <div
-                        className="absolute inset-0 opacity-10"
-                        style={{
-                            backgroundImage:
-                                'radial-gradient(circle at 20% 30%, white 1px, transparent 1px), radial-gradient(circle at 80% 70%, white 1px, transparent 1px)',
-                            backgroundSize: '32px 32px',
-                        }}
-                    />
-
-                    <div className="relative">
-                        <p className="text-sm font-semibold uppercase tracking-[0.22em] text-white/75">{t('welcome.cta_eyebrow')}</p>
-                        <h2 className="mt-3 text-3xl font-black font-headline tracking-tight text-white sm:text-4xl">
-                            {t('welcome.cta_heading')}
-                        </h2>
-                        <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-white/80 sm:text-lg">
-                            {t('welcome.cta_desc')}
-                        </p>
-                        <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-5">
-                            <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white">
-                                <Icon name="redeem" size="text-sm" />
-                                {t('welcome.cta_trial')}
-                            </span>
-
-                            {canRegister && (
-                                <Link
-                                    href={route('register')}
-                                    className="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white px-8 py-4 text-base font-semibold text-slate-900 shadow-lg transition-transform hover:scale-[1.02]"
-                                >
-                                    {t('welcome.cta_register')}
-                                    <Icon name="arrow_forward" size="text-lg" />
-                                </Link>
-                            )}
                         </div>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            <footer className="border-t border-outline-variant">
-                <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-8 sm:flex-row">
-                    <div className="flex flex-col items-center gap-1 sm:items-start">
-                        <NiterminLogo
-                            markClassName="h-7 w-7 text-on-surface"
-                            wordClassName="text-sm font-semibold tracking-tight text-on-surface"
-                            dotClassName="text-on-surface-variant"
-                        />
-                        <p className="text-xs text-on-surface-variant">{t('welcome.footer_tagline')}</p>
+                {/* FAQ */}
+                <section className="section" id="faq" style={{ paddingTop: 40 }}>
+                    <div className="container">
+                        <div className="faq-wrap">
+                            <aside className="faq-aside reveal">
+                                <span className="kicker">{t('welcome.faq_kicker')}</span>
+                                <h2>
+                                    {t('welcome.faq_h2_line1')} <em>{t('welcome.faq_h2_em')}</em> {t('welcome.faq_h2_line2')}
+                                </h2>
+                                <p>{t('welcome.faq_desc')}</p>
+                                <div className="faq-help">
+                                    <span className="av">A</span>
+                                    <div>
+                                        <b>{t('welcome.faq_help_name')}</b>
+                                        <span>{t('welcome.faq_help_meta')}</span>
+                                    </div>
+                                    <a href="#">{t('welcome.faq_help_link')}</a>
+                                </div>
+                            </aside>
+
+                            <div className="faq-list">
+                                <details open className="reveal">
+                                    <summary>
+                                        <span className="num">01</span>
+                                        <span className="q">{t('welcome.faq_q1')}</span>
+                                        <span className="plus">+</span>
+                                    </summary>
+                                    <div className="a">{t('welcome.faq_a1')}</div>
+                                </details>
+                                <details className="reveal">
+                                    <summary><span className="num">02</span><span className="q">{t('welcome.faq_q2')}</span><span className="plus">+</span></summary>
+                                    <div className="a">{t('welcome.faq_a2')}</div>
+                                </details>
+                                <details className="reveal">
+                                    <summary><span className="num">03</span><span className="q">{t('welcome.faq_q3')}</span><span className="plus">+</span></summary>
+                                    <div className="a">{t('welcome.faq_a3')}</div>
+                                </details>
+                                <details className="reveal">
+                                    <summary><span className="num">04</span><span className="q">{t('welcome.faq_q4')}</span><span className="plus">+</span></summary>
+                                    <div className="a">{t('welcome.faq_a4')}</div>
+                                </details>
+                                <details className="reveal">
+                                    <summary><span className="num">05</span><span className="q">{t('welcome.faq_q5')}</span><span className="plus">+</span></summary>
+                                    <div className="a">{t('welcome.faq_a5')}</div>
+                                </details>
+                                <details className="reveal">
+                                    <summary><span className="num">06</span><span className="q">{t('welcome.faq_q6')}</span><span className="plus">+</span></summary>
+                                    <div className="a">{t('welcome.faq_a6')}</div>
+                                </details>
+                            </div>
+                        </div>
                     </div>
+                </section>
 
-                    <p className="text-xs text-on-surface-variant">{t('welcome.footer_copy')}</p>
-                </div>
-            </footer>
-        </div>
+                {/* FOOTER */}
+                <footer className="footer">
+                    <div className="container">
+                        <div className="foot-grid">
+                            <div>
+                                <Link href="/" className="brand" style={{ marginBottom: 14 }}>
+                                    <span className="logo">
+                                        <Logo />
+                                    </span>
+                                    <span className="word">nitermin<span className="dot">.</span></span>
+                                </Link>
+                                <p className="about" style={{ marginTop: 12 }}>{t('welcome.footer_about')}</p>
+                            </div>
+                            <div>
+                                <h5>{t('welcome.footer_col_product')}</h5>
+                                <ul>
+                                    <li><a href="#features">{t('welcome.footer_link_features')}</a></li>
+                                    <li><a href="#reminders">{t('welcome.footer_link_reminders')}</a></li>
+                                    <li><a href="#notifications">{t('welcome.footer_link_notifications')}</a></li>
+                                    <li><a href="#preview">{t('welcome.footer_link_demo')}</a></li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h5>{t('welcome.footer_col_company')}</h5>
+                                <ul>
+                                    <li><a href="#">{t('welcome.footer_link_about')}</a></li>
+                                    <li><a href="#">{t('welcome.footer_link_clients')}</a></li>
+                                    <li><a href="#">{t('welcome.footer_link_careers')}</a></li>
+                                    <li><a href="#">{t('welcome.footer_link_press')}</a></li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h5>{t('welcome.footer_col_support')}</h5>
+                                <ul>
+                                    <li><a href="#">{t('welcome.footer_link_help')}</a></li>
+                                    <li><a href="#">{t('welcome.footer_link_contact')}</a></li>
+                                    <li><a href="#">{t('welcome.footer_link_status')}</a></li>
+                                    <li><a href="#">{t('welcome.footer_link_privacy')}</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div className="foot-bottom">
+                            <span>{t('welcome.footer_copy')}</span>
+                            <span>{t('welcome.footer_version')}</span>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </>
     );
 }
