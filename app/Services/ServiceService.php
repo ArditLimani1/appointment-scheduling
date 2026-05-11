@@ -2,11 +2,16 @@
 
 namespace App\Services;
 
+use App\Enums\AppointmentStatus;
+use App\Models\Appointment;
 use App\Models\Business;
 use App\Models\Service;
 use App\Repositories\Interfaces\ServiceRepositoryInterface;
 use App\Services\Interfaces\ServiceServiceInterface;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class ServiceService implements ServiceServiceInterface
 {
@@ -60,7 +65,36 @@ class ServiceService implements ServiceServiceInterface
     {
         abort_if($service->business_id !== $business->id, 403);
 
-        $this->serviceRepository->delete($service);
+        $timezone = $business->timezone ?: config('app.timezone');
+        $now = Carbon::now($timezone);
+
+        $hasBlockingFutureAppointment = Appointment::query()
+            ->where('service_id', $service->id)
+            ->where('business_id', $business->id)
+            ->whereIn('status', [AppointmentStatus::Pending, AppointmentStatus::Confirmed])
+            ->where(function ($q) use ($now) {
+                $q->whereDate('date', '>', $now->toDateString())
+                    ->orWhere(function ($q2) use ($now) {
+                        $q2->whereDate('date', '=', $now->toDateString())
+                            ->whereTime('start_time', '>=', $now->format('H:i:s'));
+                    });
+            })
+            ->exists();
+
+        if ($hasBlockingFutureAppointment) {
+            throw ValidationException::withMessages([
+                'service' => [__('request_messages.service.delete_blocked_future_appointments')],
+            ]);
+        }
+
+        DB::transaction(function () use ($service, $business) {
+            Appointment::query()
+                ->where('service_id', $service->id)
+                ->where('business_id', $business->id)
+                ->update(['service_name' => $service->name]);
+
+            $this->serviceRepository->delete($service);
+        });
     }
 
     /**

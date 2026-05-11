@@ -2,12 +2,15 @@
 
 namespace App\Services;
 
+use App\Enums\AppointmentStatus;
 use App\Enums\UserRole;
+use App\Models\Appointment;
 use App\Models\Business;
 use App\Models\User;
 use App\Repositories\Interfaces\EmployeeRepositoryInterface;
 use App\Repositories\Interfaces\ServiceRepositoryInterface;
 use App\Services\Interfaces\EmployeeServiceInterface;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
@@ -94,11 +97,48 @@ class EmployeeService implements EmployeeServiceInterface
         $user->forceFill(['remember_token' => null])->save();
     }
 
-    public function delete(Business $business, User $employee): void
+    public function delete(Business $business, User $employee, bool $deleteAppointments): void
     {
         abort_if($employee->business_id !== $business->id, 403);
         abort_if($employee->isOwnerOf($business), 403);
 
-        $this->employeeRepository->delete($employee);
+        $timezone = $business->timezone ?: config('app.timezone');
+        $now = Carbon::now($timezone);
+
+        DB::transaction(function () use ($business, $employee, $deleteAppointments, $now) {
+            // First, cancel any future pending/confirmed appointments for this employee.
+            Appointment::query()
+                ->where('business_id', $business->id)
+                ->where('employee_id', $employee->id)
+                ->whereIn('status', [AppointmentStatus::Pending, AppointmentStatus::Confirmed])
+                ->where(function ($q) use ($now) {
+                    $q->whereDate('date', '>', $now->toDateString())
+                        ->orWhere(function ($q2) use ($now) {
+                            $q2->whereDate('date', '=', $now->toDateString())
+                                ->whereTime('start_time', '>=', $now->format('H:i:s'));
+                        });
+                })
+                ->update([
+                    'status' => AppointmentStatus::Cancelled,
+                ]);
+
+            if ($deleteAppointments) {
+                Appointment::query()
+                    ->where('business_id', $business->id)
+                    ->where('employee_id', $employee->id)
+                    ->delete();
+            } else {
+                $name = $employee->name;
+                Appointment::query()
+                    ->where('business_id', $business->id)
+                    ->where('employee_id', $employee->id)
+                    ->update([
+                        'employee_name' => $name,
+                        'employee_id' => null,
+                    ]);
+            }
+
+            $this->employeeRepository->delete($employee);
+        });
     }
 }

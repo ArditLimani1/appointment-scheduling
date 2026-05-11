@@ -122,7 +122,7 @@ return [
         'filtered_service' => 'Filtered service',
         'service_earnings_period' => 'Earnings for this service (period)',
         'performance_by_service' => 'Performance by service',
-        'performance_by_service_hint' => 'Counts and revenue per service in the selected range.',
+        'performance_by_service_hint' => 'By service in this range. Counts include all statuses. Revenue is calculated only from confirmed appointments.',
         'no_appointments' => 'No appointments in this period',
         'no_appointments_hint' => 'Try changing dates or the service filter.',
         'th_service' => 'Service',
@@ -131,7 +131,7 @@ return [
         'th_confirmed' => 'Confirmed',
         'th_revenue' => 'Revenue',
         'monthly_overview' => 'Monthly overview',
-        'monthly_overview_hint' => 'Each calendar month inside your selected range (shows zero when no activity).',
+        'monthly_overview_hint' => 'Months in your range (zeros when empty). Revenue is calculated only from confirmed appointments.',
         'th_month' => 'Month',
     ],
 

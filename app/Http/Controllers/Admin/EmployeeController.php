@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\UpdateEmployeeRequest;
 use App\Models\User;
 use App\Services\Interfaces\EmployeeServiceInterface;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -50,11 +51,14 @@ class EmployeeController extends Controller
             ->with('flash_nonce', uniqid('', true));
     }
 
-    public function destroy(User $employee): RedirectResponse
+    public function destroy(Request $request, User $employee): RedirectResponse
     {
         $business = auth()->user()->panelBusiness();
         abort_unless($business, 403);
-        $this->employeeService->delete($business, $employee);
+        $data = $request->validate([
+            'delete_appointments' => ['required', 'boolean'],
+        ]);
+        $this->employeeService->delete($business, $employee, $data['delete_appointments']);
 
         return redirect()->back()
             ->with('success', __('messages.employee.deleted'))

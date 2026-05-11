@@ -60,7 +60,7 @@ trait ResolvesAppointmentCalendarQuery
     }
 
     /**
-     * @return array{employee_id?: int, statuses: list<string>, service_id?: int}
+     * @return array{employee_id?: int, statuses: list<string>, service_id?: int, search?: string}
      */
     private function calendarFiltersFromRequest(Request $request, ?int $lockedEmployeeId = null, ?int $businessIdForServiceFilter = null): array
     {
@@ -83,6 +83,15 @@ trait ResolvesAppointmentCalendarQuery
         $serviceId = $this->resolveCalendarServiceIdFromRequest($request, $businessIdForServiceFilter);
         if ($serviceId !== null) {
             $filters['service_id'] = $serviceId;
+        }
+
+        $search = $request->query('search');
+        $search = is_string($search) ? trim($search) : '';
+        if ($search !== '' && strlen($search) > 120) {
+            $search = substr($search, 0, 120);
+        }
+        if ($search !== '') {
+            $filters['search'] = $search;
         }
 
         return $filters;

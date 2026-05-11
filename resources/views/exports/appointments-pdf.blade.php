@@ -201,9 +201,9 @@
         <tbody>
             @forelse($appointments as $apt)
             <tr>
-                <td>{{ $apt->employee?->name ?? __('exports.common.none') }}</td>
+                <td>{{ $apt->resolvedEmployeeName() ?? __('exports.common.none') }}</td>
                 <td>{{ $apt->client_first_name }} {{ $apt->client_last_name }}</td>
-                <td>{{ $apt->service?->name ?? __('exports.common.none') }}</td>
+                <td>{{ $apt->resolvedServiceName() ?? __('exports.common.none') }}</td>
                 <td>{{ $apt->date->locale(app()->getLocale())->translatedFormat('d F Y') }}</td>
                 <td>{{ \Illuminate\Support\Str::substr($apt->start_time, 0, 5) }} – {{ \Illuminate\Support\Str::substr($apt->end_time, 0, 5) }}</td>
                 <td style="text-align:center;">

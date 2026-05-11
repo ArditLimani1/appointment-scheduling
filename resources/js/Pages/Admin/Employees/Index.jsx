@@ -12,19 +12,48 @@ export default function Index({ employees, services, businessRoles = [], busines
     const [showModal, setShowModal] = useState(false);
     const [editing, setEditing] = useState(null);
     const [deleteTarget, setDeleteTarget] = useState(null);
+    const [deleteStep, setDeleteStep] = useState(1);
+    const [deleteError, setDeleteError] = useState(null);
 
     const openCreate = () => { setEditing(null); setShowModal(true); };
     const openEdit = (emp) => { setEditing(emp); setShowModal(true); };
 
+    const closeDeleteFlow = () => {
+        setDeleteTarget(null);
+        setDeleteStep(1);
+        setDeleteError(null);
+    };
+
     const requestDelete = (emp) => {
         setShowModal(false);
         setEditing(null);
+        setDeleteError(null);
         setDeleteTarget(emp);
+        setDeleteStep(1);
     };
 
-    const confirmDelete = () => {
-        router.delete(route('admin.employees.destroy', deleteTarget.id));
-        setDeleteTarget(null);
+    const confirmDeleteStep1 = () => {
+        setDeleteStep(2);
+        setDeleteError(null);
+    };
+
+    const submitEmployeeDelete = (deleteAppointments) => {
+        if (!deleteTarget) {
+            return;
+        }
+        const id = deleteTarget.id;
+        router.delete(route('admin.employees.destroy', id), {
+            data: { delete_appointments: deleteAppointments },
+            preserveScroll: true,
+            onSuccess: () => {
+                closeDeleteFlow();
+            },
+            onError: (errors) => {
+                const raw = errors.employee ?? errors.message;
+                const msg = Array.isArray(raw) ? raw[0] : raw;
+                setDeleteError(msg ? String(msg) : null);
+            },
+        });
     };
 
     const toggleEmployeeActive = (employee) => {
@@ -273,10 +302,32 @@ export default function Index({ employees, services, businessRoles = [], busines
             {deleteTarget ? (
                 <DeleteConfirmModal
                     show
-                    onClose={() => setDeleteTarget(null)}
-                    onConfirm={confirmDelete}
-                    title={t('admin.employees.delete_confirm_title')}
-                    message={t('admin.employees.delete_confirm_message', { name: deleteTarget.name })}
+                    onClose={closeDeleteFlow}
+                    onConfirm={deleteStep === 1 ? confirmDeleteStep1 : undefined}
+                    onCancel={deleteStep === 2 ? () => { setDeleteStep(1); setDeleteError(null); } : undefined}
+                    cancelLabel={deleteStep === 2 ? t('admin.employees.delete_step2_cancel') : undefined}
+                    title={deleteStep === 1
+                        ? t('admin.employees.delete_confirm_title')
+                        : t('admin.employees.delete_step2_title')}
+                    message={deleteStep === 1
+                        ? t('admin.employees.delete_confirm_message', { name: deleteTarget.name })
+                        : t('admin.employees.delete_step2_message')}
+                    notice={deleteStep === 1
+                        ? t('admin.employees.delete_confirm_notice')
+                        : t('admin.employees.delete_step2_notice')}
+                    error={deleteError}
+                    confirmActions={deleteStep === 2 ? [
+                        {
+                            label: t('admin.employees.delete_with_all_appointments'),
+                            onClick: () => submitEmployeeDelete(true),
+                            variant: 'danger',
+                        },
+                        {
+                            label: t('admin.employees.delete_keep_appointment_records'),
+                            onClick: () => submitEmployeeDelete(false),
+                            variant: 'outline',
+                        },
+                    ] : undefined}
                 />
             ) : null}
 

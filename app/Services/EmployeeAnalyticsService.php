@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\Interfaces\EmployeeAnalyticsServiceInterface;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 class EmployeeAnalyticsService implements EmployeeAnalyticsServiceInterface
 {
@@ -135,7 +136,7 @@ class EmployeeAnalyticsService implements EmployeeAnalyticsServiceInterface
             $key = $cursor->format('Y-m');
             $months[$key] = [
                 'month' => $key,
-                'label' => $cursor->copy()->locale(app()->getLocale())->translatedFormat('F Y'),
+                'label' => Str::ucfirst($cursor->copy()->locale(app()->getLocale())->translatedFormat('F Y')),
                 'confirmed' => 0,
                 'cancelled' => 0,
                 'pending' => 0,

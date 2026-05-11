@@ -125,6 +125,7 @@ class AppointmentController extends Controller
             'employee_id' => $calendarFilters['employee_id'] ?? null,
             'status' => $calendarFilters['statuses'],
             'service_id' => $calendarFilters['service_id'] ?? null,
+            'search' => $calendarFilters['search'] ?? null,
             'view' => $view,
             'date' => $anchorDate,
         ];
@@ -362,7 +363,7 @@ class AppointmentController extends Controller
     }
 
     /**
-     * @return array{employee_id?: int, date_from: string, date_to: string, statuses: list<string>, service_id?: int}
+     * @return array{employee_id?: int, date_from: string, date_to: string, statuses: list<string>, service_id?: int, search?: string}
      */
     private function filtersFromRequest(Request $request): array
     {
@@ -390,6 +391,10 @@ class AppointmentController extends Controller
             $filters['date_to'] = Carbon::now()->endOfMonth()->toDateString();
         }
 
+        if ($filters['date_from'] > $filters['date_to']) {
+            [$filters['date_from'], $filters['date_to']] = [$filters['date_to'], $filters['date_from']];
+        }
+
         $filters['statuses'] = $this->resolveStatusFilterStrings($request);
 
         $business = $request->user()?->panelBusiness();
@@ -407,6 +412,15 @@ class AppointmentController extends Controller
                     }
                 }
             }
+        }
+
+        $search = $request->query('search');
+        $search = is_string($search) ? trim($search) : '';
+        if ($search !== '' && strlen($search) > 120) {
+            $search = substr($search, 0, 120);
+        }
+        if ($search !== '') {
+            $filters['search'] = $search;
         }
 
         return $filters;

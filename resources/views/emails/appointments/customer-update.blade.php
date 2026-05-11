@@ -41,11 +41,11 @@
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
                         <tr>
                             <td style="padding:8px 0; font-size:14px; color:#6b7280;">Service</td>
-                            <td style="padding:8px 0; font-size:14px; font-weight:700; color:#111827; text-align:right;">{{ $service?->name ?? '—' }}</td>
+                            <td style="padding:8px 0; font-size:14px; font-weight:700; color:#111827; text-align:right;">{{ $appointment->resolvedServiceName() ?? '—' }}</td>
                         </tr>
                         <tr>
                             <td style="padding:8px 0; font-size:14px; color:#6b7280;">Staff</td>
-                            <td style="padding:8px 0; font-size:14px; font-weight:700; color:#111827; text-align:right;">{{ $employee?->name ?? '—' }}</td>
+                            <td style="padding:8px 0; font-size:14px; font-weight:700; color:#111827; text-align:right;">{{ $appointment->resolvedEmployeeName() ?? '—' }}</td>
                         </tr>
                         <tr>
                             <td style="padding:8px 0; font-size:14px; color:#6b7280;">Date</td>

@@ -612,12 +612,22 @@ class BookingService implements BookingServiceInterface
             'start_time' => $a->start_time,
             'end_time' => $a->end_time,
             'price' => $a->price,
-            'service' => $a->service ? ['id' => $a->service->id, 'name' => $a->service->name] : null,
-            'employee' => $a->employee ? [
-                'id' => $a->employee->id,
-                'name' => $a->employee->name,
-                'title' => $a->employee->title,
-            ] : null,
+            'service' => $a->service
+                ? ['id' => $a->service->id, 'name' => $a->service->name]
+                : ($a->resolvedServiceName() ? ['id' => $a->service_id, 'name' => $a->resolvedServiceName()] : null),
+            'employee' => $a->employee
+                ? [
+                    'id' => $a->employee->id,
+                    'name' => $a->employee->name,
+                    'title' => $a->employee->title,
+                ]
+                : ($a->resolvedEmployeeName()
+                    ? [
+                        'id' => $a->employee_id,
+                        'name' => $a->resolvedEmployeeName(),
+                        'title' => null,
+                    ]
+                    : null),
             'business' => $a->business ? [
                 'id' => $a->business->id,
                 'name' => $a->business->name,

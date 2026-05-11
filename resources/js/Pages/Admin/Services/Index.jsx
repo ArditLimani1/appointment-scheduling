@@ -16,6 +16,7 @@ export default function Index({ services, sharedResources = [] }) {
     const [showModal, setShowModal] = useState(false);
     const [editing, setEditing] = useState(null);
     const [deleteTarget, setDeleteTarget] = useState(null);
+    const [deleteError, setDeleteError] = useState(null);
 
     const openCreate = () => { setEditing(null); setShowModal(true); };
     const openEdit = (svc) => { setEditing(svc); setShowModal(true); };
@@ -23,12 +24,27 @@ export default function Index({ services, sharedResources = [] }) {
     const requestDelete = (svc) => {
         setShowModal(false);
         setEditing(null);
+        setDeleteError(null);
         setDeleteTarget(svc);
     };
 
     const confirmDelete = () => {
-        router.delete(route('admin.services.destroy', deleteTarget.id));
-        setDeleteTarget(null);
+        if (!deleteTarget) {
+            return;
+        }
+        const id = deleteTarget.id;
+        router.delete(route('admin.services.destroy', id), {
+            preserveScroll: true,
+            onSuccess: () => {
+                setDeleteTarget(null);
+                setDeleteError(null);
+            },
+            onError: (errors) => {
+                const raw = errors.service ?? errors.message;
+                const msg = Array.isArray(raw) ? raw[0] : raw;
+                setDeleteError(msg ? String(msg) : null);
+            },
+        });
     };
 
     const toggleActive = (svc) => {
@@ -275,10 +291,14 @@ export default function Index({ services, sharedResources = [] }) {
             {deleteTarget ? (
                 <DeleteConfirmModal
                     show
-                    onClose={() => setDeleteTarget(null)}
+                    onClose={() => {
+                        setDeleteTarget(null);
+                        setDeleteError(null);
+                    }}
                     onConfirm={confirmDelete}
                     title={t('admin.services.delete_confirm_title')}
                     message={t('admin.services.delete_confirm_message', { name: deleteTarget.name })}
+                    error={deleteError}
                 />
             ) : null}
 

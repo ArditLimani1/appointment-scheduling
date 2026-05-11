@@ -76,9 +76,9 @@ class AppointmentsExport implements FromQuery, WithHeadings, WithMapping
     public function map($appointment): array
     {
         return [
-            $appointment->employee?->name ?? __('exports.common.not_available'),
+            $appointment->resolvedEmployeeName() ?? __('exports.common.not_available'),
             $appointment->client_first_name.' '.$appointment->client_last_name,
-            $appointment->service?->name ?? __('exports.common.not_available'),
+            $appointment->resolvedServiceName() ?? __('exports.common.not_available'),
             $appointment->date->locale(app()->getLocale())->translatedFormat('d F Y'),
             $appointment->start_time.' - '.$appointment->end_time,
             __('exports.common.'.$appointment->status->value),

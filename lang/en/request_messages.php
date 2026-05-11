@@ -5,6 +5,11 @@ return [
     'service' => [
         'resource_quantity' => 'Quantity cannot exceed the resource capacity.',
         'resource_duplicate' => 'Each resource can only be added once.',
+        'delete_blocked_future_appointments' => 'This service still has upcoming pending or confirmed appointments. Reassign or cancel those first, then try again. Until then, you can mark the service as inactive so clients cannot book it.',
+    ],
+
+    'employee' => [
+        'delete_blocked_future_appointments' => 'This employee still has upcoming pending or confirmed appointments. Either delete all their appointments, or reassign or cancel those bookings first. You can also deactivate the employee until their schedule is clear.',
     ],
 
     'booking' => [

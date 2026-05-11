@@ -75,6 +75,12 @@ class AppointmentService implements AppointmentServiceInterface
         if (! empty($filters['service_id'])) {
             $repoFilters['service_id'] = (int) $filters['service_id'];
         }
+        if (! empty($filters['search']) && is_string($filters['search'])) {
+            $term = trim($filters['search']);
+            if ($term !== '') {
+                $repoFilters['search'] = $term;
+            }
+        }
 
         $anchor = Carbon::parse($anchorDate)->startOfDay();
 
@@ -549,9 +555,9 @@ class AppointmentService implements AppointmentServiceInterface
             'start_time' => $appointment->start_time,
             'end_time' => $appointment->end_time,
             'service_id' => $appointment->service_id,
-            'service_name' => $appointment->service?->name,
+            'service_name' => $appointment->service?->name ?? $appointment->service_name,
             'employee_id' => $appointment->employee_id,
-            'employee_name' => $appointment->employee?->name,
+            'employee_name' => $appointment->employee?->name ?? $appointment->employee_name,
         ];
     }
 
@@ -622,11 +628,11 @@ class AppointmentService implements AppointmentServiceInterface
         }
 
         if (($before['service_id'] ?? null) !== $appointment->service_id) {
-            $changes[] = 'Service changed from <strong>'.e($before['service_name'] ?? '—').'</strong> to <strong>'.e($appointment->service?->name ?? '—').'</strong>.';
+            $changes[] = 'Service changed from <strong>'.e($before['service_name'] ?? '—').'</strong> to <strong>'.e($appointment->resolvedServiceName() ?? '—').'</strong>.';
         }
 
         if (($before['employee_id'] ?? null) !== $appointment->employee_id) {
-            $changes[] = 'Staff member changed from <strong>'.e($before['employee_name'] ?? '—').'</strong> to <strong>'.e($appointment->employee?->name ?? '—').'</strong>.';
+            $changes[] = 'Staff member changed from <strong>'.e($before['employee_name'] ?? '—').'</strong> to <strong>'.e($appointment->resolvedEmployeeName() ?? '—').'</strong>.';
         }
 
         $beforeStatus = (string) ($before['status'] ?? '');

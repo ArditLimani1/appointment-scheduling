@@ -122,7 +122,7 @@ return [
         'filtered_service' => 'Shërbimi i filtruar',
         'service_earnings_period' => 'Të ardhurat për këtë shërbim (periudha)',
         'performance_by_service' => 'Performanca sipas shërbimit',
-        'performance_by_service_hint' => 'Numri i termineve dhe të ardhurat për çdo shërbim në intervalin e përzgjedhur.',
+        'performance_by_service_hint' => 'Sipas shërbimit në interval. Numërimi përfshin të gjitha statuset. Të ardhurat llogariten vetëm nga terminet e konfirmuara.',
         'no_appointments' => 'Nuk ka termine në këtë periudhë',
         'no_appointments_hint' => 'Provoni të ndryshoni datat ose filtrin e shërbimit.',
         'th_service' => 'Shërbimi',
@@ -131,7 +131,7 @@ return [
         'th_confirmed' => 'Konfirmuar',
         'th_revenue' => 'Të ardhurat',
         'monthly_overview' => 'Përmbledhje mujore',
-        'monthly_overview_hint' => 'Çdo muaj kalendarik brenda intervalit të përzgjedhur',
+        'monthly_overview_hint' => 'Muajt në intervalin e zgjedhur (0 kur nuk ka aktivitet). Të ardhurat llogariten vetëm nga terminet e konfirmuara.',
         'th_month' => 'Muaji',
     ],
 
