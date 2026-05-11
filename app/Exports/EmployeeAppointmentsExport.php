@@ -94,7 +94,7 @@ class EmployeeAppointmentsExport implements FromQuery, WithHeadings, WithMapping
         return [
             $appointment->client_first_name.' '.$appointment->client_last_name,
             $contact,
-            $appointment->service?->name ?? __('exports.common.not_available'),
+            $appointment->resolvedServiceName() ?? __('exports.common.not_available'),
             $appointment->date->locale(app()->getLocale())->translatedFormat('d F Y'),
             $appointment->start_time.' - '.$appointment->end_time,
             __('exports.common.'.$appointment->status->value),

@@ -207,6 +207,7 @@ class AppointmentController extends Controller
             'employee_id' => (string) $user->id,
             'status' => $calendarFilters['statuses'],
             'service_id' => $calendarFilters['service_id'] ?? null,
+            'search' => $calendarFilters['search'] ?? null,
             'view' => $view,
             'date' => $anchorDate,
         ];

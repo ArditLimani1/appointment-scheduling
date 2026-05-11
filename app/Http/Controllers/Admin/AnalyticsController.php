@@ -9,6 +9,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Maatwebsite\Excel\Facades\Excel;
@@ -55,7 +56,9 @@ class AnalyticsController extends Controller
 
         // Resolve employee name for the filter label
         $employeeFilter = null;
-        if (! empty($filters['employee_id'])) {
+        if (! empty($filters['legacy_employee_name'])) {
+            $employeeFilter = $filters['legacy_employee_name'];
+        } elseif (! empty($filters['employee_id'])) {
             $employee = $business->employees()->find($filters['employee_id']);
             $employeeFilter = $employee?->name;
         }
@@ -104,8 +107,29 @@ class AnalyticsController extends Controller
             $filters['date_to'] = Carbon::now()->endOfMonth()->toDateString();
         }
 
+        if ($filters['date_from'] > $filters['date_to']) {
+            [$filters['date_from'], $filters['date_to']] = [$filters['date_to'], $filters['date_from']];
+        }
+
+        $employeeFromQueryParsed = false;
+        $employeeRaw = $request->query('employee');
+        if (is_string($employeeRaw) && $employeeRaw !== '') {
+            $employeeFromQueryParsed = true;
+            if (str_starts_with($employeeRaw, 'legacy:')) {
+                $decoded = rawurldecode(Str::after($employeeRaw, 'legacy:'));
+                if ($decoded !== '') {
+                    $filters['legacy_employee_name'] = $decoded;
+                }
+            } elseif (ctype_digit($employeeRaw)) {
+                $id = (int) $employeeRaw;
+                if ($id > 0) {
+                    $filters['employee_id'] = $id;
+                }
+            }
+        }
+
         $employeeIdRaw = $request->query('employee_id');
-        if ($employeeIdRaw !== null && $employeeIdRaw !== '' && is_numeric($employeeIdRaw)) {
+        if (! $employeeFromQueryParsed && $employeeIdRaw !== null && $employeeIdRaw !== '' && is_numeric($employeeIdRaw)) {
             $id = (int) $employeeIdRaw;
             if ($id > 0) {
                 $filters['employee_id'] = $id;

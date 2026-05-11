@@ -7,6 +7,7 @@ import PageHeader from '@/Components/PageHeader';
 import FilterListbox from '@/Components/FilterListbox';
 import DatePicker from '@/Components/DatePicker';
 import { useT } from '@/i18n/useT';
+import { mergeDateFromChange, mergeDateToChange } from '@/utils/dateRangeFilters';
 
 function getAnalyticsPathname() {
     return new URL(route('admin.analytics.index'), window.location.href).pathname;
@@ -16,8 +17,8 @@ function buildAnalyticsUrl(filters) {
     const queryParams = {};
     if (filters.date_from) queryParams.date_from = filters.date_from;
     if (filters.date_to) queryParams.date_to = filters.date_to;
-    if (filters.employee_id !== '' && filters.employee_id != null) {
-        queryParams.employee_id = String(filters.employee_id);
+    if (filters.employee !== '' && filters.employee != null) {
+        queryParams.employee = String(filters.employee);
     }
     const queryString = new URLSearchParams(queryParams).toString();
     return getAnalyticsPathname() + (queryString ? `?${queryString}` : '');
@@ -27,8 +28,8 @@ function buildExportUrl(filters, routeName = 'admin.analytics.export') {
     const queryParams = {};
     if (filters.date_from) queryParams.date_from = filters.date_from;
     if (filters.date_to) queryParams.date_to = filters.date_to;
-    if (filters.employee_id !== '' && filters.employee_id != null) {
-        queryParams.employee_id = String(filters.employee_id);
+    if (filters.employee !== '' && filters.employee != null) {
+        queryParams.employee = String(filters.employee);
     }
     const queryString = new URLSearchParams(queryParams).toString();
     const pathname = new URL(route(routeName), window.location.href).pathname;
@@ -100,7 +101,7 @@ export default function Index({
     total_revenue,
     employee_stats,
     monthly_performance = [],
-    employees,
+    employee_filter_options = [],
     filters = {},
     currency_symbol,
 }) {
@@ -112,11 +113,19 @@ export default function Index({
     const [localFilters, setLocalFilters] = useState({
         date_from: filters.date_from ?? currentMonthStart(),
         date_to: filters.date_to ?? currentMonthEnd(),
-        employee_id: filters.employee_id != null ? String(filters.employee_id) : '',
+        employee: filters.employee != null && filters.employee !== '' ? String(filters.employee) : '',
     });
     const [showMobileFilters, setShowMobileFilters] = useState(false);
 
-    const visitOpts = useMemo(() => ({ preserveState: false, replace: true, preserveScroll: true }), []);
+    useEffect(() => {
+        setLocalFilters({
+            date_from: filters.date_from ?? currentMonthStart(),
+            date_to: filters.date_to ?? currentMonthEnd(),
+            employee: filters.employee != null && filters.employee !== '' ? String(filters.employee) : '',
+        });
+    }, [filters.date_from, filters.date_to, filters.employee]);
+
+    const visitOpts = useMemo(() => ({ preserveState: true, replace: true, preserveScroll: true }), []);
 
     const patchFilters = useCallback((patch) => {
         setLocalFilters((current) => {
@@ -127,15 +136,14 @@ export default function Index({
     }, [visitOpts]);
 
     const clearFilters = useCallback(() => {
-        const defaultFilters = { date_from: currentMonthStart(), date_to: currentMonthEnd(), employee_id: '' };
+        const defaultFilters = { date_from: currentMonthStart(), date_to: currentMonthEnd(), employee: '' };
         setLocalFilters(defaultFilters);
         router.get(buildAnalyticsUrl(defaultFilters), {}, visitOpts);
     }, [visitOpts]);
 
-    const employeeOptions = useMemo(() => [
-        { value: '', label: t('admin.analytics.all_employees') },
-        ...employees.map((employee) => ({ value: String(employee.id), label: employee.name })),
-    ], [employees, t]);
+    const employeeOptions = useMemo(() => (
+        employee_filter_options.map((row) => ({ value: row.value, label: row.label }))
+    ), [employee_filter_options]);
 
     const fmt = (num) => Number(num).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -168,7 +176,8 @@ export default function Index({
                         className="w-full min-w-0 lg:flex-1 lg:min-w-0"
                         label={t('admin.analytics.start_date')}
                         value={localFilters.date_from}
-                        onChange={(value) => patchFilters({ date_from: value })}
+                        maxDate={localFilters.date_to || ''}
+                        onChange={(value) => patchFilters(mergeDateFromChange(localFilters, value))}
                         placeholder={t('admin.analytics.start_date_ph')}
                         buttonClassName="max-lg:!min-w-0"
                     />
@@ -176,14 +185,15 @@ export default function Index({
                         className="w-full min-w-0 lg:flex-1 lg:min-w-0"
                         label={t('admin.analytics.end_date')}
                         value={localFilters.date_to}
-                        onChange={(value) => patchFilters({ date_to: value })}
+                        minDate={localFilters.date_from || ''}
+                        onChange={(value) => patchFilters(mergeDateToChange(localFilters, value))}
                         placeholder={t('admin.analytics.end_date_ph')}
                         buttonClassName="max-lg:!min-w-0"
                     />
                     <FilterListbox
                         label={t('admin.analytics.employee')}
-                        value={localFilters.employee_id}
-                        onChange={(value) => patchFilters({ employee_id: value })}
+                        value={localFilters.employee}
+                        onChange={(value) => patchFilters({ employee: value })}
                         options={employeeOptions}
                         minWidthClass="min-w-0"
                         wrapperClassName="flex w-full min-w-0 flex-col gap-1.5 lg:flex-1"
@@ -223,7 +233,7 @@ export default function Index({
             {/* Table */}
             <section className="min-w-0 overflow-hidden rounded-2xl bg-surface-container-lowest ring-1 ring-slate-100 shadow-sm">
                 <div className="flex items-center justify-between border-b border-slate-50 bg-white px-4 py-4 sm:px-6 md:px-8">
-                    <div>
+                    <div className="min-w-0 pr-2">
                         <h3 className="font-headline text-base font-bold text-on-surface">{t('admin.analytics.employee_performance')}</h3>
                         <p className="mt-0.5 text-xs text-on-surface-variant">{t('admin.analytics.employee_breakdown')}</p>
                     </div>

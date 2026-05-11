@@ -5,6 +5,11 @@ return [
     'service' => [
         'resource_quantity' => 'Sasia nuk mund të kalojë kapacitetin e burimit.',
         'resource_duplicate' => 'Çdo burim mund të shtohet vetëm një herë.',
+        'delete_blocked_future_appointments' => 'Ky shërbim ka ende termine të ardhshëm në pritje ose të konfirmuara. Rivendosi ose anulo ato së pari, pastaj provo përsëri. Deri atëherë, mund ta shënojsh shërbimin si joaktiv që klientët të mos e rezervojnë.',
+    ],
+
+    'employee' => [
+        'delete_blocked_future_appointments' => 'Ky punonjës ka ende termine të ardhshëm në pritje ose të konfirmuara. Ose fshi të gjitha terminet e tij, ose rivendosi ose anulo ato rezervime së pari. Mund ta çaktivizosh punonjësin derisa orari të jetë i lirë.',
     ],
 
     'booking' => [

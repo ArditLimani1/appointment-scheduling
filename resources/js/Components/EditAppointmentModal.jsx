@@ -287,7 +287,11 @@ export default function EditAppointmentModal({
 
     const employeeName =
         employees.find((e) => String(e.id) === String(appointment.employee_id))?.name ?? '—';
-    const serviceName = appointment.service?.name ?? services.find((s) => String(s.id) === String(appointment.service_id))?.name ?? '—';
+    const serviceName =
+        appointment.service?.name
+        ?? appointment.service_name
+        ?? services.find((s) => String(s.id) === String(appointment.service_id))?.name
+        ?? '—';
 
     const readOnlyRow = (label, value) => (
         <div className="sm:col-span-2">

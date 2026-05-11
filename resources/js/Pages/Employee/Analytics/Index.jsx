@@ -7,6 +7,7 @@ import PageHeader from '@/Components/PageHeader';
 import FilterListbox from '@/Components/FilterListbox';
 import DatePicker from '@/Components/DatePicker';
 import { useT } from '@/i18n/useT';
+import { mergeDateFromChange, mergeDateToChange } from '@/utils/dateRangeFilters';
 
 function getAnalyticsPathname() {
     return new URL(route('employee.analytics.index'), window.location.href).pathname;
@@ -116,7 +117,15 @@ export default function Index({
     });
     const [showMobileFilters, setShowMobileFilters] = useState(false);
 
-    const visitOpts = useMemo(() => ({ preserveState: false, replace: true, preserveScroll: true }), []);
+    useEffect(() => {
+        setLocalFilters({
+            date_from: filters.date_from ?? currentMonthStart(),
+            date_to: filters.date_to ?? currentMonthEnd(),
+            service_id: filters.service_id != null ? String(filters.service_id) : '',
+        });
+    }, [filters.date_from, filters.date_to, filters.service_id]);
+
+    const visitOpts = useMemo(() => ({ preserveState: true, replace: true, preserveScroll: true }), []);
 
     const patchFilters = useCallback(
         (patch) => {
@@ -179,7 +188,8 @@ export default function Index({
                         className="w-full min-w-0 lg:flex-1 lg:min-w-0"
                         label={t('employee.analytics.from')}
                         value={localFilters.date_from}
-                        onChange={(value) => patchFilters({ date_from: value })}
+                        maxDate={localFilters.date_to || ''}
+                        onChange={(value) => patchFilters(mergeDateFromChange(localFilters, value))}
                         placeholder={t('employee.analytics.start_date_ph')}
                         buttonClassName="max-lg:!min-w-0"
                     />
@@ -187,7 +197,8 @@ export default function Index({
                         className="w-full min-w-0 lg:flex-1 lg:min-w-0"
                         label={t('employee.analytics.to')}
                         value={localFilters.date_to}
-                        onChange={(value) => patchFilters({ date_to: value })}
+                        minDate={localFilters.date_from || ''}
+                        onChange={(value) => patchFilters(mergeDateToChange(localFilters, value))}
                         placeholder={t('employee.analytics.end_date_ph')}
                         buttonClassName="max-lg:!min-w-0"
                     />
@@ -213,7 +224,7 @@ export default function Index({
 
             {/* Summary — same MetricCard grid pattern as admin analytics */}
             <section className="mb-8">
-                <div className="grid grid-cols-2 gap-2 sm:gap-6">
+                <div className="grid grid-cols-2 gap-x-2 gap-y-3 sm:gap-6">
                     <MetricCard
                         icon="event_available"
                         iconBg="bg-primary-fixed"
@@ -242,7 +253,7 @@ export default function Index({
                         label={t('employee.analytics.cancelled')}
                         value={(summary.cancelled_count ?? 0).toLocaleString()}
                     />
-                    <div className="col-span-2">
+                    <div className="col-span-2 max-sm:mt-2 sm:mt-0">
                         <MetricCard
                             variant="primary"
                             icon="payments"
@@ -277,7 +288,7 @@ export default function Index({
             {/* By service */}
             <section className="mb-8 min-w-0 overflow-hidden rounded-2xl bg-surface-container-lowest shadow-sm ring-1 ring-slate-100">
                 <div className="flex items-center justify-between border-b border-slate-50 bg-white px-4 py-4 sm:px-6 md:px-8">
-                    <div>
+                    <div className="min-w-0 pr-2">
                         <h3 className="font-headline text-base font-bold text-on-surface">{t('employee.analytics.performance_by_service')}</h3>
                         <p className="mt-0.5 text-xs text-on-surface-variant">{t('employee.analytics.performance_by_service_hint')}</p>
                     </div>

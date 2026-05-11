@@ -15,6 +15,7 @@ import {
     DEFAULT_APPOINTMENT_STATUS_FILTER,
     normalizeAppointmentStatusFilter,
 } from '@/utils/appointmentStatusFilter';
+import { mergeDateFromChange, mergeDateToChange } from '@/utils/dateRangeFilters';
 
 function DeleteConfirmModal({ appointment, onConfirm, onCancel }) {
     const t = useT();
@@ -206,7 +207,7 @@ export default function Index({
 
     const visitOpts = useMemo(
         () => ({
-            preserveState: false,
+            preserveState: true,
             replace: true,
             preserveScroll: true,
         }),
@@ -297,9 +298,9 @@ export default function Index({
         try {
             const parsedUrl = new URL(url, window.location.href);
             const relativeUrl = parsedUrl.pathname + parsedUrl.search + parsedUrl.hash;
-            router.get(relativeUrl, {}, { preserveState: false, preserveScroll: true });
+            router.get(relativeUrl, {}, { preserveState: true, preserveScroll: true });
         } catch {
-            router.visit(url, { preserveState: false, preserveScroll: true });
+            router.visit(url, { preserveState: true, preserveScroll: true });
         }
     };
 
@@ -382,7 +383,8 @@ export default function Index({
                         className="w-full min-w-0 lg:flex-1 lg:min-w-0"
                         label={t('admin.appointments.from')}
                         value={localFilters.date_from}
-                        onChange={(value) => patchFilters({ date_from: value })}
+                        maxDate={localFilters.date_to || ''}
+                        onChange={(value) => patchFilters(mergeDateFromChange(localFilters, value))}
                         placeholder={t('admin.appointments.start_date_ph')}
                         buttonClassName="max-lg:!min-w-0"
                     />
@@ -390,7 +392,8 @@ export default function Index({
                         className="w-full min-w-0 lg:flex-1 lg:min-w-0"
                         label={t('admin.appointments.to')}
                         value={localFilters.date_to}
-                        onChange={(value) => patchFilters({ date_to: value })}
+                        minDate={localFilters.date_from || ''}
+                        onChange={(value) => patchFilters(mergeDateToChange(localFilters, value))}
                         placeholder={t('admin.appointments.end_date_ph')}
                         buttonClassName="max-lg:!min-w-0"
                     />
@@ -455,7 +458,7 @@ export default function Index({
                                                         </dt>
                                                         <dd className="mt-1 flex items-baseline justify-between gap-2">
                                                             <span className="min-w-0 truncate text-sm text-on-surface-variant">
-                                                                {apt.service?.name || '—'}
+                                                                {apt.service?.name ?? apt.service_name ?? '—'}
                                                             </span>
                                                             <span className="shrink-0 whitespace-nowrap text-sm font-semibold tabular-nums text-on-surface">
                                                                 {Number(apt.price).toFixed(2)}
@@ -573,7 +576,7 @@ export default function Index({
                                                 <p className="text-xs text-on-surface-variant">{apt.client_email || apt.client_phone || '—'}</p>
                                             </td>
                                             <td className="px-4 py-5 text-sm text-on-surface-variant sm:px-6 lg:px-8">{apt.employee?.name ?? '—'}</td>
-                                            <td className="px-4 py-5 text-sm text-on-surface-variant sm:px-6 lg:px-8">{apt.service?.name || '—'}</td>
+                                            <td className="px-4 py-5 text-sm text-on-surface-variant sm:px-6 lg:px-8">{apt.service?.name ?? apt.service_name ?? '—'}</td>
                                             <td className="px-4 py-5 sm:px-6 lg:px-8">
                                                 <p className="text-sm font-semibold text-on-surface">
                                                     {formatAppointmentDate(apt.date, { day: 'numeric', month: monthStyle, year: 'numeric' }, localeBcp47)}

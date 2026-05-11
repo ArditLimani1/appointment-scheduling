@@ -251,7 +251,7 @@ function DraggableEvent({
 
     const colors = getEmployeeSlotStyles(employeeColorMap, apt.employee_id);
     const employeeName = apt.employee?.name || apt.employee_name || 'Staff';
-    const serviceName = apt.service?.name || 'Appointment';
+    const serviceName = apt.service?.name || apt.service_name || 'Appointment';
 
     return (
         <button

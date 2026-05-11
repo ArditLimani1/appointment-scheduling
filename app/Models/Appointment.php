@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class Appointment extends Model
 {
     protected $fillable = [
-        'booking_reference', 'business_id', 'employee_id', 'service_id', 'client_first_name', 'client_last_name',
+        'booking_reference', 'business_id', 'employee_id', 'employee_name', 'service_id', 'service_name', 'client_first_name', 'client_last_name',
         'client_phone', 'client_email', 'client_notes', 'date', 'start_time', 'end_time',
         'price', 'status', 'updated_by',
     ];
@@ -32,6 +32,26 @@ class Appointment extends Model
     public function service(): BelongsTo
     {
         return $this->belongsTo(Service::class);
+    }
+
+    /**
+     * Live service name when the row is still linked, otherwise the snapshot stored when the service was removed.
+     */
+    public function resolvedServiceName(): ?string
+    {
+        $name = $this->service?->name ?? $this->service_name;
+
+        return $name !== null && $name !== '' ? $name : null;
+    }
+
+    /**
+     * Live employee name when the row is still linked, otherwise the snapshot stored when the employee was removed.
+     */
+    public function resolvedEmployeeName(): ?string
+    {
+        $name = $this->employee?->name ?? $this->employee_name;
+
+        return $name !== null && $name !== '' ? $name : null;
     }
 
     public function business(): BelongsTo

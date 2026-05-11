@@ -53,6 +53,10 @@ function buildCalendarUrl(employeeCalendar, date, view, filters) {
     if (sid != null && sid !== '' && sid !== SERVICE_FILTER_ALL) {
         params.set('service_id', String(sid));
     }
+    const sq = typeof filters.search === 'string' ? filters.search.trim() : '';
+    if (sq) {
+        params.set('search', sq);
+    }
     const qs = params.toString();
     const routeName = employeeCalendar ? 'employee.appointments.calendar' : 'admin.appointments.calendar';
     const path = getRoutePathname(routeName);
@@ -160,26 +164,44 @@ export default function Calendar({
         ? [...filtersProp.status].sort().join('|')
         : String(filtersProp.status ?? '');
 
+    const searchFromProps = filtersProp.search != null && filtersProp.search !== '' ? String(filtersProp.search) : '';
+
     const normalizedFilters = useMemo(
         () => ({
             employee_id: filtersProp.employee_id != null && filtersProp.employee_id !== '' ? String(filtersProp.employee_id) : '',
             status: normalizeAppointmentStatusFilter(filtersProp.status),
             service_id: normalizeServiceFilterForState(filtersProp.service_id),
+            search: searchFromProps,
             view: filtersProp.view === 'day' || filtersProp.view === 'week' ? filtersProp.view : calendar_view === 'day' ? 'day' : 'week',
             date:
                 filtersProp.date != null && String(filtersProp.date).match(/^\d{4}-\d{2}-\d{2}$/)
                     ? String(filtersProp.date).slice(0, 10)
                     : range_start,
         }),
-        [filtersProp.employee_id, filtersProp.service_id, statusFilterKey, filtersProp.view, filtersProp.date, calendar_view, range_start],
+        [filtersProp.employee_id, filtersProp.service_id, statusFilterKey, filtersProp.view, filtersProp.date, calendar_view, range_start, searchFromProps],
     );
 
     const [localFilters, setLocalFilters] = useState(normalizedFilters);
     const [showMobileFilters, setShowMobileFilters] = useState(false);
+    const [clientSearchDraft, setClientSearchDraft] = useState(normalizedFilters.search ?? '');
+    const clientSearchDraftRef = useRef(normalizedFilters.search ?? '');
+    const searchDebounceRef = useRef(null);
 
     useEffect(() => {
         setLocalFilters(normalizedFilters);
+        const s = normalizedFilters.search ?? '';
+        setClientSearchDraft(s);
+        clientSearchDraftRef.current = s;
     }, [normalizedFilters]);
+
+    useEffect(
+        () => () => {
+            if (searchDebounceRef.current) {
+                clearTimeout(searchDebounceRef.current);
+            }
+        },
+        [],
+    );
 
     const visitOpts = useMemo(
         () => ({
@@ -216,13 +238,20 @@ export default function Calendar({
     );
 
     const clearFilters = useCallback(() => {
+        if (searchDebounceRef.current) {
+            clearTimeout(searchDebounceRef.current);
+            searchDebounceRef.current = null;
+        }
         const next = {
             employee_id: employeeCalendar ? localFilters.employee_id : '',
             status: [...DEFAULT_APPOINTMENT_STATUS_FILTER],
             service_id: SERVICE_FILTER_ALL,
+            search: '',
             date: todayYmd(),
             view: localFilters.view,
         };
+        setClientSearchDraft('');
+        clientSearchDraftRef.current = '';
         setLocalFilters(next);
         router.get(buildCalendarUrl(employeeCalendar, next.date, next.view, next), {}, visitOpts);
     }, [employeeCalendar, localFilters.employee_id, localFilters.view, visitOpts]);
@@ -318,11 +347,15 @@ export default function Calendar({
             if (!employeeCalendar && localFilters.employee_id) {
                 params.set('employee_id', String(localFilters.employee_id));
             }
+            const sq = typeof localFilters.search === 'string' ? localFilters.search.trim() : '';
+            if (sq) {
+                params.set('search', sq);
+            }
             const queryString = params.toString();
             const pathname = getRoutePathname(routeName);
             return pathname + (queryString ? `?${queryString}` : '');
         },
-        [range_start, range_end, localFilters.status, localFilters.service_id, localFilters.employee_id, employeeCalendar],
+        [range_start, range_end, localFilters.status, localFilters.service_id, localFilters.employee_id, localFilters.search, employeeCalendar],
     );
 
     const selfViewEmployeeId = useMemo(() => {
@@ -350,6 +383,7 @@ export default function Calendar({
                       dateBtnPad: 'max-xl:!min-w-0',
                       serviceWrap: 'flex w-full min-w-0 shrink-0 flex-col gap-1.5 xl:w-[220px]',
                       statusMin: 'w-full min-w-0 max-w-full xl:min-w-[200px] xl:w-[220px]',
+                      searchWrap: 'flex w-full min-w-0 flex-col gap-1.5 xl:max-w-md xl:flex-1 min-[1100px]:max-w-lg',
                       clearWrap: 'flex w-full shrink-0 items-end justify-end xl:ml-auto xl:w-auto xl:justify-end',
                       clearBtn:
                           'w-full rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-slate-50 max-xl:min-h-[2.75rem] xl:mr-2 xl:w-auto',
@@ -363,6 +397,7 @@ export default function Calendar({
                       dateBtnPad: 'max-lg:!min-w-0',
                       serviceWrap: 'flex w-full min-w-0 shrink-0 flex-col gap-1.5 lg:w-[220px]',
                       statusMin: 'w-full min-w-0 max-w-full lg:min-w-[200px] lg:w-[220px]',
+                      searchWrap: 'flex w-full min-w-0 flex-col gap-1.5 lg:max-w-md lg:flex-1 min-[1100px]:max-w-lg',
                       clearWrap: 'flex w-full shrink-0 items-end justify-end lg:ml-auto lg:w-auto lg:justify-end',
                       clearBtn:
                           'w-full rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-slate-50 max-lg:min-h-[2.75rem] lg:mr-2 lg:w-auto',
@@ -501,6 +536,48 @@ export default function Calendar({
                             options={statusOptions}
                             minWidthClass={calendarFilterBarClasses.statusMin}
                         />
+                        <div className={calendarFilterBarClasses.searchWrap}>
+                            <label
+                                htmlFor={employeeCalendar ? 'employee-calendar-client-search' : 'admin-calendar-client-search'}
+                                className="ml-1 text-[10px] font-bold uppercase tracking-widest text-outline"
+                            >
+                                {employeeCalendar ? t('employee.appointments.client') : t('admin.calendar.client_search')}
+                            </label>
+                            <div className="relative">
+                                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-outline">
+                                    <Icon name="search" size="text-base" />
+                                </span>
+                                <input
+                                    id={employeeCalendar ? 'employee-calendar-client-search' : 'admin-calendar-client-search'}
+                                    type="search"
+                                    value={clientSearchDraft}
+                                    autoComplete="off"
+                                    placeholder={employeeCalendar ? t('employee.appointments.client_name_ph') : t('admin.calendar.client_search_ph')}
+                                    onChange={(e) => {
+                                        const v = e.target.value;
+                                        setClientSearchDraft(v);
+                                        clientSearchDraftRef.current = v;
+                                        if (searchDebounceRef.current) {
+                                            clearTimeout(searchDebounceRef.current);
+                                        }
+                                        searchDebounceRef.current = setTimeout(() => {
+                                            searchDebounceRef.current = null;
+                                            const nextSearch = clientSearchDraftRef.current.trim();
+                                            setLocalFilters((cur) => {
+                                                const next = { ...cur, search: nextSearch };
+                                                router.get(
+                                                    buildCalendarUrl(employeeCalendar, next.date, next.view, next),
+                                                    {},
+                                                    visitOpts,
+                                                );
+                                                return next;
+                                            });
+                                        }, 400);
+                                    }}
+                                    className="min-h-[2.75rem] w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-on-surface shadow-none transition-colors placeholder:text-outline focus:border-on-surface/20 focus:outline-none focus:ring-2 focus:ring-on-surface/10"
+                                />
+                            </div>
+                        </div>
                         <div className={calendarFilterBarClasses.clearWrap}>
                             <button type="button" onClick={clearFilters} className={calendarFilterBarClasses.clearBtn}>
                                 {t('admin.calendar.clear')}

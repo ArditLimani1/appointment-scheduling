@@ -65,7 +65,7 @@ export default function Confirmation({ appointment, bookingBundle }) {
                                 <ul className="space-y-2">
                                     {bundle.map((row) => (
                                         <li key={row.id} className="font-headline text-base font-bold text-on-surface">
-                                            {row.service?.name || t('booking_ui.confirmation.service_fallback')}
+                                            {row.service?.name ?? row.service_name ?? t('booking_ui.confirmation.service_fallback')}
                                             <span className="font-medium text-on-surface-variant text-sm ml-2">
                                                 {formatTimeHm(row.start_time)} — {formatTimeHm(row.end_time)}
                                             </span>

@@ -13,5 +13,8 @@ interface EmployeeServiceInterface
 
     public function update(Business $business, User $employee, array $data): User;
 
-    public function delete(Business $business, User $employee): void;
+    /**
+     * @param  bool  $deleteAppointments  When true, all appointments for this employee are removed. When false, appointments are kept with an employee name snapshot and unlinked unless blocked by upcoming pending/confirmed bookings.
+     */
+    public function delete(Business $business, User $employee, bool $deleteAppointments): void;
 }

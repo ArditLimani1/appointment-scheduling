@@ -102,7 +102,13 @@ export default function EmployeeRescheduleModal({ appointment, onClose }) {
                         <h3 className="font-headline text-lg font-bold text-on-surface">Reschedule Appointment</h3>
                         <p className="text-sm text-on-surface-variant mt-0.5">
                             {appointment.client_first_name} {appointment.client_last_name}
-                            {appointment.service?.name ? <> · <span className="font-medium">{appointment.service.name}</span></> : null}
+                            {appointment.service?.name || appointment.service_name ? (
+                                <>
+                                    {' '}
+                                    ·{' '}
+                                    <span className="font-medium">{appointment.service?.name ?? appointment.service_name}</span>
+                                </>
+                            ) : null}
                         </p>
                     </div>
                     <button

@@ -13,6 +13,7 @@ import {
     DEFAULT_APPOINTMENT_STATUS_FILTER,
     normalizeAppointmentStatusFilter,
 } from '@/utils/appointmentStatusFilter';
+import { mergeDateFromChange, mergeDateToChange } from '@/utils/dateRangeFilters';
 import { useT } from '@/i18n/useT';
 
 const STATUS_BADGE_BG = {
@@ -138,7 +139,7 @@ function CancelConfirmModal({ appointment, onConfirm, onClose }) {
                         {appointment.client_first_name} {appointment.client_last_name}
                     </p>
                     <p className="text-on-surface-variant mt-0.5">
-                        {appointment.service?.name ?? t('employee.appointments.appointment_fallback')} · {formatTimeHm(appointment.start_time)}
+                        {appointment.service?.name ?? appointment.service_name ?? t('employee.appointments.appointment_fallback')} · {formatTimeHm(appointment.start_time)}
                     </p>
                 </div>
 
@@ -286,7 +287,7 @@ export default function EmployeeAppointmentsIndex({
 
     const visitOpts = useMemo(
         () => ({
-            preserveState: false,
+            preserveState: true,
             replace: true,
             preserveScroll: true,
         }),
@@ -342,9 +343,9 @@ export default function EmployeeAppointmentsIndex({
         try {
             const parsedUrl = new URL(url, window.location.href);
             const relativeUrl = parsedUrl.pathname + parsedUrl.search + parsedUrl.hash;
-            router.get(relativeUrl, {}, { preserveState: false, preserveScroll: true });
+            router.get(relativeUrl, {}, { preserveState: true, preserveScroll: true });
         } catch {
-            router.visit(url, { preserveState: false, preserveScroll: true });
+            router.visit(url, { preserveState: true, preserveScroll: true });
         }
     };
 
@@ -485,10 +486,10 @@ export default function EmployeeAppointmentsIndex({
                         className="w-full min-w-0 xl:w-auto"
                         label={t('employee.appointments.from')}
                         value={localFilters.date_from}
+                        maxDate={localFilters.date_to || ''}
                         onChange={(value) => {
                             if (!value) return;
-                            const nextTo = localFilters.date_to >= value ? localFilters.date_to : value;
-                            patchFilters({ date_from: value, date_to: nextTo });
+                            patchFilters(mergeDateFromChange(localFilters, value));
                         }}
                         placeholder={t('employee.appointments.start_date_ph')}
                         buttonClassName="max-xl:!min-w-0"
@@ -497,13 +498,10 @@ export default function EmployeeAppointmentsIndex({
                         className="w-full min-w-0 xl:w-auto"
                         label={t('employee.appointments.to')}
                         value={localFilters.date_to}
+                        minDate={localFilters.date_from || ''}
                         onChange={(value) => {
                             if (!value) return;
-                            if (value < localFilters.date_from) {
-                                patchFilters({ date_to: localFilters.date_from });
-                            } else {
-                                patchFilters({ date_to: value });
-                            }
+                            patchFilters(mergeDateToChange(localFilters, value));
                         }}
                         placeholder={t('employee.appointments.end_date_ph')}
                         buttonClassName="max-xl:!min-w-0"
@@ -629,7 +627,7 @@ export default function EmployeeAppointmentsIndex({
                                                     </dt>
                                                     <dd className="mt-1 flex items-baseline justify-between gap-2">
                                                         <span className="min-w-0 truncate text-sm text-on-surface-variant">
-                                                            {apt.service?.name ?? t('employee.appointments.appointment_fallback')}
+                                                            {apt.service?.name ?? apt.service_name ?? t('employee.appointments.appointment_fallback')}
                                                         </span>
                                                         <span className="shrink-0 whitespace-nowrap text-sm font-semibold tabular-nums text-on-surface">
                                                             {formatPrice(apt.price, currencySymbol)}
@@ -737,7 +735,7 @@ export default function EmployeeAppointmentsIndex({
                                                 </td>
                                                 <td className="py-4 pr-3 min-w-0">
                                                     <span className="block truncate text-sm text-on-surface-variant">
-                                                        {apt.service?.name ?? t('employee.appointments.appointment_fallback')}
+                                                        {apt.service?.name ?? apt.service_name ?? t('employee.appointments.appointment_fallback')}
                                                     </span>
                                                 </td>
                                                 <td className="py-4 pr-3 whitespace-nowrap">

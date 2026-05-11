@@ -35,7 +35,7 @@ function CancelConfirmModal({ appointment, onConfirm, onClose }) {
                         {appointment.client_first_name} {appointment.client_last_name}
                     </p>
                     <p className="text-on-surface-variant mt-0.5">
-                        {appointment.service?.name ?? t('employee.appointments.appointment_fallback')} · {formatTimeHm(appointment.start_time)}
+                        {appointment.service?.name ?? appointment.service_name ?? t('employee.appointments.appointment_fallback')} · {formatTimeHm(appointment.start_time)}
                     </p>
                 </div>
 
@@ -276,7 +276,7 @@ export default function Dashboard({
                                                     </dt>
                                                     <dd className="mt-1 flex items-baseline justify-between gap-2">
                                                         <span className="min-w-0 truncate text-sm text-on-surface-variant">
-                                                            {apt.service?.name ?? t('employee.appointments.appointment_fallback')}
+                                                            {apt.service?.name ?? apt.service_name ?? t('employee.appointments.appointment_fallback')}
                                                         </span>
                                                         <span className="shrink-0 whitespace-nowrap text-sm font-semibold tabular-nums text-on-surface">
                                                             {Number(apt.price).toFixed(2)}
@@ -383,7 +383,7 @@ export default function Dashboard({
                                                 </td>
                                                 <td className="py-4 pr-3 min-w-0">
                                                     <span className="block truncate text-sm text-on-surface-variant">
-                                                        {apt.service?.name ?? t('employee.appointments.appointment_fallback')}
+                                                        {apt.service?.name ?? apt.service_name ?? t('employee.appointments.appointment_fallback')}
                                                     </span>
                                                 </td>
                                                 <td className="py-4 pr-3 whitespace-nowrap">
