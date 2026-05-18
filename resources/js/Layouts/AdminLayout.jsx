@@ -8,6 +8,10 @@ import { useT } from '@/i18n/useT';
 import { Link, usePage } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 
+function toSlug(str) {
+    return (str ?? '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
 const navItems = [
     { labelKey: 'layout.admin.nav.dashboard', icon: 'dashboard', route: 'admin.dashboard', permission: 'admin.dashboard' },
     { labelKey: 'layout.admin.nav.services', icon: 'layers', route: 'admin.services.index', permission: 'admin.services' },
@@ -99,6 +103,56 @@ export default function AdminLayout({ children }) {
     const showTabs = visibleEmployeeNav.length > 0;
     const effectiveWorkspace = showTabs ? workspace : 'admin';
     const sidebarItems = effectiveWorkspace === 'employee' ? visibleEmployeeNav : visibleNav;
+
+    const bookingUrl = business?.slug
+        ? (() => {
+            if (effectiveWorkspace === 'employee' && showEmployeeSection) {
+                const employeeSlug = user?.booking_slug || toSlug(user?.name);
+                try {
+                    return route('booking.employee', { slug: business.slug, employeeSlug });
+                } catch {
+                    return `/book/${business.slug}/${employeeSlug}`;
+                }
+            }
+            try {
+                return route('booking.index', { slug: business.slug });
+            } catch {
+                return `/book/${business.slug}`;
+            }
+        })()
+        : null;
+
+    const currentUrl = usePage().url;
+    const createAppointmentHref = (() => {
+        if (effectiveWorkspace === 'employee' && can('employee.appointments')) {
+            try {
+                return route('employee.appointments.create', { return_to: currentUrl });
+            } catch {
+                return null;
+            }
+        }
+        if (can('admin.appointments')) {
+            try {
+                return route('admin.appointments.create', { return_to: currentUrl });
+            } catch {
+                return null;
+            }
+        }
+        return null;
+    })();
+    const onAppointmentCreatePage = (() => {
+        try {
+            return Boolean(
+                route().current('admin.appointments.create') ||
+                    route().current('employee.appointments.create'),
+            );
+        } catch {
+            return false;
+        }
+    })();
+    const showCreateAppointmentButton = Boolean(createAppointmentHref) && !onAppointmentCreatePage;
+    const addAppointmentLabel =
+        effectiveWorkspace === 'employee' ? t('layout.employee.add_appointment') : t('layout.admin.add_appointment');
 
     return (
         <SuccessToastProvider>
@@ -197,6 +251,28 @@ export default function AdminLayout({ children }) {
                     </div>
 
                     <div className="ml-2 flex shrink-0 items-center gap-2 sm:gap-3">
+                        {showCreateAppointmentButton && (
+                            <Link
+                                href={createAppointmentHref}
+                                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-on-surface text-surface transition-opacity hover:opacity-90 sm:h-auto sm:w-auto sm:gap-1.5 sm:rounded-xl sm:px-3 sm:py-1.5 sm:text-xs sm:font-bold"
+                                aria-label={addAppointmentLabel}
+                            >
+                                <Icon name="add" size="text-[20px] sm:text-sm" />
+                                <span className="hidden sm:inline">{addAppointmentLabel}</span>
+                            </Link>
+                        )}
+                        {bookingUrl && (
+                            <a
+                                href={bookingUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-outline-variant text-on-surface-variant transition-colors hover:bg-surface-container sm:h-auto sm:w-auto sm:gap-1.5 sm:rounded-xl sm:px-3 sm:py-1.5 sm:text-xs sm:font-medium"
+                                aria-label={t('layout.admin.booking_page')}
+                            >
+                                <Icon name="open_in_new" size="text-[18px] sm:text-sm" />
+                                <span className="hidden sm:inline">{t('layout.admin.booking_page')}</span>
+                            </a>
+                        )}
                         <EmployeeNotificationBell />
                         <Dropdown>
                             <Dropdown.Trigger>

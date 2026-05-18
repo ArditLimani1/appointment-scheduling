@@ -18,6 +18,14 @@ import {
     normalizeAppointmentStatusFilter,
 } from '@/utils/appointmentStatusFilter';
 import { shiftCalendarAnchor, todayYmd } from '@/utils/calendarNavigation';
+import {
+    FILTER_PARAM_KEYS,
+    FILTER_STORAGE_KEYS,
+    appendQueryFlag,
+    loadStoredFilters,
+    urlHasFilterQuery,
+    usePersistedFilters,
+} from '@/utils/filterPersistence';
 import { useT } from '@/i18n/useT';
 
 const APPOINTMENT_STATUSES = ['pending', 'confirmed', 'cancelled'];
@@ -39,6 +47,59 @@ function normalizeServiceFilterForState(serviceIdFromServer) {
         return SERVICE_FILTER_ALL;
     }
     return String(serviceIdFromServer);
+}
+
+function appointmentsFiltersToSearchParams(filters) {
+    const params = new URLSearchParams();
+    if (filters.employee_id !== '' && filters.employee_id != null) {
+        params.set('employee_id', String(filters.employee_id));
+    }
+    if (filters.date_from) {
+        params.set('date_from', filters.date_from);
+    }
+    if (filters.date_to) {
+        params.set('date_to', filters.date_to);
+    }
+    appendAppointmentStatusParams(params, filters.status);
+    const sid = filters.service_id;
+    if (sid != null && sid !== '' && sid !== SERVICE_FILTER_ALL) {
+        params.set('service_id', String(sid));
+    }
+    return params;
+}
+
+function buildAdminAppointmentsUrl(filters) {
+    const params = appointmentsFiltersToSearchParams(filters);
+    const queryString = params.toString();
+    const path = getRoutePathname('admin.appointments.index');
+    return path + (queryString ? `?${queryString}` : '');
+}
+
+function employeeAppointmentsFiltersToSearchParams(filters) {
+    const params = new URLSearchParams();
+    if (filters.date_from) {
+        params.set('date_from', filters.date_from);
+    }
+    if (filters.date_to) {
+        params.set('date_to', filters.date_to);
+    }
+    appendAppointmentStatusParams(params, filters.status);
+    const sid = filters.service_id;
+    if (sid != null && sid !== '' && sid !== SERVICE_FILTER_ALL) {
+        params.set('service_id', String(sid));
+    }
+    const q = typeof filters.search === 'string' ? filters.search.trim() : '';
+    if (q !== '') {
+        params.set('search', q);
+    }
+    return params;
+}
+
+function buildEmployeeAppointmentsUrl(filters) {
+    const params = employeeAppointmentsFiltersToSearchParams(filters);
+    const queryString = params.toString();
+    const path = getRoutePathname('employee.appointments.index');
+    return path + (queryString ? `?${queryString}` : '');
 }
 
 function buildCalendarUrl(employeeCalendar, date, view, filters) {
@@ -155,7 +216,9 @@ export default function Calendar({
     calendar_employee_day_offs: calendarEmployeeDayOffs = {},
 }) {
     const t = useT();
-    const { localeBcp47 } = usePage().props;
+    const page = usePage();
+    const { localeBcp47 } = page.props;
+    const inertiaUrl = typeof page.url === 'string' ? page.url : `${window.location.pathname}${window.location.search}`;
     const [selected, setSelected] = useState(null);
     const [dragSavingId, setDragSavingId] = useState(null);
     const [moveError, setMoveError] = useState(null);
@@ -212,11 +275,45 @@ export default function Calendar({
         [],
     );
 
+    const appointmentsStorageKey = employeeCalendar
+        ? FILTER_STORAGE_KEYS.employeeAppointments
+        : FILTER_STORAGE_KEYS.adminAppointments;
+    const appointmentsFilterKeys = employeeCalendar
+        ? FILTER_PARAM_KEYS.employeeAppointments
+        : FILTER_PARAM_KEYS.adminAppointments;
+
+    const buildRestoreCalendarUrl = useCallback(
+        (stored) => {
+            const date =
+                stored.date != null && String(stored.date).match(/^\d{4}-\d{2}-\d{2}$/)
+                    ? String(stored.date).slice(0, 10)
+                    : todayYmd();
+            const view = stored.view === 'day' || stored.view === 'week' ? stored.view : 'week';
+            return buildCalendarUrl(employeeCalendar, date, view, stored);
+        },
+        [employeeCalendar],
+    );
+
+    const { persist: persistFilters, persistReplace: replacePersistedFilters } = usePersistedFilters({
+        storageKey: appointmentsStorageKey,
+        filterParamKeys: appointmentsFilterKeys,
+        buildUrl: buildRestoreCalendarUrl,
+        visitOpts,
+    });
+
+    useEffect(() => {
+        if (urlHasFilterQuery(inertiaUrl, appointmentsFilterKeys)) {
+            persistFilters(localFilters);
+        }
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
     const navigate = useCallback(
         (date, view) => {
-            router.get(buildCalendarUrl(employeeCalendar, date, view, localFilters), {}, visitOpts);
+            const next = { ...localFilters, date, view };
+            persistFilters(next);
+            router.get(buildCalendarUrl(employeeCalendar, date, view, next), {}, visitOpts);
         },
-        [employeeCalendar, localFilters, visitOpts],
+        [employeeCalendar, localFilters, persistFilters, visitOpts],
     );
 
     const patchFilters = useCallback(
@@ -232,9 +329,10 @@ export default function Calendar({
                 next.date = todayYmd();
             }
             setLocalFilters(next);
+            persistFilters(next);
             router.get(buildCalendarUrl(employeeCalendar, next.date, next.view, next), {}, visitOpts);
         },
-        [employeeCalendar, filtersProp.employee_id, localFilters, visitOpts],
+        [employeeCalendar, filtersProp.employee_id, localFilters, persistFilters, visitOpts],
     );
 
     const clearFilters = useCallback(() => {
@@ -253,8 +351,25 @@ export default function Calendar({
         setClientSearchDraft('');
         clientSearchDraftRef.current = '';
         setLocalFilters(next);
+        replacePersistedFilters(next);
         router.get(buildCalendarUrl(employeeCalendar, next.date, next.view, next), {}, visitOpts);
-    }, [employeeCalendar, localFilters.employee_id, localFilters.view, visitOpts]);
+    }, [employeeCalendar, localFilters.employee_id, localFilters.view, replacePersistedFilters, visitOpts]);
+
+    const tableViewHref = useMemo(() => {
+        const stored = loadStoredFilters(appointmentsStorageKey);
+        const listFilters = {
+            employee_id: employeeCalendar ? '' : localFilters.employee_id || '',
+            date_from: stored?.date_from,
+            date_to: stored?.date_to,
+            status: localFilters.status,
+            service_id: localFilters.service_id,
+            search: localFilters.search,
+        };
+        const base = employeeCalendar
+            ? buildEmployeeAppointmentsUrl(listFilters)
+            : buildAdminAppointmentsUrl(listFilters);
+        return appendQueryFlag(base, 'list', '1');
+    }, [appointmentsStorageKey, employeeCalendar, localFilters]);
 
     const goPrev = useCallback(() => {
         const next = shiftCalendarAnchor(localFilters.date, localFilters.view, -1);
@@ -265,10 +380,6 @@ export default function Calendar({
         const next = shiftCalendarAnchor(localFilters.date, localFilters.view, 1);
         navigate(next, localFilters.view);
     }, [localFilters.date, localFilters.view, navigate]);
-
-    const goToday = useCallback(() => {
-        navigate(todayYmd(), localFilters.view);
-    }, [localFilters.view, navigate]);
 
     const onAppointmentMove = useCallback(
         (apt, { date, start_time }) => {
@@ -384,11 +495,11 @@ export default function Calendar({
                       serviceWrap: 'flex w-full min-w-0 shrink-0 flex-col gap-1.5 xl:w-[220px]',
                       statusMin: 'w-full min-w-0 max-w-full xl:min-w-[200px] xl:w-[220px]',
                       searchWrap: 'flex w-full min-w-0 flex-col gap-1.5 xl:max-w-md xl:flex-1 min-[1100px]:max-w-lg',
-                      clearWrap: 'flex w-full shrink-0 items-end justify-end xl:ml-auto xl:w-auto xl:justify-end',
+                      navControlsWrap: 'hidden xl:flex xl:shrink-0 xl:items-center xl:gap-2',
+                      clearWrap: 'flex w-full shrink-0 items-end xl:ml-auto xl:w-auto',
                       clearBtn:
-                          'w-full rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-slate-50 max-xl:min-h-[2.75rem] xl:mr-2 xl:w-auto',
-                      navWrap: 'grid w-full grid-cols-[1fr_1.45fr_1fr_1fr] items-center gap-2 xl:hidden',
-                      clearControlsWrap: 'hidden xl:flex xl:items-center xl:gap-2',
+                          'w-full rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-slate-50 max-xl:min-h-[2.75rem] xl:w-auto',
+                      navWrap: 'grid w-full grid-cols-[1fr_1.45fr_1fr] items-center gap-2 xl:hidden',
                   }
                 : {
                       row: 'mt-4 flex flex-col gap-4 border-t border-slate-100 pt-4 lg:flex-row lg:flex-wrap lg:items-end',
@@ -398,11 +509,11 @@ export default function Calendar({
                       serviceWrap: 'flex w-full min-w-0 shrink-0 flex-col gap-1.5 lg:w-[220px]',
                       statusMin: 'w-full min-w-0 max-w-full lg:min-w-[200px] lg:w-[220px]',
                       searchWrap: 'flex w-full min-w-0 flex-col gap-1.5 lg:max-w-md lg:flex-1 min-[1100px]:max-w-lg',
-                      clearWrap: 'flex w-full shrink-0 items-end justify-end lg:ml-auto lg:w-auto lg:justify-end',
+                      navControlsWrap: 'hidden lg:flex lg:shrink-0 lg:items-center lg:gap-2',
+                      clearWrap: 'flex w-full shrink-0 items-end lg:ml-auto lg:w-auto',
                       clearBtn:
-                          'w-full rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-slate-50 max-lg:min-h-[2.75rem] lg:mr-2 lg:w-auto',
-                      navWrap: 'grid w-full grid-cols-[1fr_1.45fr_1fr_1fr] items-center gap-2 lg:hidden',
-                      clearControlsWrap: 'hidden lg:flex lg:items-center lg:gap-2',
+                          'w-full rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-slate-50 max-lg:min-h-[2.75rem] lg:w-auto',
+                      navWrap: 'grid w-full grid-cols-[1fr_1.45fr_1fr] items-center gap-2 lg:hidden',
                   },
         [employeeCalendar],
     );
@@ -420,7 +531,7 @@ export default function Calendar({
                         description={t('admin.calendar.employee_description')}
                     >
                         <Link
-                            href={`${route('employee.appointments.index', {}, false)}?list=1`}
+                            href={tableViewHref}
                             className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-on-surface hover:bg-slate-50"
                         >
                             <Icon name="view_list" size="text-lg" />
@@ -437,7 +548,7 @@ export default function Calendar({
                         description={t('admin.calendar.description')}
                     >
                         <Link
-                            href={`${route('admin.appointments.index', {}, false)}?list=1`}
+                            href={tableViewHref}
                             className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-on-surface hover:bg-slate-50"
                         >
                             <Icon name="view_list" size="text-lg" />
@@ -477,15 +588,6 @@ export default function Calendar({
                             aria-label={t('admin.calendar.next_period')}
                         >
                             <Icon name="chevron_right" />
-                        </button>
-                        <button
-                            type="button"
-                            onClick={goToday}
-                            className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50"
-                            title={t('admin.calendar.today')}
-                            aria-label={t('admin.calendar.today')}
-                        >
-                            <Icon name="calendar_today" />
                         </button>
                     </div>
 
@@ -565,6 +667,7 @@ export default function Calendar({
                                             const nextSearch = clientSearchDraftRef.current.trim();
                                             setLocalFilters((cur) => {
                                                 const next = { ...cur, search: nextSearch };
+                                                persistFilters(next);
                                                 router.get(
                                                     buildCalendarUrl(employeeCalendar, next.date, next.view, next),
                                                     {},
@@ -578,47 +681,38 @@ export default function Calendar({
                                 />
                             </div>
                         </div>
+                        <div className={calendarFilterBarClasses.navControlsWrap}>
+                            <button
+                                type="button"
+                                onClick={goPrev}
+                                className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50"
+                                aria-label={t('admin.calendar.previous_period')}
+                            >
+                                <Icon name="chevron_left" />
+                            </button>
+                            <div className="flex h-11 items-stretch">
+                                <FilterListbox
+                                    value={localFilters.view}
+                                    onChange={(v) => patchFilters({ view: v, date: localFilters.date })}
+                                    options={viewOptions}
+                                    minWidthClass="min-w-[104px]"
+                                    compact
+                                    showLabel={false}
+                                />
+                            </div>
+                            <button
+                                type="button"
+                                onClick={goNext}
+                                className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50"
+                                aria-label={t('admin.calendar.next_period')}
+                            >
+                                <Icon name="chevron_right" />
+                            </button>
+                        </div>
                         <div className={calendarFilterBarClasses.clearWrap}>
                             <button type="button" onClick={clearFilters} className={calendarFilterBarClasses.clearBtn}>
                                 {t('admin.calendar.clear')}
                             </button>
-                            <div className={calendarFilterBarClasses.clearControlsWrap}>
-                                <button
-                                    type="button"
-                                    onClick={goPrev}
-                                    className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50"
-                                    aria-label={t('admin.calendar.previous_period')}
-                                >
-                                    <Icon name="chevron_left" />
-                                </button>
-                                <div className="flex h-11 items-stretch">
-                                    <FilterListbox
-                                        value={localFilters.view}
-                                        onChange={(v) => patchFilters({ view: v, date: localFilters.date })}
-                                        options={viewOptions}
-                                        minWidthClass="min-w-[104px]"
-                                        compact
-                                        showLabel={false}
-                                    />
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={goNext}
-                                    className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50"
-                                    aria-label={t('admin.calendar.next_period')}
-                                >
-                                    <Icon name="chevron_right" />
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={goToday}
-                                    className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50"
-                                    title={t('admin.calendar.today')}
-                                    aria-label={t('admin.calendar.today')}
-                                >
-                                    <Icon name="calendar_today" />
-                                </button>
-                            </div>
                         </div>
                     </div>
 

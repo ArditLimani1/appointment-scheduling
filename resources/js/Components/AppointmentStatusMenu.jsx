@@ -5,21 +5,22 @@ import { useT } from '@/i18n/useT';
 const STATUS_META = [
     {
         value: 'pending',
-        trigger: 'bg-amber-50 text-amber-950 ring-amber-200/90 hover:bg-amber-100/90',
-        itemIdle: 'text-amber-950',
-        dot: 'bg-amber-500',
+        trigger:
+            'bg-surface-container-highest text-on-surface-variant ring-outline-variant/50 hover:bg-surface-container-high',
+        itemIdle: 'text-on-surface-variant',
+        dot: 'bg-on-surface-variant',
     },
     {
         value: 'confirmed',
-        trigger: 'bg-emerald-50 text-emerald-950 ring-emerald-200/90 hover:bg-emerald-100/90',
-        itemIdle: 'text-emerald-950',
-        dot: 'bg-emerald-500',
+        trigger: 'bg-tertiary-fixed text-on-tertiary-fixed-variant ring-on-tertiary-fixed-variant/20 hover:opacity-90',
+        itemIdle: 'text-on-tertiary-fixed-variant',
+        dot: 'bg-on-tertiary-fixed-variant',
     },
     {
         value: 'cancelled',
-        trigger: 'bg-red-50 text-red-950 ring-red-200/90 hover:bg-red-100/90',
-        itemIdle: 'text-red-950',
-        dot: 'bg-red-500',
+        trigger: 'bg-error-container text-on-error-container ring-error/20 hover:bg-error-container/80',
+        itemIdle: 'text-on-error-container',
+        dot: 'bg-on-error-container',
     },
 ];
 

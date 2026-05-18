@@ -8,6 +8,12 @@ import FilterListbox from '@/Components/FilterListbox';
 import DatePicker from '@/Components/DatePicker';
 import { useT } from '@/i18n/useT';
 import { mergeDateFromChange, mergeDateToChange } from '@/utils/dateRangeFilters';
+import {
+    FILTER_PARAM_KEYS,
+    FILTER_STORAGE_KEYS,
+    urlHasFilterQuery,
+    usePersistedFilters,
+} from '@/utils/filterPersistence';
 
 function getAnalyticsPathname() {
     return new URL(route('employee.analytics.index'), window.location.href).pathname;
@@ -106,7 +112,9 @@ export default function Index({
     selected_service_name,
 }) {
     const t = useT();
-    const { auth } = usePage().props;
+    const page = usePage();
+    const inertiaUrl = typeof page.url === 'string' ? page.url : `${window.location.pathname}${window.location.search}`;
+    const { auth } = page.props;
     const CURRENCY_SYMBOLS = { EUR: '€', USD: '$', GBP: '£', CHF: 'CHF' };
     const symbol = CURRENCY_SYMBOLS[auth?.business?.currency] ?? currency_symbol ?? '€';
 
@@ -127,15 +135,29 @@ export default function Index({
 
     const visitOpts = useMemo(() => ({ preserveState: true, replace: true, preserveScroll: true }), []);
 
+    const { persist: persistFilters, persistReplace: replacePersistedFilters } = usePersistedFilters({
+        storageKey: FILTER_STORAGE_KEYS.employeeAnalytics,
+        filterParamKeys: FILTER_PARAM_KEYS.employeeAnalytics,
+        buildUrl: buildAnalyticsUrl,
+        visitOpts,
+    });
+
+    useEffect(() => {
+        if (urlHasFilterQuery(inertiaUrl, FILTER_PARAM_KEYS.employeeAnalytics)) {
+            persistFilters(localFilters);
+        }
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
     const patchFilters = useCallback(
         (patch) => {
             setLocalFilters((current) => {
                 const updated = { ...current, ...patch };
+                persistFilters(updated);
                 router.get(buildAnalyticsUrl(updated), {}, visitOpts);
                 return updated;
             });
         },
-        [visitOpts]
+        [persistFilters, visitOpts],
     );
 
     const resetFilters = useCallback(() => {
@@ -145,8 +167,9 @@ export default function Index({
             service_id: '',
         };
         setLocalFilters(defaultFilters);
+        replacePersistedFilters(defaultFilters);
         router.get(buildAnalyticsUrl(defaultFilters), {}, visitOpts);
-    }, [visitOpts]);
+    }, [replacePersistedFilters, visitOpts]);
 
     const serviceListboxOptions = useMemo(
         () => [

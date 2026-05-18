@@ -112,18 +112,7 @@
             vertical-align: middle;
         }
 
-        /* Status badges */
-        .badge {
-            display: inline-block;
-            padding: 2px 7px;
-            border-radius: 100px;
-            font-size: 8px;
-            font-weight: 700;
-            text-transform: capitalize;
-        }
-        .badge-confirmed  { background: #dcfce7; color: #166534; }
-        .badge-pending    { background: #fef3c7; color: #92400e; }
-        .badge-cancelled  { background: #fee2e2; color: #991b1b; }
+        @include('exports.partials.appointment-status-badge-styles')
 
         /* ── Footer ── */
         .footer {
