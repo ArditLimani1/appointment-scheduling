@@ -4,7 +4,10 @@ namespace Tests\Feature\Auth;
 
 use App\Enums\UserRole;
 use App\Enums\UserType;
+use App\Models\Business;
+use App\Models\BusinessType;
 use App\Models\User;
+use Database\Seeders\BusinessTypeSeeder;
 use App\Notifications\VerifyBusinessEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -96,6 +99,45 @@ class AuthenticationTest extends TestCase
 
         $this->assertAuthenticated();
         $response->assertRedirect(route('dashboard', absolute: false));
+    }
+
+    public function test_employee_login_ignores_admin_intended_url(): void
+    {
+        $this->seed(BusinessTypeSeeder::class);
+
+        $admin = User::factory()->create(['role' => UserRole::Admin]);
+        $business = Business::create([
+            'owner_id' => $admin->id,
+            'business_type_id' => BusinessType::query()->value('id'),
+            'name' => 'Auth Redirect Biz',
+            'slug' => 'auth-redirect-biz',
+            'timezone' => 'UTC',
+            'currency' => 'EUR',
+            'currency_symbol' => '€',
+            'is_active' => true,
+            'slot_duration' => 30,
+            'min_booking_notice' => 60,
+            'max_booking_window' => 30,
+            'client_identifier_type' => 'phone',
+        ]);
+
+        $employee = User::factory()->create([
+            'role' => UserRole::Employee,
+            'business_id' => $business->id,
+            'is_active' => true,
+        ]);
+
+        $this->get('/admin/dashboard');
+
+        $response = $this->post('/login', [
+            'email' => $employee->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticated();
+        $response->assertRedirect(route('dashboard', absolute: false));
+        $this->get($response->headers->get('Location'))
+            ->assertRedirect(route('employee.dashboard'));
     }
 
     public function test_users_can_logout(): void

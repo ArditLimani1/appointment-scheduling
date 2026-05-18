@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Http\Controllers\Auth\Concerns\RedirectsAfterAuthentication;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Http\RedirectResponse;
@@ -13,6 +14,7 @@ use Inertia\Response;
 
 class AuthenticatedSessionController extends Controller
 {
+    use RedirectsAfterAuthentication;
     public function create(): Response
     {
         return Inertia::render('Auth/Login', [
@@ -27,7 +29,11 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        return $this->redirectAfterLogin(
+            $request,
+            Auth::user(),
+            route('dashboard', absolute: false),
+        );
     }
 
     public function destroy(Request $request): RedirectResponse

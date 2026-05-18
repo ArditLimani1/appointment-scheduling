@@ -75,9 +75,54 @@ export default function EmployeeLayout({ children }) {
     const sidebarItems = effectiveWorkspace === 'admin' ? visibleAdminNav : visibleNav;
 
     const employeeSlug = user?.booking_slug || toSlug(user?.name);
-    const employeeBookingUrl = business?.slug
-        ? (() => { try { return route('booking.employee', { slug: business.slug, employeeSlug: employeeSlug }); } catch { return `/book/${business.slug}/${employeeSlug}`; } })()
-        : '#';
+    const bookingUrl = business?.slug
+        ? (() => {
+            if (effectiveWorkspace === 'admin') {
+                try {
+                    return route('booking.index', { slug: business.slug });
+                } catch {
+                    return `/book/${business.slug}`;
+                }
+            }
+            try {
+                return route('booking.employee', { slug: business.slug, employeeSlug });
+            } catch {
+                return `/book/${business.slug}/${employeeSlug}`;
+            }
+        })()
+        : null;
+
+    const currentUrl = usePage().url;
+    const createAppointmentHref = (() => {
+        if (effectiveWorkspace === 'admin' && can('admin.appointments')) {
+            try {
+                return route('admin.appointments.create', { return_to: currentUrl });
+            } catch {
+                return null;
+            }
+        }
+        if (can('employee.appointments')) {
+            try {
+                return route('employee.appointments.create', { return_to: currentUrl });
+            } catch {
+                return null;
+            }
+        }
+        return null;
+    })();
+    const onAppointmentCreatePage = (() => {
+        try {
+            return Boolean(
+                route().current('admin.appointments.create') ||
+                    route().current('employee.appointments.create'),
+            );
+        } catch {
+            return false;
+        }
+    })();
+    const showCreateAppointmentButton = Boolean(createAppointmentHref) && !onAppointmentCreatePage;
+    const addAppointmentLabel =
+        effectiveWorkspace === 'admin' ? t('layout.admin.add_appointment') : t('layout.employee.add_appointment');
 
     const isActive = (routeName) => {
         try {
@@ -205,7 +250,29 @@ export default function EmployeeLayout({ children }) {
                         </h1>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+                        {showCreateAppointmentButton && (
+                            <Link
+                                href={createAppointmentHref}
+                                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-on-surface text-surface transition-opacity hover:opacity-90 sm:h-auto sm:w-auto sm:gap-1.5 sm:rounded-xl sm:px-3 sm:py-1.5 sm:text-xs sm:font-bold"
+                                aria-label={addAppointmentLabel}
+                            >
+                                <Icon name="add" size="text-[20px] sm:text-sm" />
+                                <span className="hidden sm:inline">{addAppointmentLabel}</span>
+                            </Link>
+                        )}
+                        {bookingUrl && (
+                            <a
+                                href={bookingUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-outline-variant text-on-surface-variant transition-colors hover:bg-surface-container sm:h-auto sm:w-auto sm:gap-1.5 sm:rounded-xl sm:px-3 sm:py-1.5 sm:text-xs sm:font-medium"
+                                aria-label={t('layout.employee.booking_page')}
+                            >
+                                <Icon name="open_in_new" size="text-[18px] sm:text-sm" />
+                                <span className="hidden sm:inline">{t('layout.employee.booking_page')}</span>
+                            </a>
+                        )}
                         <EmployeeNotificationBell />
                         <Dropdown>
                             <Dropdown.Trigger>

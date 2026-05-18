@@ -16,6 +16,13 @@ import {
     normalizeAppointmentStatusFilter,
 } from '@/utils/appointmentStatusFilter';
 import { mergeDateFromChange, mergeDateToChange } from '@/utils/dateRangeFilters';
+import {
+    FILTER_PARAM_KEYS,
+    FILTER_STORAGE_KEYS,
+    urlHasFilterQuery,
+    usePersistedFilters,
+} from '@/utils/filterPersistence';
+import { todayYmd } from '@/utils/calendarNavigation';
 
 function DeleteConfirmModal({ appointment, onConfirm, onCancel }) {
     const t = useT();
@@ -102,6 +109,23 @@ function buildAppointmentsUrl(filters) {
     const queryString = params.toString();
     const pathname = getRoutePathname('admin.appointments.index');
     return pathname + (queryString ? `?${queryString}` : '');
+}
+
+function buildAdminCalendarUrl(filters) {
+    const params = new URLSearchParams();
+    params.set('date', todayYmd());
+    params.set('view', 'week');
+    if (filters.employee_id) {
+        params.set('employee_id', String(filters.employee_id));
+    }
+    appendAppointmentStatusParams(params, filters.status);
+    const sid = filters.service_id;
+    if (sid != null && sid !== '' && sid !== SERVICE_FILTER_ALL) {
+        params.set('service_id', String(sid));
+    }
+    const qs = params.toString();
+    const path = getRoutePathname('admin.appointments.calendar');
+    return path + (qs ? `?${qs}` : '');
 }
 
 function normalizeServiceFilterForState(serviceIdFromServer) {
@@ -214,13 +238,30 @@ export default function Index({
         [],
     );
 
-    const patchFilters = useCallback((patch) => {
-        setLocalFilters((currentFilters) => {
-            const updatedFilters = { ...currentFilters, ...patch };
-            router.get(buildAppointmentsUrl(updatedFilters), {}, visitOpts);
-            return updatedFilters;
-        });
-    }, [visitOpts]);
+    const { persist: persistFilters, persistReplace: replacePersistedFilters } = usePersistedFilters({
+        storageKey: FILTER_STORAGE_KEYS.adminAppointments,
+        filterParamKeys: FILTER_PARAM_KEYS.adminAppointments,
+        buildUrl: buildAppointmentsUrl,
+        visitOpts,
+    });
+
+    useEffect(() => {
+        if (urlHasFilterQuery(inertiaUrl, FILTER_PARAM_KEYS.adminAppointments)) {
+            persistFilters(localFilters);
+        }
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps -- sync storage when landing with explicit query
+
+    const patchFilters = useCallback(
+        (patch) => {
+            setLocalFilters((currentFilters) => {
+                const updatedFilters = { ...currentFilters, ...patch };
+                persistFilters(updatedFilters);
+                router.get(buildAppointmentsUrl(updatedFilters), {}, visitOpts);
+                return updatedFilters;
+            });
+        },
+        [persistFilters, visitOpts],
+    );
 
     const clearFilters = () => {
         const defaultFilters = {
@@ -231,8 +272,11 @@ export default function Index({
             service_id: SERVICE_FILTER_ALL,
         };
         setLocalFilters(defaultFilters);
+        replacePersistedFilters(defaultFilters);
         router.get(buildAppointmentsUrl(defaultFilters), {}, visitOpts);
     };
+
+    const calendarHref = useMemo(() => buildAdminCalendarUrl(localFilters), [localFilters]);
 
     const [editingAppointment, setEditingAppointment]   = useState(null);
     const [deletingAppointment, setDeletingAppointment] = useState(null);
@@ -338,7 +382,7 @@ export default function Index({
                 description={t('admin.appointments.description')}
             >
                 <Link
-                    href={route('admin.appointments.calendar')}
+                    href={calendarHref}
                     className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-on-surface transition-colors hover:bg-slate-50"
                 >
                     <Icon name="calendar_view_week" size="text-lg" />

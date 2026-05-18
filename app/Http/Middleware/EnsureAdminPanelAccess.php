@@ -17,7 +17,13 @@ class EnsureAdminPanelAccess
         abort_unless($user && ($user->isAdmin() || $user->isEmployee()), 403);
         abort_unless((bool) $user->is_active, 403);
 
-        abort_unless($user->hasAdminPanelAccess(), 403);
+        if (! $user->hasAdminPanelAccess()) {
+            if ($user->isEmployee()) {
+                return redirect()->route('employee.dashboard');
+            }
+
+            abort(403);
+        }
 
         return $next($request);
     }

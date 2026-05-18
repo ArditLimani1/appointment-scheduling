@@ -14,6 +14,13 @@ import {
     normalizeAppointmentStatusFilter,
 } from '@/utils/appointmentStatusFilter';
 import { mergeDateFromChange, mergeDateToChange } from '@/utils/dateRangeFilters';
+import {
+    FILTER_PARAM_KEYS,
+    FILTER_STORAGE_KEYS,
+    urlHasFilterQuery,
+    usePersistedFilters,
+} from '@/utils/filterPersistence';
+import { todayYmd } from '@/utils/calendarNavigation';
 import { useT } from '@/i18n/useT';
 
 const STATUS_BADGE_BG = {
@@ -70,6 +77,24 @@ function buildEmployeeAppointmentsUrl(filters) {
     const queryString = params.toString();
     const pathname = getRoutePathname('employee.appointments.index');
     return pathname + (queryString ? `?${queryString}` : '');
+}
+
+function buildEmployeeCalendarUrl(filters) {
+    const params = new URLSearchParams();
+    params.set('date', todayYmd());
+    params.set('view', 'week');
+    appendAppointmentStatusParams(params, filters.status);
+    const sid = filters.service_id;
+    if (sid != null && sid !== '' && sid !== SERVICE_FILTER_ALL) {
+        params.set('service_id', String(sid));
+    }
+    const q = typeof filters.search === 'string' ? filters.search.trim() : '';
+    if (q) {
+        params.set('search', q);
+    }
+    const qs = params.toString();
+    const path = getRoutePathname('employee.appointments.calendar');
+    return path + (qs ? `?${qs}` : '');
 }
 
 function normalizeAppointments(appointments) {
@@ -232,6 +257,7 @@ export default function EmployeeAppointmentsIndex({
     const filters = filtersProp ?? {};
     const t = useT();
     const page = usePage();
+    const inertiaUrl = typeof page.url === 'string' ? page.url : `${window.location.pathname}${window.location.search}`;
     const { auth, localeBcp47 } = page.props;
     const business = auth?.business;
     const permissions = Array.isArray(auth?.permissions) ? auth.permissions : [];
@@ -294,6 +320,19 @@ export default function EmployeeAppointmentsIndex({
         [],
     );
 
+    const { persist: persistFilters, persistReplace: replacePersistedFilters } = usePersistedFilters({
+        storageKey: FILTER_STORAGE_KEYS.employeeAppointments,
+        filterParamKeys: FILTER_PARAM_KEYS.employeeAppointments,
+        buildUrl: buildEmployeeAppointmentsUrl,
+        visitOpts,
+    });
+
+    useEffect(() => {
+        if (urlHasFilterQuery(inertiaUrl, FILTER_PARAM_KEYS.employeeAppointments)) {
+            persistFilters(localFilters);
+        }
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
     const patchFilters = useCallback(
         (patch) => {
             if (searchDebounceRef.current) {
@@ -306,11 +345,12 @@ export default function EmployeeAppointmentsIndex({
                     ...patch,
                     search: clientSearchDraftRef.current.trim(),
                 };
+                persistFilters(updatedFilters);
                 router.get(buildEmployeeAppointmentsUrl(updatedFilters), {}, visitOpts);
                 return updatedFilters;
             });
         },
-        [visitOpts],
+        [persistFilters, visitOpts],
     );
 
     const clearFilters = () => {
@@ -328,8 +368,11 @@ export default function EmployeeAppointmentsIndex({
         setClientSearchDraft('');
         clientSearchDraftRef.current = '';
         setLocalFilters(defaultFilters);
+        replacePersistedFilters(defaultFilters);
         router.get(buildEmployeeAppointmentsUrl(defaultFilters), {}, visitOpts);
     };
+
+    const calendarHref = useMemo(() => buildEmployeeCalendarUrl(localFilters), [localFilters]);
 
     const buildExportUrl = (routeName) => {
         const params = employeeAppointmentsFiltersToSearchParams(localFilters);
@@ -456,7 +499,7 @@ export default function EmployeeAppointmentsIndex({
             >
                 {canAppointments ? (
                     <Link
-                        href={route('employee.appointments.calendar', {}, false)}
+                        href={calendarHref}
                         className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-on-surface hover:bg-slate-50"
                     >
                         <Icon name="calendar_view_week" size="text-lg" />
@@ -549,6 +592,7 @@ export default function EmployeeAppointmentsIndex({
                                         const next = clientSearchDraftRef.current.trim();
                                         setLocalFilters((cur) => {
                                             const updated = { ...cur, search: next };
+                                            persistFilters(updated);
                                             router.get(buildEmployeeAppointmentsUrl(updated), {}, visitOpts);
                                             return updated;
                                         });
