@@ -3,25 +3,29 @@
 namespace App\Listeners;
 
 use App\Events\AppointmentCustomerNotificationRequested;
-use App\Mail\CustomerAppointmentUpdateMail;
+use App\Services\TwilioWhatsAppClient;
 use App\Support\AppointmentUpdateNotificationChannel;
+use App\Support\AppointmentUpdateWhatsAppMessage;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Support\Facades\Mail;
 use Throwable;
 
-class SendCustomerAppointmentUpdateEmail implements ShouldQueue
+class SendCustomerAppointmentUpdateWhatsApp implements ShouldQueue
 {
     use InteractsWithQueue;
 
     public bool $afterCommit = true;
 
+    public function __construct(
+        private readonly TwilioWhatsAppClient $client,
+    ) {}
+
     public function shouldQueue(AppointmentCustomerNotificationRequested $event): bool
     {
         $appointment = $event->appointment->loadMissing(['business', 'employee', 'service']);
 
-        return AppointmentUpdateNotificationChannel::for($appointment) === 'mail'
-            && filled($appointment->client_email);
+        return AppointmentUpdateNotificationChannel::for($appointment) === 'whatsapp'
+            && filled($appointment->client_phone);
     }
 
     public function tries(): int
@@ -30,8 +34,6 @@ class SendCustomerAppointmentUpdateEmail implements ShouldQueue
     }
 
     /**
-     * Back off more aggressively because Mailtrap sandbox throttles rapid sends.
-     *
      * @return list<int>
      */
     public function backoff(): array
@@ -43,17 +45,17 @@ class SendCustomerAppointmentUpdateEmail implements ShouldQueue
     {
         $appointment = $event->appointment->loadMissing(['business', 'employee', 'service']);
 
-        if (AppointmentUpdateNotificationChannel::for($appointment) !== 'mail' || ! filled($appointment->client_email)) {
+        if (AppointmentUpdateNotificationChannel::for($appointment) !== 'whatsapp' || ! filled($appointment->client_phone)) {
             return;
         }
 
-        Mail::to($appointment->client_email)->send(
-            new CustomerAppointmentUpdateMail(
+        $this->client->sendMessage((string) $appointment->client_phone, [
+            'Body' => AppointmentUpdateWhatsAppMessage::build(
                 $appointment,
                 $event->notificationType,
                 $event->changes,
-            )
-        );
+            ),
+        ]);
     }
 
     public function failed(AppointmentCustomerNotificationRequested $event, Throwable $exception): void

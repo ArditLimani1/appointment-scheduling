@@ -13,9 +13,12 @@ return new class extends Migration
         });
 
         Schema::table('schedules', function (Blueprint $table) {
-            $table->dropUnique('schedules_user_id_day_of_week_unique');
             $table->unique(['user_id', 'day_of_week', 'effective_from'], 'schedules_user_day_effective_unique');
             $table->index(['user_id', 'day_of_week', 'effective_from'], 'schedules_user_day_effective_idx');
+        });
+
+        Schema::table('schedules', function (Blueprint $table) {
+            $table->dropUnique('schedules_user_id_day_of_week_unique');
         });
     }
 

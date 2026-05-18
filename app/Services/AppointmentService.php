@@ -7,6 +7,7 @@ use App\Events\AppointmentCustomerNotificationRequested;
 use App\Exports\AppointmentsExport;
 use App\Models\Appointment;
 use App\Models\Business;
+use App\Support\AppointmentUpdateNotificationChannel;
 use App\Models\Service;
 use App\Models\SharedResource;
 use App\Models\User;
@@ -563,7 +564,7 @@ class AppointmentService implements AppointmentServiceInterface
 
     private function dispatchCustomerUpdateNotificationIfNeeded(array $before, Appointment $appointment): void
     {
-        if (! filled($appointment->client_email)) {
+        if (! AppointmentUpdateNotificationChannel::hasRecipient($appointment)) {
             return;
         }
 
