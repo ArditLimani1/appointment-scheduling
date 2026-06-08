@@ -30,7 +30,7 @@ return [
         'head_title' => 'Krijo biznesin tënd',
         'hero_title' => "Biznesi juaj,\nonline për pak minuta.",
         'hero_sub' => 'Krijoni faqen e rezervimeve, menaxhoni ekipin dhe lejoni klientët të rezervojnë 24/7.',
-        'feature_1' => 'Adresa juaj e rezervimeve: bookslot.app/biznesi-juaj',
+        'feature_1' => 'Adresa juaj e rezervimeve: nitermin.com/biznesi-juaj',
         'feature_2' => 'Menaxhoni punonjësit dhe oraret e tyre',
         'feature_3' => 'Ndiqni të ardhurat dhe terminet',
         'copyright' => '© 2026 nitermin. Të gjitha të drejtat e rezervuara.',

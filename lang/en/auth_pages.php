@@ -30,7 +30,7 @@ return [
         'head_title' => 'Create your business',
         'hero_title' => "Your business,\nonline in minutes.",
         'hero_sub' => 'Create your booking page, manage your team, and let clients schedule appointments 24/7.',
-        'feature_1' => 'Your own booking URL: bookslot.app/your-business',
+        'feature_1' => 'Your own booking URL: nitermin.com/your-business',
         'feature_2' => 'Manage employees & their schedules',
         'feature_3' => 'Track revenue and appointments',
         'copyright' => '© 2026 nitermin. All rights reserved.',

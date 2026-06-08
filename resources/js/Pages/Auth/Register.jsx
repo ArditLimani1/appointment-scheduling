@@ -5,6 +5,26 @@ import Icon from '@/Components/Icon';
 import InputError from '@/Components/InputError';
 import LanguageSwitcher from '@/i18n/LanguageSwitcher';
 import { useT } from '@/i18n/useT';
+import NiterminLogo from '@/Components/NiterminLogo';
+import './Register.css';
+
+const ArrowRight = () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M5 12h14M13 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+const ArrowLeft = () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M19 12H5M11 5l-7 7 7 7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+const CheckGlyph = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+        <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
 
 function slugify(value) {
     return value
@@ -136,8 +156,6 @@ export default function Register({ businessTypeCategories = [] }) {
         });
     };
 
-    const inputClass = "w-full rounded-2xl border-0 bg-surface-container-low px-4 py-3 text-sm text-on-surface placeholder-on-surface-variant/50 focus:ring-2 focus:ring-primary/40 transition-all";
-
     const businessTypeGroups = useMemo(
         () =>
             businessTypeCategories.map((category) => ({
@@ -150,294 +168,307 @@ export default function Register({ businessTypeCategories = [] }) {
         [businessTypeCategories],
     );
 
+    const heroTitle = t('auth_pages.register.hero_title');
+    const [heroLine1, heroLine2] = heroTitle.split('\n');
+
+    const steps = [t('auth_pages.register.step_account'), t('auth_pages.register.step_business')];
+
     return (
-        <div className="min-h-screen bg-surface font-body flex">
+        <div className="ntr-reg-shell">
             <Head title={t('auth_pages.register.head_title')} />
 
-            <div className="hidden lg:flex lg:w-2/5 xl:w-1/2 flex-col justify-between bg-primary-container p-12 relative overflow-hidden">
-                <div className="absolute inset-0 opacity-10"
-                    style={{ backgroundImage: 'radial-gradient(circle at 30% 20%, white 1px, transparent 1px), radial-gradient(circle at 70% 80%, white 1px, transparent 1px)', backgroundSize: '40px 40px' }}
-                />
-                <div className="relative">
-                    <Link href="/" className="flex items-center gap-2">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/20">
-                            <Icon name="calendar_month" size="text-xl" className="text-white" />
-                        </div>
-                        <span className="text-xl font-black font-headline text-white tracking-tight">BookSlot</span>
-                    </Link>
-                </div>
-                <div className="relative space-y-6">
-                    <h1 className="text-4xl xl:text-5xl font-black font-headline text-white leading-tight">
-                        {t('auth_pages.register.hero_title')}
-                    </h1>
-                    <p className="text-white/80 text-lg leading-relaxed">
-                        {t('auth_pages.register.hero_sub')}
-                    </p>
-                    <div className="space-y-3">
-                        {[
-                            { icon: 'link', text: t('auth_pages.register.feature_1') },
-                            { icon: 'group', text: t('auth_pages.register.feature_2') },
-                            { icon: 'payments', text: t('auth_pages.register.feature_3') },
-                        ].map((item) => (
-                            <div key={item.icon} className="flex items-center gap-3">
-                                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/20">
-                                    <Icon name={item.icon} size="text-base" className="text-white" />
-                                </div>
-                                <p className="text-sm text-white/90">{item.text}</p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-                <p className="relative text-xs text-white/50">{t('auth_pages.register.copyright')}</p>
+            <div className="ntr-reg-lang">
+                <LanguageSwitcher />
             </div>
 
-            <div className="relative flex flex-1 flex-col items-center justify-center px-6 py-12 lg:px-12">
-                <div className="absolute right-4 top-4 sm:right-6 sm:top-6 lg:right-8 lg:top-8">
-                    <LanguageSwitcher />
-                </div>
-                <div className="w-full max-w-md">
-                    <Link href="/" className="flex items-center gap-2 mb-8 lg:hidden">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-container">
-                            <Icon name="calendar_month" size="text-lg" className="text-white" />
-                        </div>
-                        <span className="text-lg font-black font-headline text-on-surface tracking-tight">BookSlot</span>
+            <div className="ntr-reg-grid">
+                <section className="ntr-reg-showcase">
+                    <div className="ntr-reg-noise" />
+
+                    <Link href="/" className="ntr-reg-brand">
+                        <NiterminLogo
+                            markClassName="ntr-reg-brand-mark"
+                            wordClassName="ntr-reg-brand-word"
+                            dotClassName="ntr-reg-brand-dot"
+                        />
                     </Link>
 
-                    <div className="flex items-center gap-2 mb-8">
-                        {[t('auth_pages.register.step_account'), t('auth_pages.register.step_business')].map((label, i) => (
-                            <div key={i} className="flex items-center gap-2">
-                                <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-all ${
-                                    i < step ? 'bg-on-surface text-surface' : i === step ? 'bg-primary text-on-primary' : 'bg-surface-container-high text-on-surface-variant'
-                                }`}>
-                                    {i < step ? <Icon name="check" size="text-xs" /> : i + 1}
-                                </div>
-                                <span className={`text-xs font-medium ${i === step ? 'text-on-surface' : 'text-on-surface-variant'}`}>{label}</span>
-                                {i < 1 && <div className={`mx-1 h-px w-8 ${i < step ? 'bg-on-surface' : 'bg-outline-variant'}`} />}
+                    <div className="ntr-reg-copy">
+                        <h1>
+                            {heroLine1}
+                            {heroLine2 && <em>{heroLine2}</em>}
+                            <span>{t('auth_pages.register.hero_sub')}</span>
+                        </h1>
+                    </div>
+
+                    <div className="ntr-reg-text-list">
+                        {[
+                            t('auth_pages.register.feature_1'),
+                            t('auth_pages.register.feature_2'),
+                            t('auth_pages.register.feature_3'),
+                        ].map((text) => (
+                            <div key={text} className="ntr-reg-text-row">
+                                <span className="ntr-reg-point-icon">
+                                    <CheckGlyph />
+                                </span>
+                                <p>{text}</p>
                             </div>
                         ))}
                     </div>
+                </section>
 
-                    <form onSubmit={submit}>
-                        {step === 0 && (
-                            <div className="space-y-1">
-                                <h2 className="text-2xl font-black font-headline text-on-surface mb-1">{t('auth_pages.register.account_title')}</h2>
-                                <p className="text-sm text-on-surface-variant mb-6">{t('auth_pages.register.account_sub')}</p>
+                <section className="ntr-reg-panel">
+                    <div className="ntr-reg-panel-inner">
+                        <Link href="/" className="ntr-reg-brand-mobile">
+                            <NiterminLogo
+                                markClassName="ntr-reg-brand-mark-mobile"
+                                wordClassName="ntr-reg-brand-word-mobile"
+                                dotClassName="ntr-reg-brand-dot-mobile"
+                            />
+                        </Link>
 
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-1.5">{t('auth_pages.register.full_name')}</label>
-                                        <input
-                                            ref={nameRef}
-                                            value={data.name}
-                                            onChange={e => updateField('name', e.target.value)}
-                                            className={inputClass}
-                                            placeholder={t('auth_pages.register.full_name_ph')}
-                                            autoFocus
-                                            required
-                                        />
-                                        <InputError message={errors.name} className="mt-1" />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-1.5">{t('auth_pages.register.email')}</label>
-                                        <input
-                                            ref={emailRef}
-                                            type="email"
-                                            value={data.email}
-                                            onChange={e => updateField('email', e.target.value)}
-                                            className={inputClass}
-                                            placeholder={t('auth_pages.register.email_ph')}
-                                            required
-                                        />
-                                        <InputError message={errors.email} className="mt-1" />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-1.5">{t('auth_pages.register.password')}</label>
-                                        <input
-                                            ref={passwordRef}
-                                            type="password"
-                                            value={data.password}
-                                            onChange={e => updateField('password', e.target.value)}
-                                            className={inputClass}
-                                            placeholder={t('auth_pages.register.password_ph')}
-                                            required
-                                        />
-                                        <InputError message={errors.password} className="mt-1" />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-1.5">{t('auth_pages.register.password_confirm')}</label>
-                                        <input
-                                            ref={passwordConfirmationRef}
-                                            type="password"
-                                            value={data.password_confirmation}
-                                            onChange={e => updateField('password_confirmation', e.target.value)}
-                                            className={inputClass}
-                                            placeholder={t('auth_pages.register.password_confirm_ph')}
-                                            required
-                                        />
-                                        <InputError message={errors.password_confirmation} className="mt-1" />
-                                    </div>
+                        <div className="ntr-reg-steps">
+                            {steps.map((label, i) => (
+                                <div
+                                    key={i}
+                                    className={`ntr-reg-step ${i === step ? 'is-active' : ''} ${i < step ? 'is-done' : ''}`}
+                                >
+                                    <span className="ntr-reg-step-dot">
+                                        {i < step ? <CheckGlyph /> : i + 1}
+                                    </span>
+                                    <span className="ntr-reg-step-label">{label}</span>
+                                    {i < steps.length - 1 && <span className="ntr-reg-step-bar" />}
                                 </div>
+                            ))}
+                        </div>
 
-                                <div className="pt-6">
-                                    <button
-                                        type="button"
-                                        onClick={() => setStep(1)}
-                                        disabled={!canContinue()}
-                                        className="primary-gradient w-full flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-semibold text-white shadow-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                                    >
-                                        {t('auth_pages.register.continue')} <Icon name="arrow_forward" size="text-lg" />
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-
-                        {step === 1 && (
-                            <div className="space-y-1">
-                                <h2 className="text-2xl font-black font-headline text-on-surface mb-1">{t('auth_pages.register.business_title')}</h2>
-                                <p className="text-sm text-on-surface-variant mb-6">{t('auth_pages.register.business_sub')}</p>
-
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-1.5">{t('auth_pages.register.business_name')}</label>
-                                        <input
-                                            ref={businessNameRef}
-                                            value={data.business_name}
-                                            onChange={e => handleBusinessName(e.target.value)}
-                                            className={inputClass}
-                                            placeholder={t('auth_pages.register.business_name_ph')}
-                                            autoFocus
-                                            required
-                                        />
-                                        <InputError message={errors.business_name} className="mt-1" />
+                        <form onSubmit={submit}>
+                            {step === 0 && (
+                                <div>
+                                    <div className="ntr-reg-form-head">
+                                        <h2>{t('auth_pages.register.account_title')}</h2>
+                                        <p>{t('auth_pages.register.account_sub')}</p>
                                     </div>
 
-                                    <div>
-                                        <label className="block text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-1.5">{t('auth_pages.register.business_type')}</label>
-                                        <FilterListbox
-                                            value={data.business_type_id === '' ? null : data.business_type_id}
-                                            onChange={(v) => {
-                                                setData('business_type_id', v == null ? '' : Number(v));
-                                                clearErrors('business_type_id');
-                                            }}
-                                            groups={businessTypeGroups}
-                                            placeholder={t('auth_pages.register.business_type_ph')}
-                                            showLabel={false}
-                                            wrapperClassName="w-full"
-                                            buttonClassName={`${inputClass} flex cursor-pointer items-center justify-between gap-2 text-left`}
-                                            panelClassName="z-[100] mt-1 max-h-60 w-[var(--button-width)] overflow-auto rounded-2xl border border-outline-variant/40 bg-surface-container-low py-1 shadow-lg ring-1 ring-black/5 outline-none transition duration-100 ease-out data-[closed]:scale-95 data-[closed]:opacity-0"
-                                            optionClassName="group cursor-pointer px-3 py-2 text-sm text-on-surface data-[focus]:bg-surface-container data-[selected]:font-semibold data-[selected]:text-on-surface"
-                                        />
-                                        <InputError message={errors.business_type_id} className="mt-1" />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-1.5">{t('auth_pages.register.booking_url')}</label>
-                                        <div className="flex items-center rounded-2xl bg-surface-container-low overflow-hidden focus-within:ring-2 focus-within:ring-primary/40">
-                                            <span className="shrink-0 px-3 py-3 text-xs font-medium text-on-surface-variant border-r border-outline-variant bg-surface-container">
-                                                bookslot.app/
-                                            </span>
+                                    <div className="ntr-reg-form">
+                                        <div className="ntr-reg-field">
+                                            <label htmlFor="name">{t('auth_pages.register.full_name')}</label>
                                             <input
-                                                ref={slugRef}
-                                                value={data.slug}
-                                                onChange={e => updateField('slug', slugify(e.target.value))}
-                                                className="flex-1 border-0 bg-transparent px-3 py-3 text-sm text-on-surface focus:ring-0"
-                                                placeholder={t('auth_pages.register.booking_slug_ph')}
+                                                id="name"
+                                                ref={nameRef}
+                                                value={data.name}
+                                                onChange={e => updateField('name', e.target.value)}
+                                                placeholder={t('auth_pages.register.full_name_ph')}
+                                                autoFocus
                                                 required
                                             />
+                                            <InputError message={errors.name} className="mt-2" />
                                         </div>
-                                        <p className="mt-1 text-xs text-on-surface-variant">{t('auth_pages.register.slug_help')}</p>
-                                        <InputError message={errors.slug} className="mt-1" />
+
+                                        <div className="ntr-reg-field">
+                                            <label htmlFor="email">{t('auth_pages.register.email')}</label>
+                                            <input
+                                                id="email"
+                                                ref={emailRef}
+                                                type="email"
+                                                value={data.email}
+                                                onChange={e => updateField('email', e.target.value)}
+                                                placeholder={t('auth_pages.register.email_ph')}
+                                                autoComplete="username"
+                                                required
+                                            />
+                                            <InputError message={errors.email} className="mt-2" />
+                                        </div>
+
+                                        <div className="ntr-reg-field">
+                                            <label htmlFor="password">{t('auth_pages.register.password')}</label>
+                                            <input
+                                                id="password"
+                                                ref={passwordRef}
+                                                type="password"
+                                                value={data.password}
+                                                onChange={e => updateField('password', e.target.value)}
+                                                placeholder={t('auth_pages.register.password_ph')}
+                                                autoComplete="new-password"
+                                                required
+                                            />
+                                            <InputError message={errors.password} className="mt-2" />
+                                        </div>
+
+                                        <div className="ntr-reg-field">
+                                            <label htmlFor="password_confirmation">{t('auth_pages.register.password_confirm')}</label>
+                                            <input
+                                                id="password_confirmation"
+                                                ref={passwordConfirmationRef}
+                                                type="password"
+                                                value={data.password_confirmation}
+                                                onChange={e => updateField('password_confirmation', e.target.value)}
+                                                placeholder={t('auth_pages.register.password_confirm_ph')}
+                                                autoComplete="new-password"
+                                                required
+                                            />
+                                            <InputError message={errors.password_confirmation} className="mt-2" />
+                                        </div>
+
+                                        <div className="ntr-reg-actions">
+                                            <button
+                                                type="button"
+                                                onClick={() => setStep(1)}
+                                                disabled={!canContinue()}
+                                                className="ntr-reg-submit"
+                                            >
+                                                <span>{t('auth_pages.register.continue')}</span>
+                                                <ArrowRight />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {step === 1 && (
+                                <div>
+                                    <div className="ntr-reg-form-head">
+                                        <h2>{t('auth_pages.register.business_title')}</h2>
+                                        <p>{t('auth_pages.register.business_sub')}</p>
                                     </div>
 
-                                    <div>
-                                        <label className="block text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-1.5">{t('auth_pages.register.location')} <span className="normal-case font-normal">{t('auth_pages.register.optional')}</span></label>
-                                        <input
-                                            ref={locationRef}
-                                            value={data.location}
-                                            onChange={e => updateField('location', e.target.value)}
-                                            className={inputClass}
-                                            placeholder={t('auth_pages.register.location_ph')}
-                                        />
-                                        <InputError message={errors.location} className="mt-1" />
-                                    </div>
+                                    <div className="ntr-reg-form">
+                                        <div className="ntr-reg-field">
+                                            <label htmlFor="business_name">{t('auth_pages.register.business_name')}</label>
+                                            <input
+                                                id="business_name"
+                                                ref={businessNameRef}
+                                                value={data.business_name}
+                                                onChange={e => handleBusinessName(e.target.value)}
+                                                placeholder={t('auth_pages.register.business_name_ph')}
+                                                autoFocus
+                                                required
+                                            />
+                                            <InputError message={errors.business_name} className="mt-2" />
+                                        </div>
 
-                                    <div>
-                                        <label className="block text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-1.5">{t('auth_pages.register.business_phone')} <span className="normal-case font-normal">{t('auth_pages.register.optional')}</span></label>
-                                        <input
-                                            ref={phoneRef}
-                                            type="tel"
-                                            value={data.phone}
-                                            onChange={e => updateField('phone', e.target.value)}
-                                            className={inputClass}
-                                            placeholder={t('auth_pages.register.phone_ph')}
-                                        />
-                                        <InputError message={errors.phone} className="mt-1" />
-                                    </div>
+                                        <div className="ntr-reg-field">
+                                            <label>{t('auth_pages.register.business_type')}</label>
+                                            <FilterListbox
+                                                value={data.business_type_id === '' ? null : data.business_type_id}
+                                                onChange={(v) => {
+                                                    setData('business_type_id', v == null ? '' : Number(v));
+                                                    clearErrors('business_type_id');
+                                                }}
+                                                groups={businessTypeGroups}
+                                                placeholder={t('auth_pages.register.business_type_ph')}
+                                                showLabel={false}
+                                                wrapperClassName="w-full"
+                                                buttonClassName="ntr-reg-select"
+                                                panelClassName="ntr-reg-select-panel"
+                                                optionClassName="ntr-reg-select-option"
+                                                groupHeadingClassName="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400"
+                                            />
+                                            <InputError message={errors.business_type_id} className="mt-2" />
+                                        </div>
 
-                                    <div>
-                                        <label className="block text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-1.5">
-                                            {t('auth_pages.register.business_logo')} <span className="normal-case font-normal">{t('auth_pages.register.optional')}</span>
-                                        </label>
-                                        <div className="rounded-2xl border border-dashed border-outline-variant/70 bg-surface-container-low px-4 py-4">
-                                            <label className="flex cursor-pointer items-center justify-between gap-3 rounded-xl bg-surface px-4 py-3 transition-colors hover:bg-surface-container-low">
-                                                <div className="min-w-0">
-                                                    <p className="text-sm font-medium text-on-surface">
-                                                        {data.logo ? data.logo.name : t('auth_pages.register.upload_logo')}
-                                                    </p>
-                                                    <p className="mt-1 text-xs text-on-surface-variant">
-                                                        {t('auth_pages.register.logo_help')}
-                                                    </p>
-                                                </div>
-                                                <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-container text-on-primary-container">
-                                                    <Icon name="upload" size="text-lg" />
-                                                </span>
+                                        <div className="ntr-reg-field">
+                                            <label htmlFor="slug">{t('auth_pages.register.booking_url')}</label>
+                                            <div className="ntr-reg-slug">
+                                                <span className="ntr-reg-slug-prefix">nitermin.com/</span>
                                                 <input
-                                                    type="file"
-                                                    accept="image/png,image/jpeg,image/webp,image/jpg"
-                                                    className="hidden"
-                                                    onChange={(e) => {
-                                                        setData('logo', e.target.files?.[0] ?? null);
-                                                        clearErrors('logo');
-                                                    }}
+                                                    id="slug"
+                                                    ref={slugRef}
+                                                    value={data.slug}
+                                                    onChange={e => updateField('slug', slugify(e.target.value))}
+                                                    placeholder={t('auth_pages.register.booking_slug_ph')}
+                                                    required
                                                 />
-                                            </label>
+                                            </div>
+                                            <p className="ntr-reg-help">{t('auth_pages.register.slug_help')}</p>
+                                            <InputError message={errors.slug} className="mt-2" />
                                         </div>
-                                        <InputError message={errors.logo} className="mt-1" />
+
+                                        <div className="ntr-reg-field">
+                                            <label htmlFor="location">
+                                                {t('auth_pages.register.location')} <span className="optional">{t('auth_pages.register.optional')}</span>
+                                            </label>
+                                            <input
+                                                id="location"
+                                                ref={locationRef}
+                                                value={data.location}
+                                                onChange={e => updateField('location', e.target.value)}
+                                                placeholder={t('auth_pages.register.location_ph')}
+                                            />
+                                            <InputError message={errors.location} className="mt-2" />
+                                        </div>
+
+                                        <div className="ntr-reg-field">
+                                            <label htmlFor="phone">
+                                                {t('auth_pages.register.business_phone')} <span className="optional">{t('auth_pages.register.optional')}</span>
+                                            </label>
+                                            <input
+                                                id="phone"
+                                                ref={phoneRef}
+                                                type="tel"
+                                                value={data.phone}
+                                                onChange={e => updateField('phone', e.target.value)}
+                                                placeholder={t('auth_pages.register.phone_ph')}
+                                            />
+                                            <InputError message={errors.phone} className="mt-2" />
+                                        </div>
+
+                                        <div className="ntr-reg-field">
+                                            <label>
+                                                {t('auth_pages.register.business_logo')} <span className="optional">{t('auth_pages.register.optional')}</span>
+                                            </label>
+                                            <div className="ntr-reg-upload">
+                                                <label className="ntr-reg-upload-inner">
+                                                    <div className="ntr-reg-upload-text">
+                                                        <p>{data.logo ? data.logo.name : t('auth_pages.register.upload_logo')}</p>
+                                                        <span>{t('auth_pages.register.logo_help')}</span>
+                                                    </div>
+                                                    <span className="ntr-reg-upload-icon">
+                                                        <Icon name="upload" size="text-lg" />
+                                                    </span>
+                                                    <input
+                                                        type="file"
+                                                        accept="image/png,image/jpeg,image/webp,image/jpg"
+                                                        className="hidden"
+                                                        onChange={(e) => {
+                                                            setData('logo', e.target.files?.[0] ?? null);
+                                                            clearErrors('logo');
+                                                        }}
+                                                    />
+                                                </label>
+                                            </div>
+                                            <InputError message={errors.logo} className="mt-2" />
+                                        </div>
+
+                                        <div className="ntr-reg-actions">
+                                            <button
+                                                type="button"
+                                                onClick={() => setStep(0)}
+                                                className="ntr-reg-back"
+                                            >
+                                                <ArrowLeft />
+                                                <span>{t('auth_pages.register.back')}</span>
+                                            </button>
+                                            <button
+                                                type="submit"
+                                                disabled={processing || !data.business_name || !data.slug || !data.business_type_id}
+                                                className="ntr-reg-submit"
+                                            >
+                                                <span>{processing ? t('auth_pages.register.creating') : t('auth_pages.register.create_business')}</span>
+                                                {!processing && <CheckGlyph />}
+                                            </button>
+                                        </div>
                                     </div>
-
                                 </div>
+                            )}
+                        </form>
 
-                                <div className="pt-6 flex items-center gap-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => setStep(0)}
-                                        className="flex items-center gap-1.5 rounded-2xl border border-outline-variant px-5 py-3.5 text-sm font-medium text-on-surface hover:bg-surface-container-low transition-all"
-                                    >
-                                        <Icon name="arrow_back" size="text-lg" /> {t('auth_pages.register.back')}
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        disabled={processing || !data.business_name || !data.slug || !data.business_type_id}
-                                        className="primary-gradient flex-1 flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-semibold text-white shadow-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                                    >
-                                        {processing ? t('auth_pages.register.creating') : t('auth_pages.register.create_business')}
-                                        {!processing && <Icon name="check_circle" size="text-lg" />}
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </form>
-
-                    <p className="mt-6 text-center text-sm text-on-surface-variant">
-                        {t('auth_pages.register.already_account')}{' '}
-                        <Link href={route('login')} className="font-semibold text-primary hover:underline">
-                            {t('auth_pages.register.sign_in')}
-                        </Link>
-                    </p>
-                </div>
+                        <p className="ntr-reg-login">
+                            {t('auth_pages.register.already_account')}{' '}
+                            <Link href={route('login')}>{t('auth_pages.register.sign_in')}</Link>
+                        </p>
+                    </div>
+                </section>
             </div>
         </div>
     );
