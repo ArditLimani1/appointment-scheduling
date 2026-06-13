@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'twilio' => [
+        'sid' => env('TWILIO_SID'),
+        'token' => env('TWILIO_TOKEN'),
+        'whatsapp_from' => env('TWILIO_WHATSAPP_FROM'),
+        'whatsapp_booking_template_sid' => env('TWILIO_WHATSAPP_BOOKING_TEMPLATE_SID'),
+    ],
+
 ];
