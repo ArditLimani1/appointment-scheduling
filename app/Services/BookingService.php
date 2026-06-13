@@ -31,6 +31,7 @@ class BookingService implements BookingServiceInterface
         private ScheduleOverrideRepositoryInterface $scheduleOverrideRepository,
         private AppointmentRepositoryInterface $appointmentRepository,
         private SharedResourceUsageService $sharedResourceUsageService,
+        private TwilioWhatsAppService $whatsApp,
     ) {}
 
     public function getBookingPageData(string $slug, ?string $employeeSlug = null): array
@@ -226,7 +227,7 @@ class BookingService implements BookingServiceInterface
 
         $bookingReference = Str::uuid()->toString();
 
-        return DB::transaction(function () use ($business, $employeeId, $data, $services, $timezone, $bookingReference, $startTime, $blockEnd) {
+        $created = DB::transaction(function () use ($business, $employeeId, $data, $services, $timezone, $bookingReference, $startTime, $blockEnd) {
             Appointment::query()
                 ->where('employee_id', $employeeId)
                 ->whereDate('date', $data['date'])
@@ -306,6 +307,10 @@ class BookingService implements BookingServiceInterface
 
             return $created;
         });
+
+        $this->sendBookingWhatsApp($created);
+
+        return $created;
     }
 
     public function getAdminAvailableSlots(Business $business, array $data): array
@@ -1143,5 +1148,27 @@ class BookingService implements BookingServiceInterface
                 $user->notify(new NewAppointmentsAssignedToEmployee($payload));
             }
         });
+    }
+
+    /**
+     * @param  Collection<int, Appointment>  $appointments
+     */
+    private function sendBookingWhatsApp(Collection $appointments): void
+    {
+        $first = $appointments->first();
+        if (! $first instanceof Appointment) {
+            return;
+        }
+
+        $phone = trim((string) ($first->client_phone ?? ''));
+        $templateSid = (string) config('services.twilio.whatsapp_booking_template_sid');
+        if ($phone === '' || $templateSid === '' || ! $this->whatsApp->isConfigured()) {
+            return;
+        }
+
+        $date = $first->date?->format('d M Y') ?? '';
+        $time = (string) $first->start_time;
+
+        $this->whatsApp->sendTemplate($phone, $templateSid, ['1' => $date, '2' => $time]);
     }
 }
