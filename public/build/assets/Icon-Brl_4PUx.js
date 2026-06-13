@@ -1,0 +1,1 @@
+import{t as e}from"./app-Cs3SkwAL.js";var t=e();function n({name:e,filled:n=!1,className:r=``,size:i=`text-xl`}){return(0,t.jsx)(`span`,{className:`material-symbols-outlined ${i} ${r}`,style:n?{fontVariationSettings:`'FILL' 1`}:{},children:e})}export{n as t};
