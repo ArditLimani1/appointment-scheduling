@@ -1,1 +1,0 @@
-function e(e,t){return!e||!t?0:e<t?-1:+(e>t)}function t(t,n){if(!n)return{date_from:n,date_to:t.date_to};let r=t.date_to;return!r||e(r,n)<0?{date_from:n,date_to:n}:{date_from:n,date_to:r}}function n(t,n){if(!n)return{date_from:t.date_from,date_to:n};let r=t.date_from;return!r||e(n,r)<0?{date_from:n,date_to:n}:{date_from:r,date_to:n}}export{n,t};
