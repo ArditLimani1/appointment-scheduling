@@ -411,45 +411,43 @@
 }
 
 .ntr-reg-upload-inner {
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
+  display:block;
   padding:12px 14px;
   border-radius:12px;
   cursor:pointer;
   background:#fff;
   border:1px solid var(--line);
-  transition:background .15s ease;
+  transition:background .15s ease, border-color .15s ease;
 }
 
-.ntr-reg-upload-inner:hover { background:#f7f8fb; }
+.ntr-reg-upload-inner:hover { background:#f7f8fb; border-color:#d8d8df; }
 
 .ntr-reg-upload-text p {
   margin:0;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
   font-size:14px;
   font-weight:600;
   color:var(--ink);
 }
 
-.ntr-reg-upload-text span {
-  display:block;
-  margin-top:3px;
-  font-size:12px;
-  color:var(--ink3);
-  font-weight:400;
+.ntr-reg-upload-text p span {
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
 }
 
-.ntr-reg-upload-icon {
-  width:40px;
-  height:40px;
+.ntr-reg-upload-inline-icon {
   flex-shrink:0;
-  border-radius:11px;
-  background:var(--ink);
-  color:#fff;
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  color:var(--ink3);
+  transition:color .15s ease;
+}
+
+.ntr-reg-upload-inner:hover .ntr-reg-upload-inline-icon {
+  color:var(--ink2);
 }
 
 /* Buttons */

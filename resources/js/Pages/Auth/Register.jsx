@@ -178,7 +178,7 @@ export default function Register({ businessTypeCategories = [] }) {
             <Head title={t('auth_pages.register.head_title')} />
 
             <div className="ntr-reg-lang">
-                <LanguageSwitcher />
+                <LanguageSwitcher compact />
             </div>
 
             <div className="ntr-reg-grid">
@@ -420,12 +420,11 @@ export default function Register({ businessTypeCategories = [] }) {
                                             <div className="ntr-reg-upload">
                                                 <label className="ntr-reg-upload-inner">
                                                     <div className="ntr-reg-upload-text">
-                                                        <p>{data.logo ? data.logo.name : t('auth_pages.register.upload_logo')}</p>
-                                                        <span>{t('auth_pages.register.logo_help')}</span>
+                                                        <p>
+                                                            <span>{data.logo ? data.logo.name : t('auth_pages.register.upload_logo')}</span>
+                                                            <Icon name="upload" size="text-lg" className="ntr-reg-upload-inline-icon" />
+                                                        </p>
                                                     </div>
-                                                    <span className="ntr-reg-upload-icon">
-                                                        <Icon name="upload" size="text-lg" />
-                                                    </span>
                                                     <input
                                                         type="file"
                                                         accept="image/png,image/jpeg,image/webp,image/jpg"

@@ -19,6 +19,12 @@ const ArrowRight = () => (
     </svg>
 );
 
+const LoginIcon = ({ className = '' }) => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
+        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
 const PlayIcon = () => (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <polygon points="6 4 20 12 6 20 6 4" fill="currentColor" />
@@ -135,23 +141,29 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                         </nav>
                         <div className="nav-ctas">
                             <LanguageSwitcher />
+                            {!auth?.user && canLogin && (
+                                <Link
+                                    href={loginHref}
+                                    className="nav-login"
+                                    title={t('welcome.nav_login_hint')}
+                                >
+                                    <LoginIcon className="nav-login-icon" />
+                                    <span>{t('welcome.nav_login')}</span>
+                                </Link>
+                            )}
                             {auth?.user ? (
-                                <Link href={dashboardHref} className="btn btn-ink">
-                                    {t('welcome.nav_dashboard')} <ArrowRight />
+                                <Link href={dashboardHref} className="btn btn-ink nav-cta-trial nav-cta-dashboard">
+                                    {t('welcome.nav_dashboard')}
+                                    <ArrowRight className="nav-cta-arrow" />
                                 </Link>
                             ) : (
-                                <>
-                                    {canLogin && (
-                                        <Link href={loginHref} className="btn btn-ghost">
-                                            {t('welcome.nav_login')}
-                                        </Link>
-                                    )}
-                                    {canRegister && (
-                                        <Link href={primaryCtaHref} className="btn btn-ink">
-                                            {t('welcome.nav_cta_trial')} <ArrowRight />
-                                        </Link>
-                                    )}
-                                </>
+                                canRegister && (
+                                    <Link href={primaryCtaHref} className="btn btn-ink nav-cta-trial">
+                                        <span className="nav-cta-label-full">{t('welcome.nav_cta_trial')}</span>
+                                        <span className="nav-cta-label-mobile">{t('welcome.nav_cta_trial_mobile')}</span>
+                                        <ArrowRight className="nav-cta-arrow" />
+                                    </Link>
+                                )
                             )}
                         </div>
                     </div>
@@ -166,8 +178,12 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                             </h1>
                             <p className="lede">{t('welcome.hero_lede')}</p>
                             <div className="hero-ctas">
-                                <Link href={primaryCtaHref} className="btn btn-ink">
-                                    {t('welcome.hero_cta_primary')} <ArrowRight />
+                                <Link href={primaryCtaHref} className="btn btn-hero-trial">
+                                    <span className="btn-hero-trial-text">
+                                        <span className="btn-hero-trial-lead">{t('welcome.hero_cta_primary_lead')}</span>
+                                        <span className="btn-hero-trial-highlight">{t('welcome.hero_cta_primary_highlight')}</span>
+                                    </span>
+                                    <ArrowRight />
                                 </Link>
                                 <a href="#preview" className="btn btn-light">
                                     <PlayIcon /> {t('welcome.hero_cta_secondary')}

@@ -18,6 +18,38 @@ class EmployeeAppointmentCalendarTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_admin_owner_with_also_works_as_staff_can_view_employee_calendar(): void
+    {
+        $this->seed(BusinessTypeSeeder::class);
+
+        $owner = User::factory()->create([
+            'role' => UserRole::Admin,
+            'also_works_as_staff' => true,
+            'is_active' => true,
+            'onboarding_completed_at' => now(),
+        ]);
+
+        $business = Business::create([
+            'owner_id' => $owner->id,
+            'business_type_id' => BusinessType::query()->value('id'),
+            'name' => 'Owner Staff Cal Biz',
+            'slug' => 'owner-staff-cal-biz',
+            'timezone' => 'UTC',
+            'currency' => 'EUR',
+            'currency_symbol' => '€',
+            'is_active' => true,
+        ]);
+
+        $owner->forceFill(['business_id' => $business->id])->save();
+
+        $response = $this->actingAs($owner)->get(route('employee.appointments.calendar'));
+
+        $response->assertOk();
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('Admin/Appointments/Calendar')
+            ->where('employee_calendar', true));
+    }
+
     public function test_employee_can_view_calendar_with_hours_and_edit_support(): void
     {
         $this->seed(BusinessTypeSeeder::class);
@@ -40,6 +72,7 @@ class EmployeeAppointmentCalendarTest extends TestCase
         $employee = User::factory()->create([
             'role' => UserRole::Employee,
             'business_id' => $business->id,
+            'is_active' => true,
         ]);
 
         $response = $this->actingAs($employee)->get(route('employee.appointments.calendar'));
@@ -80,6 +113,7 @@ class EmployeeAppointmentCalendarTest extends TestCase
         $employee = User::factory()->create([
             'role' => UserRole::Employee,
             'business_id' => $business->id,
+            'is_active' => true,
         ]);
 
         $serviceA = Service::create([

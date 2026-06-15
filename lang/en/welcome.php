@@ -2,7 +2,7 @@
 
 return [
 
-    'meta_title' => 'Nitermin — appointment management for clinics',
+    'meta_title' => 'Nitermin, appointment management for clinics',
 
     // Nav
     'nav_features' => 'Features',
@@ -11,15 +11,18 @@ return [
     'nav_product' => 'Product',
     'nav_faq' => 'FAQ',
     'nav_login' => 'Log in',
+    'nav_login_hint' => 'Log in to your account',
     'nav_dashboard' => 'Dashboard',
-    'nav_cta_trial' => 'Try free',
+    'nav_cta_trial' => '1 Month Free',
+    'nav_cta_trial_mobile' => '1 month free',
 
     // Hero
     'hero_h1_line1' => 'The calendar your team',
     'hero_h1_em' => 'actually',
     'hero_h1_line2' => 'uses.',
-    'hero_lede' => 'Nitermin manages appointments, reminders, payments and reports — so you can run the clinic, practice or medical center. Open the day, close it nine hours later. Nothing forgotten.',
-    'hero_cta_primary' => 'Try free — 14 days',
+    'hero_lede' => 'Manage any business that runs on appointments. Focus on your work, not on calls to book clients.',
+    'hero_cta_primary_lead' => 'Start free',
+    'hero_cta_primary_highlight' => '1 Month Free',
     'hero_cta_secondary' => 'See the product',
     'hero_trust_strong_1' => '2,400+ clinics',
     'hero_trust_middle' => 'managing',
@@ -53,17 +56,17 @@ return [
 
     // Reminders section
     'rem_kicker' => 'CORE FEATURE · REMINDERS',
-    'rem_h2_line1' => 'Patients who',
+    'rem_h2_line1' => 'Clients who',
     'rem_h2_em' => 'actually',
     'rem_h2_line2' => 'show up.',
-    'rem_lede' => 'Every appointment is reminded automatically over WhatsApp and Email — 24 hours before the visit. No phone calls, no forgetting, no empty front desk hours.',
+    'rem_lede' => 'Every appointment is reminded automatically over WhatsApp and Email, 24 hours before the visit. No phone calls, no forgetting, no empty front desk hours.',
 
     'rem_card_wa_title' => 'WhatsApp confirmation',
     'rem_card_wa_desc' => 'Patients receive the details the moment they book.',
     'rem_card_email_title' => 'Automatic email',
-    'rem_card_email_desc' => 'Details, map and instructions — delivered to inbox.',
+    'rem_card_email_desc' => 'Details, map and instructions, delivered to inbox.',
     'rem_card_bell_title' => '24-hour reminder',
-    'rem_card_bell_desc' => 'Before every appointment — patients remember themselves.',
+    'rem_card_bell_desc' => 'Before every appointment, patients remember themselves.',
     'rem_card_lang_title' => 'Albanian, English & more',
     'rem_card_lang_desc' => 'Personalised messages with your logo and your tone.',
 
@@ -79,7 +82,7 @@ return [
     'phone_msg_booking_addr' => '12 Dëshmorët e Kombit, Tirana',
     'phone_msg_time_1' => 'Apr 8 · 16:22',
     'phone_msg_thanks' => 'Thank you! See you then. 🌿',
-    'phone_msg_24h_label' => '— 24 HOURS LATER —',
+    'phone_msg_24h_label' => '24 HOURS LATER',
     'phone_msg_reminder_strong' => 'Appointment reminder',
     'phone_msg_reminder_intro' => 'A reminder for tomorrow\'s visit:',
     'phone_msg_reminder_when' => '📅 Apr 9 · 14:30',
@@ -151,14 +154,14 @@ return [
     'inapp_h3_line1' => 'Everything important,',
     'inapp_h3_em' => 'in real time',
     'inapp_h3_line2' => '.',
-    'inapp_lede' => 'Nothing slips by. New appointments, cancellations, payments, schedule changes — they all appear instantly in the in-app notifications, with a full history you can filter.',
+    'inapp_lede' => 'Nothing slips by. New appointments, cancellations, payments, schedule changes, they all appear instantly in the in-app notifications, with a full history you can filter.',
 
     'inapp_li_1_title' => 'Instant sync',
     'inapp_li_1_desc' => 'Every action shows up in seconds, no refresh.',
     'inapp_li_2_title' => 'Smart priority',
     'inapp_li_2_desc' => 'Cancellations and new bookings always surface first.',
     'inapp_li_3_title' => 'Full history',
-    'inapp_li_3_desc' => 'Filter by type, date or doctor — nothing gets lost.',
+    'inapp_li_3_desc' => 'Filter by type, date or doctor, nothing gets lost.',
     'inapp_li_4_title' => 'Push on desktop and mobile',
     'inapp_li_4_desc' => 'Even when the app is closed, you know everything.',
 
@@ -167,7 +170,7 @@ return [
     'features_h2_line1' => 'Everything you need to run a clinic,',
     'features_h2_em' => 'nothing',
     'features_h2_line2' => 'you don\'t.',
-    'features_desc' => 'Bookings, payments, reminders, doctors, reports and exports — one tool, no plugin maze.',
+    'features_desc' => 'Bookings, payments, reminders, doctors, reports and exports. One tool, no plugin maze.',
 
     // Revenue tile
     'tile_revenue_live' => 'LIVE',
@@ -309,7 +312,7 @@ return [
     'steps_h2_em' => 'in under five minutes',
     'steps_h2_line2' => '.',
     'step_1_title' => 'Add services',
-    'step_1_desc' => 'Name, duration, price. Mark the popular ones — patients see them first.',
+    'step_1_desc' => 'Name, duration, price. Mark the popular ones, patients see them first.',
     'step_2_title' => 'Invite the team',
     'step_2_desc' => 'Assign services to each doctor and roles. Every member has their own account.',
     'step_3_title' => 'Share the link',
@@ -318,7 +321,7 @@ return [
     'step_4_desc' => 'The calendar fills, reminders go out, payments come in, reports update automatically.',
 
     // Testimonial
-    'test_q_part1' => '"We moved from pen-and-paper to managing four doctors from one screen. Saturday calmed down —',
+    'test_q_part1' => '"We moved from pen-and-paper to managing four doctors from one screen. Saturday calmed down,',
     'test_q_em' => 'zero cancellation calls',
     'test_q_part2' => '".',
     'test_author_name' => 'Dr. Elena Marku',
@@ -353,11 +356,11 @@ return [
     'faq_q3' => 'Can patients book in different languages?',
     'faq_a3' => 'Yes. The booking page comes in Albanian and English from day one, with more languages added each quarter. Patients pick the language from the top-right toggle.',
     'faq_q4' => 'Do you charge per booking?',
-    'faq_a4' => 'Never. Clear monthly pricing. Take as many bookings as you can handle — no limits.',
+    'faq_a4' => 'Never. Clear monthly pricing. Take as many bookings as you can handle, no limits.',
     'faq_q5' => 'Can I export my data?',
-    'faq_a5' => 'Any time. Every list — appointments, services, doctors, analytics — exports to PDF or Excel with one click. Your data, your terms.',
+    'faq_a5' => 'Any time. Every list (appointments, services, doctors, analytics) exports to PDF or Excel with one click. Your data, your terms.',
     'faq_q6' => 'What happens when the trial ends?',
-    'faq_a6' => 'If you don\'t add a card, your account is paused but your data stays. Add a card any time to continue — no re-setup.',
+    'faq_a6' => 'If you don\'t add a card, your account is paused but your data stays. Add a card any time to continue, no re-setup.',
 
     // Footer
     'footer_about' => 'Appointment management for medical clinics and practices. Quiet calendars, automatic reminders, and patients who actually show up.',

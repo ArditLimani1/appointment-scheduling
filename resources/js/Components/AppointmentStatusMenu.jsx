@@ -8,19 +8,19 @@ const STATUS_META = [
         trigger:
             'bg-surface-container-highest text-on-surface-variant ring-outline-variant/50 hover:bg-surface-container-high',
         itemIdle: 'text-on-surface-variant',
-        dot: 'bg-on-surface-variant',
+        dot: 'bg-surface-container-highest ring-1 ring-inset ring-outline-variant/70',
     },
     {
         value: 'confirmed',
-        trigger: 'bg-tertiary-fixed text-on-tertiary-fixed-variant ring-on-tertiary-fixed-variant/20 hover:opacity-90',
-        itemIdle: 'text-on-tertiary-fixed-variant',
-        dot: 'bg-on-tertiary-fixed-variant',
+        trigger: 'bg-tertiary-fixed text-on-tertiary-fixed ring-on-tertiary-fixed/20 hover:opacity-90',
+        itemIdle: 'text-on-tertiary-fixed',
+        dot: 'bg-tertiary-fixed',
     },
     {
         value: 'cancelled',
         trigger: 'bg-error-container text-on-error-container ring-error/20 hover:bg-error-container/80',
         itemIdle: 'text-on-error-container',
-        dot: 'bg-on-error-container',
+        dot: 'bg-error ring-1 ring-inset ring-error/40',
     },
 ];
 

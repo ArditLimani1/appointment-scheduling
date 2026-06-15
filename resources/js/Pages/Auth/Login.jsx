@@ -42,7 +42,7 @@ export default function Login({ status, canResetPassword }) {
             <Head title={t('auth_pages.login.head_title')} />
 
             <div className="ntr-login-lang">
-                <LanguageSwitcher />
+                <LanguageSwitcher compact />
             </div>
 
             <div className="ntr-login-grid">

@@ -11,7 +11,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import Icon from '@/Components/Icon';
 import { getEmployeeSlotStyles } from '@/utils/employeeCalendarColor';
-import { appointmentStatusValue, formatTimeHm, minutesToTimeHm, sqWeekdayName, timeToMinutes } from '@/utils/appointmentDate';
+import { appointmentStatusValue, formatAppointmentDate, formatTimeHm, minutesToTimeHm, sqWeekdayName, timeToMinutes } from '@/utils/appointmentDate';
 
 /** Busy / invalid slot while dragging — same for column bands and drop preview (matches hover feedback). */
 const BUSY_CONFLICT_OVERLAY_CLASS =
@@ -214,6 +214,7 @@ function DraggableEvent({
     gridLineMinutes,
     hideEmployeeName = false,
 }) {
+    const { localeBcp47 } = usePage().props;
     const cancelled = appointmentStatusValue(apt.status) === 'cancelled';
     const id = `appt-${apt.id}`;
     const startMin = timeToMinutes(apt.start_time);
@@ -252,6 +253,20 @@ function DraggableEvent({
     const colors = getEmployeeSlotStyles(employeeColorMap, apt.employee_id);
     const employeeName = apt.employee?.name || apt.employee_name || 'Staff';
     const serviceName = apt.service?.name || apt.service_name || 'Appointment';
+    const startHm = formatTimeHm(apt.start_time);
+    const endHm = formatTimeHm(apt.end_time);
+    const timeRangeLabel = startHm && endHm ? `${startHm}–${endHm}` : startHm;
+    const dateLabel = formatAppointmentDate(
+        dayDateStr || apt.date,
+        { day: 'numeric', month: 'short' },
+        localeBcp47,
+    );
+    const scheduleLabel = [dateLabel, timeRangeLabel].filter(Boolean).join(' · ');
+    const clientName = [apt.client_first_name, apt.client_last_name].filter(Boolean).join(' ').trim();
+    const primaryLabel = hideEmployeeName
+        ? (clientName || serviceName)
+        : employeeName;
+    const showServiceLine = !hideEmployeeName || Boolean(clientName);
 
     return (
         <button
@@ -267,26 +282,33 @@ function DraggableEvent({
             }}
         >
             <span
-                className="pointer-events-none flex h-full min-h-0 flex-col rounded-md border-l-[3px] px-1.5 py-1.5 sm:py-2"
+                className="pointer-events-none flex h-full min-h-0 flex-col rounded-md border-l-[3px] px-2 py-2 sm:px-2.5 sm:py-2.5"
                 style={{
                     backgroundColor: colors.bg,
                     borderLeftColor: colors.border,
                     color: colors.text,
                 }}
             >
-                <span className="flex items-start justify-between gap-1">
-                    <span className="min-w-0 truncate text-[8px] font-extrabold leading-tight sm:text-[10px]">
-                        {hideEmployeeName ? serviceName : employeeName}
+                <span className="flex items-start justify-between gap-1.5">
+                    <span className="min-w-0 truncate text-[10px] font-extrabold leading-snug sm:text-xs">
+                        {primaryLabel}
                     </span>
                     <Icon
                         name={statusIconName(apt.status)}
-                        size="text-sm"
-                        className={`shrink-0 sm:text-base ${statusIconClassName(apt.status)}`}
+                        size="text-base"
+                        className={`shrink-0 sm:text-lg ${statusIconClassName(apt.status)}`}
                     />
                 </span>
-                {!hideEmployeeName && (
-                    <span className="mt-0.5 min-w-0 truncate text-[8px] font-semibold leading-tight opacity-95 sm:text-[10px]">{serviceName}</span>
-                )}
+                {scheduleLabel ? (
+                    <span className="mt-1 min-w-0 truncate text-[10px] font-bold leading-snug tabular-nums opacity-95 sm:text-xs">
+                        {scheduleLabel}
+                    </span>
+                ) : null}
+                {showServiceLine ? (
+                    <span className="mt-1 min-w-0 truncate text-[10px] font-semibold leading-snug opacity-95 sm:text-xs">
+                        {serviceName}
+                    </span>
+                ) : null}
             </span>
         </button>
     );
