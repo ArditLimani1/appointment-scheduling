@@ -85,8 +85,35 @@ export default function EditAppointmentModal({
     const [errors, setErrors]             = useState({});
     const [submitting, setSubmitting]     = useState(false);
     const prevKeyRef                      = useRef('');
+    const savedStartTime                  = formatTimeHm(appointment.start_time);
+    /** Remember the chosen time on the appointment date so it survives date-picker round-trips. */
+    const lastTimeOnApptDateRef           = useRef(savedStartTime);
 
     const patch = (field, value) => setForm((f) => ({ ...f, [field]: value }));
+
+    useEffect(() => {
+        lastTimeOnApptDateRef.current = savedStartTime;
+    }, [appointment.id, savedStartTime]);
+
+    useEffect(() => {
+        if (form.date === apptDate) {
+            const cur = formatTimeHm(form.start_time);
+            if (cur) {
+                lastTimeOnApptDateRef.current = cur;
+            }
+        }
+    }, [form.date, form.start_time, apptDate]);
+
+    const handleDateChange = (value) => {
+        const newDate = value || apptDate;
+        setForm((f) => ({
+            ...f,
+            date: newDate,
+            start_time: newDate === apptDate
+                ? (lastTimeOnApptDateRef.current || savedStartTime || '')
+                : '',
+        }));
+    };
 
     // Employees who can perform the selected service
     const eligibleEmployees = useMemo(() => {
@@ -490,7 +517,7 @@ export default function EditAppointmentModal({
                                     <label className={labelCls}>{t('components.edit_appointment.date')}</label>
                                     <DatePicker
                                         value={form.date}
-                                        onChange={(v) => { patch('date', v || apptDate); patch('start_time', ''); }}
+                                        onChange={handleDateChange}
                                         placeholder={t('components.edit_appointment.date_placeholder')}
                                         portal
                                     />

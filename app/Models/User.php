@@ -110,6 +110,14 @@ class User extends Authenticatable implements MustVerifyEmailContract
         return $this->role === UserRole::Employee;
     }
 
+    /**
+     * Employee role, or business owner who enabled "also works as staff" in settings.
+     */
+    public function worksAsStaff(): bool
+    {
+        return $this->isEmployee() || ($this->isAdmin() && $this->also_works_as_staff);
+    }
+
     public function isSuperAdmin(): bool
     {
         return $this->user_type === UserType::SuperAdmin;

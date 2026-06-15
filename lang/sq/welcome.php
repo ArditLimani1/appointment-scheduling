@@ -2,7 +2,7 @@
 
 return [
 
-    'meta_title' => 'Nitermin — menaxhimi i takimeve për klinika',
+    'meta_title' => 'Nitermin, menaxhimi i takimeve për klinika',
 
     // Nav
     'nav_features' => 'Funksione',
@@ -11,15 +11,18 @@ return [
     'nav_product' => 'Produkti',
     'nav_faq' => 'Pyetje',
     'nav_login' => 'Hyr',
+    'nav_login_hint' => 'Hyr në llogarinë tuaj',
     'nav_dashboard' => 'Paneli',
-    'nav_cta_trial' => 'Provo falas',
+    'nav_cta_trial' => '1 Muaj Falas',
+    'nav_cta_trial_mobile' => '1 Muaj falas',
 
     // Hero
     'hero_h1_line1' => 'Kalendari që ekipi juaj',
     'hero_h1_em' => 'vërtet',
     'hero_h1_line2' => 'e përdor.',
-    'hero_lede' => 'Nitermin menaxhon takimet, kujtesat, pagesat dhe raportet — që ju të menaxhoni klinikën, ordinancën ose qendrën mjekësore. Hapni ditën, mbylleni 9 orë më vonë. Asgjë e harruar.',
-    'hero_cta_primary' => 'Provo falas — 14 ditë',
+    'hero_lede' => 'Menaxhoni çdo biznes që punon me takime. Fokusoheni në punën tuaj, jo në telefonata për rezervime.',
+    'hero_cta_primary_lead' => 'Filloni falas',
+    'hero_cta_primary_highlight' => '1 Muaj Falas',
     'hero_cta_secondary' => 'Shiko produktin',
     'hero_trust_strong_1' => '2,400+ klinika',
     'hero_trust_middle' => 'me',
@@ -53,17 +56,17 @@ return [
 
     // Reminders section
     'rem_kicker' => 'FUNKSIONI KRYESOR · KUJTESAT',
-    'rem_h2_line1' => 'Pacientë që',
+    'rem_h2_line1' => 'Klientë që',
     'rem_h2_em' => 'vërtet',
     'rem_h2_line2' => 'vijnë në takim.',
-    'rem_lede' => 'Çdo takim kujtohet automatikisht përmes WhatsApp dhe Email — 24 orë para vizitës. Pa telefonata, pa harresë, pa orare të humbura në recepsion.',
+    'rem_lede' => 'Çdo takim kujtohet automatikisht përmes WhatsApp dhe Email, 24 orë para vizitës. Pa telefonata, pa harresë, pa orare të humbura në recepsion.',
 
     'rem_card_wa_title' => 'Konfirmim WhatsApp',
     'rem_card_wa_desc' => 'Pacienti merr menjëherë detajet sapo rezervon takimin.',
     'rem_card_email_title' => 'Email automatik',
-    'rem_card_email_desc' => 'Detaje, hartë dhe instruksione — dorëzuar në inbox.',
+    'rem_card_email_desc' => 'Detaje, hartë dhe instruksione, dorëzuar në inbox.',
     'rem_card_bell_title' => 'Kujtesa 24 orë para',
-    'rem_card_bell_desc' => 'Përpara çdo takimi — pacienti del vetë në mendje.',
+    'rem_card_bell_desc' => 'Përpara çdo takimi, pacienti del vetë në mendje.',
     'rem_card_lang_title' => 'Shqip, anglisht & më shumë',
     'rem_card_lang_desc' => 'Mesazhe të personalizuara me logon dhe tonin tuaj.',
 
@@ -79,7 +82,7 @@ return [
     'phone_msg_booking_addr' => 'Rr. Dëshmorët e Kombit 12, Tiranë',
     'phone_msg_time_1' => '8 Pri · 16:22',
     'phone_msg_thanks' => 'Faleminderit! Ju presim. 🌿',
-    'phone_msg_24h_label' => '— 24 ORË MË VONË —',
+    'phone_msg_24h_label' => '24 ORË MË VONË',
     'phone_msg_reminder_strong' => 'Kujtesë takimi',
     'phone_msg_reminder_intro' => 'Po ju kujtojmë takimin nesër:',
     'phone_msg_reminder_when' => '📅 9 Pri · 14:30',
@@ -151,14 +154,14 @@ return [
     'inapp_h3_line1' => 'Çdo gjë e rëndësishme,',
     'inapp_h3_em' => 'në kohë reale',
     'inapp_h3_line2' => '.',
-    'inapp_lede' => 'Asgjë nuk ju shpëton. Takime të reja, anulime, pagesa, ndryshime orari — të gjitha shfaqen menjëherë në njoftimet brenda aplikacionit, me një historik të plotë që mund ta filtroni.',
+    'inapp_lede' => 'Asgjë nuk ju shpëton. Takime të reja, anulime, pagesa, ndryshime orari, të gjitha shfaqen menjëherë në njoftimet brenda aplikacionit, me një historik të plotë që mund ta filtroni.',
 
     'inapp_li_1_title' => 'Sinkronizim i menjëhershëm',
     'inapp_li_1_desc' => 'Çdo veprim shfaqet në sekonda, pa rifreskim.',
     'inapp_li_2_title' => 'Prioritete inteligjente',
     'inapp_li_2_desc' => 'Anulimet dhe takimet e reja shfaqen të para, gjithmonë.',
     'inapp_li_3_title' => 'Historik i plotë',
-    'inapp_li_3_desc' => 'Filtro sipas tipit, datës ose mjekut — asnjë veprim nuk humbet.',
+    'inapp_li_3_desc' => 'Filtro sipas tipit, datës ose mjekut, asnjë veprim nuk humbet.',
     'inapp_li_4_title' => 'Push në desktop dhe mobile',
     'inapp_li_4_desc' => 'Edhe kur aplikacioni është mbyllur, ju dini gjithçka.',
 
@@ -167,7 +170,7 @@ return [
     'features_h2_line1' => 'Gjithçka që ju duhet për të menaxhuar një klinikë,',
     'features_h2_em' => 'asgjë',
     'features_h2_line2' => 'që nuk ju duhet.',
-    'features_desc' => 'Rezervime, pagesa, kujtesa, mjekë, raporte dhe eksportime — një mjet i vetëm, pa labirintin e shtojcave.',
+    'features_desc' => 'Rezervime, pagesa, kujtesa, mjekë, raporte dhe eksportime. Një mjet i vetëm, pa labirintin e shtojcave.',
 
     // Revenue tile
     'tile_revenue_live' => 'LIVE',
@@ -309,7 +312,7 @@ return [
     'steps_h2_em' => 'për më pak se pesë minuta',
     'steps_h2_line2' => '.',
     'step_1_title' => 'Shtoni shërbimet',
-    'step_1_desc' => 'Emri, kohëzgjatja, çmimi. Etiketoni më të kërkuarit — pacientët i shohin lart.',
+    'step_1_desc' => 'Emri, kohëzgjatja, çmimi. Etiketoni më të kërkuarit, pacientët i shohin lart.',
     'step_2_title' => 'Ftoni ekipin',
     'step_2_desc' => 'Caktoni shërbimet për çdo mjek dhe rolet. Çdo anëtar ka llogarinë e vet.',
     'step_3_title' => 'Ndani linkun',
@@ -318,7 +321,7 @@ return [
     'step_4_desc' => 'Kalendari mbushet, kujtesat shkojnë, pagesat vijnë, raportet përditësohen automatikisht.',
 
     // Testimonial
-    'test_q_part1' => '"Kaluam nga regjistrimi me letër dhe stilolaps në menaxhimin e katër mjekëve nga një ekran i vetëm. E shtuna u qetësua —',
+    'test_q_part1' => '"Kaluam nga regjistrimi me letër dhe stilolaps në menaxhimin e katër mjekëve nga një ekran i vetëm. E shtuna u qetësua,',
     'test_q_em' => 'asnjë telefonatë anulimi',
     'test_q_part2' => '".',
     'test_author_name' => 'Dr. Elena Marku',
@@ -353,11 +356,11 @@ return [
     'faq_q3' => 'A mund të pranojnë pacientët rezervime në gjuhë të ndryshme?',
     'faq_a3' => 'Po. Faqja e rezervimit vjen në shqip dhe anglisht qysh në fillim, me gjuhë të tjera që shtohen çdo tremujor. Pacientët zgjedhin gjuhën nga butoni në krye djathtas.',
     'faq_q4' => 'A keni tarifa për çdo rezervim?',
-    'faq_a4' => 'Asnjëherë. Tarifë e qartë mujore. Merrni aq rezervime sa mund të menaxhoni — pa kufizime.',
+    'faq_a4' => 'Asnjëherë. Tarifë e qartë mujore. Merrni aq rezervime sa mund të menaxhoni, pa kufizime.',
     'faq_q5' => 'A mund t\'i eksportoj të dhënat e mia?',
-    'faq_a5' => 'Në çdo kohë. Çdo listë — takime, shërbime, mjekë, analitikë — eksportohet në PDF ose Excel me një klik. Të dhënat tuaja, kushtet tuaja.',
+    'faq_a5' => 'Në çdo kohë. Çdo listë (takime, shërbime, mjekë, analitikë) eksportohet në PDF ose Excel me një klik. Të dhënat tuaja, kushtet tuaja.',
     'faq_q6' => 'Çfarë ndodh pasi mbaron periudha provë?',
-    'faq_a6' => 'Nëse nuk shtoni kartën, llogaria juaj pauzohet por të dhënat mbeten. Shtoni kartën në çdo kohë për të vazhduar — pa konfigurime të reja.',
+    'faq_a6' => 'Nëse nuk shtoni kartën, llogaria juaj pauzohet por të dhënat mbeten. Shtoni kartën në çdo kohë për të vazhduar, pa konfigurime të reja.',
 
     // Footer
     'footer_about' => 'Sistemi i menaxhimit të takimeve për klinika dhe ordinanca mjekësore. Kalendarë të qetë, kujtesa automatike dhe pacientë që vërtet vijnë.',

@@ -171,7 +171,7 @@ class AppointmentController extends Controller
     public function calendar(Request $request): Response
     {
         $user = $request->user();
-        abort_unless($user->isEmployee(), 403);
+        abort_unless($user->worksAsStaff(), 403);
 
         $business = $user->panelBusiness();
         abort_unless($business, 403);

@@ -32,7 +32,7 @@ class UpdateEmployeeAppointmentRequest extends FormRequest
     {
         $validator->after(function ($validator): void {
             $user = $this->user();
-            if (! $user || ! $user->isEmployee() || ! $user->business_id) {
+            if (! $user || ! $user->worksAsStaff() || ! $user->business_id) {
                 return;
             }
 
