@@ -51,6 +51,8 @@ use App\Services\Interfaces\SuperAdmin\BusinessTypeCategoryManagementServiceInte
 use App\Services\Interfaces\SuperAdmin\BusinessTypeManagementServiceInterface;
 use App\Services\Interfaces\SuperAdmin\PlatformDashboardServiceInterface;
 use App\Services\Interfaces\SuperAdmin\UserAdministrationServiceInterface;
+use App\Services\Interfaces\WhatsAppSenderInterface;
+use App\Services\MetaWhatsAppService;
 use App\Services\ScheduleService;
 use App\Services\ServiceService;
 use App\Services\SharedResourceService;
@@ -96,6 +98,8 @@ class RepositoryServiceProvider extends ServiceProvider
         BusinessTypeCategoryManagementServiceInterface::class => BusinessTypeCategoryManagementService::class,
         PlatformDashboardServiceInterface::class => PlatformDashboardService::class,
         AuditLogQueryServiceInterface::class => AuditLogQueryService::class,
+
+        WhatsAppSenderInterface::class => MetaWhatsAppService::class,
     ];
 
     public function register(): void {}

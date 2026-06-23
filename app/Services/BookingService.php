@@ -16,6 +16,7 @@ use App\Repositories\Interfaces\ScheduleOverrideRepositoryInterface;
 use App\Repositories\Interfaces\ScheduleRepositoryInterface;
 use App\Repositories\Interfaces\ServiceRepositoryInterface;
 use App\Services\Interfaces\BookingServiceInterface;
+use App\Services\Interfaces\WhatsAppSenderInterface;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -31,7 +32,7 @@ class BookingService implements BookingServiceInterface
         private ScheduleOverrideRepositoryInterface $scheduleOverrideRepository,
         private AppointmentRepositoryInterface $appointmentRepository,
         private SharedResourceUsageService $sharedResourceUsageService,
-        private TwilioWhatsAppService $whatsApp,
+        private WhatsAppSenderInterface $whatsApp,
     ) {}
 
     public function getBookingPageData(string $slug, ?string $employeeSlug = null): array
@@ -1161,14 +1162,13 @@ class BookingService implements BookingServiceInterface
         }
 
         $phone = trim((string) ($first->client_phone ?? ''));
-        $templateSid = (string) config('services.twilio.whatsapp_booking_template_sid');
-        if ($phone === '' || $templateSid === '' || ! $this->whatsApp->isConfigured()) {
+        if ($phone === '' || ! $this->whatsApp->isConfigured()) {
             return;
         }
 
         $date = $first->date?->format('d M Y') ?? '';
         $time = (string) $first->start_time;
 
-        $this->whatsApp->sendTemplate($phone, $templateSid, ['1' => $date, '2' => $time]);
+        $this->whatsApp->sendBookingConfirmation($phone, $date, $time);
     }
 }

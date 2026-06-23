@@ -35,11 +35,12 @@ return [
         ],
     ],
 
-    'twilio' => [
-        'sid' => env('TWILIO_SID'),
-        'token' => env('TWILIO_TOKEN'),
-        'whatsapp_from' => env('TWILIO_WHATSAPP_FROM'),
-        'whatsapp_booking_template_sid' => env('TWILIO_WHATSAPP_BOOKING_TEMPLATE_SID'),
+    'meta_whatsapp' => [
+        'token' => env('META_WHATSAPP_TOKEN'),
+        'phone_number_id' => env('META_WHATSAPP_PHONE_NUMBER_ID'),
+        'booking_template' => env('META_WHATSAPP_BOOKING_TEMPLATE'),
+        'booking_template_lang' => env('META_WHATSAPP_BOOKING_TEMPLATE_LANG', 'en'),
+        'api_version' => env('META_WHATSAPP_API_VERSION', 'v21.0'),
     ],
 
 ];
