@@ -3,6 +3,7 @@ import { useId, useMemo, useState } from 'react';
 import Icon from '@/Components/Icon';
 import OnboardingShell from './OnboardingShell';
 import { useT } from '@/i18n/useT';
+import { resolveClientIdentifierType } from '@/utils/clientIdentification';
 
 const numericInputCls =
     'w-28 border-0 rounded-xl py-3 px-4 text-base font-extrabold text-on-surface text-center bg-surface-container-lowest ring-1 ring-outline-variant focus:outline-none focus:ring-2 focus:ring-on-surface/20 transition-shadow';
@@ -122,7 +123,8 @@ function ToggleCard({ icon, title, help, label, value, onChange }) {
 
 export default function Admin({ settings }) {
     const t = useT();
-    const { errors } = usePage().props;
+    const { errors, features } = usePage().props;
+    const whatsappEnabled = features?.whatsapp ?? false;
     const [stepIndex, setStepIndex] = useState(0);
     const [processing, setProcessing] = useState(false);
 
@@ -130,7 +132,10 @@ export default function Admin({ settings }) {
         slot_duration: settings.slot_duration ?? 30,
         min_booking_notice: settings.min_booking_notice ?? 120,
         max_booking_window: settings.max_booking_window ?? 30,
-        client_identifier_type: settings.client_identifier_type ?? 'phone',
+        client_identifier_type: resolveClientIdentifierType(
+            settings.client_identifier_type,
+            whatsappEnabled,
+        ),
         owner_also_works_as_staff: !!settings.owner_also_works_as_staff,
         allow_employee_service_edit: settings.allow_employee_service_edit ?? true,
         uses_shared_resources: !!settings.uses_shared_resources,
@@ -138,32 +143,39 @@ export default function Admin({ settings }) {
 
     const updateField = (key, value) => setData((prev) => ({ ...prev, [key]: value }));
 
-    const steps = useMemo(
-        () => [
+    const steps = useMemo(() => {
+        const defs = [
             {
                 id: 'rules',
-                eyebrow: t('onboarding.shared.step_label', { current: 1, total: 3 }),
                 label: t('onboarding.admin.step_rules_title'),
                 description: t('onboarding.admin.step_rules_sub'),
                 icon: 'rule',
             },
-            {
-                id: 'client',
-                eyebrow: t('onboarding.shared.step_label', { current: 2, total: 3 }),
-                label: t('onboarding.admin.step_client_title'),
-                description: t('onboarding.admin.step_client_sub'),
-                icon: 'badge',
-            },
+            ...(whatsappEnabled
+                ? [
+                      {
+                          id: 'client',
+                          label: t('onboarding.admin.step_client_title'),
+                          description: t('onboarding.admin.step_client_sub'),
+                          icon: 'badge',
+                      },
+                  ]
+                : []),
             {
                 id: 'operations',
-                eyebrow: t('onboarding.shared.step_label', { current: 3, total: 3 }),
                 label: t('onboarding.admin.step_operations_title'),
                 description: t('onboarding.admin.step_operations_sub'),
                 icon: 'tune',
             },
-        ],
-        [t],
-    );
+        ];
+
+        return defs.map((step, idx) => ({
+            ...step,
+            eyebrow: t('onboarding.shared.step_label', { current: idx + 1, total: defs.length }),
+        }));
+    }, [t, whatsappEnabled]);
+
+    const currentStepId = steps[stepIndex]?.id;
 
     const isLastStep = stepIndex === steps.length - 1;
 
@@ -214,7 +226,7 @@ export default function Admin({ settings }) {
         >
             <Head title={t('onboarding.shared.head_title')} />
 
-            {stepIndex === 0 && (
+            {currentStepId === 'rules' && (
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                     <NumberCard
                         title={t('onboarding.admin.slot_duration_title')}
@@ -249,7 +261,7 @@ export default function Admin({ settings }) {
                 </div>
             )}
 
-            {stepIndex === 1 && (
+            {currentStepId === 'client' && (
                 <SegmentedChoice
                     value={data.client_identifier_type}
                     onChange={(value) => updateField('client_identifier_type', value)}
@@ -270,7 +282,7 @@ export default function Admin({ settings }) {
                 />
             )}
 
-            {stepIndex === 2 && (
+            {currentStepId === 'operations' && (
                 <div className="space-y-4">
                     <ToggleCard
                         icon="workspaces"

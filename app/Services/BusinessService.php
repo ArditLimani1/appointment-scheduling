@@ -6,6 +6,7 @@ use App\Models\Business;
 use App\Models\User;
 use App\Repositories\Interfaces\BusinessRepositoryInterface;
 use App\Services\Interfaces\BusinessServiceInterface;
+use App\Support\ClientIdentification;
 
 class BusinessService implements BusinessServiceInterface
 {
@@ -24,7 +25,7 @@ class BusinessService implements BusinessServiceInterface
             'slot_duration' => 30,
             'min_booking_notice' => 120,
             'max_booking_window' => 30,
-            'client_identifier_type' => 'phone',
+            'client_identifier_type' => ClientIdentification::resolve(null),
             'allow_employee_service_edit' => true,
             'uses_shared_resources' => false,
         ]);
@@ -43,6 +44,10 @@ class BusinessService implements BusinessServiceInterface
 
     public function updateSettings(User $user, array $data): Business
     {
+        if (! ClientIdentification::whatsappEnabled()) {
+            $data['client_identifier_type'] = 'email';
+        }
+
         $business = $user->panelBusiness();
 
         if ($business) {

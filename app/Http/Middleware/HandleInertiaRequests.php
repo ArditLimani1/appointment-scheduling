@@ -90,6 +90,9 @@ class HandleInertiaRequests extends Middleware
                 'info' => fn () => $request->session()->get('info'),
                 'nonce' => fn () => $request->session()->get('flash_nonce'),
             ],
+            'features' => [
+                'whatsapp' => (bool) config('features.whatsapp', false),
+            ],
         ];
     }
 

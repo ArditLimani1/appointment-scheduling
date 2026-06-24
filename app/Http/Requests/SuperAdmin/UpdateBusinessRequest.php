@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\SuperAdmin;
 
+use App\Support\ClientIdentification;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -10,6 +11,13 @@ class UpdateBusinessRequest extends FormRequest
     public function authorize(): bool
     {
         return $this->user()?->isSuperAdmin() ?? false;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if (! ClientIdentification::whatsappEnabled()) {
+            $this->merge(['client_identifier_type' => 'email']);
+        }
     }
 
     public function rules(): array
@@ -29,7 +37,7 @@ class UpdateBusinessRequest extends FormRequest
             'slot_duration' => ['required', 'integer', 'min:5', 'max:480'],
             'min_booking_notice' => ['required', 'integer', 'min:0', 'max:10080'],
             'max_booking_window' => ['required', 'integer', 'min:1', 'max:365'],
-            'client_identifier_type' => ['required', 'in:phone,email'],
+            'client_identifier_type' => ClientIdentification::storedTypeRules(),
             'allow_employee_service_edit' => ['boolean'],
         ];
     }

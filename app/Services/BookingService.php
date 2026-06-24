@@ -17,6 +17,7 @@ use App\Repositories\Interfaces\ScheduleRepositoryInterface;
 use App\Repositories\Interfaces\ServiceRepositoryInterface;
 use App\Services\Interfaces\BookingServiceInterface;
 use App\Services\Interfaces\WhatsAppSenderInterface;
+use App\Support\ClientIdentification;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -91,7 +92,7 @@ class BookingService implements BookingServiceInterface
             'slot_duration' => $business->slot_duration,
             'min_booking_notice' => $business->min_booking_notice,
             'max_booking_window' => $business->max_booking_window,
-            'client_identifier_type' => $business->client_identifier_type,
+            'client_identifier_type' => ClientIdentification::resolve($business->client_identifier_type),
             'uses_shared_resources' => $business->uses_shared_resources,
         ];
     }

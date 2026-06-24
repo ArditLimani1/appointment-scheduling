@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import LanguageSwitcher from '@/i18n/LanguageSwitcher';
 import { useT } from '@/i18n/useT';
@@ -31,6 +31,13 @@ const PlayIcon = () => (
     </svg>
 );
 
+const MailGlyph = ({ size = 16 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <rect x="3" y="5" width="18" height="14" rx="2" />
+        <path d="M3 7l9 6 9-6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
 const WhatsAppGlyph = ({ size = 16 }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
         <path d="M12 2A10 10 0 0 0 3.4 17.2L2 22l4.9-1.3A10 10 0 1 0 12 2z" />
@@ -45,6 +52,8 @@ const StarSvg = ({ size = 7 }) => (
 
 export default function Welcome({ auth, canLogin, canRegister }) {
     const t = useT();
+    const { features } = usePage().props;
+    const whatsappEnabled = features?.whatsapp ?? false;
     const [activeTab, setActiveTab] = useState('services');
     const [copied, setCopied] = useState(false);
     const [revText, setRevText] = useState('0');
@@ -269,12 +278,14 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                                 </span>
                                 <div><strong>{t('welcome.floater_new_appt_title')}</strong><span>{t('welcome.floater_new_appt_body')}</span></div>
                             </div>
-                            <div className="floater f2">
-                                <span className="icon" style={{ background: '#DCFCE7', color: '#25D366' }}>
-                                    <WhatsAppGlyph />
-                                </span>
-                                <div><strong>{t('welcome.floater_wa_title')}</strong><span>{t('welcome.floater_wa_body')}</span></div>
-                            </div>
+                            {whatsappEnabled ? (
+                                <div className="floater f2">
+                                    <span className="icon" style={{ background: '#DCFCE7', color: '#25D366' }}>
+                                        <WhatsAppGlyph />
+                                    </span>
+                                    <div><strong>{t('welcome.floater_wa_title')}</strong><span>{t('welcome.floater_wa_body')}</span></div>
+                                </div>
+                            ) : null}
                             <div className="floater f3">
                                 <span className="icon" style={{ background: '#FEF3C7', color: '#D97706' }}>
                                     <strong style={{ fontSize: 14 }}>€</strong>
@@ -309,13 +320,15 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                                 <h2>
                                     {t('welcome.rem_h2_line1')} <em>{t('welcome.rem_h2_em')}</em> {t('welcome.rem_h2_line2')}
                                 </h2>
-                                <p className="lede">{t('welcome.rem_lede')}</p>
+                                <p className="lede">{t(whatsappEnabled ? 'welcome.rem_lede' : 'welcome.rem_lede_no_wa')}</p>
                                 <div className="rem-cards">
-                                    <div className="rem-card">
-                                        <span className="rc-ic wa"><WhatsAppGlyph size={15} /></span>
-                                        <b>{t('welcome.rem_card_wa_title')}</b>
-                                        <span>{t('welcome.rem_card_wa_desc')}</span>
-                                    </div>
+                                    {whatsappEnabled ? (
+                                        <div className="rem-card">
+                                            <span className="rc-ic wa"><WhatsAppGlyph size={15} /></span>
+                                            <b>{t('welcome.rem_card_wa_title')}</b>
+                                            <span>{t('welcome.rem_card_wa_desc')}</span>
+                                        </div>
+                                    ) : null}
                                     <div className="rem-card">
                                         <span className="rc-ic em">
                                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -354,41 +367,49 @@ export default function Welcome({ auth, canLogin, canRegister }) {
 
                             <div className="rem-stage reveal">
                                 <div className="phone">
-                                    <div className="phone-screen">
+                                    <div className="phone-screen phone-screen-mail">
                                         <div className="phone-statusbar">
                                             <span>9:41</span>
                                             <span>••• 5G ⏷</span>
                                         </div>
-                                        <div className="phone-app">
-                                            <div className="app-head">
+                                        <div className="phone-app phone-mail-app">
+                                            <div className="mail-toolbar">
                                                 <span className="back">‹</span>
-                                                <div className="who">
-                                                    <span className="av">K</span>
-                                                    <div><b>{t('welcome.mock_clinic')}</b><span>{t('welcome.phone_clinic_status')}</span></div>
-                                                </div>
-                                                <span style={{ color: 'var(--whatsapp)', fontSize: 18 }}>⋮</span>
+                                                <span className="mail-title">{t('welcome.phone_mail_inbox')}</span>
+                                                <span className="mail-action">
+                                                    <MailGlyph size={15} />
+                                                </span>
                                             </div>
 
-                                            <div className="bubble bot" style={{ animationDelay: '.1s' }}>
-                                                <b>{t('welcome.phone_msg_greeting_strong')}</b><br />
-                                                {t('welcome.phone_msg_booking_intro')}<br />
-                                                <b>{t('welcome.phone_msg_booking_when')}</b><br />
-                                                {t('welcome.phone_msg_booking_who')}<br />
-                                                <span style={{ color: '#6B6B78', fontSize: 11 }}>{t('welcome.phone_msg_booking_addr')}</span>
-                                                <small>{t('welcome.phone_msg_time_1')}</small>
+                                            <div className="mail-open" style={{ animationDelay: '.1s' }}>
+                                                <div className="mail-sender">
+                                                    <span className="av em">K</span>
+                                                    <div className="mail-sender-text">
+                                                        <b>{t('welcome.mock_clinic')}</b>
+                                                        <span>{t('welcome.phone_mail_from_addr')}</span>
+                                                    </div>
+                                                    <small>{t('welcome.phone_msg_time_1')}</small>
+                                                </div>
+                                                <div className="mail-subject">{t('welcome.phone_mail_subject_confirm')}</div>
+                                                <div className="mail-body">
+                                                    <b>{t('welcome.phone_msg_greeting_strong')}</b>
+                                                    <p>{t('welcome.phone_msg_booking_intro')}</p>
+                                                    <p><b>{t('welcome.phone_msg_booking_when')}</b></p>
+                                                    <p>{t('welcome.phone_msg_booking_who')}</p>
+                                                    <p className="mail-muted">{t('welcome.phone_msg_booking_addr')}</p>
+                                                </div>
                                             </div>
-                                            <div className="bubble bot" style={{ animationDelay: '.4s' }}>
-                                                {t('welcome.phone_msg_thanks')}
-                                                <small>{t('welcome.phone_msg_time_1')}</small>
-                                            </div>
-                                            <div style={{ textAlign: 'center', fontSize: 9.5, color: '#9CA3AF', fontWeight: 600, letterSpacing: 1, margin: '6px 0', animation: 'ntr-bubIn .5s ease both', animationDelay: '.9s' }}>
-                                                {t('welcome.phone_msg_24h_label')}
-                                            </div>
-                                            <div className="bubble bot" style={{ animationDelay: '1.1s' }}>
-                                                <b>{t('welcome.phone_msg_reminder_strong')}</b> ⏰<br />
-                                                {t('welcome.phone_msg_reminder_intro')}<br />
-                                                <b>{t('welcome.phone_msg_reminder_when')}</b><br />
-                                                {t('welcome.phone_msg_reminder_who')}
+
+                                            <div className="mail-divider">{t('welcome.phone_msg_24h_label')}</div>
+
+                                            <div className="mail-preview" style={{ animationDelay: '1.1s' }}>
+                                                <span className="mail-unread" />
+                                                <div className="mail-preview-text">
+                                                    <b>{t('welcome.phone_mail_subject_reminder')}</b>
+                                                    <span>
+                                                        {t('welcome.mock_clinic')} · {t('welcome.phone_msg_reminder_when')}
+                                                    </span>
+                                                </div>
                                                 <small>{t('welcome.phone_msg_time_2')}</small>
                                             </div>
                                         </div>
@@ -396,11 +417,21 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                                 </div>
 
                                 <div className="channels left">
-                                    <div className="chan" style={{ animationDelay: '.4s' }}>
-                                        <span className="ico wa"><WhatsAppGlyph /></span>
-                                        <div><b>{t('welcome.chan_wa_title')}</b><span>{t('welcome.chan_wa_sub')}</span></div>
-                                        <span className="live" />
-                                    </div>
+                                    {whatsappEnabled ? (
+                                        <div className="chan" style={{ animationDelay: '.4s' }}>
+                                            <span className="ico wa"><WhatsAppGlyph /></span>
+                                            <div><b>{t('welcome.chan_wa_title')}</b><span>{t('welcome.chan_wa_sub')}</span></div>
+                                            <span className="live" />
+                                        </div>
+                                    ) : (
+                                        <div className="chan" style={{ animationDelay: '.4s' }}>
+                                            <span className="ico em">
+                                                <MailGlyph size={14} />
+                                            </span>
+                                            <div><b>{t('welcome.chan_email_title')}</b><span>{t('welcome.chan_email_sub')}</span></div>
+                                            <span className="live" />
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="channels right">
                                     <div className="chan" style={{ animationDelay: '.8s' }}>
@@ -507,7 +538,7 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                                             </span>
                                             <div className="t-body">
                                                 <div className="tt"><b>{t('welcome.toast_remind_title')}</b><span className="tag remind">{t('welcome.toast_remind_tag')}</span></div>
-                                                <p>{t('welcome.toast_remind_body')}</p>
+                                                <p>{t(whatsappEnabled ? 'welcome.toast_remind_body' : 'welcome.toast_remind_body_no_wa')}</p>
                                             </div>
                                             <div className="t-side">
                                                 <span className="when">{t('welcome.toast_remind_when')}</span>
@@ -718,7 +749,7 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                                         <h3>
                                             {t('welcome.tile_link_h3_line1')} <em>{t('welcome.tile_link_h3_em')}</em> {t('welcome.tile_link_h3_line2')}
                                         </h3>
-                                        <p>{t('welcome.tile_link_desc')}</p>
+                                        <p>{t(whatsappEnabled ? 'welcome.tile_link_desc' : 'welcome.tile_link_desc_no_wa')}</p>
                                     </div>
                                     <div className="rhs">
                                         <div className="url-bar">
@@ -746,7 +777,9 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                                         </div>
                                         <div className="url-share">
                                             <span className="lbl">{t('welcome.tile_link_share_label')}</span>
-                                            <span className="pill"><span className="ic" style={{ color: '#25D366' }}><WhatsAppGlyph size={12} /></span>{t('welcome.tile_link_share_wa')}</span>
+                                            {whatsappEnabled ? (
+                                                <span className="pill"><span className="ic" style={{ color: '#25D366' }}><WhatsAppGlyph size={12} /></span>{t('welcome.tile_link_share_wa')}</span>
+                                            ) : null}
                                             <span className="pill"><span className="ic" style={{ color: '#E1306C' }}>
                                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="4" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="1" fill="currentColor" /></svg>
                                             </span>{t('welcome.tile_link_share_ig')}</span>
@@ -1020,8 +1053,8 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                                     <div className="a">{t('welcome.faq_a1')}</div>
                                 </details>
                                 <details className="reveal">
-                                    <summary><span className="num">02</span><span className="q">{t('welcome.faq_q2')}</span><span className="plus">+</span></summary>
-                                    <div className="a">{t('welcome.faq_a2')}</div>
+                                    <summary><span className="num">02</span><span className="q">{t(whatsappEnabled ? 'welcome.faq_q2' : 'welcome.faq_q2_no_wa')}</span><span className="plus">+</span></summary>
+                                    <div className="a">{t(whatsappEnabled ? 'welcome.faq_a2' : 'welcome.faq_a2_no_wa')}</div>
                                 </details>
                                 <details className="reveal">
                                     <summary><span className="num">03</span><span className="q">{t('welcome.faq_q3')}</span><span className="plus">+</span></summary>

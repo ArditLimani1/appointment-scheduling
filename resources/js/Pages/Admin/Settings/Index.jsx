@@ -65,7 +65,8 @@ export default function Index({
     owner_also_works_as_staff = false,
 }) {
     const t = useT();
-    const { flash } = usePage().props;
+    const { flash, features } = usePage().props;
+    const whatsappEnabled = features?.whatsapp ?? false;
     const [activeTab, setActiveTab] = useState('identity');
 
     // Which confirm modal is open: null | 'identity' | 'rules'
@@ -126,11 +127,19 @@ export default function Index({
         slot_duration: settings.slot_duration || 30,
         min_booking_notice: settings.min_booking_notice || 120,
         max_booking_window: settings.max_booking_window || 30,
-        client_identifier_type: settings.client_identifier_type || 'phone',
+        client_identifier_type: whatsappEnabled
+            ? (settings.client_identifier_type || 'phone')
+            : 'email',
         allow_employee_service_edit: settings.allow_employee_service_edit ?? true,
         uses_shared_resources: settings.uses_shared_resources ?? false,
         ...(show_owner_staff_toggle ? { owner_also_works_as_staff: !!owner_also_works_as_staff } : {}),
     });
+
+    useEffect(() => {
+        if (!whatsappEnabled) {
+            setData('client_identifier_type', 'email');
+        }
+    }, [whatsappEnabled, setData]);
 
     useEffect(() => {
         if (rulesErrors && Object.keys(rulesErrors).length > 0) {
@@ -411,37 +420,38 @@ export default function Index({
                         {/* Bottom row: Client Identification + I also work as staff (if applicable) */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6 border-t border-outline-variant/40">
 
-                            {/* Client Identification */}
-                            <div className="bg-surface rounded-xl p-6">
-                                <p className="text-sm font-bold text-on-surface mb-1">{t('admin.settings.client_id_title')}</p>
-                                <p className="text-xs text-on-surface-variant mb-4">{t('admin.settings.client_id_help')}</p>
-                                <div className="flex gap-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => setData('client_identifier_type', 'phone')}
-                                        className={`flex items-center gap-2 flex-1 justify-center py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${
-                                            data.client_identifier_type === 'phone'
-                                                ? 'border-on-surface bg-on-surface text-surface'
-                                                : 'border-outline-variant bg-surface-container-lowest text-on-surface-variant ring-1 ring-outline-variant/60 hover:border-on-surface/40'
-                                        }`}
-                                    >
-                                        <Icon name="phone" size="text-base" />
-                                        {t('admin.settings.client_id_phone')}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setData('client_identifier_type', 'email')}
-                                        className={`flex items-center gap-2 flex-1 justify-center py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${
-                                            data.client_identifier_type === 'email'
-                                                ? 'border-on-surface bg-on-surface text-surface'
-                                                : 'border-outline-variant bg-surface-container-lowest text-on-surface-variant ring-1 ring-outline-variant/60 hover:border-on-surface/40'
-                                        }`}
-                                    >
-                                        <Icon name="mail" size="text-base" />
-                                        {t('admin.settings.client_id_email')}
-                                    </button>
+                            {whatsappEnabled ? (
+                                <div className="bg-surface rounded-xl p-6">
+                                    <p className="text-sm font-bold text-on-surface mb-1">{t('admin.settings.client_id_title')}</p>
+                                    <p className="text-xs text-on-surface-variant mb-4">{t('admin.settings.client_id_help')}</p>
+                                    <div className="flex gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => setData('client_identifier_type', 'phone')}
+                                            className={`flex items-center gap-2 flex-1 justify-center py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${
+                                                data.client_identifier_type === 'phone'
+                                                    ? 'border-on-surface bg-on-surface text-surface'
+                                                    : 'border-outline-variant bg-surface-container-lowest text-on-surface-variant ring-1 ring-outline-variant/60 hover:border-on-surface/40'
+                                            }`}
+                                        >
+                                            <Icon name="phone" size="text-base" />
+                                            {t('admin.settings.client_id_phone')}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setData('client_identifier_type', 'email')}
+                                            className={`flex items-center gap-2 flex-1 justify-center py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${
+                                                data.client_identifier_type === 'email'
+                                                    ? 'border-on-surface bg-on-surface text-surface'
+                                                    : 'border-outline-variant bg-surface-container-lowest text-on-surface-variant ring-1 ring-outline-variant/60 hover:border-on-surface/40'
+                                            }`}
+                                        >
+                                            <Icon name="mail" size="text-base" />
+                                            {t('admin.settings.client_id_email')}
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
+                            ) : null}
 
                             <div className="bg-surface rounded-xl p-6 flex items-center justify-between gap-4">
                                 <div>

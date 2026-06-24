@@ -7,6 +7,7 @@ use App\Repositories\Interfaces\BusinessRepositoryInterface;
 use App\Repositories\Interfaces\BusinessTypeRepositoryInterface;
 use App\Services\AuditLogger;
 use App\Services\Interfaces\SuperAdmin\BusinessAdministrationServiceInterface;
+use App\Support\ClientIdentification;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class BusinessAdministrationService implements BusinessAdministrationServiceInterface
@@ -35,6 +36,10 @@ class BusinessAdministrationService implements BusinessAdministrationServiceInte
 
     public function update(Business $business, array $data): Business
     {
+        if (! ClientIdentification::whatsappEnabled()) {
+            $data['client_identifier_type'] = 'email';
+        }
+
         $business = $this->businesses->update($business, $data);
 
         AuditLogger::log('business.updated', $business, ['slug' => $business->slug], $business->name);

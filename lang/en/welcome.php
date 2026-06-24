@@ -60,6 +60,7 @@ return [
     'rem_h2_em' => 'actually',
     'rem_h2_line2' => 'show up.',
     'rem_lede' => 'Every appointment is reminded automatically over WhatsApp and Email, 24 hours before the visit. No phone calls, no forgetting, no empty front desk hours.',
+    'rem_lede_no_wa' => 'Every appointment is reminded automatically by email, 24 hours before the visit. No phone calls, no forgetting, no empty front desk hours.',
 
     'rem_card_wa_title' => 'WhatsApp confirmation',
     'rem_card_wa_desc' => 'Patients receive the details the moment they book.',
@@ -73,8 +74,11 @@ return [
     'rem_cta_primary' => 'Try reminders',
     'rem_cta_secondary' => 'How it works',
 
-    // Phone preview
-    'phone_clinic_status' => 'online',
+    // Phone preview (mail app)
+    'phone_mail_inbox' => 'Inbox',
+    'phone_mail_from_addr' => 'appointments@democlinic.com',
+    'phone_mail_subject_confirm' => 'Appointment confirmed ✓',
+    'phone_mail_subject_reminder' => 'Reminder: appointment tomorrow',
     'phone_msg_greeting_strong' => 'Hi Lulzim! 👋',
     'phone_msg_booking_intro' => 'Your appointment was booked successfully:',
     'phone_msg_booking_when' => '📅 Apr 9 · 14:30',
@@ -91,6 +95,8 @@ return [
 
     'chan_wa_title' => 'WhatsApp confirmation',
     'chan_wa_sub' => 'Sent · just booked',
+    'chan_email_title' => 'Email confirmation',
+    'chan_email_sub' => 'Sent · just booked',
     'chan_bell_title' => '24h reminder',
     'chan_bell_sub' => 'Auto · tomorrow at 14:30',
 
@@ -145,6 +151,7 @@ return [
     'toast_remind_title' => 'Reminders sent',
     'toast_remind_tag' => 'SYSTEM',
     'toast_remind_body' => '12 WhatsApp reminders + 8 emails were sent for tomorrow\'s appointments.',
+    'toast_remind_body_no_wa' => '8 reminder emails were sent for tomorrow\'s appointments.',
     'toast_remind_when' => '3 hrs',
 
     'inapp_foot_count' => '12 notifications today',
@@ -209,6 +216,7 @@ return [
     'tile_link_h3_em' => 'every',
     'tile_link_h3_line2' => 'patient.',
     'tile_link_desc' => 'Share it on Instagram, Google Business, WhatsApp or post it in the clinic. Patients book directly, 24/7.',
+    'tile_link_desc_no_wa' => 'Share it on Instagram, Google Business or post it in the clinic. Clients book directly, 24/7.',
     'tile_link_slug' => 'yourClinic',
     'tile_link_copy' => 'Copy',
     'tile_link_copied' => 'Copied',
@@ -353,6 +361,8 @@ return [
     'faq_a1' => 'Less than five minutes. Add services, invite your team, share the booking link. Most clinics get their first booking within the first hour.',
     'faq_q2' => 'How do WhatsApp reminders work?',
     'faq_a2' => '24 hours before each appointment we automatically send a WhatsApp message and an email to the patient, with visit details and direct confirm/cancel buttons. The appointment status updates instantly in your calendar.',
+    'faq_q2_no_wa' => 'How do email reminders work?',
+    'faq_a2_no_wa' => '24 hours before each appointment we automatically send an email to the client with visit details. The appointment status updates instantly in your calendar.',
     'faq_q3' => 'Can patients book in different languages?',
     'faq_a3' => 'Yes. The booking page comes in Albanian and English from day one, with more languages added each quarter. Patients pick the language from the top-right toggle.',
     'faq_q4' => 'Do you charge per booking?',

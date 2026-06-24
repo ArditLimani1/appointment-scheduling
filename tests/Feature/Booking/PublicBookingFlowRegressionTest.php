@@ -89,7 +89,7 @@ class PublicBookingFlowRegressionTest extends TestCase
             'start_time' => '10:00',
             'client_first_name' => 'Guest',
             'client_last_name' => 'Person',
-            'client_phone' => '+38349100200',
+            'client_email' => 'guest@example.com',
         ]);
 
         $response->assertRedirect();
@@ -124,7 +124,7 @@ class PublicBookingFlowRegressionTest extends TestCase
             'start_time' => $time,
             'client_first_name' => 'Guest',
             'client_last_name' => 'Person',
-            'client_phone' => '+38349100200',
+            'client_email' => 'guest@example.com',
         ]);
 
         $response->assertSessionHasErrors('start_time');
@@ -144,7 +144,7 @@ class PublicBookingFlowRegressionTest extends TestCase
             'start_time' => '10:00',
             'client_first_name' => 'Guest',
             'client_last_name' => 'Person',
-            'client_phone' => '+38349100200',
+            'client_email' => 'guest@example.com',
         ]);
 
         $response->assertSessionHasErrors('date');

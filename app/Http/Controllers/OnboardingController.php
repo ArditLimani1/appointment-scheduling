@@ -7,6 +7,7 @@ use App\Models\Business;
 use App\Models\User;
 use App\Services\Interfaces\BusinessServiceInterface;
 use App\Services\Interfaces\ScheduleServiceInterface;
+use App\Support\ClientIdentification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -44,7 +45,7 @@ class OnboardingController extends Controller
             'slot_duration' => ['required', 'integer', 'min:5', 'max:240'],
             'min_booking_notice' => ['required', 'integer', 'min:0', 'max:43200'],
             'max_booking_window' => ['required', 'integer', 'min:1', 'max:365'],
-            'client_identifier_type' => ['required', 'in:phone,email'],
+            'client_identifier_type' => ClientIdentification::storedTypeRules(),
             'allow_employee_service_edit' => ['required', 'boolean'],
             'uses_shared_resources' => ['required', 'boolean'],
             'owner_also_works_as_staff' => ['required', 'boolean'],
@@ -139,7 +140,7 @@ class OnboardingController extends Controller
             'slot_duration' => 30,
             'min_booking_notice' => 120,
             'max_booking_window' => 30,
-            'client_identifier_type' => 'phone',
+            'client_identifier_type' => ClientIdentification::resolve(null),
             'allow_employee_service_edit' => true,
             'uses_shared_resources' => false,
         ]);
@@ -149,7 +150,7 @@ class OnboardingController extends Controller
                 'slot_duration' => (int) ($business->slot_duration ?? 30),
                 'min_booking_notice' => (int) ($business->min_booking_notice ?? 120),
                 'max_booking_window' => (int) ($business->max_booking_window ?? 30),
-                'client_identifier_type' => $business->client_identifier_type ?? 'phone',
+                'client_identifier_type' => ClientIdentification::resolve($business->client_identifier_type),
                 'allow_employee_service_edit' => (bool) ($business->allow_employee_service_edit ?? true),
                 'uses_shared_resources' => false,
                 'owner_also_works_as_staff' => false,

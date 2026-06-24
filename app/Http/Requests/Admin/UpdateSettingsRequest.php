@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Support\ClientIdentification;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -10,6 +11,13 @@ class UpdateSettingsRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if (! ClientIdentification::whatsappEnabled()) {
+            $this->merge(['client_identifier_type' => 'email']);
+        }
     }
 
     public function rules(): array
@@ -33,7 +41,7 @@ class UpdateSettingsRequest extends FormRequest
             'slot_duration' => ['sometimes', 'required', 'integer', 'min:5', 'max:120'],
             'min_booking_notice' => ['sometimes', 'required', 'integer', 'min:0'],
             'max_booking_window' => ['sometimes', 'required', 'integer', 'min:1'],
-            'client_identifier_type' => ['sometimes', 'required', 'in:phone,email'],
+            'client_identifier_type' => ClientIdentification::storedTypeRules(required: false),
             'owner_also_works_as_staff' => ['sometimes', 'boolean'],
             'allow_employee_service_edit' => ['sometimes', 'boolean'],
             'uses_shared_resources' => ['sometimes', 'boolean'],
