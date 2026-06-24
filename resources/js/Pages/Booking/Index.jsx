@@ -12,6 +12,7 @@ import {
     validateBookingDetails,
 } from '@/utils/bookingClientDetails';
 import { patchSqMonthName } from '@/utils/appointmentDate';
+import { resolveClientIdentifierType } from '@/utils/clientIdentification';
 
 function toDateString(d) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -118,7 +119,7 @@ export default function Index({
     booking_max_date: bookingMaxDateProp,
 }) {
     const t = useT();
-    const { localeBcp47 } = usePage().props;
+    const { localeBcp47, features } = usePage().props;
     const preselectedEmployee = preselected_employee_id
         ? (employees.find((e) => e.id === preselected_employee_id) ?? null)
         : null;
@@ -159,7 +160,10 @@ export default function Index({
         });
     }, []);
 
-    const identifierType = business?.client_identifier_type ?? 'phone';
+    const identifierType = resolveClientIdentifierType(
+        business?.client_identifier_type,
+        features?.whatsapp ?? false,
+    );
 
     const detailsValidation = useMemo(
         () =>

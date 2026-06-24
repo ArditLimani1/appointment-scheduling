@@ -74,8 +74,11 @@ return [
     'rem_cta_primary' => 'Try reminders',
     'rem_cta_secondary' => 'How it works',
 
-    // Phone preview
-    'phone_clinic_status' => 'online',
+    // Phone preview (mail app)
+    'phone_mail_inbox' => 'Inbox',
+    'phone_mail_from_addr' => 'appointments@democlinic.com',
+    'phone_mail_subject_confirm' => 'Appointment confirmed ✓',
+    'phone_mail_subject_reminder' => 'Reminder: appointment tomorrow',
     'phone_msg_greeting_strong' => 'Hi Lulzim! 👋',
     'phone_msg_booking_intro' => 'Your appointment was booked successfully:',
     'phone_msg_booking_when' => '📅 Apr 9 · 14:30',
@@ -92,6 +95,8 @@ return [
 
     'chan_wa_title' => 'WhatsApp confirmation',
     'chan_wa_sub' => 'Sent · just booked',
+    'chan_email_title' => 'Email confirmation',
+    'chan_email_sub' => 'Sent · just booked',
     'chan_bell_title' => '24h reminder',
     'chan_bell_sub' => 'Auto · tomorrow at 14:30',
 

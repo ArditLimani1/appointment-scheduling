@@ -5,6 +5,7 @@ import DatePicker from '@/Components/DatePicker';
 import FilterListbox from '@/Components/FilterListbox';
 import { useT } from '@/i18n/useT';
 import { appointmentStatusValue, formatAppointmentDate, formatTimeHm } from '@/utils/appointmentDate';
+import { resolveClientIdentifierType } from '@/utils/clientIdentification';
 
 function toDateString(d) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -46,9 +47,12 @@ export default function EditAppointmentModal({
         ],
         [t],
     );
-    const { auth } = usePage().props;
+    const { auth, features } = usePage().props;
     const currencySymbol = CURRENCY_SYMBOLS[auth?.business?.currency] ?? auth?.business?.currency_symbol ?? '€';
-    const clientIdentifierType = auth?.business?.client_identifier_type === 'email' ? 'email' : 'phone';
+    const clientIdentifierType = resolveClientIdentifierType(
+        auth?.business?.client_identifier_type,
+        features?.whatsapp ?? false,
+    );
     const usesEmailIdentifier = clientIdentifierType === 'email';
     const employeeCanEditService = (auth?.business?.allow_employee_service_edit ?? true) === true;
     const lockServiceForEmployee = employeeMode && !employeeCanEditService;

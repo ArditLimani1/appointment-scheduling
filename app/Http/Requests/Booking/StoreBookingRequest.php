@@ -4,6 +4,7 @@ namespace App\Http\Requests\Booking;
 
 use App\Http\Requests\Concerns\SanitizesBookingClientFields;
 use App\Models\Business;
+use App\Support\ClientIdentification;
 use App\Models\Service;
 use App\Models\User;
 use Carbon\Carbon;
@@ -45,19 +46,15 @@ class StoreBookingRequest extends FormRequest
     public function rules(): array
     {
         $business = Business::where('slug', $this->route('slug'))->first();
-        $identifierType = $business?->client_identifier_type ?? 'phone';
+        $clientFields = ClientIdentification::clientFieldRules($business?->client_identifier_type);
 
         $nameRegex = '/^[\p{L}\p{M}0-9\s\'.,-]+$/u';
 
         return [
             'client_first_name' => ['required', 'string', 'min:1', 'max:100', 'regex:'.$nameRegex],
             'client_last_name' => ['required', 'string', 'min:1', 'max:100', 'regex:'.$nameRegex],
-            'client_phone' => $identifierType === 'phone'
-                ? ['required', 'string', 'regex:/^\+?[0-9]{6,20}$/']
-                : ['nullable', 'string', 'max:50'],
-            'client_email' => $identifierType === 'email'
-                ? ['required', 'string', 'email:rfc', 'max:255', 'regex:/^[^<>"\'`]+$/u']
-                : ['nullable', 'string', 'max:255'],
+            'client_phone' => $clientFields['client_phone'],
+            'client_email' => $clientFields['client_email'],
             'client_notes' => ['nullable', 'string', 'max:2000', 'regex:/^[^<>]*$/u'],
             'employee_id' => ['required', 'integer', 'exists:users,id'],
             'service_ids' => ['required', 'array', 'min:1'],

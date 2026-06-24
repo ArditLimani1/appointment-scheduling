@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { useState, useEffect } from 'react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import SuperAdminLayout from '@/Layouts/SuperAdminLayout';
 import DeleteConfirmModal from '@/Components/DeleteConfirmModal';
 import Icon from '@/Components/Icon';
@@ -19,6 +19,8 @@ function Field({ label, error, children }) {
 export default function Show({ business, employees, stats, businessTypes }) {
     const [tab, setTab] = useState('employees');
     const [deleteTarget, setDeleteTarget] = useState(null);
+    const { features } = usePage().props;
+    const whatsappEnabled = features?.whatsapp ?? false;
 
     const form = useForm({
         name: business.name ?? '',
@@ -33,9 +35,17 @@ export default function Show({ business, employees, stats, businessTypes }) {
         slot_duration: business.slot_duration ?? 30,
         min_booking_notice: business.min_booking_notice ?? 120,
         max_booking_window: business.max_booking_window ?? 30,
-        client_identifier_type: business.client_identifier_type ?? 'phone',
+        client_identifier_type: whatsappEnabled
+            ? (business.client_identifier_type ?? 'phone')
+            : 'email',
         allow_employee_service_edit: business.allow_employee_service_edit ?? true,
     });
+
+    useEffect(() => {
+        if (!whatsappEnabled) {
+            form.setData('client_identifier_type', 'email');
+        }
+    }, [whatsappEnabled]);
 
     const submit = (e) => {
         e.preventDefault();
@@ -263,14 +273,16 @@ export default function Show({ business, employees, stats, businessTypes }) {
                         </Field>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                        <Field label="Client Identifier" error={form.errors.client_identifier_type}>
-                            <select value={form.data.client_identifier_type} onChange={(e) => form.setData('client_identifier_type', e.target.value)} className={inputCls}>
-                                <option value="phone">Phone</option>
-                                <option value="email">Email</option>
-                            </select>
-                        </Field>
-                        <label className="flex items-center gap-3 rounded-lg ring-1 ring-outline-variant bg-surface-container-lowest px-4 py-3 mt-7">
+                    <div className={`grid grid-cols-1 gap-4 ${whatsappEnabled ? 'md:grid-cols-2' : ''} mb-8`}>
+                        {whatsappEnabled ? (
+                            <Field label="Client Identifier" error={form.errors.client_identifier_type}>
+                                <select value={form.data.client_identifier_type} onChange={(e) => form.setData('client_identifier_type', e.target.value)} className={inputCls}>
+                                    <option value="phone">Phone</option>
+                                    <option value="email">Email</option>
+                                </select>
+                            </Field>
+                        ) : null}
+                        <label className={`flex items-center gap-3 rounded-lg ring-1 ring-outline-variant bg-surface-container-lowest px-4 py-3 ${whatsappEnabled ? 'mt-7' : ''}`}>
                             <input
                                 type="checkbox"
                                 checked={!!form.data.allow_employee_service_edit}

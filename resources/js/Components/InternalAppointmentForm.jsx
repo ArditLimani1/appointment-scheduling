@@ -11,6 +11,7 @@ import {
     validateBookingDetails,
 } from '@/utils/bookingClientDetails';
 import { patchSqMonthName } from '@/utils/appointmentDate';
+import { resolveClientIdentifierType } from '@/utils/clientIdentification';
 
 const CURRENCY_SYMBOLS = { EUR: '€', USD: '$', GBP: '£', CHF: 'CHF' };
 
@@ -61,7 +62,7 @@ export default function InternalAppointmentForm({
     backHref: backHrefProp,
 }) {
     const t = useT();
-    const { localeBcp47 } = usePage().props;
+    const { localeBcp47, features } = usePage().props;
     const isEmployeeContext = context === 'employee';
     const backHref =
         backHrefProp
@@ -78,7 +79,10 @@ export default function InternalAppointmentForm({
 
     const currencySymbol =
         CURRENCY_SYMBOLS[business?.currency] ?? business?.currency_symbol ?? '€';
-    const identifierType = business?.client_identifier_type ?? 'phone';
+    const identifierType = resolveClientIdentifierType(
+        business?.client_identifier_type,
+        features?.whatsapp ?? false,
+    );
     const bookingToday = bookingTodayProp || toDateString(new Date());
 
     const initialEmployee = useMemo(() => {

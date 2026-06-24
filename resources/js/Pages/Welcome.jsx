@@ -31,6 +31,13 @@ const PlayIcon = () => (
     </svg>
 );
 
+const MailGlyph = ({ size = 16 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <rect x="3" y="5" width="18" height="14" rx="2" />
+        <path d="M3 7l9 6 9-6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
 const WhatsAppGlyph = ({ size = 16 }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
         <path d="M12 2A10 10 0 0 0 3.4 17.2L2 22l4.9-1.3A10 10 0 1 0 12 2z" />
@@ -360,41 +367,49 @@ export default function Welcome({ auth, canLogin, canRegister }) {
 
                             <div className="rem-stage reveal">
                                 <div className="phone">
-                                    <div className="phone-screen">
+                                    <div className="phone-screen phone-screen-mail">
                                         <div className="phone-statusbar">
                                             <span>9:41</span>
                                             <span>••• 5G ⏷</span>
                                         </div>
-                                        <div className="phone-app">
-                                            <div className="app-head">
+                                        <div className="phone-app phone-mail-app">
+                                            <div className="mail-toolbar">
                                                 <span className="back">‹</span>
-                                                <div className="who">
-                                                    <span className="av">K</span>
-                                                    <div><b>{t('welcome.mock_clinic')}</b><span>{t('welcome.phone_clinic_status')}</span></div>
-                                                </div>
-                                                <span style={{ color: 'var(--whatsapp)', fontSize: 18 }}>⋮</span>
+                                                <span className="mail-title">{t('welcome.phone_mail_inbox')}</span>
+                                                <span className="mail-action">
+                                                    <MailGlyph size={15} />
+                                                </span>
                                             </div>
 
-                                            <div className="bubble bot" style={{ animationDelay: '.1s' }}>
-                                                <b>{t('welcome.phone_msg_greeting_strong')}</b><br />
-                                                {t('welcome.phone_msg_booking_intro')}<br />
-                                                <b>{t('welcome.phone_msg_booking_when')}</b><br />
-                                                {t('welcome.phone_msg_booking_who')}<br />
-                                                <span style={{ color: '#6B6B78', fontSize: 11 }}>{t('welcome.phone_msg_booking_addr')}</span>
-                                                <small>{t('welcome.phone_msg_time_1')}</small>
+                                            <div className="mail-open" style={{ animationDelay: '.1s' }}>
+                                                <div className="mail-sender">
+                                                    <span className="av em">K</span>
+                                                    <div className="mail-sender-text">
+                                                        <b>{t('welcome.mock_clinic')}</b>
+                                                        <span>{t('welcome.phone_mail_from_addr')}</span>
+                                                    </div>
+                                                    <small>{t('welcome.phone_msg_time_1')}</small>
+                                                </div>
+                                                <div className="mail-subject">{t('welcome.phone_mail_subject_confirm')}</div>
+                                                <div className="mail-body">
+                                                    <b>{t('welcome.phone_msg_greeting_strong')}</b>
+                                                    <p>{t('welcome.phone_msg_booking_intro')}</p>
+                                                    <p><b>{t('welcome.phone_msg_booking_when')}</b></p>
+                                                    <p>{t('welcome.phone_msg_booking_who')}</p>
+                                                    <p className="mail-muted">{t('welcome.phone_msg_booking_addr')}</p>
+                                                </div>
                                             </div>
-                                            <div className="bubble bot" style={{ animationDelay: '.4s' }}>
-                                                {t('welcome.phone_msg_thanks')}
-                                                <small>{t('welcome.phone_msg_time_1')}</small>
-                                            </div>
-                                            <div style={{ textAlign: 'center', fontSize: 9.5, color: '#9CA3AF', fontWeight: 600, letterSpacing: 1, margin: '6px 0', animation: 'ntr-bubIn .5s ease both', animationDelay: '.9s' }}>
-                                                {t('welcome.phone_msg_24h_label')}
-                                            </div>
-                                            <div className="bubble bot" style={{ animationDelay: '1.1s' }}>
-                                                <b>{t('welcome.phone_msg_reminder_strong')}</b> ⏰<br />
-                                                {t('welcome.phone_msg_reminder_intro')}<br />
-                                                <b>{t('welcome.phone_msg_reminder_when')}</b><br />
-                                                {t('welcome.phone_msg_reminder_who')}
+
+                                            <div className="mail-divider">{t('welcome.phone_msg_24h_label')}</div>
+
+                                            <div className="mail-preview" style={{ animationDelay: '1.1s' }}>
+                                                <span className="mail-unread" />
+                                                <div className="mail-preview-text">
+                                                    <b>{t('welcome.phone_mail_subject_reminder')}</b>
+                                                    <span>
+                                                        {t('welcome.mock_clinic')} · {t('welcome.phone_msg_reminder_when')}
+                                                    </span>
+                                                </div>
                                                 <small>{t('welcome.phone_msg_time_2')}</small>
                                             </div>
                                         </div>
@@ -408,7 +423,15 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                                             <div><b>{t('welcome.chan_wa_title')}</b><span>{t('welcome.chan_wa_sub')}</span></div>
                                             <span className="live" />
                                         </div>
-                                    ) : null}
+                                    ) : (
+                                        <div className="chan" style={{ animationDelay: '.4s' }}>
+                                            <span className="ico em">
+                                                <MailGlyph size={14} />
+                                            </span>
+                                            <div><b>{t('welcome.chan_email_title')}</b><span>{t('welcome.chan_email_sub')}</span></div>
+                                            <span className="live" />
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="channels right">
                                     <div className="chan" style={{ animationDelay: '.8s' }}>

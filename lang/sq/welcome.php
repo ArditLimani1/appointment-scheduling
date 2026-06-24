@@ -74,8 +74,11 @@ return [
     'rem_cta_primary' => 'Provo kujtesat',
     'rem_cta_secondary' => 'Si funksionon',
 
-    // Phone preview
-    'phone_clinic_status' => 'online',
+    // Phone preview (mail app)
+    'phone_mail_inbox' => 'Inbox',
+    'phone_mail_from_addr' => 'takime@klinikademo.com',
+    'phone_mail_subject_confirm' => 'Takimi u konfirmua ✓',
+    'phone_mail_subject_reminder' => 'Kujtesë: takimi nesër',
     'phone_msg_greeting_strong' => 'Përshëndetje Lulzim! 👋',
     'phone_msg_booking_intro' => 'Takimi juaj u rezervua me sukses:',
     'phone_msg_booking_when' => '📅 9 Pri · 14:30',
@@ -92,6 +95,8 @@ return [
 
     'chan_wa_title' => 'Konfirmimi WhatsApp',
     'chan_wa_sub' => 'Dërguar · sapo rezervoi',
+    'chan_email_title' => 'Konfirmim me email',
+    'chan_email_sub' => 'Dërguar · sapo rezervoi',
     'chan_bell_title' => 'Kujtesa 24h',
     'chan_bell_sub' => 'Auto · nesër në 14:30',
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Support\ClientIdentification;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -22,13 +23,15 @@ class UpdateAppointmentRequest extends FormRequest
 
     public function rules(): array
     {
-        $businessId = $this->user()?->panelBusiness()?->id;
+        $business = $this->user()?->panelBusiness();
+        $businessId = $business?->id;
+        $clientFields = ClientIdentification::clientFieldRules($business?->client_identifier_type);
 
         return [
             'client_first_name' => ['required', 'string', 'max:100'],
             'client_last_name' => ['required', 'string', 'max:100'],
-            'client_phone' => ['nullable', 'string', 'max:50'],
-            'client_email' => ['nullable', 'email', 'max:255'],
+            'client_phone' => $clientFields['client_phone'],
+            'client_email' => $clientFields['client_email'],
             'client_notes' => ['nullable', 'string', 'max:2000'],
             'service_id' => [
                 'required', 'integer',

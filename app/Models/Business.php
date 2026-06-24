@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\ClientIdentification;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -58,5 +60,12 @@ class Business extends Model
     public function sharedResources(): HasMany
     {
         return $this->hasMany(SharedResource::class);
+    }
+
+    protected function clientIdentifierType(): Attribute
+    {
+        return Attribute::get(
+            static fn (?string $value) => ClientIdentification::resolve($value),
+        );
     }
 }
