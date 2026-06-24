@@ -60,6 +60,7 @@ return [
     'rem_h2_em' => 'vërtet',
     'rem_h2_line2' => 'vijnë në takim.',
     'rem_lede' => 'Çdo takim kujtohet automatikisht përmes WhatsApp dhe Email, 24 orë para vizitës. Pa telefonata, pa harresë, pa orare të humbura në recepsion.',
+    'rem_lede_no_wa' => 'Çdo takim kujtohet automatikisht me email, 24 orë para vizitës. Pa telefonata, pa harresë, pa orare të humbura në recepsion.',
 
     'rem_card_wa_title' => 'Konfirmim WhatsApp',
     'rem_card_wa_desc' => 'Pacienti merr menjëherë detajet sapo rezervon takimin.',
@@ -145,6 +146,7 @@ return [
     'toast_remind_title' => 'Kujtesat e dërguara',
     'toast_remind_tag' => 'SISTEMI',
     'toast_remind_body' => '12 kujtesa WhatsApp + 8 email u dërguan për takimet e nesërme.',
+    'toast_remind_body_no_wa' => '8 email kujtese u dërguan për takimet e nesërme.',
     'toast_remind_when' => '3 orë',
 
     'inapp_foot_count' => '12 njoftime sot',
@@ -209,6 +211,7 @@ return [
     'tile_link_h3_em' => 'të gjithë',
     'tile_link_h3_line2' => 'pacientët tuaj.',
     'tile_link_desc' => 'Ndajeni në Instagram, Google Business, WhatsApp ose afishojeni në klinikë. Pacientët rezervojnë direkt, 24/7.',
+    'tile_link_desc_no_wa' => 'Ndajeni në Instagram, Google Business ose afishojeni në klinikë. Klientët rezervojnë direkt, 24/7.',
     'tile_link_slug' => 'emriBiznesit',
     'tile_link_copy' => 'Kopjo',
     'tile_link_copied' => 'Kopjuar',
@@ -353,6 +356,8 @@ return [
     'faq_a1' => 'Më pak se pesë minuta. Shtoni shërbimet, ftoni ekipin tuaj, ndani linkun e rezervimit. Shumica e klinikave marrin rezervimin e parë brenda orës së parë.',
     'faq_q2' => 'Si funksionojnë kujtesat me WhatsApp?',
     'faq_a2' => '24 orë para çdo takimi dërgojmë automatikisht një mesazh WhatsApp dhe një email pacientit, me detajet e vizitës dhe butona për konfirmim/anulim direkt. Statusi i takimit përditësohet menjëherë në kalendarin tuaj.',
+    'faq_q2_no_wa' => 'Si funksionojnë kujtesat me email?',
+    'faq_a2_no_wa' => '24 orë para çdo takimi dërgojmë automatikisht një email klientit me detajet e vizitës. Statusi i takimit përditësohet menjëherë në kalendarin tuaj.',
     'faq_q3' => 'A mund të pranojnë pacientët rezervime në gjuhë të ndryshme?',
     'faq_a3' => 'Po. Faqja e rezervimit vjen në shqip dhe anglisht qysh në fillim, me gjuhë të tjera që shtohen çdo tremujor. Pacientët zgjedhin gjuhën nga butoni në krye djathtas.',
     'faq_q4' => 'A keni tarifa për çdo rezervim?',

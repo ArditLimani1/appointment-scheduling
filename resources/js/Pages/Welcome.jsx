@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import LanguageSwitcher from '@/i18n/LanguageSwitcher';
 import { useT } from '@/i18n/useT';
@@ -45,6 +45,8 @@ const StarSvg = ({ size = 7 }) => (
 
 export default function Welcome({ auth, canLogin, canRegister }) {
     const t = useT();
+    const { features } = usePage().props;
+    const whatsappEnabled = features?.whatsapp ?? false;
     const [activeTab, setActiveTab] = useState('services');
     const [copied, setCopied] = useState(false);
     const [revText, setRevText] = useState('0');
@@ -269,12 +271,14 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                                 </span>
                                 <div><strong>{t('welcome.floater_new_appt_title')}</strong><span>{t('welcome.floater_new_appt_body')}</span></div>
                             </div>
-                            <div className="floater f2">
-                                <span className="icon" style={{ background: '#DCFCE7', color: '#25D366' }}>
-                                    <WhatsAppGlyph />
-                                </span>
-                                <div><strong>{t('welcome.floater_wa_title')}</strong><span>{t('welcome.floater_wa_body')}</span></div>
-                            </div>
+                            {whatsappEnabled ? (
+                                <div className="floater f2">
+                                    <span className="icon" style={{ background: '#DCFCE7', color: '#25D366' }}>
+                                        <WhatsAppGlyph />
+                                    </span>
+                                    <div><strong>{t('welcome.floater_wa_title')}</strong><span>{t('welcome.floater_wa_body')}</span></div>
+                                </div>
+                            ) : null}
                             <div className="floater f3">
                                 <span className="icon" style={{ background: '#FEF3C7', color: '#D97706' }}>
                                     <strong style={{ fontSize: 14 }}>€</strong>
@@ -309,13 +313,15 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                                 <h2>
                                     {t('welcome.rem_h2_line1')} <em>{t('welcome.rem_h2_em')}</em> {t('welcome.rem_h2_line2')}
                                 </h2>
-                                <p className="lede">{t('welcome.rem_lede')}</p>
+                                <p className="lede">{t(whatsappEnabled ? 'welcome.rem_lede' : 'welcome.rem_lede_no_wa')}</p>
                                 <div className="rem-cards">
-                                    <div className="rem-card">
-                                        <span className="rc-ic wa"><WhatsAppGlyph size={15} /></span>
-                                        <b>{t('welcome.rem_card_wa_title')}</b>
-                                        <span>{t('welcome.rem_card_wa_desc')}</span>
-                                    </div>
+                                    {whatsappEnabled ? (
+                                        <div className="rem-card">
+                                            <span className="rc-ic wa"><WhatsAppGlyph size={15} /></span>
+                                            <b>{t('welcome.rem_card_wa_title')}</b>
+                                            <span>{t('welcome.rem_card_wa_desc')}</span>
+                                        </div>
+                                    ) : null}
                                     <div className="rem-card">
                                         <span className="rc-ic em">
                                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -396,11 +402,13 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                                 </div>
 
                                 <div className="channels left">
-                                    <div className="chan" style={{ animationDelay: '.4s' }}>
-                                        <span className="ico wa"><WhatsAppGlyph /></span>
-                                        <div><b>{t('welcome.chan_wa_title')}</b><span>{t('welcome.chan_wa_sub')}</span></div>
-                                        <span className="live" />
-                                    </div>
+                                    {whatsappEnabled ? (
+                                        <div className="chan" style={{ animationDelay: '.4s' }}>
+                                            <span className="ico wa"><WhatsAppGlyph /></span>
+                                            <div><b>{t('welcome.chan_wa_title')}</b><span>{t('welcome.chan_wa_sub')}</span></div>
+                                            <span className="live" />
+                                        </div>
+                                    ) : null}
                                 </div>
                                 <div className="channels right">
                                     <div className="chan" style={{ animationDelay: '.8s' }}>
@@ -507,7 +515,7 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                                             </span>
                                             <div className="t-body">
                                                 <div className="tt"><b>{t('welcome.toast_remind_title')}</b><span className="tag remind">{t('welcome.toast_remind_tag')}</span></div>
-                                                <p>{t('welcome.toast_remind_body')}</p>
+                                                <p>{t(whatsappEnabled ? 'welcome.toast_remind_body' : 'welcome.toast_remind_body_no_wa')}</p>
                                             </div>
                                             <div className="t-side">
                                                 <span className="when">{t('welcome.toast_remind_when')}</span>
@@ -718,7 +726,7 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                                         <h3>
                                             {t('welcome.tile_link_h3_line1')} <em>{t('welcome.tile_link_h3_em')}</em> {t('welcome.tile_link_h3_line2')}
                                         </h3>
-                                        <p>{t('welcome.tile_link_desc')}</p>
+                                        <p>{t(whatsappEnabled ? 'welcome.tile_link_desc' : 'welcome.tile_link_desc_no_wa')}</p>
                                     </div>
                                     <div className="rhs">
                                         <div className="url-bar">
@@ -746,7 +754,9 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                                         </div>
                                         <div className="url-share">
                                             <span className="lbl">{t('welcome.tile_link_share_label')}</span>
-                                            <span className="pill"><span className="ic" style={{ color: '#25D366' }}><WhatsAppGlyph size={12} /></span>{t('welcome.tile_link_share_wa')}</span>
+                                            {whatsappEnabled ? (
+                                                <span className="pill"><span className="ic" style={{ color: '#25D366' }}><WhatsAppGlyph size={12} /></span>{t('welcome.tile_link_share_wa')}</span>
+                                            ) : null}
                                             <span className="pill"><span className="ic" style={{ color: '#E1306C' }}>
                                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="4" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="1" fill="currentColor" /></svg>
                                             </span>{t('welcome.tile_link_share_ig')}</span>
@@ -1020,8 +1030,8 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                                     <div className="a">{t('welcome.faq_a1')}</div>
                                 </details>
                                 <details className="reveal">
-                                    <summary><span className="num">02</span><span className="q">{t('welcome.faq_q2')}</span><span className="plus">+</span></summary>
-                                    <div className="a">{t('welcome.faq_a2')}</div>
+                                    <summary><span className="num">02</span><span className="q">{t(whatsappEnabled ? 'welcome.faq_q2' : 'welcome.faq_q2_no_wa')}</span><span className="plus">+</span></summary>
+                                    <div className="a">{t(whatsappEnabled ? 'welcome.faq_a2' : 'welcome.faq_a2_no_wa')}</div>
                                 </details>
                                 <details className="reveal">
                                     <summary><span className="num">03</span><span className="q">{t('welcome.faq_q3')}</span><span className="plus">+</span></summary>

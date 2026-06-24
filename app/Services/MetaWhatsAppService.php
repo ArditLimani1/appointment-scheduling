@@ -10,6 +10,10 @@ class MetaWhatsAppService implements WhatsAppSenderInterface
 {
     public function isConfigured(): bool
     {
+        if (! config('features.whatsapp', false)) {
+            return false;
+        }
+
         return filled(config('services.meta_whatsapp.token'))
             && filled(config('services.meta_whatsapp.phone_number_id'));
     }
