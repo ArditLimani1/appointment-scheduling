@@ -74,15 +74,6 @@ export default function OnboardingShell({
                                 <span className="text-xs font-semibold text-on-surface">{user.name}</span>
                             </div>
                         )}
-                        <Link
-                            href={route('logout')}
-                            method="post"
-                            as="button"
-                            className="inline-flex items-center gap-1.5 rounded-xl border border-outline-variant/40 bg-surface-container-lowest px-3 py-2 text-xs font-bold uppercase tracking-widest text-on-surface-variant hover:text-error transition-colors"
-                        >
-                            <Icon name="logout" size="text-sm" />
-                            <span className="hidden sm:inline">{t('onboarding.shared.logout')}</span>
-                        </Link>
                     </div>
                 </div>
             </header>

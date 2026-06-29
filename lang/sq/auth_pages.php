@@ -50,7 +50,7 @@ return [
         'business_title' => 'Konfiguroni biznesin',
         'business_sub' => 'Kështu do t’ju gjejnë dhe rezervojnë klientët.',
         'business_name' => 'Emri i biznesit',
-        'business_name_ph' => 'Studio Bukurie Bella',
+        'business_name_ph' => 'Poliklinika Northwell',
         'business_type' => 'Lloji i biznesit',
         'business_type_ph' => 'Zgjidhni llojin e biznesit',
         'booking_url' => 'Adresa për rezervim',
@@ -96,6 +96,12 @@ return [
 
     'verify' => [
         'head_title' => 'Verifikimi i emailit',
+        'hero_title' => 'Konfirmoje',
+        'hero_accent' => 'adresën e emailit.',
+        'hero_subtitle' => 'Një verifikim i shpejtë e hap panelin dhe ju lejon ta përfundoni konfigurimin e biznesit.',
+        'feature_1' => 'Hapeni emailin e fundit që ju kemi dërguar',
+        'feature_2' => 'Klikoni butonin ose linkun e verifikimit',
+        'feature_3' => 'Kthehuni këtu dhe vazhdoni në panel',
         'intro' => 'Faleminderit për regjistrimin! Para se të vazhdoni, verifikoni emailin duke klikuar lidhjen që ju dërguam. Nëse nuk e keni marrë, mund ta dërgojmë përsëri.',
         'resent' => 'Një lidhje e re verifikimi u dërgua në adresën e emailit të dhënë gjatë regjistrimit.',
         'resend' => 'Ridërgo emailin e verifikimit',

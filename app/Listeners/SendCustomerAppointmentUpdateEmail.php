@@ -32,18 +32,22 @@ class SendCustomerAppointmentUpdateEmail implements ShouldQueue
 
     public function handle(AppointmentCustomerNotificationRequested $event): void
     {
-        $appointment = $event->appointment->loadMissing(['business', 'employee', 'service']);
+        $appointment = $event->appointment->loadMissing(['business.owner', 'employee', 'service']);
 
         if (! filled($appointment->client_email)) {
             return;
         }
 
+        $locale = $appointment->employee?->locale
+            ?: $appointment->business?->owner?->locale
+            ?: app()->getLocale();
+
         Mail::to($appointment->client_email)->send(
-            new CustomerAppointmentUpdateMail(
+            (new CustomerAppointmentUpdateMail(
                 $appointment,
                 $event->notificationType,
                 $event->changes,
-            )
+            ))->locale($locale)
         );
     }
 

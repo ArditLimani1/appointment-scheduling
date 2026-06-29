@@ -3,6 +3,7 @@ import Dropdown from '@/Components/Dropdown';
 import EmployeeNotificationBell from '@/Components/EmployeeNotificationBell';
 import Icon from '@/Components/Icon';
 import WorkspaceTabs, { useWorkspace } from '@/Components/WorkspaceTabs';
+import useLockBodyScroll from '@/hooks/useLockBodyScroll';
 import LanguageSwitcher from '@/i18n/LanguageSwitcher';
 import { useT } from '@/i18n/useT';
 import { Link, usePage } from '@inertiajs/react';
@@ -48,6 +49,7 @@ export default function AdminLayout({ children }) {
     const can = (key) => permissions.includes(key);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const t = useT();
+    useLockBodyScroll(sidebarOpen);
 
     const visibleNav = useMemo(
         () =>
@@ -164,10 +166,10 @@ export default function AdminLayout({ children }) {
                 />
             )}
 
-            <aside className={`fixed top-0 left-0 z-50 h-screen w-72 bg-surface flex flex-col transition-transform duration-300 ${
+            <aside className={`fixed top-0 left-0 z-50 h-screen w-72 overflow-y-auto overscroll-contain bg-surface flex flex-col transition-transform duration-300 ${
                 sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
             }`}>
-                <div className="flex flex-col h-full py-10 px-8">
+                <div className="flex min-h-full flex-col px-8 py-10">
                     <div className="mb-10">
                         <p className="text-sm font-extrabold font-headline text-on-surface uppercase tracking-widest leading-none">
                             {business?.name ?? t('layout.admin.fallback_business')}

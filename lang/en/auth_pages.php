@@ -50,7 +50,7 @@ return [
         'business_title' => 'Set up your business',
         'business_sub' => 'This is how clients will find and book with you.',
         'business_name' => 'Business Name',
-        'business_name_ph' => "Bella's Hair Studio",
+        'business_name_ph' => 'Northwell Clinic',
         'business_type' => 'Type of business',
         'business_type_ph' => 'Select your business type',
         'booking_url' => 'Booking URL',
@@ -96,6 +96,12 @@ return [
 
     'verify' => [
         'head_title' => 'Email Verification',
+        'hero_title' => 'Confirm your',
+        'hero_accent' => 'email address.',
+        'hero_subtitle' => 'A quick verification unlocks your dashboard and lets you finish setting up the business.',
+        'feature_1' => 'Open the latest message we sent to your inbox',
+        'feature_2' => 'Tap the verification button or link',
+        'feature_3' => 'Come back here and continue to the dashboard',
         'intro' => "Thanks for signing up! Before getting started, please verify your email by clicking the link we sent you. If you didn't receive it, we can send another.",
         'resent' => 'A new verification link has been sent to the email address you provided during registration.',
         'resend' => 'Resend Verification Email',

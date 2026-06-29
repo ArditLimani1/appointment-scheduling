@@ -57,8 +57,8 @@ export default function Confirmation({ appointment, bookingBundle }) {
 
                     <div className="space-y-8">
                         <div className="flex items-start gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-primary-container flex items-center justify-center shrink-0 text-on-primary-container text-xl font-bold font-headline">
-                                {apt.employee?.name?.charAt(0)?.toUpperCase() ?? '?'}
+                            <div className="w-12 h-12 rounded-xl bg-primary-container flex items-center justify-center shrink-0 text-on-primary-container">
+                                <Icon name="person" size="text-xl" />
                             </div>
                             <div className="min-w-0 flex-1">
                                 <p className="text-sm text-on-surface-variant mb-1">{t('booking_ui.confirmation.services_professional')}</p>
@@ -79,7 +79,7 @@ export default function Confirmation({ appointment, bookingBundle }) {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div className="bg-surface-container-low p-4 rounded-lg">
                                 <div className="flex items-center gap-2 mb-2 text-on-surface">
                                     <Icon name="calendar_today" size="text-sm" />

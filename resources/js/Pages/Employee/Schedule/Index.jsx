@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import EmployeeLayout from '@/Layouts/EmployeeLayout';
 import Icon from '@/Components/Icon';
 import TimeInputPicker from '@/Components/TimeInputPicker';
+import useLockBodyScroll from '@/hooks/useLockBodyScroll';
 import { useT } from '@/i18n/useT';
 import { appointmentStatusValue, formatAppointmentDate, formatTimeHm, patchSqMonthName, sqWeekdayName } from '@/utils/appointmentDate';
 
@@ -79,6 +80,7 @@ function formatTimeShort(hm) {
 
 function AddBreakModal({ dayLabel, onSave, onClose }) {
     const t = useT();
+    useLockBodyScroll(true);
     const [form, setForm] = useState({ start_time: '12:00', end_time: '13:00' });
     const [error, setError] = useState('');
     useEffect(() => {
@@ -173,6 +175,7 @@ function AddBreakModal({ dayLabel, onSave, onClose }) {
 
 function DayOffBlockingModal({ dayLabel, appointments, onConfirm, onClose }) {
     const t = useT();
+    useLockBodyScroll(true);
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-4">
             <div className="w-full max-w-md rounded-3xl bg-surface p-6 shadow-2xl">
@@ -246,6 +249,7 @@ function DayOffBlockingModal({ dayLabel, appointments, onConfirm, onClose }) {
 
 function ValidationNoticeModal({ message, onClose }) {
     const t = useT();
+    useLockBodyScroll(true);
     return (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 px-4">
             <div className="w-full max-w-md rounded-2xl bg-surface p-6 shadow-2xl">

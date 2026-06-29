@@ -1,14 +1,14 @@
-Verify your email for {{ $businessName }}
+{{ __('mail.verify_business.text_title', ['business' => $businessName]) }}
 
-Hello{{ $recipientName ? ' '.$recipientName : '' }},
+{{ $recipientName ? __('mail.verify_business.text_greeting', ['name' => $recipientName]) : __('mail.verify_business.text_greeting_generic') }}
 
-Thanks for creating {{ $businessName }} on NiTermin.
+{{ __('mail.verify_business.text_thanks', ['business' => $businessName]) }}
 
-Please verify your email address to activate your business account and sign in to the dashboard.
+{{ __('mail.verify_business.text_intro') }}
 
-Verify your email:
+{{ __('mail.verify_business.text_cta') }}
 {{ $verificationUrl }}
 
-This link expires in {{ $expiresInMinutes }} minutes.
+{{ __('mail.verify_business.text_expiry', ['minutes' => $expiresInMinutes]) }}
 
-If you did not create this business account, you can safely ignore this email.
+{{ __('mail.verify_business.text_ignore') }}

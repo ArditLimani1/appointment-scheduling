@@ -8,6 +8,7 @@ use App\Enums\UserType;
 use App\Notifications\VerifyBusinessEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail as MustVerifyEmailContract;
+use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -17,7 +18,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-class User extends Authenticatable implements MustVerifyEmailContract
+class User extends Authenticatable implements MustVerifyEmailContract, HasLocalePreference
 {
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
@@ -143,7 +144,12 @@ class User extends Authenticatable implements MustVerifyEmailContract
             return;
         }
 
-        $this->notify(new VerifyBusinessEmail);
+        $this->notify((new VerifyBusinessEmail)->locale($this->preferredLocale()));
+    }
+
+    public function preferredLocale(): string
+    {
+        return filled($this->locale) ? (string) $this->locale : app()->getLocale();
     }
 
     public function ownedBusiness(): HasOne

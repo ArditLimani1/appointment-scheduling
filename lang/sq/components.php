@@ -31,6 +31,7 @@ return [
         'last_name' => 'Mbiemri',
         'phone' => 'Numri i telefonit',
         'email' => 'E-mail',
+        'email_notification_hint' => 'Email-i i përditësimit të terminit dërgohet vetëm kur ruhet një adresë email-i.',
         'notes' => 'Shënime',
         'notes_optional' => '(opsionale)',
         'past_date_title' => 'Datë e kaluar.',

@@ -2,6 +2,7 @@ import { Head, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import Icon from '@/Components/Icon';
+import useLockBodyScroll from '@/hooks/useLockBodyScroll';
 import { useT } from '@/i18n/useT';
 
 /** Editable fields: clear surface + ring (not gray read-only look). */
@@ -16,6 +17,7 @@ const rulesNumberCls =
 
 function ConfirmSaveModal({ section, onConfirm, onCancel }) {
     const t = useT();
+    useLockBodyScroll(true);
     const title =
         section === 'identity'
             ? t('admin.settings.confirm.identity_title')
@@ -238,6 +240,7 @@ export default function Index({
                                     value={identity.data.name}
                                     onChange={(e) => identity.setData('name', e.target.value)}
                                     className={editableInputCls}
+                                    placeholder={t('auth_pages.register.business_name_ph')}
                                     required
                                 />
                                 {identity.errors.name && <p className="text-xs text-error mt-1">{identity.errors.name}</p>}

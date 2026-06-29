@@ -83,9 +83,9 @@ export default function EmployeeModal({ show, onClose, editing, services, busine
     const editingOwner = editing && businessOwnerId != null && editing.id === businessOwnerId;
 
     return (
-        <Modal show={show} onClose={onClose} maxWidth="lg">
-            <form onSubmit={handleSubmit} className="p-6">
-                <div className="flex items-start justify-between mb-5">
+        <Modal show={show} onClose={onClose} maxWidth="md">
+            <form onSubmit={handleSubmit} className="flex max-h-[min(100dvh-1.5rem,56rem)] flex-col sm:max-h-[min(92vh,56rem)]">
+                <div className="flex items-start justify-between border-b border-outline-variant/30 px-4 py-4 sm:px-6 sm:py-5">
                     <div>
                         <h2 className="text-lg font-bold text-on-surface">{editing ? t('admin.employees.modal.edit_title') : t('admin.employees.modal.add_title')}</h2>
                         <p className="text-xs text-on-surface-variant mt-0.5">{editing ? t('admin.employees.modal.edit_sub') : t('admin.employees.modal.add_sub')}</p>
@@ -95,15 +95,16 @@ export default function EmployeeModal({ show, onClose, editing, services, busine
                     </button>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
                     <div>
                         <label className="block text-sm font-medium text-on-surface mb-1.5">{t('admin.employees.modal.full_name')} <span className="text-error">*</span></label>
-                        <input value={data.name} onChange={e => setData('name', e.target.value)} className={inputClass} autoFocus required />
+                        <input value={data.name} onChange={e => setData('name', e.target.value)} className={`${inputClass} text-base sm:text-sm`} autoFocus required />
                         <InputError message={errors.name} className="mt-1" />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-on-surface mb-1.5">{t('admin.employees.modal.email')} <span className="text-error">*</span></label>
-                        <input type="email" value={data.email} onChange={e => setData('email', e.target.value)} className={inputClass} required />
+                        <input type="email" value={data.email} onChange={e => setData('email', e.target.value)} className={`${inputClass} text-base sm:text-sm`} required />
                         <InputError message={errors.email} className="mt-1" />
                     </div>
                     <div className="flex min-h-0 flex-col sm:h-full">
@@ -117,7 +118,7 @@ export default function EmployeeModal({ show, onClose, editing, services, busine
                             </p>
                         )}
                         <div className="mt-auto">
-                            <input type="password" value={data.password} onChange={e => setData('password', e.target.value)} className={inputClass} required={!editing} />
+                            <input type="password" value={data.password} onChange={e => setData('password', e.target.value)} className={`${inputClass} text-base sm:text-sm`} required={!editing} />
                             <InputError message={errors.password} className="mt-1" />
                         </div>
                     </div>
@@ -127,7 +128,7 @@ export default function EmployeeModal({ show, onClose, editing, services, busine
                             <span className="text-xs text-on-surface-variant font-normal">{t('admin.employees.modal.optional')}</span>
                         </label>
                         <div className="mt-auto">
-                            <input type="tel" value={data.phone} onChange={e => setData('phone', e.target.value)} className={inputClass} />
+                            <input type="tel" value={data.phone} onChange={e => setData('phone', e.target.value)} className={`${inputClass} text-base sm:text-sm`} />
                         </div>
                     </div>
                     <div className="sm:col-span-2">
@@ -135,7 +136,7 @@ export default function EmployeeModal({ show, onClose, editing, services, busine
                             {t('admin.employees.modal.job_title')}{' '}
                             <span className="text-xs text-on-surface-variant font-normal">{t('admin.employees.modal.optional')}</span>
                         </label>
-                        <input value={data.title} onChange={e => setData('title', e.target.value)} className={inputClass} />
+                        <input value={data.title} onChange={e => setData('title', e.target.value)} className={`${inputClass} text-base sm:text-sm`} />
                     </div>
                     {!editingOwner && (
                         <div className="sm:col-span-2">
@@ -171,65 +172,66 @@ export default function EmployeeModal({ show, onClose, editing, services, busine
                             </p>
                         </div>
                     )}
-                </div>
-
-                {services?.length > 0 && (
-                    <div className="mt-4">
-                        <label className="block text-sm font-medium text-on-surface mb-2">{t('admin.employees.modal.assigned_services')}</label>
-                        <Listbox
-                            value={data.service_ids}
-                            onChange={(ids) => setData('service_ids', ids)}
-                            multiple
-                        >
-                            <div className="relative">
-                                <ListboxButton
-                                    className={`${inputClass} flex cursor-pointer items-center justify-between gap-2 text-left`}
-                                >
-                                    <span className={`block min-h-[1.25rem] truncate ${data.service_ids.length === 0 ? 'text-on-surface-variant/60' : ''}`}>
-                                        {assignedServicesLabel}
-                                    </span>
-                                    <Icon name="expand_more" size="text-[20px]" className="shrink-0 text-on-surface-variant" />
-                                </ListboxButton>
-                                <ListboxOptions
-                                    portal
-                                    anchor="bottom start"
-                                    transition
-                                    className="z-[100] mt-1 max-h-60 w-[var(--button-width)] overflow-auto rounded-xl border border-outline-variant bg-surface-container-low py-1 shadow-lg ring-1 ring-black/5 outline-none transition duration-100 ease-out data-[closed]:scale-95 data-[closed]:opacity-0"
-                                >
-                                    {services.map((s) => (
-                                        <ListboxOption
-                                            key={s.id}
-                                            value={s.id}
-                                            className="group flex cursor-pointer items-center gap-2 px-3 py-2.5 text-sm text-on-surface data-[focus]:bg-surface-container-high data-[selected]:bg-on-surface/10"
-                                        >
-                                            <span
-                                                className="flex h-4 w-4 shrink-0 items-center justify-center rounded border border-outline-variant group-data-[selected]:border-on-surface group-data-[selected]:bg-on-surface"
-                                                aria-hidden
-                                            >
-                                                <Icon
-                                                    name="check"
-                                                    size="text-[10px]"
-                                                    className="text-surface opacity-0 group-data-[selected]:opacity-100"
-                                                />
-                                            </span>
-                                            <span className="truncate">{s.name}</span>
-                                        </ListboxOption>
-                                    ))}
-                                </ListboxOptions>
-                            </div>
-                        </Listbox>
                     </div>
-                )}
 
-                <div className="mt-4 flex items-center gap-3">
-                    <label className="relative inline-flex cursor-pointer items-center">
-                        <input type="checkbox" checked={data.is_active} onChange={e => setData('is_active', e.target.checked)} className="peer sr-only" />
-                        <div className="peer h-5 w-9 rounded-full bg-outline-variant after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-on-surface peer-checked:after:translate-x-full" />
-                    </label>
-                    <span className="text-sm text-on-surface">{t('admin.employees.modal.active_account')}</span>
+                    {services?.length > 0 && (
+                        <div className="mt-4">
+                            <label className="block text-sm font-medium text-on-surface mb-2">{t('admin.employees.modal.assigned_services')}</label>
+                            <Listbox
+                                value={data.service_ids}
+                                onChange={(ids) => setData('service_ids', ids)}
+                                multiple
+                            >
+                                <div className="relative">
+                                    <ListboxButton
+                                        className={`${inputClass} flex cursor-pointer items-center justify-between gap-2 text-left text-base sm:text-sm`}
+                                    >
+                                        <span className={`block min-h-[1.25rem] truncate ${data.service_ids.length === 0 ? 'text-on-surface-variant/60' : ''}`}>
+                                            {assignedServicesLabel}
+                                        </span>
+                                        <Icon name="expand_more" size="text-[20px]" className="shrink-0 text-on-surface-variant" />
+                                    </ListboxButton>
+                                    <ListboxOptions
+                                        portal
+                                        anchor="bottom start"
+                                        transition
+                                        className="z-[100] mt-1 max-h-60 w-[var(--button-width)] overflow-auto rounded-xl border border-outline-variant bg-surface-container-low py-1 shadow-lg ring-1 ring-black/5 outline-none transition duration-100 ease-out data-[closed]:scale-95 data-[closed]:opacity-0"
+                                    >
+                                        {services.map((s) => (
+                                            <ListboxOption
+                                                key={s.id}
+                                                value={s.id}
+                                                className="group flex cursor-pointer items-center gap-2 px-3 py-2.5 text-sm text-on-surface data-[focus]:bg-surface-container-high data-[selected]:bg-on-surface/10"
+                                            >
+                                                <span
+                                                    className="flex h-4 w-4 shrink-0 items-center justify-center rounded border border-outline-variant group-data-[selected]:border-on-surface group-data-[selected]:bg-on-surface"
+                                                    aria-hidden
+                                                >
+                                                    <Icon
+                                                        name="check"
+                                                        size="text-[10px]"
+                                                        className="text-surface opacity-0 group-data-[selected]:opacity-100"
+                                                    />
+                                                </span>
+                                                <span className="truncate">{s.name}</span>
+                                            </ListboxOption>
+                                        ))}
+                                    </ListboxOptions>
+                                </div>
+                            </Listbox>
+                        </div>
+                    )}
+
+                    <div className="mt-4 flex items-center gap-3">
+                        <label className="relative inline-flex cursor-pointer items-center">
+                            <input type="checkbox" checked={data.is_active} onChange={e => setData('is_active', e.target.checked)} className="peer sr-only" />
+                            <div className="peer h-5 w-9 rounded-full bg-outline-variant after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-on-surface peer-checked:after:translate-x-full" />
+                        </label>
+                        <span className="text-sm text-on-surface">{t('admin.employees.modal.active_account')}</span>
+                    </div>
                 </div>
 
-                <div className="mt-6 flex items-center justify-end gap-3">
+                <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-outline-variant/30 px-4 py-4 sm:flex-row sm:items-center sm:justify-end sm:gap-3 sm:px-6">
                     <button type="button" onClick={onClose} className="rounded-xl border border-outline-variant px-5 py-2.5 text-sm font-medium text-on-surface hover:bg-surface-container-low transition-colors">
                         {t('admin.employees.modal.cancel')}
                     </button>

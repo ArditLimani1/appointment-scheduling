@@ -13,7 +13,7 @@ class AppointmentCustomerNotificationRequested
     public bool $afterCommit = true;
 
     /**
-     * @param  list<string>  $changes
+     * @param  list<array{type:string,from:?string,to:?string}>  $changes
      */
     public function __construct(
         public readonly Appointment $appointment,

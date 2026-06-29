@@ -98,8 +98,8 @@ function BreakModal({ dayLabel, onSave, onClose, initialBreak = null, t }) {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-            <div className="w-full max-w-sm rounded-3xl bg-surface p-6 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 px-4 pb-4 pt-10 sm:items-center sm:pb-0">
+            <div className="w-full max-w-sm rounded-3xl bg-surface p-5 shadow-2xl sm:p-6">
                 <div className="mb-5 flex items-center justify-between">
                     <div>
                         <h3 className="font-headline text-lg font-bold text-on-surface">
@@ -117,7 +117,7 @@ function BreakModal({ dayLabel, onSave, onClose, initialBreak = null, t }) {
                 </div>
 
                 <div className="space-y-4">
-                    <div className="flex items-center gap-3">
+                    <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-3">
                         <div className="flex-1">
                             <label className="mb-1 block text-xs font-medium text-on-surface-variant">
                                 {t('onboarding.employee.start_time')}
@@ -129,7 +129,7 @@ function BreakModal({ dayLabel, onSave, onClose, initialBreak = null, t }) {
                                 className={`w-full ${inputClass}`}
                             />
                         </div>
-                        <span className="mt-5 text-on-surface-variant">–</span>
+                        <span className="mb-2 text-center text-on-surface-variant">–</span>
                         <div className="flex-1">
                             <label className="mb-1 block text-xs font-medium text-on-surface-variant">
                                 {t('onboarding.employee.end_time')}

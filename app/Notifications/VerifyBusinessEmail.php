@@ -35,7 +35,7 @@ class VerifyBusinessEmail extends VerifyEmail implements ShouldQueue
         $businessName = $notifiable->ownedBusiness?->name ?? 'your business';
 
         return (new MailMessage)
-            ->subject("Verify your email for {$businessName}")
+            ->subject(__('mail.verify_business.subject', ['business' => $businessName]))
             ->view([
                 'html' => 'emails.auth.verify-business-email',
                 'text' => 'emails.auth.verify-business-email-text',

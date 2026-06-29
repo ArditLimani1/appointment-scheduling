@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import EmployeeLayout from '@/Layouts/EmployeeLayout';
 import Icon from '@/Components/Icon';
 import TimeInputPicker from '@/Components/TimeInputPicker';
+import useLockBodyScroll from '@/hooks/useLockBodyScroll';
 import { useT } from '@/i18n/useT';
 
 /** Next calendar date (including today) that falls on this weekday; `dayOfWeek` 0 = Monday … 6 = Sunday. */
@@ -87,6 +88,7 @@ function BookingUrlField({ label, prefix, value }) {
 // ─── Confirm save modal (same as Admin Settings) ─────────────────────────────
 function ConfirmSaveModal({ onConfirm, onCancel }) {
     const t = useT();
+    useLockBodyScroll(true);
     return (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onCancel} />
@@ -125,6 +127,7 @@ function ConfirmSaveModal({ onConfirm, onCancel }) {
 
 function ValidationNoticeModal({ message, onClose }) {
     const t = useT();
+    useLockBodyScroll(true);
     return (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/40 px-4">
             <div className="w-full max-w-md rounded-2xl bg-surface p-6 shadow-2xl">
@@ -214,8 +217,8 @@ function AddBreakModal({ dayLabel, onSave, onClose }) {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-            <div className="w-full max-w-sm rounded-3xl bg-surface p-6 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 px-4 pb-4 pt-10 sm:items-center sm:pb-0">
+            <div className="w-full max-w-sm rounded-3xl bg-surface p-5 shadow-2xl sm:p-6">
                 <div className="mb-5 flex items-center justify-between">
                     <div>
                         <h3 className="font-headline text-lg font-bold text-on-surface">{t('employee.schedule.add_break_title')}</h3>
@@ -231,7 +234,7 @@ function AddBreakModal({ dayLabel, onSave, onClose }) {
                 </div>
 
                 <div className="space-y-4">
-                    <div className="flex items-center gap-3">
+                    <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-3">
                         <div className="flex-1">
                             <label className="mb-1 block text-xs font-medium text-on-surface-variant">{t('employee.schedule.start_time')}</label>
                             <TimeInputPicker
@@ -241,7 +244,7 @@ function AddBreakModal({ dayLabel, onSave, onClose }) {
                                 ariaLabel={t('employee.schedule.start_time')}
                             />
                         </div>
-                        <span className="mt-5 text-on-surface-variant">–</span>
+                        <span className="mb-2 text-center text-on-surface-variant">–</span>
                         <div className="flex-1">
                             <label className="mb-1 block text-xs font-medium text-on-surface-variant">{t('employee.schedule.end_time')}</label>
                             <TimeInputPicker

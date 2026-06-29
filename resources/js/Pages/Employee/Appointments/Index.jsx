@@ -252,7 +252,6 @@ export default function EmployeeAppointmentsIndex({
     services = [],
     employees = [],
     filters: filtersProp,
-    employee_compact_mobile_appointments = false,
 }) {
     const filters = filtersProp ?? {};
     const t = useT();
@@ -615,9 +614,9 @@ export default function EmployeeAppointmentsIndex({
             </div>
 
             <div className="bg-surface-container-lowest rounded-2xl overflow-hidden ring-1 ring-slate-100 shadow-sm">
-                <div className="px-8 py-5 border-b border-slate-50 flex items-center justify-between bg-white">
-                    <h3 className="font-headline font-bold text-base text-on-surface">{t('employee.appointments.my_bookings')}</h3>
-                    <p className="text-xs text-on-surface-variant">
+                <div className="flex flex-col gap-2 border-b border-slate-50 bg-white px-4 py-4 sm:px-6 sm:py-5 md:flex-row md:items-center md:justify-between md:px-8">
+                    <h3 className="font-headline text-xl font-bold text-on-surface md:text-base">{t('employee.appointments.my_bookings')}</h3>
+                    <p className="text-sm leading-relaxed text-on-surface-variant md:text-xs md:text-right">
                         {t(
                             totalCount === 1
                                 ? 'employee.appointments.appointment_total_one'
@@ -635,8 +634,7 @@ export default function EmployeeAppointmentsIndex({
                     </div>
                 ) : (
                     <>
-                        {employee_compact_mobile_appointments ? (
-                            <div className="md:hidden space-y-3 p-4 bg-white border-b border-slate-50">
+                        <div className="md:hidden space-y-3 p-4 bg-white border-b border-slate-50">
                                 {rows.map((apt) => {
                                     const isCancelled = appointmentStatusValue(apt.status) === 'cancelled';
                                     return (
@@ -712,13 +710,10 @@ export default function EmployeeAppointmentsIndex({
                                         </article>
                                     );
                                 })}
-                            </div>
-                        ) : null}
+                        </div>
 
                         <div
-                            className={`overflow-x-auto px-4 sm:px-6 md:px-8${
-                                employee_compact_mobile_appointments ? ' hidden md:block' : ''
-                            }`}
+                            className="hidden overflow-x-auto px-4 sm:px-6 md:block md:px-8"
                         >
                             <table className="w-full min-w-[800px] text-left">
                                 <thead>

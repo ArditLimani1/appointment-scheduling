@@ -30,8 +30,8 @@ return [
         'unit_min' => 'min',
         'unit_days' => 'ditë',
 
-        'step_client_title' => 'Identifikimi i klientit',
-        'step_client_sub' => 'Si do t’i identifikoni klientët gjatë rezervimit?',
+        'step_client_title' => 'Identifikimi dhe njoftimi i klientit',
+        'step_client_sub' => 'Zgjidhni nëse klientët rezervojnë me telefon apo email, sepse kjo përcakton edhe ku u dërgohen njoftimet dhe përditësimet.',
         'client_phone' => 'Telefon',
         'client_phone_desc' => 'Klienti vendos numrin e telefonit gjatë rezervimit.',
         'client_email' => 'Email',
@@ -51,9 +51,9 @@ return [
         'service_edit_help' => 'Nëse është e çaktivizuar, stafi mund të ndryshojë vetëm datën dhe orën.',
 
         'step_resources_title' => 'Burime të përbashkëta',
-        'step_resources_sub' => 'A përdor biznesi juaj burime të përbashkëta si dhoma, karrige ose pajisje?',
+        'step_resources_sub' => 'Aktivizojeni nëse terminet varen nga dhoma, karrige, pajisje ose burime të tjera me kapacitet të kufizuar.',
         'resources_label' => 'Aktivizo menaxhimin e burimeve të përbashkëta',
-        'resources_help' => 'Kur është aktiv, mund të krijoni burime, t’i lidhni me shërbimet dhe rezervimet respektojnë kapacitetin.',
+        'resources_help' => 'Kur është aktiv, mund të krijoni dhoma ose pajisje të përbashkëta, t’i lidhni me shërbimet dhe kalendari e bllokon automatikisht tejkalimin e kapacitetit.',
     ],
 
     'employee' => [

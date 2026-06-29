@@ -30,8 +30,8 @@ return [
         'unit_min' => 'min',
         'unit_days' => 'days',
 
-        'step_client_title' => 'Client identification',
-        'step_client_sub' => 'How will clients identify themselves when booking?',
+        'step_client_title' => 'Client identification & notifications',
+        'step_client_sub' => 'Choose whether clients book with phone or email, which also decides how updates and notifications reach them.',
         'client_phone' => 'Phone',
         'client_phone_desc' => 'Clients enter their phone number when booking.',
         'client_email' => 'Email',
@@ -51,9 +51,9 @@ return [
         'service_edit_help' => 'When disabled, staff can only change the date and time.',
 
         'step_resources_title' => 'Shared resources',
-        'step_resources_sub' => 'Does your business use shared resources like rooms, chairs or equipment?',
+        'step_resources_sub' => 'Enable this if appointments depend on shared rooms, chairs, devices, or other equipment with limited capacity.',
         'resources_label' => 'Enable shared resources management',
-        'resources_help' => 'When enabled, you can create resources, attach them to services and bookings respect their capacity.',
+        'resources_help' => 'When enabled, you can create shared rooms or equipment, attach them to services, and the calendar will block overbooking automatically.',
     ],
 
     'employee' => [

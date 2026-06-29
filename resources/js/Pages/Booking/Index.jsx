@@ -474,8 +474,8 @@ export default function Index({
                     <h1 className="font-headline text-5xl font-extrabold tracking-tight mb-4 text-on-surface">{t('booking_ui.hero.title')}</h1>
                     {isEmployeePreselected ? (
                         <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-on-surface text-surface text-base font-bold font-headline shrink-0">
-                                {preselectedEmployee.name.charAt(0).toUpperCase()}
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-on-surface text-surface shrink-0">
+                                <Icon name="person" size="text-lg" />
                             </div>
                             <p className="text-on-surface-variant text-lg">
                                 {t('booking_ui.hero.with_professional')}{' '}
@@ -604,8 +604,8 @@ export default function Index({
                                                     : 'bg-surface-container-low hover:bg-surface-container-high'
                                             }`}
                                         >
-                                            <div className="w-16 h-16 rounded-full bg-on-surface flex items-center justify-center text-surface text-2xl font-bold font-headline shrink-0">
-                                                {emp.name.charAt(0).toUpperCase()}
+                                            <div className="w-16 h-16 rounded-full bg-on-surface flex items-center justify-center text-surface shrink-0">
+                                                <Icon name="person" size="text-2xl" />
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <p className="font-headline font-bold text-lg text-on-surface">{emp.name}</p>
@@ -725,7 +725,7 @@ export default function Index({
                                         }}
                                         maxLength={201}
                                         autoComplete="name"
-                                        className="w-full h-14 px-6 rounded-xl border border-slate-100 bg-transparent focus:ring-2 focus:ring-on-surface/20 transition-all text-sm text-on-surface"
+                                        className="w-full h-14 px-6 rounded-xl border border-slate-100 bg-transparent focus:ring-2 focus:ring-on-surface/20 transition-all text-base text-on-surface"
                                     />
                                     {(errors.client_first_name || clientFieldErrors.client_first_name) && (
                                         <p className="text-xs text-error mt-1">{errors.client_first_name || clientFieldErrors.client_first_name}</p>
@@ -747,7 +747,7 @@ export default function Index({
                                             }}
                                             maxLength={24}
                                             autoComplete="tel"
-                                            className="w-full h-14 px-6 rounded-xl border border-slate-100 bg-transparent focus:ring-2 focus:ring-on-surface/20 transition-all placeholder:text-on-surface/40 text-sm text-on-surface"
+                                            className="w-full h-14 px-6 rounded-xl border border-slate-100 bg-transparent focus:ring-2 focus:ring-on-surface/20 transition-all placeholder:text-on-surface/40 text-base text-on-surface"
                                             placeholder="+38349444348"
                                         />
                                         <p className="text-xs text-on-surface-variant">{t('booking_ui.steps.phone_hint')}</p>
@@ -767,7 +767,7 @@ export default function Index({
                                             }}
                                             maxLength={255}
                                             autoComplete="email"
-                                            className="w-full h-14 px-6 rounded-xl border border-slate-100 bg-transparent focus:ring-2 focus:ring-on-surface/20 transition-all text-sm text-on-surface"
+                                            className="w-full h-14 px-6 rounded-xl border border-slate-100 bg-transparent focus:ring-2 focus:ring-on-surface/20 transition-all text-base text-on-surface"
                                         />
                                         {(errors.client_email || clientFieldErrors.client_email) && (
                                             <p className="text-xs text-error mt-1">{errors.client_email || clientFieldErrors.client_email}</p>
@@ -786,7 +786,7 @@ export default function Index({
                                         }}
                                         maxLength={2000}
                                         rows={3}
-                                        className="w-full px-6 py-4 rounded-xl border border-slate-100 bg-transparent focus:ring-2 focus:ring-on-surface/20 transition-all text-sm text-on-surface resize-none"
+                                        className="w-full px-6 py-4 rounded-xl border border-slate-100 bg-transparent focus:ring-2 focus:ring-on-surface/20 transition-all text-base text-on-surface resize-none"
                                     />
                                     {(errors.client_notes || clientFieldErrors.client_notes) && (
                                         <p className="text-xs text-error mt-1">{errors.client_notes || clientFieldErrors.client_notes}</p>
@@ -844,14 +844,17 @@ export default function Index({
                                         <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-1">{t('booking_ui.steps.summary_datetime')}</p>
                                         {selectedDate && selectedSlot
                                             ? (
-                                                <p className="font-bold text-on-surface">
-                                                    {formatDateLabel(selectedDate, localeBcp47)}
-                                                    {' · '}
-                                                    {(() => {
-                                                        const endHm = totalBookingMinutes > 0 ? addMinutesToTimeString(selectedSlot, totalBookingMinutes) : null;
-                                                        return endHm ? `${selectedSlot}–${endHm}` : selectedSlot;
-                                                    })()}
-                                                </p>
+                                                <div className="space-y-1">
+                                                    <p className="font-bold text-on-surface">
+                                                        {formatDateLabel(selectedDate, localeBcp47)}
+                                                    </p>
+                                                    <p className="font-bold text-on-surface whitespace-nowrap">
+                                                        {(() => {
+                                                            const endHm = totalBookingMinutes > 0 ? addMinutesToTimeString(selectedSlot, totalBookingMinutes) : null;
+                                                            return endHm ? `${selectedSlot}–${endHm}` : selectedSlot;
+                                                        })()}
+                                                    </p>
+                                                </div>
                                             )
                                             : <p className="text-outline text-sm">{t('booking_ui.steps.not_selected')}</p>
                                         }

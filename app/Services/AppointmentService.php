@@ -612,7 +612,7 @@ class AppointmentService implements AppointmentServiceInterface
     }
 
     /**
-     * @return list<string>
+     * @return list<array{type:string,from:?string,to:?string}>
      */
     private function buildChangeSummary(array $before, Appointment $appointment): array
     {
@@ -620,19 +620,35 @@ class AppointmentService implements AppointmentServiceInterface
         $currentDate = optional($appointment->date)->format('Y-m-d');
 
         if (($before['date'] ?? null) !== $currentDate) {
-            $changes[] = 'Date changed from <strong>'.e($this->formatDate($before['date'] ?? null)).'</strong> to <strong>'.e($this->formatDate($currentDate)).'</strong>.';
+            $changes[] = [
+                'type' => 'date',
+                'from' => $before['date'] ?? null,
+                'to' => $currentDate,
+            ];
         }
 
         if (($before['start_time'] ?? null) !== $appointment->start_time) {
-            $changes[] = 'Time changed from <strong>'.e($this->formatTime($before['start_time'] ?? null)).'</strong> to <strong>'.e($this->formatTime($appointment->start_time)).'</strong>.';
+            $changes[] = [
+                'type' => 'time',
+                'from' => $before['start_time'] ?? null,
+                'to' => $appointment->start_time,
+            ];
         }
 
         if (($before['service_id'] ?? null) !== $appointment->service_id) {
-            $changes[] = 'Service changed from <strong>'.e($before['service_name'] ?? '—').'</strong> to <strong>'.e($appointment->resolvedServiceName() ?? '—').'</strong>.';
+            $changes[] = [
+                'type' => 'service',
+                'from' => $before['service_name'] ?? '—',
+                'to' => $appointment->resolvedServiceName() ?? '—',
+            ];
         }
 
         if (($before['employee_id'] ?? null) !== $appointment->employee_id) {
-            $changes[] = 'Staff member changed from <strong>'.e($before['employee_name'] ?? '—').'</strong> to <strong>'.e($appointment->resolvedEmployeeName() ?? '—').'</strong>.';
+            $changes[] = [
+                'type' => 'staff',
+                'from' => $before['employee_name'] ?? '—',
+                'to' => $appointment->resolvedEmployeeName() ?? '—',
+            ];
         }
 
         $beforeStatus = (string) ($before['status'] ?? '');
@@ -640,19 +656,13 @@ class AppointmentService implements AppointmentServiceInterface
             ? $appointment->status->value
             : (string) $appointment->status;
         if ($beforeStatus !== '' && $beforeStatus !== $currentStatus) {
-            $changes[] = 'Status changed from <strong>'.e(ucfirst($beforeStatus)).'</strong> to <strong>'.e(ucfirst($currentStatus)).'</strong>.';
+            $changes[] = [
+                'type' => 'status',
+                'from' => $beforeStatus,
+                'to' => $currentStatus,
+            ];
         }
 
         return $changes;
-    }
-
-    private function formatDate(?string $date): string
-    {
-        return $date ? Carbon::parse($date)->format('d M Y') : '—';
-    }
-
-    private function formatTime(?string $time): string
-    {
-        return $time ? Carbon::parse($time)->format('H:i') : '—';
     }
 }

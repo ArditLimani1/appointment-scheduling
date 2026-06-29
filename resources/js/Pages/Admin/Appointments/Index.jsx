@@ -6,8 +6,8 @@ import PageHeader from '@/Components/PageHeader';
 import FilterListbox from '@/Components/FilterListbox';
 import FilterStatusMulti from '@/Components/FilterStatusMulti';
 import DatePicker from '@/Components/DatePicker';
-import AppointmentStatusMenu from '@/Components/AppointmentStatusMenu';
 import EditAppointmentModal from '@/Components/EditAppointmentModal';
+import useLockBodyScroll from '@/hooks/useLockBodyScroll';
 import { useT } from '@/i18n/useT';
 import { appointmentStatusValue, formatAppointmentDate, formatTimeHm } from '@/utils/appointmentDate';
 import {
@@ -26,6 +26,7 @@ import { todayYmd } from '@/utils/calendarNavigation';
 
 function DeleteConfirmModal({ appointment, onConfirm, onCancel }) {
     const t = useT();
+    useLockBodyScroll(true);
     return (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onCancel} />
@@ -67,6 +68,11 @@ function DeleteConfirmModal({ appointment, onConfirm, onCancel }) {
 }
 
 const APPOINTMENT_STATUSES = ['pending', 'confirmed', 'cancelled'];
+const STATUS_BADGE_BG = {
+    pending: 'bg-surface-container-highest text-on-surface-variant',
+    confirmed: 'bg-tertiary-fixed text-on-tertiary-fixed-variant',
+    cancelled: 'bg-error-container text-on-error-container',
+};
 
 /** Headless UI Listbox can mis-handle empty-string values; use a sentinel for “all services”. */
 const SERVICE_FILTER_ALL = 'all';
@@ -184,6 +190,17 @@ function ExportDropdown({ excelUrl, pdfUrl }) {
                 </div>
             )}
         </div>
+    );
+}
+
+function AppointmentStatusBadge({ status }) {
+    const t = useT();
+    const bg = STATUS_BADGE_BG[status] || STATUS_BADGE_BG.pending;
+
+    return (
+        <span className={`inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-full px-3 py-1 text-[10px] font-extrabold uppercase leading-none ${bg}`}>
+            {t(`common.status.${status}`)}
+        </span>
     );
 }
 
@@ -316,6 +333,81 @@ export default function Index({
 
     const updateStatus = (apt, status) => {
         router.patch(route('admin.appointments.update', apt.id), { status }, { preserveScroll: true });
+    };
+
+    const renderActionButtons = (apt, compact = false) => {
+        const st = appointmentStatusValue(apt.status);
+        const isPending = st === 'pending';
+        const isConfirmed = st === 'confirmed';
+        const isDesktop = !compact;
+        const buttonSizeClass = compact
+            ? 'min-h-[2.625rem] px-3 py-2 text-xs'
+            : 'min-h-[2.5rem] px-3 py-2 text-xs';
+        const buttons = [];
+
+        if (isPending) {
+            buttons.push(
+                <button
+                    key="confirm"
+                    type="button"
+                    onClick={() => updateStatus(apt, 'confirmed')}
+                    className={`inline-flex ${compact ? 'w-full' : 'whitespace-nowrap'} items-center justify-center gap-1.5 rounded-xl bg-emerald-50 font-bold text-emerald-950 ring-1 ring-emerald-200/90 transition-colors hover:bg-emerald-100/90 ${buttonSizeClass}`}
+                >
+                    <Icon name="check_circle" size="text-sm" />
+                    <span>{t('admin.appointments.confirm')}</span>
+                </button>
+            );
+        }
+
+        if (isPending || isConfirmed) {
+            buttons.push(
+                <button
+                    key="cancel"
+                    type="button"
+                    onClick={() => updateStatus(apt, 'cancelled')}
+                    className={`inline-flex ${compact ? 'w-full' : 'whitespace-nowrap'} items-center justify-center gap-1.5 rounded-xl bg-red-50 font-bold text-red-950 ring-1 ring-red-200/90 transition-colors hover:bg-red-100/90 ${buttonSizeClass}`}
+                >
+                    <Icon name="cancel" size="text-sm" />
+                    <span>{t('admin.appointments.cancel')}</span>
+                </button>
+            );
+        }
+
+        buttons.push(
+            <button
+                key="edit"
+                type="button"
+                onClick={() => setEditingAppointment(apt)}
+                className={
+                    isDesktop
+                        ? 'inline-flex items-center justify-center rounded-xl bg-surface-container-high p-2.5 text-on-surface transition-colors hover:bg-surface-container-highest'
+                        : `inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-surface-container-high font-bold text-on-surface transition-colors hover:bg-surface-container-highest ${buttonSizeClass}`
+                }
+                title={t('admin.appointments.edit')}
+            >
+                <Icon name="edit_calendar" size="text-base" className="shrink-0" />
+                {compact ? <span>{t('admin.appointments.edit')}</span> : null}
+            </button>
+        );
+
+        buttons.push(
+            <button
+                key="delete"
+                type="button"
+                onClick={() => setDeletingAppointment(apt)}
+                className={
+                    isDesktop
+                        ? 'inline-flex items-center justify-center rounded-xl border border-red-200 bg-red-50 p-2.5 text-red-950 transition-colors hover:bg-red-100/90'
+                        : `inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 font-bold text-red-950 transition-colors hover:bg-red-100/90 ${buttonSizeClass}`
+                }
+                title={t('admin.appointments.delete')}
+            >
+                <Icon name="delete" size="text-sm" className="shrink-0" />
+                {compact ? <span>{t('admin.appointments.delete')}</span> : null}
+            </button>
+        );
+
+        return buttons;
     };
 
     const confirmDelete = () => {
@@ -546,31 +638,12 @@ export default function Index({
                                                     </div>
                                                 </dl>
                                             </div>
-                                            <div className="mt-3 w-full min-w-0 max-w-full">
-                                                <AppointmentStatusMenu
-                                                    layout="block"
-                                                    status={apt.status}
-                                                    onChange={(s) => updateStatus(apt, s)}
-                                                />
+                                            <div className="mt-3 flex justify-end">
+                                                <AppointmentStatusBadge status={appointmentStatusValue(apt.status)} />
                                             </div>
-                                            <div className="mt-3 mx-auto w-full max-w-[19rem] border-t border-outline-variant/25 pt-3">
+                                            <div className="mt-3 border-t border-outline-variant/25 pt-3">
                                                 <div className="grid grid-cols-2 gap-2">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setEditingAppointment(apt)}
-                                                        className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-surface-container-high px-3 py-2.5 text-xs font-bold text-on-surface transition-colors hover:bg-surface-container-highest sm:text-sm"
-                                                    >
-                                                        <Icon name="edit" size="text-lg" className="shrink-0" />
-                                                        <span className="truncate">{t('admin.appointments.edit')}</span>
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setDeletingAppointment(apt)}
-                                                        className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-xs font-bold text-red-950 transition-colors hover:bg-red-100/90 sm:text-sm"
-                                                    >
-                                                        <Icon name="delete" size="text-lg" className="shrink-0" />
-                                                        <span className="truncate">{t('admin.appointments.delete')}</span>
-                                                    </button>
+                                                    {renderActionButtons(apt, true)}
                                                 </div>
                                             </div>
                                         </article>
@@ -630,7 +703,7 @@ export default function Index({
                                                 </p>
                                             </td>
                                             <td className="px-4 py-5 align-middle sm:px-6 lg:px-8">
-                                                <AppointmentStatusMenu status={apt.status} onChange={(s) => updateStatus(apt, s)} />
+                                                <AppointmentStatusBadge status={appointmentStatusValue(apt.status)} />
                                             </td>
                                             <td className="min-w-[5.5rem] whitespace-nowrap px-4 py-5 text-right text-sm font-bold tabular-nums text-on-surface sm:px-6 lg:px-8">
                                                 {Number(apt.price).toFixed(2)}
@@ -638,23 +711,8 @@ export default function Index({
                                                 {currencySymbol}
                                             </td>
                                             <td className="px-4 py-5 text-right sm:px-6 lg:px-8">
-                                                <div className="inline-flex items-center gap-1">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setEditingAppointment(apt)}
-                                                        className="inline-flex rounded-lg p-2 text-outline transition-colors hover:bg-surface-container hover:text-on-surface"
-                                                        title={t('admin.appointments.edit')}
-                                                    >
-                                                        <Icon name="edit" size="text-[18px]" />
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setDeletingAppointment(apt)}
-                                                        className="inline-flex rounded-lg p-2 text-outline transition-colors hover:bg-error-container hover:text-error"
-                                                        title={t('admin.appointments.delete')}
-                                                    >
-                                                        <Icon name="delete" size="text-[18px]" />
-                                                    </button>
+                                                <div className="ml-auto flex min-w-[12rem] flex-wrap items-center justify-end gap-2">
+                                                    {renderActionButtons(apt)}
                                                 </div>
                                             </td>
                                         </tr>

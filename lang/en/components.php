@@ -31,6 +31,7 @@ return [
         'last_name' => 'Last Name',
         'phone' => 'Phone Number',
         'email' => 'Email',
+        'email_notification_hint' => 'Appointment update emails are sent only when an email address is saved.',
         'notes' => 'Notes',
         'notes_optional' => '(optional)',
         'past_date_title' => 'Past date.',
