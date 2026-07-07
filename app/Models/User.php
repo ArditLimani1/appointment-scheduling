@@ -6,6 +6,7 @@ use App\Enums\Permission;
 use App\Enums\UserRole;
 use App\Enums\UserType;
 use App\Notifications\VerifyBusinessEmail;
+use App\Support\DefaultEmployeeSchedule;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail as MustVerifyEmailContract;
 use Illuminate\Contracts\Translation\HasLocalePreference;
@@ -82,6 +83,8 @@ class User extends Authenticatable implements MustVerifyEmailContract, HasLocale
                 'also_works_as_staff' => true,
                 'business_id' => $business->id,
             ])->save();
+
+            DefaultEmployeeSchedule::seedIfEmpty($this);
 
             return;
         }

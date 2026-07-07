@@ -727,7 +727,7 @@ export default function InternalAppointmentForm({
                             <div className="space-y-6">
                                 <div className="flex items-start gap-4">
                                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-surface-container-low">
-                                        <Icon name="content_cut" className="text-on-surface-variant" />
+                                        <Icon name="design_services" className="text-on-surface-variant" />
                                     </div>
                                     <div>
                                         <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">

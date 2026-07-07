@@ -3,22 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Icon from '@/Components/Icon';
 import OnboardingShell from './OnboardingShell';
 import { useT } from '@/i18n/useT';
-
-function buildDays(raw) {
-    return Array.from({ length: 7 }, (_, i) => {
-        const existing = (raw ?? []).find((s) => Number(s.day_of_week) === i);
-        return {
-            day_of_week: i,
-            is_active: existing?.is_active ?? false,
-            start_time: existing?.start_time ? String(existing.start_time).slice(0, 5) : '09:00',
-            end_time: existing?.end_time ? String(existing.end_time).slice(0, 5) : '17:00',
-            breaks: (existing?.breaks ?? []).map((b) => ({
-                start_time: String(b.start_time).slice(0, 5),
-                end_time: String(b.end_time).slice(0, 5),
-            })),
-        };
-    });
-}
+import { buildEmployeeScheduleDays } from '@/utils/defaultEmployeeSchedule';
 
 function formatTimeShort(hm) {
     if (!hm || typeof hm !== 'string') return '';
@@ -296,7 +281,7 @@ export default function Employee({
     const [stepIndex, setStepIndex] = useState(0);
     const [processing, setProcessing] = useState(false);
     const [bookingSlug, setBookingSlug] = useState(booking_slug || '');
-    const [days, setDays] = useState(() => buildDays(initialSchedules));
+    const [days, setDays] = useState(() => buildEmployeeScheduleDays(initialSchedules));
     const [breakModal, setBreakModal] = useState({ open: false, dayIndex: null, breakIndex: null });
 
     const slugError = errors?.booking_slug

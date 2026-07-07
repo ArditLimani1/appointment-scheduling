@@ -223,6 +223,7 @@ return [
         'client_identifier_type' => 'mënyra e identifikimit të klientit',
         'allow_employee_service_edit' => 'leja e ndryshimit të shërbimit nga punonjësi',
         'uses_shared_resources' => 'përdorimi i burimeve të përbashkëta',
+        'auto_confirm_appointments' => 'konfirmimi automatik i termineve',
         'owner_also_works_as_staff' => 'pronari punon si pjesë e stafit',
         'also_works_as_staff' => 'punon si pjesë e stafit',
         'locale' => 'gjuha',

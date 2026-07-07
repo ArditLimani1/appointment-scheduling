@@ -134,6 +134,7 @@ export default function Index({
             : 'email',
         allow_employee_service_edit: settings.allow_employee_service_edit ?? true,
         uses_shared_resources: settings.uses_shared_resources ?? false,
+        auto_confirm_appointments: settings.auto_confirm_appointments ?? false,
         ...(show_owner_staff_toggle ? { owner_also_works_as_staff: !!owner_also_works_as_staff } : {}),
     });
 
@@ -254,6 +255,7 @@ export default function Index({
                                     value={identity.data.phone}
                                     onChange={(e) => identity.setData('phone', e.target.value)}
                                     className={editableInputCls}
+                                    placeholder={t('auth_pages.register.phone_ph')}
                                 />
                                 {identity.errors.phone && <p className="text-xs text-error mt-1">{identity.errors.phone}</p>}
                             </div>
@@ -266,6 +268,7 @@ export default function Index({
                                     value={identity.data.location}
                                     onChange={(e) => identity.setData('location', e.target.value)}
                                     className={editableInputCls}
+                                    placeholder={t('auth_pages.register.location_ph')}
                                 />
                                 {identity.errors.location && <p className="text-xs text-error mt-1">{identity.errors.location}</p>}
                             </div>
@@ -280,6 +283,7 @@ export default function Index({
                                         value={identity.data.slug}
                                         onChange={(e) => identity.setData('slug', e.target.value)}
                                         className="flex-1 bg-transparent border-0 outline-none px-3 py-3 text-sm text-on-surface font-medium min-w-0"
+                                        placeholder={t('auth_pages.register.booking_slug_ph')}
                                         required
                                     />
                                     <button
@@ -473,6 +477,27 @@ export default function Index({
                                 >
                                     <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all duration-200 ${
                                         data.allow_employee_service_edit ? 'right-1' : 'left-1'
+                                    }`} />
+                                </button>
+                            </div>
+
+                            <div className="bg-surface rounded-xl p-6 flex items-center justify-between gap-4">
+                                <div>
+                                    <p className="text-sm font-bold text-on-surface">{t('admin.settings.auto_confirm_title')}</p>
+                                    <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">
+                                        {t('admin.settings.auto_confirm_help')}
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setData('auto_confirm_appointments', !data.auto_confirm_appointments)}
+                                    className={`relative shrink-0 w-12 h-6 rounded-full transition-colors duration-200 ${
+                                        data.auto_confirm_appointments ? 'bg-on-surface' : 'bg-surface-container-highest'
+                                    }`}
+                                    aria-pressed={data.auto_confirm_appointments}
+                                >
+                                    <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all duration-200 ${
+                                        data.auto_confirm_appointments ? 'right-1' : 'left-1'
                                     }`} />
                                 </button>
                             </div>

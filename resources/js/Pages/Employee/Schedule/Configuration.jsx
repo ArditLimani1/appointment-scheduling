@@ -5,6 +5,7 @@ import Icon from '@/Components/Icon';
 import TimeInputPicker from '@/Components/TimeInputPicker';
 import useLockBodyScroll from '@/hooks/useLockBodyScroll';
 import { useT } from '@/i18n/useT';
+import { buildEmployeeScheduleDays } from '@/utils/defaultEmployeeSchedule';
 
 /** Next calendar date (including today) that falls on this weekday; `dayOfWeek` 0 = Monday … 6 = Sunday. */
 function representativeDateForWeekday(dayOfWeek) {
@@ -416,24 +417,8 @@ export default function Configuration({
         ? (Array.isArray(errors.booking_slug) ? errors.booking_slug[0] : errors.booking_slug)
         : undefined;
 
-    const buildDays = (raw) => {
-        return Array.from({ length: 7 }, (_, i) => {
-            const existing = (raw ?? []).find((s) => Number(s.day_of_week) === i);
-            return {
-                day_of_week: i,
-                is_active: existing?.is_active ?? false,
-                start_time: existing?.start_time ? String(existing.start_time).slice(0, 5) : '09:00',
-                end_time: existing?.end_time ? String(existing.end_time).slice(0, 5) : '17:00',
-                breaks: (existing?.breaks ?? []).map((b) => ({
-                    start_time: String(b.start_time).slice(0, 5),
-                    end_time: String(b.end_time).slice(0, 5),
-                })),
-            };
-        });
-    };
-
     const [activeTab, setActiveTab] = useState('info');
-    const [days, setDays] = useState(() => buildDays(initialSchedules));
+    const [days, setDays] = useState(() => buildEmployeeScheduleDays(initialSchedules));
     const [breakModalDayIndex, setBreakModalDayIndex] = useState(null);
     const [bookingSlug, setBookingSlug] = useState(initialBookingSlug ?? '');
     const [confirmOpen, setConfirmOpen] = useState(false);

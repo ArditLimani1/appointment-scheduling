@@ -15,7 +15,7 @@ class Business extends Model
         'description', 'logo', 'timezone', 'currency', 'currency_symbol',
         'slot_duration', 'min_booking_notice', 'max_booking_window',
         'is_active', 'client_identifier_type', 'allow_employee_service_edit',
-        'uses_shared_resources',
+        'uses_shared_resources', 'auto_confirm_appointments',
     ];
 
     protected function casts(): array
@@ -24,6 +24,7 @@ class Business extends Model
             'is_active' => 'boolean',
             'allow_employee_service_edit' => 'boolean',
             'uses_shared_resources' => 'boolean',
+            'auto_confirm_appointments' => 'boolean',
         ];
     }
 

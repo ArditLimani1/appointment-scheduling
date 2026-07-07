@@ -7,6 +7,7 @@ export default function Confirmation({ appointment, bookingBundle }) {
     const t = useT();
     const bundle = bookingBundle?.length ? bookingBundle : [appointment];
     const apt = bundle[0];
+    const isConfirmed = apt.status === 'confirmed';
 
     const dateLong = formatAppointmentDate(apt.date, { day: 'numeric', month: 'long', year: 'numeric' });
     const dateShort = formatAppointmentDate(apt.date, { weekday: 'long', day: 'numeric', month: 'long' });
@@ -18,7 +19,7 @@ export default function Confirmation({ appointment, bookingBundle }) {
 
     return (
         <div className="min-h-screen bg-surface font-body text-on-surface">
-            <Head title={t('booking_ui.confirmation.submitted_title')} />
+            <Head title={isConfirmed ? t('booking_ui.confirmation.head_title') : t('booking_ui.confirmation.submitted_title')} />
 
             <div className="w-full h-1 bg-surface-container-highest">
                 <div className="h-full bg-on-surface w-full transition-all duration-700" />
@@ -38,21 +39,24 @@ export default function Confirmation({ appointment, bookingBundle }) {
                         <Icon name="check_circle" size="text-4xl" filled className="text-on-tertiary-fixed" />
                     </div>
                     <h2 className="font-headline text-3xl font-extrabold tracking-tight text-on-surface mb-4">
-                        {t('booking_ui.confirmation.submitted_title')}
+                        {isConfirmed ? t('booking_ui.confirmation.confirmed_title') : t('booking_ui.confirmation.submitted_title')}
                     </h2>
                     <p className="text-on-surface text-lg font-medium leading-relaxed">
-                        {t('booking_ui.confirmation.thanks', { business: businessName })}
+                        {isConfirmed
+                            ? t('booking_ui.confirmation.confirmed_thanks', { business: businessName })
+                            : t('booking_ui.confirmation.thanks', { business: businessName })}
                     </p>
                     {dateShort !== '—' && (
                         <p className="text-on-surface-variant text-sm mt-5">
-                            {t('booking_ui.confirmation.requested_time')} <span className="font-semibold text-on-surface">{dateShort}</span>
+                            {isConfirmed ? t('booking_ui.confirmation.confirmed_time') : t('booking_ui.confirmation.requested_time')}{' '}
+                            <span className="font-semibold text-on-surface">{dateShort}</span>
                         </p>
                     )}
                 </div>
 
                 <div className="bg-surface-container-lowest rounded-xl p-8 mb-10 shadow-[0_4px_24px_rgba(0,0,0,0.06)]">
                     <p className="font-headline text-xs font-bold uppercase tracking-widest text-on-surface-variant mb-8">
-                        {t('booking_ui.confirmation.request_summary')}
+                        {isConfirmed ? t('booking_ui.confirmation.confirmed_summary') : t('booking_ui.confirmation.request_summary')}
                     </p>
 
                     <div className="space-y-8">
@@ -143,7 +147,7 @@ export default function Confirmation({ appointment, bookingBundle }) {
                 </div>
 
                 <p className="mt-8 text-center text-on-surface-variant text-xs max-w-sm mx-auto leading-relaxed">
-                    {t('booking_ui.confirmation.change_note')}
+                    {isConfirmed ? t('booking_ui.confirmation.confirmed_note') : t('booking_ui.confirmation.change_note')}
                 </p>
             </main>
         </div>

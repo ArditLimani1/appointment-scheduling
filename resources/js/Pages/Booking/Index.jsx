@@ -804,7 +804,7 @@ export default function Index({
                             <div className="space-y-6">
                                 <div className="flex items-start gap-4">
                                     <div className="w-12 h-12 rounded-xl bg-surface-container-low flex items-center justify-center shrink-0">
-                                        <Icon name="content_cut" className="text-on-surface-variant" />
+                                        <Icon name="design_services" className="text-on-surface-variant" />
                                     </div>
                                     <div>
                                         <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-1">{t('booking_ui.steps.summary_services')}</p>

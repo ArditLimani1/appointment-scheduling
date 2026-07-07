@@ -69,6 +69,11 @@ export default function Register({ businessTypeCategories = [] }) {
         clearErrors('business_name', 'slug');
     };
 
+    const suggestedSlugPlaceholder = useMemo(() => {
+        const fromName = slugify(data.business_name);
+        return fromName || t('auth_pages.register.booking_slug_ph');
+    }, [data.business_name, t]);
+
     const canContinue = () => {
         return data.name && data.email && data.password && data.password_confirmation;
     };
@@ -376,7 +381,7 @@ export default function Register({ businessTypeCategories = [] }) {
                                                     ref={slugRef}
                                                     value={data.slug}
                                                     onChange={e => updateField('slug', slugify(e.target.value))}
-                                                    placeholder={t('auth_pages.register.booking_slug_ph')}
+                                                    placeholder={suggestedSlugPlaceholder}
                                                     required
                                                 />
                                             </div>
