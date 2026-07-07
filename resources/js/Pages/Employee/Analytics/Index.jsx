@@ -292,7 +292,7 @@ export default function Index({
                 <section className="mb-8 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-4 sm:px-6">
                     <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-on-surface text-surface">
-                            <Icon name="content_cut" size="text-xl" />
+                            <Icon name="design_services" size="text-xl" />
                         </div>
                         <div>
                             <p className="text-xs font-bold uppercase tracking-wider text-outline">{t('employee.analytics.filtered_service')}</p>

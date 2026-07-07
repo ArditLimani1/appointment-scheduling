@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\AppointmentStatus;
+use App\Events\AppointmentCustomerNotificationRequested;
 use App\Models\Appointment;
 use App\Models\Business;
 use App\Models\Service;
@@ -228,8 +229,10 @@ class BookingService implements BookingServiceInterface
         $blockEnd = $startTime->copy()->addMinutes($totalMinutes);
 
         $bookingReference = Str::uuid()->toString();
+        $autoConfirm = (bool) $business->auto_confirm_appointments;
+        $initialStatus = $autoConfirm ? AppointmentStatus::Confirmed : AppointmentStatus::Pending;
 
-        $created = DB::transaction(function () use ($business, $employeeId, $data, $services, $timezone, $bookingReference, $startTime, $blockEnd) {
+        $created = DB::transaction(function () use ($business, $employeeId, $data, $services, $timezone, $bookingReference, $startTime, $blockEnd, $initialStatus) {
             Appointment::query()
                 ->where('employee_id', $employeeId)
                 ->whereDate('date', $data['date'])
@@ -298,7 +301,7 @@ class BookingService implements BookingServiceInterface
                     'start_time' => $cursor->format('H:i'),
                     'end_time' => $segmentEnd->format('H:i'),
                     'price' => $service->price,
-                    'status' => AppointmentStatus::Pending,
+                    'status' => $initialStatus,
                 ]);
                 $this->syncAppointmentSharedResources($appointment, $service, $business);
                 $created->push($appointment);
@@ -309,6 +312,10 @@ class BookingService implements BookingServiceInterface
 
             return $created;
         });
+
+        if ($autoConfirm) {
+            $this->notifyCustomerOfConfirmedBooking($created);
+        }
 
         $this->sendBookingWhatsApp($created);
 
@@ -619,6 +626,7 @@ class BookingService implements BookingServiceInterface
             'start_time' => $a->start_time,
             'end_time' => $a->end_time,
             'price' => $a->price,
+            'status' => $a->status instanceof AppointmentStatus ? $a->status->value : (string) $a->status,
             'service' => $a->service
                 ? ['id' => $a->service->id, 'name' => $a->service->name]
                 : ($a->resolvedServiceName() ? ['id' => $a->service_id, 'name' => $a->resolvedServiceName()] : null),
@@ -1171,5 +1179,24 @@ class BookingService implements BookingServiceInterface
         $time = (string) $first->start_time;
 
         $this->whatsApp->sendBookingConfirmation($phone, $date, $time);
+    }
+
+    /**
+     * @param  Collection<int, Appointment>  $appointments
+     */
+    private function notifyCustomerOfConfirmedBooking(Collection $appointments): void
+    {
+        $first = $appointments->first();
+        if (! $first instanceof Appointment || ! filled($first->client_email)) {
+            return;
+        }
+
+        $first->loadMissing(['business.owner', 'employee', 'service']);
+
+        event(new AppointmentCustomerNotificationRequested(
+            $first,
+            'confirmed',
+            [],
+        ));
     }
 }

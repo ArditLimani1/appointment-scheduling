@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Repositories\Interfaces\EmployeeRepositoryInterface;
 use App\Repositories\Interfaces\ServiceRepositoryInterface;
 use App\Services\Interfaces\EmployeeServiceInterface;
+use App\Support\DefaultEmployeeSchedule;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -46,6 +47,8 @@ class EmployeeService implements EmployeeServiceInterface
         if (! empty($data['service_ids'])) {
             $this->employeeRepository->syncServices($employee, $data['service_ids']);
         }
+
+        DefaultEmployeeSchedule::seedIfEmpty($employee);
 
         return $employee;
     }

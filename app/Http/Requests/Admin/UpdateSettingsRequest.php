@@ -45,6 +45,7 @@ class UpdateSettingsRequest extends FormRequest
             'owner_also_works_as_staff' => ['sometimes', 'boolean'],
             'allow_employee_service_edit' => ['sometimes', 'boolean'],
             'uses_shared_resources' => ['sometimes', 'boolean'],
+            'auto_confirm_appointments' => ['sometimes', 'boolean'],
         ];
     }
 

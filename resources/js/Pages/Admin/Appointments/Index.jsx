@@ -335,14 +335,11 @@ export default function Index({
         router.patch(route('admin.appointments.update', apt.id), { status }, { preserveScroll: true });
     };
 
-    const renderActionButtons = (apt, compact = false) => {
+    const renderActionButtons = (apt) => {
         const st = appointmentStatusValue(apt.status);
         const isPending = st === 'pending';
         const isConfirmed = st === 'confirmed';
-        const isDesktop = !compact;
-        const buttonSizeClass = compact
-            ? 'min-h-[2.625rem] px-3 py-2 text-xs'
-            : 'min-h-[2.5rem] px-3 py-2 text-xs';
+        const buttonSizeClass = 'min-h-[2.5rem] px-3 py-2 text-xs';
         const buttons = [];
 
         if (isPending) {
@@ -351,7 +348,7 @@ export default function Index({
                     key="confirm"
                     type="button"
                     onClick={() => updateStatus(apt, 'confirmed')}
-                    className={`inline-flex ${compact ? 'w-full' : 'whitespace-nowrap'} items-center justify-center gap-1.5 rounded-xl bg-emerald-50 font-bold text-emerald-950 ring-1 ring-emerald-200/90 transition-colors hover:bg-emerald-100/90 ${buttonSizeClass}`}
+                    className={`inline-flex whitespace-nowrap items-center justify-center gap-1.5 rounded-xl bg-emerald-50 font-bold text-emerald-950 ring-1 ring-emerald-200/90 transition-colors hover:bg-emerald-100/90 ${buttonSizeClass}`}
                 >
                     <Icon name="check_circle" size="text-sm" />
                     <span>{t('admin.appointments.confirm')}</span>
@@ -365,7 +362,7 @@ export default function Index({
                     key="cancel"
                     type="button"
                     onClick={() => updateStatus(apt, 'cancelled')}
-                    className={`inline-flex ${compact ? 'w-full' : 'whitespace-nowrap'} items-center justify-center gap-1.5 rounded-xl bg-red-50 font-bold text-red-950 ring-1 ring-red-200/90 transition-colors hover:bg-red-100/90 ${buttonSizeClass}`}
+                    className={`inline-flex whitespace-nowrap items-center justify-center gap-1.5 rounded-xl bg-red-50 font-bold text-red-950 ring-1 ring-red-200/90 transition-colors hover:bg-red-100/90 ${buttonSizeClass}`}
                 >
                     <Icon name="cancel" size="text-sm" />
                     <span>{t('admin.appointments.cancel')}</span>
@@ -378,15 +375,10 @@ export default function Index({
                 key="edit"
                 type="button"
                 onClick={() => setEditingAppointment(apt)}
-                className={
-                    isDesktop
-                        ? 'inline-flex items-center justify-center rounded-xl bg-surface-container-high p-2.5 text-on-surface transition-colors hover:bg-surface-container-highest'
-                        : `inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-surface-container-high font-bold text-on-surface transition-colors hover:bg-surface-container-highest ${buttonSizeClass}`
-                }
+                className="inline-flex items-center justify-center rounded-xl bg-surface-container-high p-2.5 text-on-surface transition-colors hover:bg-surface-container-highest"
                 title={t('admin.appointments.edit')}
             >
                 <Icon name="edit_calendar" size="text-base" className="shrink-0" />
-                {compact ? <span>{t('admin.appointments.edit')}</span> : null}
             </button>
         );
 
@@ -395,19 +387,81 @@ export default function Index({
                 key="delete"
                 type="button"
                 onClick={() => setDeletingAppointment(apt)}
-                className={
-                    isDesktop
-                        ? 'inline-flex items-center justify-center rounded-xl border border-red-200 bg-red-50 p-2.5 text-red-950 transition-colors hover:bg-red-100/90'
-                        : `inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 font-bold text-red-950 transition-colors hover:bg-red-100/90 ${buttonSizeClass}`
-                }
+                className="inline-flex items-center justify-center rounded-xl border border-red-200 bg-red-50 p-2.5 text-red-950 transition-colors hover:bg-red-100/90"
                 title={t('admin.appointments.delete')}
             >
                 <Icon name="delete" size="text-sm" className="shrink-0" />
-                {compact ? <span>{t('admin.appointments.delete')}</span> : null}
             </button>
         );
 
         return buttons;
+    };
+
+    const renderMobileActions = (apt) => {
+        const st = appointmentStatusValue(apt.status);
+        const isPending = st === 'pending';
+        const isConfirmed = st === 'confirmed';
+        const isCancelled = st === 'cancelled';
+        const statusButtonClass = 'inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold';
+        const iconButtonClass = 'inline-flex items-center justify-center rounded-xl p-2.5 transition-colors';
+
+        return (
+            <>
+                <div className="mt-3 flex items-center justify-between gap-3 border-t border-outline-variant/25 pt-3">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-outline">
+                        {t('admin.appointments.th_status')}
+                    </span>
+                    <AppointmentStatusBadge status={st} />
+                </div>
+
+                {!isCancelled && (isPending || isConfirmed) ? (
+                    <div className="mt-3 border-t border-outline-variant/25 pt-3">
+                        <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-outline">
+                            {t('admin.appointments.change_status')}
+                        </p>
+                        <div className="flex flex-wrap items-center justify-end gap-2">
+                            {isPending ? (
+                                <button
+                                    type="button"
+                                    onClick={() => updateStatus(apt, 'confirmed')}
+                                    className={`${statusButtonClass} bg-emerald-50 text-emerald-950 ring-1 ring-emerald-200/90 hover:bg-emerald-100/90`}
+                                >
+                                    <Icon name="check_circle" size="text-sm" />
+                                    {t('admin.appointments.confirm')}
+                                </button>
+                            ) : null}
+                            <button
+                                type="button"
+                                onClick={() => updateStatus(apt, 'cancelled')}
+                                className={`${statusButtonClass} bg-red-50 text-red-950 ring-1 ring-red-200/90 hover:bg-red-100/90`}
+                            >
+                                <Icon name="cancel" size="text-sm" />
+                                {t('admin.appointments.cancel')}
+                            </button>
+                        </div>
+                    </div>
+                ) : null}
+
+                <div className="mt-3 flex items-center justify-end gap-2 border-t border-outline-variant/25 pt-3">
+                    <button
+                        type="button"
+                        onClick={() => setEditingAppointment(apt)}
+                        className={`${iconButtonClass} bg-surface-container-high text-on-surface hover:bg-surface-container-highest`}
+                        title={t('admin.appointments.edit')}
+                    >
+                        <Icon name="edit_calendar" size="text-base" />
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setDeletingAppointment(apt)}
+                        className={`${iconButtonClass} border border-red-200 bg-red-50 text-red-950 hover:bg-red-100/90`}
+                        title={t('admin.appointments.delete')}
+                    >
+                        <Icon name="delete" size="text-sm" />
+                    </button>
+                </div>
+            </>
+        );
     };
 
     const confirmDelete = () => {
@@ -638,14 +692,7 @@ export default function Index({
                                                     </div>
                                                 </dl>
                                             </div>
-                                            <div className="mt-3 flex justify-end">
-                                                <AppointmentStatusBadge status={appointmentStatusValue(apt.status)} />
-                                            </div>
-                                            <div className="mt-3 border-t border-outline-variant/25 pt-3">
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    {renderActionButtons(apt, true)}
-                                                </div>
-                                            </div>
+                                            {renderMobileActions(apt)}
                                         </article>
                                     );
                                 })}

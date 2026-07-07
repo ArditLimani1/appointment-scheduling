@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Models\Schedule;
 use App\Models\ScheduleBreak;
 use App\Models\User;
+use App\Support\DefaultEmployeeSchedule;
 use Illuminate\Database\Seeder;
 
 class ScheduleSeeder extends Seeder
@@ -25,10 +26,9 @@ class ScheduleSeeder extends Seeder
             ->get();
 
         foreach ($employees as $employee) {
-            // Monday (0) → Saturday (5), closed Sunday (6)
-            foreach (range(0, 5) as $day) {
+            foreach (DefaultEmployeeSchedule::week() as $day) {
                 $existing = Schedule::where('user_id', $employee->id)
-                    ->where('day_of_week', $day)
+                    ->where('day_of_week', $day['day_of_week'])
                     ->first();
 
                 if ($existing) {
@@ -37,17 +37,19 @@ class ScheduleSeeder extends Seeder
 
                 $schedule = Schedule::create([
                     'user_id' => $employee->id,
-                    'day_of_week' => $day,
-                    'start_time' => '09:00',
-                    'end_time' => '18:00',
-                    'is_active' => true,
+                    'day_of_week' => $day['day_of_week'],
+                    'start_time' => $day['start_time'],
+                    'end_time' => $day['end_time'],
+                    'is_active' => $day['is_active'],
                 ]);
 
-                ScheduleBreak::create([
-                    'schedule_id' => $schedule->id,
-                    'start_time' => '13:00',
-                    'end_time' => '14:00',
-                ]);
+                foreach ($day['breaks'] as $break) {
+                    ScheduleBreak::create([
+                        'schedule_id' => $schedule->id,
+                        'start_time' => $break['start_time'],
+                        'end_time' => $break['end_time'],
+                    ]);
+                }
             }
         }
 

@@ -194,7 +194,7 @@ function AppointmentStatusBadge({ status }) {
     const v = appointmentStatusValue(status);
     const bg = STATUS_BADGE_BG[v] || STATUS_BADGE_BG.pending;
     return (
-        <span className={`shrink-0 px-3 py-1 text-[10px] font-extrabold uppercase rounded-full ${bg}`}>
+        <span className={`inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-full px-3 py-1 text-[10px] font-extrabold uppercase leading-none ${bg}`}>
             {t(`common.status.${v}`)}
         </span>
     );
@@ -219,7 +219,7 @@ function ExportDropdown({ excelUrl, pdfUrl }) {
             <button
                 type="button"
                 onClick={() => setOpen((v) => !v)}
-                className="flex items-center gap-2 rounded-xl bg-on-surface px-6 py-3 text-sm font-bold text-surface hover:opacity-90 transition-opacity"
+                className="inline-flex items-center gap-2 rounded-xl bg-on-surface px-6 py-3 text-sm font-bold text-surface hover:opacity-90 transition-opacity shrink-0"
             >
                 <Icon name="download" size="text-lg" />
                 {t('employee.appointments.export')}
@@ -442,49 +442,64 @@ export default function EmployeeAppointmentsIndex({
         router.patch(route('employee.appointments.update', apt.id), { status: 'cancelled' }, { preserveScroll: true });
     };
 
-    const renderMobileStatusRow = (apt) => (
-        <div className="mb-3 flex justify-end">
-            <AppointmentStatusBadge status={apt.status} />
-        </div>
-    );
-
     const renderMobileActions = (apt) => {
         const st = appointmentStatusValue(apt.status);
         const isCancelled = st === 'cancelled';
         const isPending = st === 'pending';
         const isConfirmed = st === 'confirmed';
+        const statusButtonClass = 'inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold';
+        const iconButtonClass = 'inline-flex items-center justify-center rounded-xl p-2.5 transition-colors';
 
         return (
-            <div className="mt-3 flex flex-wrap items-center justify-end gap-2 border-t border-outline-variant/25 pt-3">
-                {isPending && (
-                    <button
-                        type="button"
-                        onClick={() => handleConfirm(apt)}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-950 ring-1 ring-emerald-200/90"
-                    >
-                        <Icon name="check_circle" size="text-sm" /> {t('employee.appointments.confirm')}
-                    </button>
-                )}
-                {(isPending || isConfirmed) && (
-                    <button
-                        type="button"
-                        onClick={() => openCancelModal(apt)}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-950 ring-1 ring-red-200/90"
-                    >
-                        <Icon name="cancel" size="text-sm" /> {t('employee.appointments.cancel')}
-                    </button>
-                )}
-                {!isCancelled && (
-                    <button
-                        type="button"
-                        onClick={() => setEditingApt(apt)}
-                        className="inline-flex items-center justify-center rounded-xl bg-surface-container-high p-2 text-on-surface"
-                        title={t('employee.appointments.reschedule')}
-                    >
-                        <Icon name="edit_calendar" size="text-base" />
-                    </button>
-                )}
-            </div>
+            <>
+                <div className="mt-3 flex items-center justify-between gap-3 border-t border-outline-variant/25 pt-3">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-outline">
+                        {t('employee.appointments.th_status')}
+                    </span>
+                    <AppointmentStatusBadge status={apt.status} />
+                </div>
+
+                {!isCancelled && (isPending || isConfirmed) ? (
+                    <div className="mt-3 border-t border-outline-variant/25 pt-3">
+                        <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-outline">
+                            {t('employee.appointments.change_status')}
+                        </p>
+                        <div className="flex flex-wrap items-center justify-end gap-2">
+                            {isPending ? (
+                                <button
+                                    type="button"
+                                    onClick={() => handleConfirm(apt)}
+                                    className={`${statusButtonClass} bg-emerald-50 text-emerald-950 ring-1 ring-emerald-200/90 hover:bg-emerald-100/90`}
+                                >
+                                    <Icon name="check_circle" size="text-sm" />
+                                    {t('employee.appointments.confirm')}
+                                </button>
+                            ) : null}
+                            <button
+                                type="button"
+                                onClick={() => openCancelModal(apt)}
+                                className={`${statusButtonClass} bg-red-50 text-red-950 ring-1 ring-red-200/90 hover:bg-red-100/90`}
+                            >
+                                <Icon name="cancel" size="text-sm" />
+                                {t('employee.appointments.cancel')}
+                            </button>
+                        </div>
+                    </div>
+                ) : null}
+
+                {!isCancelled ? (
+                    <div className="mt-3 flex items-center justify-end gap-2 border-t border-outline-variant/25 pt-3">
+                        <button
+                            type="button"
+                            onClick={() => setEditingApt(apt)}
+                            className={`${iconButtonClass} bg-surface-container-high text-on-surface hover:bg-surface-container-highest`}
+                            title={t('employee.appointments.reschedule')}
+                        >
+                            <Icon name="edit_calendar" size="text-base" />
+                        </button>
+                    </div>
+                ) : null}
+            </>
         );
     };
 
@@ -644,8 +659,6 @@ export default function EmployeeAppointmentsIndex({
                                                 isCancelled ? 'bg-error-container/15' : 'bg-surface-container-low/50'
                                             }`}
                                         >
-                                            {renderMobileStatusRow(apt)}
-
                                             <dl className="space-y-2 text-xs">
                                                 <div className="rounded-xl border border-outline-variant/25 bg-surface-container-lowest/70 px-3 py-2">
                                                     <dt className="text-[10px] font-bold uppercase tracking-wider text-outline">

@@ -207,6 +207,7 @@ return [
         'th_actions' => 'Veprimet',
         'confirm' => 'Konfirmo',
         'cancel' => 'Anulo',
+        'change_status' => 'Ndrysho statusin',
         'edit' => 'Ndrysho',
         'delete' => 'Fshi',
         'delete_title' => 'Fshi terminin',
@@ -410,6 +411,8 @@ return [
         'allow_service_edit_help' => 'Nëse është e çaktivizuar, punonjësit mund të ndryshojnë vetëm datën dhe orën e terminit.',
         'uses_shared_resources_title' => 'Burime të përbashkëta',
         'uses_shared_resources_help' => 'Aktivizojeni kur terminet varen nga dhoma, karrige, pajisje ose burime të tjera me kapacitet të kufizuar. Kalendari e ndalon automatikisht tejkalimin e kapacitetit.',
+        'auto_confirm_title' => 'Konfirmim automatik i termineve',
+        'auto_confirm_help' => 'Kur është aktiv, rezervimet online konfirmohen menjëherë dhe klienti merr email konfirmimi. Kur është joaktiv, terminet e reja mbeten në pritje derisa dikush t’i konfirmojë manualisht.',
         'owner_staff_title' => 'Jam pjesë e stafit',
         'owner_staff_help' => 'Aktivizojeni nëse ju vetë jeni pjesë e orarit të rezervimeve si ofrues shërbimi.',
         'confirm' => [

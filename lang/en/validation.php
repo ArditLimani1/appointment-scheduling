@@ -233,6 +233,7 @@ return [
         'client_identifier_type' => 'client identifier type',
         'allow_employee_service_edit' => 'allow employee service edit',
         'uses_shared_resources' => 'uses shared resources',
+        'auto_confirm_appointments' => 'auto-confirm appointments',
         'owner_also_works_as_staff' => 'owner also works as staff',
         'also_works_as_staff' => 'also works as staff',
         'locale' => 'language',

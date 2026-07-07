@@ -207,6 +207,7 @@ return [
         'th_actions' => 'Actions',
         'confirm' => 'Confirm',
         'cancel' => 'Cancel',
+        'change_status' => 'Change status',
         'edit' => 'Edit',
         'delete' => 'Delete',
         'delete_title' => 'Delete Appointment',
@@ -410,6 +411,8 @@ return [
         'allow_service_edit_help' => 'If off, employees can only edit appointment date and time.',
         'uses_shared_resources_title' => 'Shared resources (rooms, equipment)',
         'uses_shared_resources_help' => 'Turn this on when bookings depend on rooms, chairs, devices, or other limited-capacity resources. The calendar will then prevent overbooking automatically.',
+        'auto_confirm_title' => 'Auto-confirm appointments',
+        'auto_confirm_help' => 'When on, online bookings are confirmed immediately and the client receives a confirmation email. When off, new bookings stay pending until someone confirms them manually.',
         'owner_staff_title' => 'I also work as staff',
         'owner_staff_help' => 'Turn this on if you take appointments yourself.',
         'confirm' => [

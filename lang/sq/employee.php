@@ -46,6 +46,7 @@ return [
         'appointment_fallback' => 'Termini',
         'confirm' => 'Konfirmo',
         'cancel' => 'Anulo',
+        'change_status' => 'Ndrysho statusin',
         'reschedule' => 'Riplanifiko',
         'no_keep' => 'Jo, mbaje',
         'yes_cancel' => 'Po, anuloje',

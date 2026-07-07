@@ -46,6 +46,7 @@ return [
         'appointment_fallback' => 'Appointment',
         'confirm' => 'Confirm',
         'cancel' => 'Cancel',
+        'change_status' => 'Change status',
         'reschedule' => 'Reschedule',
         'no_keep' => 'No, keep it',
         'yes_cancel' => 'Yes, cancel',

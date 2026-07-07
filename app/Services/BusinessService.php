@@ -28,6 +28,7 @@ class BusinessService implements BusinessServiceInterface
             'client_identifier_type' => ClientIdentification::resolve(null),
             'allow_employee_service_edit' => true,
             'uses_shared_resources' => false,
+            'auto_confirm_appointments' => false,
         ]);
 
         $showOwnerStaffToggle = $user->isAdmin()

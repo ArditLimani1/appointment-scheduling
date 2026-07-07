@@ -8,7 +8,7 @@ export default function PageHeader({ title, description, children }) {
                 )}
             </div>
             {children != null ? (
-                <div className="flex w-full min-w-0 shrink-0 flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+                <div className="flex w-full min-w-0 shrink-0 flex-row flex-wrap items-center justify-end gap-2 self-end sm:w-auto">
                     {children}
                 </div>
             ) : null}
