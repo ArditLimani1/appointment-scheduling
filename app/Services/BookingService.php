@@ -1175,10 +1175,11 @@ class BookingService implements BookingServiceInterface
             return;
         }
 
+        $businessName = (string) ($first->business?->name ?? '');
         $date = $first->date?->format('d M Y') ?? '';
         $time = (string) $first->start_time;
 
-        $this->whatsApp->sendBookingConfirmation($phone, $date, $time);
+        $this->whatsApp->sendBookingConfirmation($phone, $businessName, $date, $time);
     }
 
     /**

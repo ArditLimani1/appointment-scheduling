@@ -18,7 +18,7 @@ class MetaWhatsAppService implements WhatsAppSenderInterface
             && filled(config('services.meta_whatsapp.phone_number_id'));
     }
 
-    public function sendBookingConfirmation(string $toE164, string $date, string $time): bool
+    public function sendBookingConfirmation(string $toE164, string $businessName, string $date, string $time): bool
     {
         $template = (string) config('services.meta_whatsapp.booking_template');
         if ($template === '') {
@@ -27,7 +27,7 @@ class MetaWhatsAppService implements WhatsAppSenderInterface
 
         $language = (string) config('services.meta_whatsapp.booking_template_lang', 'en');
 
-        return $this->sendTemplate($toE164, $template, $language, [$date, $time]);
+        return $this->sendTemplate($toE164, $template, $language, [$businessName, $date, $time]);
     }
 
     public function sendTemplate(string $toE164, string $templateName, string $languageCode, array $bodyParams = []): bool
