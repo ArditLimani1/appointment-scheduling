@@ -15,6 +15,8 @@ use App\Repositories\Interfaces\EmployeeRepositoryInterface;
 use App\Repositories\Interfaces\ServiceRepositoryInterface;
 use App\Services\Interfaces\AppointmentServiceInterface;
 use App\Services\Interfaces\BookingServiceInterface;
+use App\Services\Interfaces\WhatsAppSenderInterface;
+use App\Support\AppointmentWhatsAppParams;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -29,6 +31,7 @@ class AppointmentService implements AppointmentServiceInterface
         private ServiceRepositoryInterface $serviceRepository,
         private SharedResourceUsageService $sharedResourceUsageService,
         private BookingServiceInterface $bookingService,
+        private WhatsAppSenderInterface $whatsApp,
     ) {}
 
     public function getFiltered(Business $business, array $filters, int $perPage = 10): array
@@ -563,20 +566,36 @@ class AppointmentService implements AppointmentServiceInterface
 
     private function dispatchCustomerUpdateNotificationIfNeeded(array $before, Appointment $appointment): void
     {
-        if (! filled($appointment->client_email)) {
-            return;
-        }
-
         $notificationType = $this->determineNotificationType($before, $appointment);
         if ($notificationType === null) {
             return;
         }
 
-        event(new AppointmentCustomerNotificationRequested(
-            $appointment,
-            $notificationType,
-            $this->buildChangeSummary($before, $appointment),
-        ));
+        if (filled($appointment->client_email)) {
+            event(new AppointmentCustomerNotificationRequested(
+                $appointment,
+                $notificationType,
+                $this->buildChangeSummary($before, $appointment),
+            ));
+        }
+
+        $this->sendWhatsAppUpdateNotification($appointment, $notificationType);
+    }
+
+    private function sendWhatsAppUpdateNotification(Appointment $appointment, string $notificationType): void
+    {
+        $phone = trim((string) ($appointment->client_phone ?? ''));
+        if ($phone === '' || ! $this->whatsApp->isConfigured()) {
+            return;
+        }
+
+        [$businessName, $date, $time, $contact] = AppointmentWhatsAppParams::fromAppointment($appointment);
+
+        match ($notificationType) {
+            'cancelled' => $this->whatsApp->sendBookingCancellation($phone, $businessName, $date, $time, $contact),
+            'rescheduled', 'changed' => $this->whatsApp->sendBookingUpdate($phone, $businessName, $date, $time, $contact),
+            default => null,
+        };
     }
 
     private function determineNotificationType(array $before, Appointment $appointment): ?string

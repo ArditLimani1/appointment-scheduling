@@ -18,6 +18,7 @@ use App\Repositories\Interfaces\ScheduleRepositoryInterface;
 use App\Repositories\Interfaces\ServiceRepositoryInterface;
 use App\Services\Interfaces\BookingServiceInterface;
 use App\Services\Interfaces\WhatsAppSenderInterface;
+use App\Support\AppointmentWhatsAppParams;
 use App\Support\ClientIdentification;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -1175,11 +1176,9 @@ class BookingService implements BookingServiceInterface
             return;
         }
 
-        $businessName = (string) ($first->business?->name ?? '');
-        $date = $first->date?->format('d M Y') ?? '';
-        $time = (string) $first->start_time;
+        [$businessName, $date, $time, $contact] = AppointmentWhatsAppParams::fromAppointment($first);
 
-        $this->whatsApp->sendBookingConfirmation($phone, $businessName, $date, $time);
+        $this->whatsApp->sendBookingConfirmation($phone, $businessName, $date, $time, $contact);
     }
 
     /**

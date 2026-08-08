@@ -18,16 +18,34 @@ class MetaWhatsAppService implements WhatsAppSenderInterface
             && filled(config('services.meta_whatsapp.phone_number_id'));
     }
 
-    public function sendBookingConfirmation(string $toE164, string $businessName, string $date, string $time): bool
+    public function sendBookingConfirmation(string $toE164, string $businessName, string $date, string $time, string $contact): bool
     {
-        $template = (string) config('services.meta_whatsapp.booking_template');
+        return $this->sendConfiguredTemplate('booking_template', $toE164, [$businessName, $date, $time, $contact]);
+    }
+
+    public function sendBookingUpdate(string $toE164, string $businessName, string $date, string $time, string $contact): bool
+    {
+        return $this->sendConfiguredTemplate('update_template', $toE164, [$businessName, $date, $time, $contact]);
+    }
+
+    public function sendBookingCancellation(string $toE164, string $businessName, string $date, string $time, string $contact): bool
+    {
+        return $this->sendConfiguredTemplate('cancellation_template', $toE164, [$businessName, $date, $time, $contact]);
+    }
+
+    /**
+     * @param  list<string>  $bodyParams
+     */
+    private function sendConfiguredTemplate(string $configKey, string $toE164, array $bodyParams): bool
+    {
+        $template = (string) config("services.meta_whatsapp.{$configKey}");
         if ($template === '') {
             return false;
         }
 
         $language = (string) config('services.meta_whatsapp.booking_template_lang', 'en');
 
-        return $this->sendTemplate($toE164, $template, $language, [$businessName, $date, $time]);
+        return $this->sendTemplate($toE164, $template, $language, $bodyParams);
     }
 
     public function sendTemplate(string $toE164, string $templateName, string $languageCode, array $bodyParams = []): bool
