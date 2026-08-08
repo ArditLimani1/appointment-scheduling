@@ -29,6 +29,8 @@ class BusinessService implements BusinessServiceInterface
             'allow_employee_service_edit' => true,
             'uses_shared_resources' => false,
             'auto_confirm_appointments' => false,
+            'whatsapp_reminders_enabled' => false,
+            'reminder_time' => '08:00',
         ]);
 
         $showOwnerStaffToggle = $user->isAdmin()

@@ -33,6 +33,11 @@ class MetaWhatsAppService implements WhatsAppSenderInterface
         return $this->sendConfiguredTemplate('cancellation_template', $toE164, [$businessName, $date, $time, $contact]);
     }
 
+    public function sendBookingReminder(string $toE164, string $businessName, string $date, string $time, string $contact): bool
+    {
+        return $this->sendConfiguredTemplate('reminder_template', $toE164, [$businessName, $date, $time, $contact]);
+    }
+
     /**
      * @param  list<string>  $bodyParams
      */

@@ -41,6 +41,7 @@ return [
         'booking_template' => env('META_WHATSAPP_BOOKING_TEMPLATE'),
         'update_template' => env('META_WHATSAPP_UPDATE_TEMPLATE'),
         'cancellation_template' => env('META_WHATSAPP_CANCELLATION_TEMPLATE'),
+        'reminder_template' => env('META_WHATSAPP_REMINDER_TEMPLATE'),
         'booking_template_lang' => env('META_WHATSAPP_BOOKING_TEMPLATE_LANG', 'en'),
         'api_version' => env('META_WHATSAPP_API_VERSION', 'v21.0'),
     ],

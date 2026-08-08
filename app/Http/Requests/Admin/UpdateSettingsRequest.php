@@ -46,6 +46,8 @@ class UpdateSettingsRequest extends FormRequest
             'allow_employee_service_edit' => ['sometimes', 'boolean'],
             'uses_shared_resources' => ['sometimes', 'boolean'],
             'auto_confirm_appointments' => ['sometimes', 'boolean'],
+            'whatsapp_reminders_enabled' => ['sometimes', 'boolean'],
+            'reminder_time' => ['sometimes', 'required_if:whatsapp_reminders_enabled,true', 'nullable', 'date_format:H:i'],
         ];
     }
 

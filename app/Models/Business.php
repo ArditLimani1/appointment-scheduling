@@ -16,6 +16,7 @@ class Business extends Model
         'slot_duration', 'min_booking_notice', 'max_booking_window',
         'is_active', 'client_identifier_type', 'allow_employee_service_edit',
         'uses_shared_resources', 'auto_confirm_appointments',
+        'whatsapp_reminders_enabled', 'reminder_time',
     ];
 
     protected function casts(): array
@@ -25,7 +26,18 @@ class Business extends Model
             'allow_employee_service_edit' => 'boolean',
             'uses_shared_resources' => 'boolean',
             'auto_confirm_appointments' => 'boolean',
+            'whatsapp_reminders_enabled' => 'boolean',
         ];
+    }
+
+    /**
+     * Normalise the stored time (e.g. "08:00:00") to "H:i" for forms and comparisons.
+     */
+    protected function reminderTime(): Attribute
+    {
+        return Attribute::get(
+            static fn (?string $value): string => $value ? substr($value, 0, 5) : '08:00',
+        );
     }
 
     public function owner(): BelongsTo

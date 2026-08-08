@@ -413,6 +413,9 @@ return [
         'uses_shared_resources_help' => 'Turn this on when bookings depend on rooms, chairs, devices, or other limited-capacity resources. The calendar will then prevent overbooking automatically.',
         'auto_confirm_title' => 'Auto-confirm appointments',
         'auto_confirm_help' => 'When on, online bookings are confirmed immediately and the client receives a confirmation email. When off, new bookings stay pending until someone confirms them manually.',
+        'reminders_title' => 'WhatsApp appointment reminders',
+        'reminders_help' => 'When on, clients with a confirmed appointment today automatically receive a WhatsApp reminder at the time you choose.',
+        'reminder_time_label' => 'Reminder time',
         'owner_staff_title' => 'I also work as staff',
         'owner_staff_help' => 'Turn this on if you take appointments yourself.',
         'confirm' => [

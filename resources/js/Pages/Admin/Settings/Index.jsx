@@ -135,6 +135,8 @@ export default function Index({
         allow_employee_service_edit: settings.allow_employee_service_edit ?? true,
         uses_shared_resources: settings.uses_shared_resources ?? false,
         auto_confirm_appointments: settings.auto_confirm_appointments ?? false,
+        whatsapp_reminders_enabled: settings.whatsapp_reminders_enabled ?? false,
+        reminder_time: settings.reminder_time || '08:00',
         ...(show_owner_staff_toggle ? { owner_also_works_as_staff: !!owner_also_works_as_staff } : {}),
     });
 
@@ -501,6 +503,48 @@ export default function Index({
                                     }`} />
                                 </button>
                             </div>
+
+                            {whatsappEnabled && (
+                                <div className="bg-surface rounded-xl p-6 sm:col-span-2">
+                                    <div className="flex items-center justify-between gap-4">
+                                        <div>
+                                            <p className="text-sm font-bold text-on-surface">{t('admin.settings.reminders_title')}</p>
+                                            <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">
+                                                {t('admin.settings.reminders_help')}
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setData('whatsapp_reminders_enabled', !data.whatsapp_reminders_enabled)}
+                                            className={`relative shrink-0 w-12 h-6 rounded-full transition-colors duration-200 ${
+                                                data.whatsapp_reminders_enabled ? 'bg-on-surface' : 'bg-surface-container-highest'
+                                            }`}
+                                            aria-pressed={data.whatsapp_reminders_enabled}
+                                        >
+                                            <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all duration-200 ${
+                                                data.whatsapp_reminders_enabled ? 'right-1' : 'left-1'
+                                            }`} />
+                                        </button>
+                                    </div>
+                                    {data.whatsapp_reminders_enabled && (
+                                        <div className="mt-4 flex items-center gap-3">
+                                            <label htmlFor="reminder_time" className="text-xs font-bold text-on-surface-variant uppercase">
+                                                {t('admin.settings.reminder_time_label')}
+                                            </label>
+                                            <input
+                                                id="reminder_time"
+                                                type="time"
+                                                value={data.reminder_time}
+                                                onChange={e => setData('reminder_time', e.target.value)}
+                                                className={rulesNumberCls}
+                                            />
+                                        </div>
+                                    )}
+                                    {rulesErrors.reminder_time && (
+                                        <p className="text-xs text-error mt-2">{rulesErrors.reminder_time}</p>
+                                    )}
+                                </div>
+                            )}
 
                             <div className={`bg-surface rounded-xl p-6 flex items-center justify-between gap-4 ${show_owner_staff_toggle ? '' : 'sm:col-span-2'}`}>
                                 <div>

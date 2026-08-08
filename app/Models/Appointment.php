@@ -12,7 +12,7 @@ class Appointment extends Model
     protected $fillable = [
         'booking_reference', 'business_id', 'employee_id', 'employee_name', 'service_id', 'service_name', 'client_first_name', 'client_last_name',
         'client_phone', 'client_email', 'client_notes', 'date', 'start_time', 'end_time',
-        'price', 'status', 'updated_by',
+        'price', 'status', 'updated_by', 'reminder_sent_at',
     ];
 
     protected function casts(): array
@@ -21,6 +21,7 @@ class Appointment extends Model
             'date' => 'date',
             'price' => 'decimal:2',
             'status' => AppointmentStatus::class,
+            'reminder_sent_at' => 'datetime',
         ];
     }
 

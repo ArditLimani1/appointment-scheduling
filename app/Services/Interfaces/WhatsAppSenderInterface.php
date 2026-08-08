@@ -11,4 +11,6 @@ interface WhatsAppSenderInterface
     public function sendBookingUpdate(string $toE164, string $businessName, string $date, string $time, string $contact): bool;
 
     public function sendBookingCancellation(string $toE164, string $businessName, string $date, string $time, string $contact): bool;
+
+    public function sendBookingReminder(string $toE164, string $businessName, string $date, string $time, string $contact): bool;
 }
