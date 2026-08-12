@@ -50,6 +50,9 @@ class EmployeeService implements EmployeeServiceInterface
 
         DefaultEmployeeSchedule::seedIfEmpty($employee);
 
+        $employee->loadMissing('business');
+        $employee->sendEmailVerificationNotification();
+
         return $employee;
     }
 

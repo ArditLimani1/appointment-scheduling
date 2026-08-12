@@ -15,6 +15,7 @@ import { formatAppointmentDate, patchSqMonthName } from '@/utils/appointmentDate
 import {
     appendAppointmentStatusParams,
     DEFAULT_APPOINTMENT_STATUS_FILTER,
+    EMPLOYEE_DEFAULT_APPOINTMENT_STATUS_FILTER,
     normalizeAppointmentStatusFilter,
 } from '@/utils/appointmentStatusFilter';
 import { shiftCalendarAnchor, todayYmd } from '@/utils/calendarNavigation';
@@ -83,7 +84,7 @@ function employeeAppointmentsFiltersToSearchParams(filters) {
     if (filters.date_to) {
         params.set('date_to', filters.date_to);
     }
-    appendAppointmentStatusParams(params, filters.status);
+    appendAppointmentStatusParams(params, filters.status, EMPLOYEE_DEFAULT_APPOINTMENT_STATUS_FILTER);
     const sid = filters.service_id;
     if (sid != null && sid !== '' && sid !== SERVICE_FILTER_ALL) {
         params.set('service_id', String(sid));
@@ -109,7 +110,11 @@ function buildCalendarUrl(employeeCalendar, date, view, filters) {
     if (!employeeCalendar && filters.employee_id) {
         params.set('employee_id', String(filters.employee_id));
     }
-    appendAppointmentStatusParams(params, filters.status);
+    appendAppointmentStatusParams(
+        params,
+        filters.status,
+        employeeCalendar ? EMPLOYEE_DEFAULT_APPOINTMENT_STATUS_FILTER : DEFAULT_APPOINTMENT_STATUS_FILTER,
+    );
     const sid = filters.service_id;
     if (sid != null && sid !== '' && sid !== SERVICE_FILTER_ALL) {
         params.set('service_id', String(sid));
@@ -232,7 +237,10 @@ export default function Calendar({
     const normalizedFilters = useMemo(
         () => ({
             employee_id: filtersProp.employee_id != null && filtersProp.employee_id !== '' ? String(filtersProp.employee_id) : '',
-            status: normalizeAppointmentStatusFilter(filtersProp.status),
+            status: normalizeAppointmentStatusFilter(
+                filtersProp.status,
+                employeeCalendar ? EMPLOYEE_DEFAULT_APPOINTMENT_STATUS_FILTER : DEFAULT_APPOINTMENT_STATUS_FILTER,
+            ),
             service_id: normalizeServiceFilterForState(filtersProp.service_id),
             search: searchFromProps,
             view: filtersProp.view === 'day' || filtersProp.view === 'week' ? filtersProp.view : calendar_view === 'day' ? 'day' : 'week',
@@ -241,7 +249,7 @@ export default function Calendar({
                     ? String(filtersProp.date).slice(0, 10)
                     : range_start,
         }),
-        [filtersProp.employee_id, filtersProp.service_id, statusFilterKey, filtersProp.view, filtersProp.date, calendar_view, range_start, searchFromProps],
+        [filtersProp.employee_id, filtersProp.service_id, statusFilterKey, filtersProp.view, filtersProp.date, calendar_view, range_start, searchFromProps, employeeCalendar],
     );
 
     const [localFilters, setLocalFilters] = useState(normalizedFilters);
@@ -342,7 +350,7 @@ export default function Calendar({
         }
         const next = {
             employee_id: employeeCalendar ? localFilters.employee_id : '',
-            status: [...DEFAULT_APPOINTMENT_STATUS_FILTER],
+            status: [...(employeeCalendar ? EMPLOYEE_DEFAULT_APPOINTMENT_STATUS_FILTER : DEFAULT_APPOINTMENT_STATUS_FILTER)],
             service_id: SERVICE_FILTER_ALL,
             search: '',
             date: todayYmd(),
@@ -450,7 +458,11 @@ export default function Calendar({
             const params = new URLSearchParams();
             params.set('date_from', range_start);
             params.set('date_to', range_end);
-            appendAppointmentStatusParams(params, localFilters.status);
+            appendAppointmentStatusParams(
+                params,
+                localFilters.status,
+                employeeCalendar ? EMPLOYEE_DEFAULT_APPOINTMENT_STATUS_FILTER : DEFAULT_APPOINTMENT_STATUS_FILTER,
+            );
             const sid = localFilters.service_id;
             if (sid != null && sid !== '' && sid !== SERVICE_FILTER_ALL) {
                 params.set('service_id', String(sid));

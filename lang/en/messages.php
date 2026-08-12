@@ -9,7 +9,7 @@ return [
     ],
 
     'employee' => [
-        'created' => 'Employee created successfully.',
+        'created' => 'Employee created successfully. A verification email was sent — share their password separately.',
         'updated' => 'Employee updated successfully.',
         'deleted' => 'Employee deleted successfully.',
     ],

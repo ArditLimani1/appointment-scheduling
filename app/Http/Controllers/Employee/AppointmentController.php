@@ -182,7 +182,12 @@ class AppointmentController extends Controller
         }
 
         $anchorDate = $this->resolveCalendarAnchorDate($request);
-        $calendarFilters = $this->calendarFiltersFromRequest($request, (int) $user->id, (int) $business->id);
+        $calendarFilters = $this->calendarFiltersFromRequest(
+            $request,
+            (int) $user->id,
+            (int) $business->id,
+            ['pending', 'confirmed', 'cancelled'],
+        );
 
         $data = $this->appointmentService->getCalendarView($business, $view, $anchorDate, $calendarFilters);
 
@@ -476,7 +481,7 @@ class AppointmentController extends Controller
             'employee_id' => (int) $user->id,
             'date_from' => $from,
             'date_to' => $to,
-            'statuses' => $this->resolveStatusFilterStrings($request),
+            'statuses' => $this->resolveStatusFilterStrings($request, ['pending', 'confirmed', 'cancelled']),
             'service_id' => $resolvedServiceId,
             'search' => $search !== '' ? $search : null,
         ];

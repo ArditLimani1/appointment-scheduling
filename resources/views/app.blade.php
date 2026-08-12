@@ -6,8 +6,17 @@
 
         <title inertia>{{ config('app.name', 'NiTermin') }}</title>
 
+        <meta name="theme-color" content="#0e0e11">
+        <meta name="application-name" content="NiTermin">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="default">
+        <meta name="apple-mobile-web-app-title" content="NiTermin">
+        <meta name="mobile-web-app-capable" content="yes">
+
+        <link rel="manifest" href="/manifest.webmanifest">
         <link rel="icon" type="image/svg+xml" href="/favicon.svg">
         <link rel="alternate icon" href="/favicon.ico">
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

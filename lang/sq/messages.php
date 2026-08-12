@@ -9,7 +9,7 @@ return [
     ],
 
     'employee' => [
-        'created' => 'Punonjësi u shtua me sukses.',
+        'created' => 'Punonjësi u shtua me sukses. U dërgua email verifikimi — ndajeni fjalëkalimin veçmas.',
         'updated' => 'Të dhënat e punonjësit u përditësuan me sukses.',
         'deleted' => 'Punonjësi u hoq nga sistemi.',
     ],

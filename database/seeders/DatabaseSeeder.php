@@ -68,6 +68,7 @@ class DatabaseSeeder extends Seeder
             'title' => 'Master berber',
             'is_active' => true,
             'business_id' => $business->id,
+            'email_verified_at' => now(),
         ]);
 
         $sarah = User::create([
@@ -79,6 +80,7 @@ class DatabaseSeeder extends Seeder
             'title' => 'Stiliste e flokëve',
             'is_active' => true,
             'business_id' => $business->id,
+            'email_verified_at' => now(),
         ]);
 
         $marcus = User::create([
@@ -90,6 +92,7 @@ class DatabaseSeeder extends Seeder
             'title' => 'Specialist për mjekër',
             'is_active' => true,
             'business_id' => $business->id,
+            'email_verified_at' => now(),
         ]);
 
         $elena = User::create([
@@ -101,6 +104,7 @@ class DatabaseSeeder extends Seeder
             'title' => 'Specialiste ngjyrimi',
             'is_active' => true,
             'business_id' => $business->id,
+            'email_verified_at' => now(),
         ]);
 
         $employees = [$john, $sarah, $marcus, $elena];

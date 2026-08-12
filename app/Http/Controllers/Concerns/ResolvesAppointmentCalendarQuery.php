@@ -26,11 +26,12 @@ trait ResolvesAppointmentCalendarQuery
 
     /**
      * Multi-select status query (`status[]=pending&status[]=confirmed`). Single `status=` or comma list still accepted.
-     * Default when absent or empty: pending + confirmed.
+     * Default when absent or empty: pending + confirmed (or $defaultWhenEmpty).
      *
+     * @param  list<string>|null  $defaultWhenEmpty
      * @return list<string>
      */
-    private function resolveStatusFilterStrings(Request $request): array
+    private function resolveStatusFilterStrings(Request $request, ?array $defaultWhenEmpty = null): array
     {
         $allowed = ['pending', 'confirmed', 'cancelled'];
         $raw = $request->query('status');
@@ -53,19 +54,24 @@ trait ResolvesAppointmentCalendarQuery
         $values = array_values(array_unique($values));
 
         if ($values === []) {
-            return ['pending', 'confirmed'];
+            return $defaultWhenEmpty ?? ['pending', 'confirmed'];
         }
 
         return $values;
     }
 
     /**
+     * @param  list<string>|null  $defaultStatuses
      * @return array{employee_id?: int, statuses: list<string>, service_id?: int, search?: string}
      */
-    private function calendarFiltersFromRequest(Request $request, ?int $lockedEmployeeId = null, ?int $businessIdForServiceFilter = null): array
-    {
+    private function calendarFiltersFromRequest(
+        Request $request,
+        ?int $lockedEmployeeId = null,
+        ?int $businessIdForServiceFilter = null,
+        ?array $defaultStatuses = null,
+    ): array {
         $filters = [
-            'statuses' => $this->resolveStatusFilterStrings($request),
+            'statuses' => $this->resolveStatusFilterStrings($request, $defaultStatuses),
         ];
 
         if ($lockedEmployeeId !== null) {
