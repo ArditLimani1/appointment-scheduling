@@ -34,4 +34,9 @@ return [
 
     'dash' => '—',
 
+    'time' => [
+        'hour' => 'Hour',
+        'minute' => 'Min',
+    ],
+
 ];

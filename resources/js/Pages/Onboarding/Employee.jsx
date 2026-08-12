@@ -1,6 +1,7 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
 import Icon from '@/Components/Icon';
+import TimeSelect from '@/Components/TimeSelect';
 import OnboardingShell from './OnboardingShell';
 import { useT } from '@/i18n/useT';
 import { buildEmployeeScheduleDays } from '@/utils/defaultEmployeeSchedule';
@@ -107,11 +108,11 @@ function BreakModal({ dayLabel, onSave, onClose, initialBreak = null, t }) {
                             <label className="mb-1 block text-xs font-medium text-on-surface-variant">
                                 {t('onboarding.employee.start_time')}
                             </label>
-                            <input
-                                type="time"
+                            <TimeSelect
                                 value={form.start_time}
-                                onChange={(e) => { setForm((f) => ({ ...f, start_time: e.target.value })); setError(''); }}
+                                onChange={(next) => { setForm((f) => ({ ...f, start_time: next })); setError(''); }}
                                 className={`w-full ${inputClass}`}
+                                ariaLabel={t('onboarding.employee.start_time')}
                             />
                         </div>
                         <span className="mb-2 text-center text-on-surface-variant">–</span>
@@ -119,11 +120,11 @@ function BreakModal({ dayLabel, onSave, onClose, initialBreak = null, t }) {
                             <label className="mb-1 block text-xs font-medium text-on-surface-variant">
                                 {t('onboarding.employee.end_time')}
                             </label>
-                            <input
-                                type="time"
+                            <TimeSelect
                                 value={form.end_time}
-                                onChange={(e) => { setForm((f) => ({ ...f, end_time: e.target.value })); setError(''); }}
+                                onChange={(next) => { setForm((f) => ({ ...f, end_time: next })); setError(''); }}
                                 className={`w-full ${inputClass}`}
+                                ariaLabel={t('onboarding.employee.end_time')}
                             />
                         </div>
                     </div>
@@ -190,22 +191,22 @@ function ScheduleDayCard({ day, label, onChange, onAddBreak, onEditBreak, onRemo
                                 <label className="mb-1 block text-xs text-on-surface-variant">
                                     {t('onboarding.employee.from')}
                                 </label>
-                                <input
-                                    type="time"
+                                <TimeSelect
                                     value={day.start_time}
-                                    onChange={(e) => onChange({ ...day, start_time: e.target.value })}
+                                    onChange={(next) => onChange({ ...day, start_time: next })}
                                     className={inputClass}
+                                    ariaLabel={t('onboarding.employee.from')}
                                 />
                             </div>
                             <div className="min-w-0">
                                 <label className="mb-1 block text-xs text-on-surface-variant">
                                     {t('onboarding.employee.to')}
                                 </label>
-                                <input
-                                    type="time"
+                                <TimeSelect
                                     value={day.end_time}
-                                    onChange={(e) => onChange({ ...day, end_time: e.target.value })}
+                                    onChange={(next) => onChange({ ...day, end_time: next })}
                                     className={inputClass}
+                                    ariaLabel={t('onboarding.employee.to')}
                                 />
                             </div>
                         </div>

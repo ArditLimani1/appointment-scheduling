@@ -2,7 +2,7 @@ import { Head, router, usePage } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
 import EmployeeLayout from '@/Layouts/EmployeeLayout';
 import Icon from '@/Components/Icon';
-import TimeInputPicker from '@/Components/TimeInputPicker';
+import TimeSelect from '@/Components/TimeSelect';
 import useLockBodyScroll from '@/hooks/useLockBodyScroll';
 import { useT } from '@/i18n/useT';
 import { buildEmployeeScheduleDays } from '@/utils/defaultEmployeeSchedule';
@@ -238,7 +238,7 @@ function AddBreakModal({ dayLabel, onSave, onClose }) {
                     <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-3">
                         <div className="flex-1">
                             <label className="mb-1 block text-xs font-medium text-on-surface-variant">{t('employee.schedule.start_time')}</label>
-                            <TimeInputPicker
+                            <TimeSelect
                                 value={form.start_time}
                                 onChange={(next) => { setForm((f) => ({ ...f, start_time: next })); setError(''); }}
                                 className={`w-full ${inputClass}`}
@@ -248,7 +248,7 @@ function AddBreakModal({ dayLabel, onSave, onClose }) {
                         <span className="mb-2 text-center text-on-surface-variant">–</span>
                         <div className="flex-1">
                             <label className="mb-1 block text-xs font-medium text-on-surface-variant">{t('employee.schedule.end_time')}</label>
-                            <TimeInputPicker
+                            <TimeSelect
                                 value={form.end_time}
                                 onChange={(next) => { setForm((f) => ({ ...f, end_time: next })); setError(''); }}
                                 className={`w-full ${inputClass}`}
@@ -323,7 +323,7 @@ function ConfigurationDayCard({ day, locale, dayError, onChange, onUpdateBreak, 
                         <div className="grid w-full grid-cols-2 gap-3 md:flex md:flex-wrap md:justify-center md:gap-2">
                             <div className="min-w-0">
                                 <label className="mb-1 block text-xs text-on-surface-variant">{t('employee.schedule.from')}</label>
-                                <TimeInputPicker
+                                <TimeSelect
                                     value={day.start_time}
                                     onChange={(next) => onChange({ ...day, start_time: next })}
                                     className={inputClass}
@@ -332,7 +332,7 @@ function ConfigurationDayCard({ day, locale, dayError, onChange, onUpdateBreak, 
                             </div>
                             <div className="min-w-0">
                                 <label className="mb-1 block text-xs text-on-surface-variant">{t('employee.schedule.to')}</label>
-                                <TimeInputPicker
+                                <TimeSelect
                                     value={day.end_time}
                                     onChange={(next) => onChange({ ...day, end_time: next })}
                                     className={inputClass}
@@ -354,13 +354,13 @@ function ConfigurationDayCard({ day, locale, dayError, onChange, onUpdateBreak, 
                                         <span className="whitespace-nowrap text-xs font-semibold">{t('employee.schedule.break')}</span>
                                     </div>
                                     <div className="grid min-w-0 flex-1 grid-cols-2 gap-2">
-                                        <TimeInputPicker
+                                        <TimeSelect
                                             value={brk.start_time}
                                             onChange={(next) => onUpdateBreak(bi, { start_time: next })}
                                             className={inputClass}
                                             ariaLabel={t('employee.schedule.break_from')}
                                         />
-                                        <TimeInputPicker
+                                        <TimeSelect
                                             value={brk.end_time}
                                             onChange={(next) => onUpdateBreak(bi, { end_time: next })}
                                             className={inputClass}
