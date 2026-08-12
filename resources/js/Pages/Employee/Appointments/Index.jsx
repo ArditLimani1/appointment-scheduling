@@ -10,7 +10,7 @@ import EditAppointmentModal from '@/Components/EditAppointmentModal';
 import { appointmentStatusValue, formatAppointmentDate, formatTimeHm, patchSqMonthName } from '@/utils/appointmentDate';
 import {
     appendAppointmentStatusParams,
-    DEFAULT_APPOINTMENT_STATUS_FILTER,
+    EMPLOYEE_DEFAULT_APPOINTMENT_STATUS_FILTER,
     normalizeAppointmentStatusFilter,
 } from '@/utils/appointmentStatusFilter';
 import { mergeDateFromChange, mergeDateToChange } from '@/utils/dateRangeFilters';
@@ -60,7 +60,7 @@ function employeeAppointmentsFiltersToSearchParams(filters) {
     if (filters.date_to) {
         params.set('date_to', filters.date_to);
     }
-    appendAppointmentStatusParams(params, filters.status);
+    appendAppointmentStatusParams(params, filters.status, EMPLOYEE_DEFAULT_APPOINTMENT_STATUS_FILTER);
     const sid = filters.service_id;
     if (sid != null && sid !== '' && sid !== SERVICE_FILTER_ALL) {
         params.set('service_id', String(sid));
@@ -83,7 +83,7 @@ function buildEmployeeCalendarUrl(filters) {
     const params = new URLSearchParams();
     params.set('date', todayYmd());
     params.set('view', 'week');
-    appendAppointmentStatusParams(params, filters.status);
+    appendAppointmentStatusParams(params, filters.status, EMPLOYEE_DEFAULT_APPOINTMENT_STATUS_FILTER);
     const sid = filters.service_id;
     if (sid != null && sid !== '' && sid !== SERVICE_FILTER_ALL) {
         params.set('service_id', String(sid));
@@ -275,7 +275,7 @@ export default function EmployeeAppointmentsIndex({
     const [localFilters, setLocalFilters] = useState({
         date_from: filters.date_from ?? currentMonthStart(),
         date_to: filters.date_to ?? currentMonthEnd(),
-        status: normalizeAppointmentStatusFilter(filters.status),
+        status: normalizeAppointmentStatusFilter(filters.status, EMPLOYEE_DEFAULT_APPOINTMENT_STATUS_FILTER),
         service_id: normalizeServiceFilterForState(filters.service_id),
         search: searchFromServer,
     });
@@ -293,7 +293,7 @@ export default function EmployeeAppointmentsIndex({
         setLocalFilters({
             date_from: filters.date_from ?? currentMonthStart(),
             date_to: filters.date_to ?? currentMonthEnd(),
-            status: normalizeAppointmentStatusFilter(filters.status),
+            status: normalizeAppointmentStatusFilter(filters.status, EMPLOYEE_DEFAULT_APPOINTMENT_STATUS_FILTER),
             service_id: normalizeServiceFilterForState(filters.service_id),
             search: searchFromServer,
         });
@@ -360,7 +360,7 @@ export default function EmployeeAppointmentsIndex({
         const defaultFilters = {
             date_from: currentMonthStart(),
             date_to: currentMonthEnd(),
-            status: [...DEFAULT_APPOINTMENT_STATUS_FILTER],
+            status: [...EMPLOYEE_DEFAULT_APPOINTMENT_STATUS_FILTER],
             service_id: SERVICE_FILTER_ALL,
             search: '',
         };

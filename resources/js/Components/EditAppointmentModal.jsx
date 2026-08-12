@@ -334,12 +334,12 @@ export default function EditAppointmentModal({
     );
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-end justify-center p-0 sm:items-center sm:p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 max-sm:items-start max-sm:p-3 max-sm:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             {/* Backdrop */}
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
             {/* Panel */}
-            <div className="relative flex max-h-[100dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[28px] bg-white shadow-2xl sm:max-h-[min(92vh,880px)] sm:rounded-2xl">
+            <div className="edit-appointment-modal-panel relative flex max-h-[min(92vh,880px)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl max-sm:rounded-[28px]">
 
                 {/* Header */}
                 <div className="flex shrink-0 items-center justify-between border-b border-slate-100 bg-white px-4 py-3 sm:rounded-t-2xl sm:px-5">
@@ -445,7 +445,7 @@ export default function EditAppointmentModal({
                         )}
 
                         {/* ── Tab: Service & Schedule ── */}
-                        {!effectiveReadOnly && activeTab === 'schedule' && (
+                        {!effectiveReadOnly && !employeeMode && activeTab === 'schedule' && (
                             <div className="space-y-3">
                                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                     {!lockServiceForEmployee && (
@@ -480,43 +480,26 @@ export default function EditAppointmentModal({
                                 {errors.service_id && <p className="text-xs text-error">{errors.service_id}</p>}
                                 {errors.status && <p className="text-xs text-error">{errors.status}</p>}
 
-                                {!employeeMode && (
-                                    <>
-                                        <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2">
-                                            <FilterListbox
-                                                label={t('components.edit_appointment.employee')}
-                                                compact
-                                                value={form.employee_id}
-                                                onChange={(v) => { patch('employee_id', v); patch('start_time', ''); }}
-                                                options={eligibleEmployees.map((e) => ({ value: String(e.id), label: e.name }))}
-                                                minWidthClass="w-full"
-                                            />
-                                            <div>
-                                                <span className={labelCls}>{t('components.edit_appointment.payment')}</span>
-                                                <div className="flex h-[42px] items-center rounded-xl border border-slate-100 bg-slate-50 px-3 text-sm font-bold text-on-surface">
-                                                    {Number(appointment.price ?? 0).toFixed(2)}
-                                                    <span className="ml-1 font-semibold text-on-surface-variant">{currencySymbol}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        {errors.employee_id && <p className="text-xs text-error">{errors.employee_id}</p>}
-                                        {form.service_id && eligibleEmployees.length === 0 && (
-                                            <p className="text-xs text-amber-600">{t('components.edit_appointment.no_employee_service')}</p>
-                                        )}
-                                    </>
-                                )}
-
-                                {employeeMode && !lockServiceForEmployee && (
+                                <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2">
+                                    <FilterListbox
+                                        label={t('components.edit_appointment.employee')}
+                                        compact
+                                        value={form.employee_id}
+                                        onChange={(v) => { patch('employee_id', v); patch('start_time', ''); }}
+                                        options={eligibleEmployees.map((e) => ({ value: String(e.id), label: e.name }))}
+                                        minWidthClass="w-full"
+                                    />
                                     <div>
                                         <span className={labelCls}>{t('components.edit_appointment.payment')}</span>
                                         <div className="flex h-[42px] items-center rounded-xl border border-slate-100 bg-slate-50 px-3 text-sm font-bold text-on-surface">
                                             {Number(appointment.price ?? 0).toFixed(2)}
                                             <span className="ml-1 font-semibold text-on-surface-variant">{currencySymbol}</span>
                                         </div>
-                                        <p className="mt-1 text-[11px] text-on-surface-variant">
-                                            {t('components.edit_appointment.price_updates_hint')}
-                                        </p>
                                     </div>
+                                </div>
+                                {errors.employee_id && <p className="text-xs text-error">{errors.employee_id}</p>}
+                                {form.service_id && eligibleEmployees.length === 0 && (
+                                    <p className="text-xs text-amber-600">{t('components.edit_appointment.no_employee_service')}</p>
                                 )}
 
                                 <div>
@@ -532,15 +515,9 @@ export default function EditAppointmentModal({
 
                                 <div>
                                     <label className={labelCls}>{t('components.edit_appointment.time')}</label>
-                                    {(!employeeMode && (!form.employee_id || !form.date || !form.service_id)) ? (
+                                    {(!form.employee_id || !form.date || !form.service_id) ? (
                                         <p className="py-1 text-xs text-on-surface-variant">
                                             {t('components.edit_appointment.choose_staff_first')}
-                                        </p>
-                                    ) : (employeeMode && (!form.date || !form.service_id)) ? (
-                                        <p className="py-1 text-xs text-on-surface-variant">
-                                            {lockServiceForEmployee
-                                                ? t('components.edit_appointment.choose_date_first')
-                                                : t('components.edit_appointment.choose_service_date_first')}
                                         </p>
                                     ) : loadingSlots ? (
                                         <div className="flex items-center gap-2 py-1 text-xs text-on-surface-variant">
@@ -608,9 +585,6 @@ export default function EditAppointmentModal({
                                                 className={inputCls}
                                             />
                                             {errors.client_email && <p className="text-xs text-error mt-1">{errors.client_email}</p>}
-                                            <p className="mt-1 text-[11px] text-on-surface-variant">
-                                                {t('components.edit_appointment.email_notification_hint')}
-                                            </p>
                                         </div>
                                     ) : (
                                         <div className="sm:col-span-2">
@@ -640,10 +614,111 @@ export default function EditAppointmentModal({
                                     </div>
                             </div>
                         )}
+
+                        {/* Employee edit (single panel, no tabs) */}
+                        {!effectiveReadOnly && employeeMode && (
+                            <div className="space-y-3">
+                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                    {!lockServiceForEmployee && (
+                                        <FilterListbox
+                                            label={t('components.edit_appointment.service')}
+                                            compact
+                                            value={form.service_id}
+                                            onChange={(v) => { patch('service_id', v); }}
+                                            options={services.map((s) => ({
+                                                value: String(s.id),
+                                                label: t('components.edit_appointment.service_option', {
+                                                    name: s.name,
+                                                    duration: s.duration,
+                                                }),
+                                            }))}
+                                            minWidthClass="w-full"
+                                        />
+                                    )}
+                                    <FilterListbox
+                                        label={t('components.edit_appointment.status')}
+                                        compact
+                                        value={form.status}
+                                        onChange={(v) => patch('status', v)}
+                                        options={[
+                                            { value: 'pending', label: t('common.status.pending') },
+                                            { value: 'confirmed', label: t('common.status.confirmed') },
+                                            { value: 'cancelled', label: t('common.status.cancelled') },
+                                        ]}
+                                        minWidthClass={lockServiceForEmployee ? 'w-full sm:max-w-md' : 'w-full'}
+                                    />
+                                </div>
+                                {errors.service_id && <p className="text-xs text-error">{errors.service_id}</p>}
+                                {errors.status && <p className="text-xs text-error">{errors.status}</p>}
+
+                                {!lockServiceForEmployee && (
+                                    <div>
+                                        <span className={labelCls}>{t('components.edit_appointment.payment')}</span>
+                                        <div className="flex h-[42px] items-center rounded-xl border border-slate-100 bg-slate-50 px-3 text-sm font-bold text-on-surface">
+                                            {Number(appointment.price ?? 0).toFixed(2)}
+                                            <span className="ml-1 font-semibold text-on-surface-variant">{currencySymbol}</span>
+                                        </div>
+                                        <p className="mt-1 text-[11px] text-on-surface-variant">
+                                            {t('components.edit_appointment.price_updates_hint')}
+                                        </p>
+                                    </div>
+                                )}
+
+                                <div>
+                                    <label className={labelCls}>{t('components.edit_appointment.date')}</label>
+                                    <DatePicker
+                                        value={form.date}
+                                        onChange={handleDateChange}
+                                        placeholder={t('components.edit_appointment.date_placeholder')}
+                                        portal
+                                    />
+                                    {errors.date && <p className="text-xs text-error mt-0.5">{errors.date}</p>}
+                                </div>
+
+                                <div>
+                                    <label className={labelCls}>{t('components.edit_appointment.time')}</label>
+                                    {(!form.date || !form.service_id) ? (
+                                        <p className="py-1 text-xs text-on-surface-variant">
+                                            {lockServiceForEmployee
+                                                ? t('components.edit_appointment.choose_date_first')
+                                                : t('components.edit_appointment.choose_service_date_first')}
+                                        </p>
+                                    ) : loadingSlots ? (
+                                        <div className="flex items-center gap-2 py-1 text-xs text-on-surface-variant">
+                                            <Icon name="sync" size="text-sm" className="animate-spin" />{' '}
+                                            {t('components.edit_appointment.loading_slots')}
+                                        </div>
+                                    ) : slotOptions.length === 0 ? (
+                                        <p className="py-1 text-xs text-on-surface-variant">{t('components.edit_appointment.no_slots')}</p>
+                                    ) : (
+                                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                                            {slotOptions.map((slotHm) => (
+                                                <button
+                                                    key={slotHm}
+                                                    type="button"
+                                                    onClick={() => patch('start_time', slotHm)}
+                                                    className={`min-h-11 rounded-xl px-2 text-sm font-bold transition-all ${
+                                                        formatTimeHm(form.start_time) === slotHm
+                                                            ? 'bg-on-surface text-surface'
+                                                            : 'bg-slate-100 text-on-surface hover:bg-slate-200'
+                                                    }`}
+                                                >
+                                                    {(() => {
+                                                        const endHm = addMinutesToTimeString(slotHm, selectedServiceDuration);
+                                                        return endHm ? `${slotHm} - ${endHm}` : slotHm;
+                                                    })()}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {errors.start_time && <p className="text-xs text-error mt-0.5">{errors.start_time}</p>}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Footer — always visible */}
-                    <div className="flex shrink-0 flex-col gap-3 border-t border-slate-100 bg-white px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                    <div className="flex shrink-0 flex-col gap-3 border-t border-slate-100 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
                         {effectiveReadOnly ? (
                             <div className="flex w-full justify-end">
                                 <button

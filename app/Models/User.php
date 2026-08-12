@@ -6,6 +6,7 @@ use App\Enums\Permission;
 use App\Enums\UserRole;
 use App\Enums\UserType;
 use App\Notifications\VerifyBusinessEmail;
+use App\Notifications\VerifyEmployeeEmail;
 use App\Support\DefaultEmployeeSchedule;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail as MustVerifyEmailContract;
@@ -129,7 +130,11 @@ class User extends Authenticatable implements MustVerifyEmailContract, HasLocale
 
     public function requiresEmailVerification(): bool
     {
-        return $this->isAdmin() && ! $this->isSuperAdmin();
+        if ($this->isSuperAdmin()) {
+            return false;
+        }
+
+        return $this->isAdmin() || $this->isEmployee();
     }
 
     public function hasVerifiedEmail(): bool
@@ -147,7 +152,11 @@ class User extends Authenticatable implements MustVerifyEmailContract, HasLocale
             return;
         }
 
-        $this->notify((new VerifyBusinessEmail)->locale($this->preferredLocale()));
+        $notification = $this->isEmployee()
+            ? new VerifyEmployeeEmail
+            : new VerifyBusinessEmail;
+
+        $this->notify($notification->locale($this->preferredLocale()));
     }
 
     public function preferredLocale(): string

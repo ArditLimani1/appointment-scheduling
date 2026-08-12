@@ -87,4 +87,27 @@ class EmailVerificationTest extends TestCase
         $response->assertRedirect(route('login', absolute: false));
         $response->assertSessionHas('status', 'Email verified successfully. You can now sign in.');
     }
+
+    public function test_guest_can_verify_employee_email_from_signed_link(): void
+    {
+        $user = User::factory()->unverified()->create([
+            'role' => UserRole::Employee,
+        ]);
+
+        Event::fake();
+
+        $verificationUrl = URL::temporarySignedRoute(
+            'verification.verify',
+            now()->addMinutes(60),
+            ['id' => $user->id, 'hash' => sha1($user->email)],
+            absolute: false,
+        );
+
+        $response = $this->get($verificationUrl);
+
+        Event::assertDispatched(Verified::class);
+        $this->assertTrue($user->fresh()->hasVerifiedEmail());
+        $response->assertRedirect(route('login', absolute: false));
+        $response->assertSessionHas('status', 'Email verified successfully. You can now sign in.');
+    }
 }

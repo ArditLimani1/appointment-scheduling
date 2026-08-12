@@ -9,6 +9,7 @@ use App\Models\BusinessType;
 use App\Models\User;
 use Database\Seeders\BusinessTypeSeeder;
 use App\Notifications\VerifyBusinessEmail;
+use App\Notifications\VerifyEmployeeEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
@@ -70,19 +71,25 @@ class AuthenticationTest extends TestCase
         Notification::assertSentTo($user, VerifyBusinessEmail::class);
     }
 
-    public function test_unverified_employees_can_still_authenticate(): void
+    public function test_unverified_employees_can_not_authenticate_and_receive_a_fresh_verification_link(): void
     {
+        Notification::fake();
+
         $user = User::factory()->unverified()->create([
             'role' => UserRole::Employee,
         ]);
 
-        $response = $this->post('/login', [
+        $response = $this->from('/login')->post('/login', [
             'email' => $user->email,
             'password' => 'password',
         ]);
 
-        $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertRedirect('/login');
+        $response->assertSessionHasErrors([
+            'email' => 'Please verify your email before logging in. We sent you a fresh verification link.',
+        ]);
+        $this->assertGuest();
+        Notification::assertSentTo($user, VerifyEmployeeEmail::class);
     }
 
     public function test_unverified_super_admins_can_still_authenticate(): void

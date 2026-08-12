@@ -12,6 +12,7 @@ use App\Services\Interfaces\EmployeeServiceInterface;
 use App\Support\DefaultEmployeeSchedule;
 use Database\Seeders\BusinessTypeSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class DefaultEmployeeScheduleTest extends TestCase
@@ -39,6 +40,8 @@ class DefaultEmployeeScheduleTest extends TestCase
 
     public function test_new_employee_gets_monday_to_friday_nine_to_five_with_lunch_break(): void
     {
+        Notification::fake();
+
         $business = $this->makeBusiness();
 
         $employee = app(EmployeeServiceInterface::class)->store($business, [

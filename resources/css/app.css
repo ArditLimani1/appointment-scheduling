@@ -130,3 +130,11 @@
 .app-timepicker .tp-ui-cancel-btn {
     margin-right: 6px;
 }
+
+/* Edit appointment bottom sheet: cap height on mobile, allow shorter tabs */
+@media (max-width: 639.98px) {
+    .edit-appointment-modal-panel {
+        max-height: calc(100dvh - 1.5rem - max(0.75rem, env(safe-area-inset-bottom)) - 1.5rem) !important;
+    }
+}
+
