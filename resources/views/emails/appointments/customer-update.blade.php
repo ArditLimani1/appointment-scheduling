@@ -8,6 +8,22 @@
     $withBusiness = $business?->name
         ? __('mail.appointment_update.intro_with_business', ['business' => $business->name])
         : '';
+    // Each notification type gets its own wording, so the badge and the intro line
+    // always agree with the subject built in CustomerAppointmentUpdateMail.
+    $eyebrowLine = match ($notificationType) {
+        'reminder' => __('mail.appointment_update.eyebrow_reminder'),
+        'confirmed' => __('mail.appointment_update.eyebrow_confirmed'),
+        'cancelled' => __('mail.appointment_update.eyebrow_cancelled'),
+        'rescheduled' => __('mail.appointment_update.eyebrow_rescheduled'),
+        default => __('mail.appointment_update.eyebrow'),
+    };
+    $introLine = match ($notificationType) {
+        'reminder' => __('mail.appointment_update.intro_reminder', ['with_business' => $withBusiness]),
+        'confirmed' => __('mail.appointment_update.intro_confirmed', ['with_business' => $withBusiness]),
+        'cancelled' => __('mail.appointment_update.intro_cancelled', ['with_business' => $withBusiness]),
+        'rescheduled' => __('mail.appointment_update.intro_rescheduled', ['with_business' => $withBusiness]),
+        default => __('mail.appointment_update.intro', ['with_business' => $withBusiness]),
+    };
 @endphp
 <!DOCTYPE html>
 <html lang="en">
@@ -40,7 +56,7 @@
                     </tr>
                 </table>
                 <div style="margin-top:16px;">
-                    <span style="display:inline-block; padding:7px 11px; border:1px solid #e6e6eb; border-radius:999px; background:#fafafc; color:#6b6b78; font-size:11px; font-weight:700; letter-spacing:0.16em; text-transform:uppercase;">{{ __('mail.appointment_update.eyebrow') }}</span>
+                    <span style="display:inline-block; padding:7px 11px; border:1px solid #e6e6eb; border-radius:999px; background:#fafafc; color:#6b6b78; font-size:11px; font-weight:700; letter-spacing:0.16em; text-transform:uppercase;">{{ $eyebrowLine }}</span>
                 </div>
             </div>
 
@@ -50,7 +66,7 @@
                     {{ $clientName !== '' ? __('mail.appointment_update.greeting', ['name' => $clientName]) : __('mail.appointment_update.greeting_generic') }}
                 </p>
                 <p style="margin:0 0 26px; font-size:15px; line-height:1.7; color:#3a3a45;">
-                    {{ __('mail.appointment_update.intro', ['with_business' => $withBusiness]) }}
+                    {{ $introLine }}
                 </p>
 
                 <div style="border:1px solid #efeff3; border-radius:22px; background:#fafafc; padding:20px; margin-bottom:24px;">

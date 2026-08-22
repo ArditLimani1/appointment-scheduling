@@ -37,6 +37,21 @@ return [
         'client_email' => 'Email',
         'client_email_desc' => 'Clients enter their email address when booking.',
 
+        'step_automation_title' => 'Automations',
+        'step_automation_sub' => 'Decide whether online bookings confirm themselves and whether clients get an automatic reminder.',
+
+        'auto_confirm_title' => 'Auto-confirm appointments',
+        'auto_confirm_help' => 'When on, online bookings are confirmed immediately and the client is notified straight away. When off, new bookings stay pending until someone confirms them manually.',
+        'auto_confirm_label' => 'Confirm online bookings automatically',
+
+        'reminders_title_phone' => 'Automatic WhatsApp reminders',
+        'reminders_title_email' => 'Automatic email reminders',
+        'reminders_help_phone' => 'When on, clients with a confirmed appointment today automatically receive a WhatsApp reminder at the time you choose. The channel follows the client identification you picked, so it changes to email if you switch to email.',
+        'reminders_help_email' => 'When on, clients with a confirmed appointment today automatically receive an email reminder at the time you choose. The channel follows the client identification you picked, so it changes to WhatsApp if you switch to phone.',
+        'reminders_label_phone' => 'Send a WhatsApp reminder on the day of the appointment',
+        'reminders_label_email' => 'Send an email reminder on the day of the appointment',
+        'reminder_time_label' => 'Reminder time',
+
         'step_operations_title' => 'Operating preferences',
         'step_operations_sub' => 'A few last preferences for how you work and how you manage shared resources.',
 

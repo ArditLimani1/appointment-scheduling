@@ -61,6 +61,8 @@ return [
         'submitted_title' => 'Kërkesa u dërgua',
         'confirmed_title' => 'Termini u konfirmua',
         'thanks' => 'Faleminderit për rezervimin te :business.',
+        'pending_note_phone' => 'Kërkesa juaj për termin do të shqyrtohet nga biznesi. Do të merrni një mesazh në numrin që dhatë sapo termini të konfirmohet.',
+        'pending_note_email' => 'Kërkesa juaj për termin do të shqyrtohet nga biznesi. Do të merrni një email në adresën që dhatë sapo termini të konfirmohet.',
         'confirmed_thanks' => 'Termini juaj te :business është konfirmuar.',
         'requested_time' => 'Koha e kërkuar:',
         'confirmed_time' => 'Koha e konfirmuar:',

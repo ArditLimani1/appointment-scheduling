@@ -79,7 +79,7 @@ function SegmentedChoice({ options, value, onChange }) {
     );
 }
 
-function ToggleCard({ icon, title, help, label, value, onChange }) {
+function ToggleCard({ icon, title, help, label, value, onChange, children }) {
     const toggleId = useId();
     return (
         <div className="rounded-2xl border border-outline-variant/40 bg-surface p-6 sm:p-7">
@@ -117,6 +117,8 @@ function ToggleCard({ icon, title, help, label, value, onChange }) {
                     />
                 </button>
             </div>
+
+            {children}
         </div>
     );
 }
@@ -139,6 +141,9 @@ export default function Admin({ settings }) {
         owner_also_works_as_staff: !!settings.owner_also_works_as_staff,
         allow_employee_service_edit: settings.allow_employee_service_edit ?? true,
         uses_shared_resources: !!settings.uses_shared_resources,
+        auto_confirm_appointments: !!settings.auto_confirm_appointments,
+        reminders_enabled: !!settings.reminders_enabled,
+        reminder_time: settings.reminder_time || '08:00',
     });
 
     const updateField = (key, value) => setData((prev) => ({ ...prev, [key]: value }));
@@ -161,6 +166,12 @@ export default function Admin({ settings }) {
                       },
                   ]
                 : []),
+            {
+                id: 'automation',
+                label: t('onboarding.admin.step_automation_title'),
+                description: t('onboarding.admin.step_automation_sub'),
+                icon: 'notifications_active',
+            },
             {
                 id: 'operations',
                 label: t('onboarding.admin.step_operations_title'),
@@ -280,6 +291,60 @@ export default function Admin({ settings }) {
                         },
                     ]}
                 />
+            )}
+
+            {currentStepId === 'automation' && (
+                <div className="space-y-4">
+                    <ToggleCard
+                        icon="task_alt"
+                        title={t('onboarding.admin.auto_confirm_title')}
+                        help={t('onboarding.admin.auto_confirm_help')}
+                        label={t('onboarding.admin.auto_confirm_label')}
+                        value={data.auto_confirm_appointments}
+                        onChange={(v) => updateField('auto_confirm_appointments', v)}
+                    />
+                    <ToggleCard
+                        icon="alarm"
+                        title={t(
+                            data.client_identifier_type === 'phone'
+                                ? 'onboarding.admin.reminders_title_phone'
+                                : 'onboarding.admin.reminders_title_email',
+                        )}
+                        help={t(
+                            data.client_identifier_type === 'phone'
+                                ? 'onboarding.admin.reminders_help_phone'
+                                : 'onboarding.admin.reminders_help_email',
+                        )}
+                        label={t(
+                            data.client_identifier_type === 'phone'
+                                ? 'onboarding.admin.reminders_label_phone'
+                                : 'onboarding.admin.reminders_label_email',
+                        )}
+                        value={data.reminders_enabled}
+                        onChange={(v) => updateField('reminders_enabled', v)}
+                    >
+                        {data.reminders_enabled && (
+                            <div className="mt-4 flex flex-wrap items-center gap-3">
+                                <label
+                                    htmlFor="onboarding_reminder_time"
+                                    className="text-xs font-bold uppercase tracking-widest text-on-surface-variant"
+                                >
+                                    {t('onboarding.admin.reminder_time_label')}
+                                </label>
+                                <input
+                                    id="onboarding_reminder_time"
+                                    type="time"
+                                    value={data.reminder_time}
+                                    onChange={(e) => updateField('reminder_time', e.target.value)}
+                                    className="border-0 rounded-xl py-3 px-4 text-base font-extrabold text-on-surface bg-surface-container-lowest ring-1 ring-outline-variant focus:outline-none focus:ring-2 focus:ring-on-surface/20 transition-shadow"
+                                />
+                            </div>
+                        )}
+                        {errors?.reminder_time && (
+                            <p className="mt-2 text-xs font-medium text-error">{errors.reminder_time}</p>
+                        )}
+                    </ToggleCard>
+                </div>
             )}
 
             {currentStepId === 'operations' && (

@@ -61,6 +61,8 @@ return [
         'submitted_title' => 'Booking Submitted',
         'confirmed_title' => 'Appointment Confirmed',
         'thanks' => 'Thanks for booking at :business.',
+        'pending_note_phone' => 'The business will review your request. You will get a message on the number you provided as soon as your appointment is confirmed.',
+        'pending_note_email' => 'The business will review your request. You will get an email at the address you provided as soon as your appointment is confirmed.',
         'confirmed_thanks' => 'Your appointment at :business is confirmed.',
         'requested_time' => 'Requested time:',
         'confirmed_time' => 'Confirmed time:',

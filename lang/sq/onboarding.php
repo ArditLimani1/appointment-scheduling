@@ -37,6 +37,21 @@ return [
         'client_email' => 'Email',
         'client_email_desc' => 'Klienti vendos adresën e e-mailit gjatë rezervimit.',
 
+        'step_automation_title' => 'Automatizimet',
+        'step_automation_sub' => 'Vendos nëse rezervimet online konfirmohen vetë dhe nëse klientët marrin kujtesë automatike.',
+
+        'auto_confirm_title' => 'Konfirmim automatik i termineve',
+        'auto_confirm_help' => 'Kur është aktiv, rezervimet online konfirmohen menjëherë dhe klienti njoftohet në çast. Kur është joaktiv, terminet e reja mbeten në pritje derisa dikush t’i konfirmojë manualisht.',
+        'auto_confirm_label' => 'Konfirmo automatikisht rezervimet online',
+
+        'reminders_title_phone' => 'Kujtesa automatike në WhatsApp',
+        'reminders_title_email' => 'Kujtesa automatike me email',
+        'reminders_help_phone' => 'Kur është aktiv, klientët me termin të konfirmuar sot marrin automatikisht një kujtesë në WhatsApp në orën që zgjedh. Kanali ndjek identifikimin e klientit që ke zgjedhur, prandaj kalon në email nëse e ndryshon në email.',
+        'reminders_help_email' => 'Kur është aktiv, klientët me termin të konfirmuar sot marrin automatikisht një kujtesë me email në orën që zgjedh. Kanali ndjek identifikimin e klientit që ke zgjedhur, prandaj kalon në WhatsApp nëse e ndryshon në telefon.',
+        'reminders_label_phone' => 'Dërgo kujtesë në WhatsApp ditën e terminit',
+        'reminders_label_email' => 'Dërgo kujtesë me email ditën e terminit',
+        'reminder_time_label' => 'Ora e kujtesës',
+
         'step_operations_title' => 'Preferencat e operimit',
         'step_operations_sub' => 'Disa rregullime të fundit për mënyrën se si do të punoni dhe si do të menaxhoni burimet.',
 

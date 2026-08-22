@@ -51,6 +51,7 @@ class CustomerAppointmentUpdateMail extends Mailable
             'cancelled' => __('mail.appointment_update.subject_cancelled', ['business' => $businessName]),
             'confirmed' => __('mail.appointment_update.subject_confirmed', ['business' => $businessName]),
             'rescheduled' => __('mail.appointment_update.subject_rescheduled', ['business' => $businessName]),
+            'reminder' => __('mail.appointment_update.subject_reminder', ['business' => $businessName]),
             default => __('mail.appointment_update.subject_updated', ['business' => $businessName]),
         };
     }

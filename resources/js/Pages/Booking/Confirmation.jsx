@@ -16,6 +16,7 @@ export default function Confirmation({ appointment, bookingBundle }) {
     const currencySymbol = apt.business?.currency_symbol ?? '€';
     const bookingSlug = apt.business?.slug;
     const businessName = apt.business?.name || t('booking_ui.confirmation.default_business');
+    const notifiesByPhone = apt.business?.notification_channel === 'phone';
 
     return (
         <div className="min-h-screen bg-surface font-body text-on-surface">
@@ -46,6 +47,15 @@ export default function Confirmation({ appointment, bookingBundle }) {
                             ? t('booking_ui.confirmation.confirmed_thanks', { business: businessName })
                             : t('booking_ui.confirmation.thanks', { business: businessName })}
                     </p>
+                    {!isConfirmed && (
+                        <p className="text-on-surface-variant text-base leading-relaxed mt-3">
+                            {t(
+                                notifiesByPhone
+                                    ? 'booking_ui.confirmation.pending_note_phone'
+                                    : 'booking_ui.confirmation.pending_note_email',
+                            )}
+                        </p>
+                    )}
                     {dateShort !== '—' && (
                         <p className="text-on-surface-variant text-sm mt-5">
                             {isConfirmed ? t('booking_ui.confirmation.confirmed_time') : t('booking_ui.confirmation.requested_time')}{' '}

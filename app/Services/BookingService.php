@@ -618,7 +618,7 @@ class BookingService implements BookingServiceInterface
             ->with([
                 'employee:id,name,title',
                 'service:id,name',
-                'business:id,name,slug,location,currency_symbol',
+                'business:id,name,slug,location,currency_symbol,client_identifier_type',
             ])
             ->orderBy('start_time')
             ->get();
@@ -654,6 +654,8 @@ class BookingService implements BookingServiceInterface
                 'slug' => $a->business->slug,
                 'location' => $a->business->location,
                 'currency_symbol' => $a->business->currency_symbol,
+                // Tells the confirmation page which channel a pending request will be answered on.
+                'notification_channel' => ClientIdentification::resolve($a->business->client_identifier_type),
             ] : null,
         ];
 
