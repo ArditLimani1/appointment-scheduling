@@ -34,6 +34,13 @@ class UserController extends Controller
         return back()->with('success', "Lidhja për rivendosjen e fjalëkalimit u dërgua në {$user->email}.");
     }
 
+    public function destroy(User $user): RedirectResponse
+    {
+        $email = $this->service->delete($user);
+
+        return back()->with('success', "Llogaria {$email} u fshi përgjithmonë.");
+    }
+
     public function impersonate(Request $request, User $user): RedirectResponse
     {
         $this->service->impersonate($request->user(), $user);

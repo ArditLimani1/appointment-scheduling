@@ -119,6 +119,7 @@ Route::middleware(['auth', 'super_admin'])->prefix('super-admin')->name('super-a
     Route::get('/users', [SuperAdmin\UserController::class, 'index'])->name('users.index');
     Route::post('/users/{user}/password-reset', [SuperAdmin\UserController::class, 'sendPasswordReset'])->name('users.password-reset');
     Route::post('/users/{user}/impersonate', [SuperAdmin\UserController::class, 'impersonate'])->name('users.impersonate');
+    Route::delete('/users/{user}', [SuperAdmin\UserController::class, 'destroy'])->name('users.destroy');
 
     Route::get('/business-type-categories', [SuperAdmin\BusinessTypeCategoryController::class, 'index'])->name('business-type-categories.index');
     Route::post('/business-type-categories', [SuperAdmin\BusinessTypeCategoryController::class, 'store'])->name('business-type-categories.store');

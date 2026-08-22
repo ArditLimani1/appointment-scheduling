@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import SuperAdminLayout from '@/Layouts/SuperAdminLayout';
 import PageHeader from '@/Components/PageHeader';
+import DeleteConfirmModal from '@/Components/DeleteConfirmModal';
 import Icon from '@/Components/Icon';
 
 export default function UsersIndex({ users, filters }) {
@@ -8,6 +10,8 @@ export default function UsersIndex({ users, filters }) {
         search: filters.search ?? '',
         role: filters.role ?? '',
     });
+
+    const [deleteTarget, setDeleteTarget] = useState(null);
 
     const submit = (e) => {
         e.preventDefault();
@@ -22,6 +26,11 @@ export default function UsersIndex({ users, filters }) {
     const impersonate = (u) => {
         if (!confirm(`Impersonate ${u.name} (${u.email})?`)) return;
         router.post(route('super-admin.users.impersonate', u.id));
+    };
+
+    const confirmDelete = () => {
+        router.delete(route('super-admin.users.destroy', deleteTarget.id), { preserveScroll: true });
+        setDeleteTarget(null);
     };
 
     const formatDate = (s) => new Date(s).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
@@ -116,6 +125,14 @@ export default function UsersIndex({ users, filters }) {
                                                         >
                                                             <Icon name="visibility" size="text-[18px]" />
                                                         </button>
+                                                        <button
+                                                            onClick={() => setDeleteTarget(u)}
+                                                            disabled={!!u.owned_business}
+                                                            className="p-2 text-outline hover:text-error transition-colors rounded-lg hover:bg-error-container disabled:opacity-40 disabled:hover:text-outline disabled:hover:bg-transparent disabled:cursor-not-allowed"
+                                                            title={u.owned_business ? 'Business owner — delete the business first' : 'Delete account'}
+                                                        >
+                                                            <Icon name="delete" size="text-[18px]" />
+                                                        </button>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -146,6 +163,18 @@ export default function UsersIndex({ users, filters }) {
                     </>
                 )}
             </div>
+            <DeleteConfirmModal
+                show={!!deleteTarget}
+                onClose={() => setDeleteTarget(null)}
+                onConfirm={confirmDelete}
+                title="Delete user?"
+                message={`${deleteTarget?.name} (${deleteTarget?.email}) will be permanently removed and the email freed up for a new account. This cannot be undone.`}
+                notice={
+                    deleteTarget?.business
+                        ? `Upcoming appointments for this staff member will be cancelled; past ones keep the name "${deleteTarget?.name}".`
+                        : null
+                }
+            />
         </SuperAdminLayout>
     );
 }
