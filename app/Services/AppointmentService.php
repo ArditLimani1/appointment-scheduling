@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Enums\AppointmentStatus;
-use App\Events\AppointmentCustomerNotificationRequested;
 use App\Exports\AppointmentsExport;
 use App\Models\Appointment;
 use App\Models\Business;
@@ -13,10 +12,10 @@ use App\Models\User;
 use App\Repositories\Interfaces\AppointmentRepositoryInterface;
 use App\Repositories\Interfaces\EmployeeRepositoryInterface;
 use App\Repositories\Interfaces\ServiceRepositoryInterface;
+use App\Services\AuditLogger;
 use App\Services\Interfaces\AppointmentServiceInterface;
 use App\Services\Interfaces\BookingServiceInterface;
-use App\Services\Interfaces\WhatsAppSenderInterface;
-use App\Support\AppointmentWhatsAppParams;
+use App\Support\AppointmentListScope;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -31,7 +30,7 @@ class AppointmentService implements AppointmentServiceInterface
         private ServiceRepositoryInterface $serviceRepository,
         private SharedResourceUsageService $sharedResourceUsageService,
         private BookingServiceInterface $bookingService,
-        private WhatsAppSenderInterface $whatsApp,
+        private AppointmentClientNotifier $clientNotifier,
     ) {}
 
     public function getFiltered(Business $business, array $filters, int $perPage = 10): array
@@ -55,6 +54,7 @@ class AppointmentService implements AppointmentServiceInterface
             ]),
             'filters' => [
                 'employee_id' => $filters['employee_id'] ?? null,
+                'scope' => AppointmentListScope::normalize($filters['scope'] ?? null),
                 'date_from' => $filters['date_from'] ?? null,
                 'date_to' => $filters['date_to'] ?? null,
                 'status' => $filters['statuses'] ?? [],
@@ -92,9 +92,15 @@ class AppointmentService implements AppointmentServiceInterface
             $rangeEnd = $anchor->toDateString();
             $columnDates = [$rangeStart];
         } else {
-            $view = 'week';
-            $start = $anchor->copy()->startOfWeek(Carbon::MONDAY);
-            $end = $start->copy()->addDays(6);
+            if ($view === 'rolling') {
+                // 7-day window centred on the anchor day, so "today" keeps the middle column.
+                $start = $anchor->copy()->subDays(3);
+                $end = $anchor->copy()->addDays(3);
+            } else {
+                $view = 'week';
+                $start = $anchor->copy()->startOfWeek(Carbon::MONDAY);
+                $end = $start->copy()->addDays(6);
+            }
             $rangeStart = $start->toDateString();
             $rangeEnd = $end->toDateString();
             $columnDates = [];
@@ -531,11 +537,55 @@ class AppointmentService implements AppointmentServiceInterface
             });
     }
 
+    /**
+     * Hard delete with no undo and no client notification, so it is limited to
+     * appointments that were cancelled first — cancelling is what tells the client.
+     */
     public function delete(Business $business, Appointment $appointment): void
     {
         abort_if($appointment->business_id !== $business->id, 403);
 
+        $status = $appointment->status instanceof AppointmentStatus
+            ? $appointment->status
+            : AppointmentStatus::tryFrom((string) $appointment->status);
+
+        abort_if($status !== AppointmentStatus::Cancelled, 422, __('errors.appointment.delete_requires_cancelled'));
+
+        // Capture before the row is gone — the audit entry is all that survives it.
+        $metadata = $this->auditMetadataForDeletion($appointment);
+        $label = trim(implode(' · ', array_filter([
+            trim($appointment->client_first_name.' '.$appointment->client_last_name),
+            trim(($metadata['date'] ?? '').' '.($metadata['start_time'] ?? '')),
+        ])));
+
         $this->appointmentRepository->delete($appointment);
+
+        AuditLogger::log('appointment.deleted', null, $metadata, $label !== '' ? $label : null);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function auditMetadataForDeletion(Appointment $appointment): array
+    {
+        $appointment->loadMissing(['business', 'employee', 'service']);
+
+        return [
+            'appointment_id' => $appointment->id,
+            'business_id' => $appointment->business_id,
+            'business_name' => $appointment->business?->name,
+            'booking_reference' => $appointment->booking_reference,
+            'client_name' => trim($appointment->client_first_name.' '.$appointment->client_last_name),
+            'client_phone' => $appointment->client_phone,
+            'client_email' => $appointment->client_email,
+            'date' => optional($appointment->date)->format('Y-m-d'),
+            'start_time' => $appointment->start_time,
+            'end_time' => $appointment->end_time,
+            'status' => AppointmentStatus::Cancelled->value,
+            'service_name' => $appointment->resolvedServiceName(),
+            'employee_name' => $appointment->resolvedEmployeeName(),
+            'price' => $appointment->price,
+        ];
     }
 
     public function export(Business $business, array $filters): BinaryFileResponse
@@ -571,31 +621,11 @@ class AppointmentService implements AppointmentServiceInterface
             return;
         }
 
-        if (filled($appointment->client_email)) {
-            event(new AppointmentCustomerNotificationRequested(
-                $appointment,
-                $notificationType,
-                $this->buildChangeSummary($before, $appointment),
-            ));
-        }
-
-        $this->sendWhatsAppUpdateNotification($appointment, $notificationType);
-    }
-
-    private function sendWhatsAppUpdateNotification(Appointment $appointment, string $notificationType): void
-    {
-        $phone = trim((string) ($appointment->client_phone ?? ''));
-        if ($phone === '' || ! $this->whatsApp->isConfigured()) {
-            return;
-        }
-
-        [$businessName, $date, $time, $contact] = AppointmentWhatsAppParams::fromAppointment($appointment);
-
-        match ($notificationType) {
-            'cancelled' => $this->whatsApp->sendBookingCancellation($phone, $businessName, $date, $time, $contact),
-            'rescheduled', 'changed' => $this->whatsApp->sendBookingUpdate($phone, $businessName, $date, $time, $contact),
-            default => null,
-        };
+        $this->clientNotifier->notify(
+            $appointment,
+            $notificationType,
+            $this->buildChangeSummary($before, $appointment),
+        );
     }
 
     private function determineNotificationType(array $before, Appointment $appointment): ?string
@@ -612,19 +642,21 @@ class AppointmentService implements AppointmentServiceInterface
         $employeeChanged = ((int) ($before['employee_id'] ?? 0)) !== (int) $appointment->employee_id;
 
         if ($statusChanged && $currentStatus === AppointmentStatus::Cancelled->value) {
-            return 'cancelled';
+            return AppointmentClientNotifier::CANCELLED;
         }
 
+        // Pending → confirmed is the client's first real confirmation, so it sends the
+        // confirmation message rather than an "updated" one.
         if ($statusChanged && $currentStatus === AppointmentStatus::Confirmed->value) {
-            return 'confirmed';
+            return AppointmentClientNotifier::CONFIRMED;
         }
 
         if ($scheduleChanged) {
-            return 'rescheduled';
+            return AppointmentClientNotifier::RESCHEDULED;
         }
 
         if ($serviceChanged || $employeeChanged) {
-            return 'changed';
+            return AppointmentClientNotifier::CHANGED;
         }
 
         return null;

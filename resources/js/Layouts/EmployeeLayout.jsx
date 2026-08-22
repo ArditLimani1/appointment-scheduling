@@ -9,10 +9,6 @@ import { useT } from '@/i18n/useT';
 import { Link, usePage } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 
-function toSlug(str) {
-    return (str ?? '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-}
-
 const navItems = [
     { labelKey: 'layout.employee.nav.dashboard', icon: 'dashboard', route: 'employee.dashboard', permission: 'employee.dashboard' },
     { labelKey: 'layout.employee.nav.appointments', icon: 'calendar_today', route: 'employee.appointments.index', permission: 'employee.dashboard' },
@@ -75,24 +71,6 @@ export default function EmployeeLayout({ children }) {
     const showTabs = visibleAdminNav.length > 0;
     const effectiveWorkspace = showTabs ? workspace : 'employee';
     const sidebarItems = effectiveWorkspace === 'admin' ? visibleAdminNav : visibleNav;
-
-    const employeeSlug = user?.booking_slug || toSlug(user?.name);
-    const bookingUrl = business?.slug
-        ? (() => {
-            if (effectiveWorkspace === 'admin') {
-                try {
-                    return route('booking.index', { slug: business.slug });
-                } catch {
-                    return `/book/${business.slug}`;
-                }
-            }
-            try {
-                return route('booking.employee', { slug: business.slug, employeeSlug });
-            } catch {
-                return `/book/${business.slug}/${employeeSlug}`;
-            }
-        })()
-        : null;
 
     const currentUrl = usePage().url;
     const createAppointmentHref = (() => {
@@ -263,18 +241,6 @@ export default function EmployeeLayout({ children }) {
                                 <Icon name="add" size="text-[20px] sm:text-sm" />
                                 <span className="hidden sm:inline">{addAppointmentLabel}</span>
                             </Link>
-                        )}
-                        {bookingUrl && (
-                            <a
-                                href={bookingUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-outline-variant text-on-surface-variant transition-colors hover:bg-surface-container sm:h-auto sm:w-auto sm:gap-1.5 sm:rounded-xl sm:px-3 sm:py-1.5 sm:text-xs sm:font-medium"
-                                aria-label={t('layout.employee.booking_page')}
-                            >
-                                <Icon name="open_in_new" size="text-[18px] sm:text-sm" />
-                                <span className="hidden sm:inline">{t('layout.employee.booking_page')}</span>
-                            </a>
                         )}
                         <EmployeeNotificationBell />
                         <Dropdown>

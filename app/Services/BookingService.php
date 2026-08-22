@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Enums\AppointmentStatus;
-use App\Events\AppointmentCustomerNotificationRequested;
 use App\Models\Appointment;
 use App\Models\Business;
 use App\Models\Service;
@@ -17,8 +16,6 @@ use App\Repositories\Interfaces\ScheduleOverrideRepositoryInterface;
 use App\Repositories\Interfaces\ScheduleRepositoryInterface;
 use App\Repositories\Interfaces\ServiceRepositoryInterface;
 use App\Services\Interfaces\BookingServiceInterface;
-use App\Services\Interfaces\WhatsAppSenderInterface;
-use App\Support\AppointmentWhatsAppParams;
 use App\Support\ClientIdentification;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -35,7 +32,7 @@ class BookingService implements BookingServiceInterface
         private ScheduleOverrideRepositoryInterface $scheduleOverrideRepository,
         private AppointmentRepositoryInterface $appointmentRepository,
         private SharedResourceUsageService $sharedResourceUsageService,
-        private WhatsAppSenderInterface $whatsApp,
+        private AppointmentClientNotifier $clientNotifier,
     ) {}
 
     public function getBookingPageData(string $slug, ?string $employeeSlug = null): array
@@ -315,10 +312,8 @@ class BookingService implements BookingServiceInterface
         });
 
         if ($autoConfirm) {
-            $this->notifyCustomerOfConfirmedBooking($created);
+            $this->clientNotifier->notify($created->first(), AppointmentClientNotifier::CONFIRMED);
         }
-
-        $this->sendBookingWhatsApp($created);
 
         return $created;
     }
@@ -447,14 +442,17 @@ class BookingService implements BookingServiceInterface
         $totalMinutes = (int) $services->sum('duration');
         $blockEnd = $startTime->copy()->addMinutes($totalMinutes);
 
-        $defaultStatus = $context === 'employee'
+        // Booking your own slot needs no confirmation step — you are the one who agreed to it.
+        $actorId = (int) (auth()->id() ?? 0);
+        $isSelfBooking = $actorId > 0 && $actorId === $employeeId;
+        $defaultStatus = $isSelfBooking || (bool) $business->auto_confirm_appointments
             ? AppointmentStatus::Confirmed
             : AppointmentStatus::Pending;
 
         $bookingReference = Str::uuid()->toString();
         $updatedBy = auth()->id();
 
-        return DB::transaction(function () use ($business, $employeeId, $data, $services, $timezone, $bookingReference, $defaultStatus, $updatedBy, $context, $startTime, $blockEnd) {
+        $created = DB::transaction(function () use ($business, $employeeId, $data, $services, $timezone, $bookingReference, $defaultStatus, $updatedBy, $context, $startTime, $blockEnd) {
             Appointment::query()
                 ->where('employee_id', $employeeId)
                 ->whereDate('date', $data['date'])
@@ -534,6 +532,12 @@ class BookingService implements BookingServiceInterface
 
             return $created;
         });
+
+        if ($defaultStatus === AppointmentStatus::Confirmed) {
+            $this->clientNotifier->notify($created->first(), AppointmentClientNotifier::CONFIRMED);
+        }
+
+        return $created;
     }
 
     public function getInternalAvailableSlots(Business $business, array $data, string $context): array
@@ -1161,42 +1165,4 @@ class BookingService implements BookingServiceInterface
         });
     }
 
-    /**
-     * @param  Collection<int, Appointment>  $appointments
-     */
-    private function sendBookingWhatsApp(Collection $appointments): void
-    {
-        $first = $appointments->first();
-        if (! $first instanceof Appointment) {
-            return;
-        }
-
-        $phone = trim((string) ($first->client_phone ?? ''));
-        if ($phone === '' || ! $this->whatsApp->isConfigured()) {
-            return;
-        }
-
-        [$businessName, $date, $time, $contact] = AppointmentWhatsAppParams::fromAppointment($first);
-
-        $this->whatsApp->sendBookingConfirmation($phone, $businessName, $date, $time, $contact);
-    }
-
-    /**
-     * @param  Collection<int, Appointment>  $appointments
-     */
-    private function notifyCustomerOfConfirmedBooking(Collection $appointments): void
-    {
-        $first = $appointments->first();
-        if (! $first instanceof Appointment || ! filled($first->client_email)) {
-            return;
-        }
-
-        $first->loadMissing(['business.owner', 'employee', 'service']);
-
-        event(new AppointmentCustomerNotificationRequested(
-            $first,
-            'confirmed',
-            [],
-        ));
-    }
 }

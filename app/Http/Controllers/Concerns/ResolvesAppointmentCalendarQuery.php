@@ -8,6 +8,16 @@ use Illuminate\Http\Request;
 
 trait ResolvesAppointmentCalendarQuery
 {
+    /** `rolling` is a 7-day window centred on the anchor day (3 back, 3 ahead). */
+    private const CALENDAR_VIEWS = ['day', 'week', 'rolling'];
+
+    private function resolveCalendarView(Request $request): string
+    {
+        $view = $request->query('view', 'week');
+
+        return is_string($view) && in_array($view, self::CALENDAR_VIEWS, true) ? $view : 'week';
+    }
+
     /**
      * Anchor date for calendar (Y-m-d). Supports legacy `week` query for bookmarks.
      */

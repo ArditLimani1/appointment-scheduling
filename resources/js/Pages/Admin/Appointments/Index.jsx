@@ -5,6 +5,10 @@ import Icon from '@/Components/Icon';
 import PageHeader from '@/Components/PageHeader';
 import FilterListbox from '@/Components/FilterListbox';
 import FilterStatusMulti from '@/Components/FilterStatusMulti';
+import AppointmentScopeToggle, {
+    APPOINTMENT_SCOPE_UPCOMING,
+    normalizeAppointmentScope,
+} from '@/Components/AppointmentScopeToggle';
 import DatePicker from '@/Components/DatePicker';
 import EditAppointmentModal from '@/Components/EditAppointmentModal';
 import useLockBodyScroll from '@/hooks/useLockBodyScroll';
@@ -15,7 +19,7 @@ import {
     DEFAULT_APPOINTMENT_STATUS_FILTER,
     normalizeAppointmentStatusFilter,
 } from '@/utils/appointmentStatusFilter';
-import { mergeDateFromChange, mergeDateToChange } from '@/utils/dateRangeFilters';
+import { currentMonthRange, mergeDateFromChange, mergeDateToChange } from '@/utils/dateRangeFilters';
 import {
     FILTER_PARAM_KEYS,
     FILTER_STORAGE_KEYS,
@@ -77,22 +81,13 @@ const STATUS_BADGE_BG = {
 /** Headless UI Listbox can mis-handle empty-string values; use a sentinel for “all services”. */
 const SERVICE_FILTER_ALL = 'all';
 
-function currentMonthStart() {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
-}
-
-function currentMonthEnd() {
-    const d = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
 function getRoutePathname(routeName) {
     return new URL(route(routeName), window.location.href).pathname;
 }
 
 function appointmentsFiltersToSearchParams(filters) {
     const params = new URLSearchParams();
+    params.set('scope', normalizeAppointmentScope(filters.scope));
     if (filters.employee_id !== '' && filters.employee_id != null) {
         params.set('employee_id', String(filters.employee_id));
     }
@@ -229,8 +224,9 @@ export default function Index({
 
     const [localFilters, setLocalFilters] = useState({
         employee_id: filters.employee_id != null && filters.employee_id !== '' ? String(filters.employee_id) : '',
-        date_from: filters.date_from ?? currentMonthStart(),
-        date_to: filters.date_to ?? currentMonthEnd(),
+        scope: normalizeAppointmentScope(filters.scope),
+        date_from: filters.date_from ?? currentMonthRange().from,
+        date_to: filters.date_to ?? currentMonthRange().to,
         status: normalizeAppointmentStatusFilter(filters.status),
         service_id: normalizeServiceFilterForState(filters.service_id),
     });
@@ -239,12 +235,13 @@ export default function Index({
     useEffect(() => {
         setLocalFilters({
             employee_id: filters.employee_id != null && filters.employee_id !== '' ? String(filters.employee_id) : '',
-            date_from: filters.date_from ?? currentMonthStart(),
-            date_to: filters.date_to ?? currentMonthEnd(),
+            scope: normalizeAppointmentScope(filters.scope),
+            date_from: filters.date_from ?? currentMonthRange().from,
+            date_to: filters.date_to ?? currentMonthRange().to,
             status: normalizeAppointmentStatusFilter(filters.status),
             service_id: normalizeServiceFilterForState(filters.service_id),
         });
-    }, [filters.employee_id, filters.date_from, filters.date_to, filters.service_id, statusFilterKey]);
+    }, [filters.employee_id, filters.scope, filters.date_from, filters.date_to, filters.service_id, statusFilterKey]);
 
     const visitOpts = useMemo(
         () => ({
@@ -283,8 +280,9 @@ export default function Index({
     const clearFilters = () => {
         const defaultFilters = {
             employee_id: '',
-            date_from: currentMonthStart(),
-            date_to: currentMonthEnd(),
+            scope: APPOINTMENT_SCOPE_UPCOMING,
+            date_from: currentMonthRange().from,
+            date_to: currentMonthRange().to,
             status: [...DEFAULT_APPOINTMENT_STATUS_FILTER],
             service_id: SERVICE_FILTER_ALL,
         };
@@ -382,17 +380,21 @@ export default function Index({
             </button>
         );
 
-        buttons.push(
-            <button
-                key="delete"
-                type="button"
-                onClick={() => setDeletingAppointment(apt)}
-                className="inline-flex items-center justify-center rounded-xl border border-red-200 bg-red-50 p-2.5 text-red-950 transition-colors hover:bg-red-100/90"
-                title={t('admin.appointments.delete')}
-            >
-                <Icon name="delete" size="text-sm" className="shrink-0" />
-            </button>
-        );
+        // Deleting is permanent and silent, so it is offered only once the client has been
+        // told — i.e. after the appointment is cancelled.
+        if (st === 'cancelled') {
+            buttons.push(
+                <button
+                    key="delete"
+                    type="button"
+                    onClick={() => setDeletingAppointment(apt)}
+                    className="inline-flex items-center justify-center rounded-xl border border-red-200 bg-red-50 p-2.5 text-red-950 transition-colors hover:bg-red-100/90"
+                    title={t('admin.appointments.delete')}
+                >
+                    <Icon name="delete" size="text-sm" className="shrink-0" />
+                </button>
+            );
+        }
 
         return buttons;
     };
@@ -451,14 +453,16 @@ export default function Index({
                     >
                         <Icon name="edit_calendar" size="text-base" />
                     </button>
-                    <button
-                        type="button"
-                        onClick={() => setDeletingAppointment(apt)}
-                        className={`${iconButtonClass} border border-red-200 bg-red-50 text-red-950 hover:bg-red-100/90`}
-                        title={t('admin.appointments.delete')}
-                    >
-                        <Icon name="delete" size="text-sm" />
-                    </button>
+                    {isCancelled ? (
+                        <button
+                            type="button"
+                            onClick={() => setDeletingAppointment(apt)}
+                            className={`${iconButtonClass} border border-red-200 bg-red-50 text-red-950 hover:bg-red-100/90`}
+                            title={t('admin.appointments.delete')}
+                        >
+                            <Icon name="delete" size="text-sm" />
+                        </button>
+                    ) : null}
                 </div>
             </>
         );
@@ -541,6 +545,12 @@ export default function Index({
             </PageHeader>
 
             <div className="mb-6 rounded-2xl bg-surface-container-lowest p-4 ring-1 ring-slate-100 shadow-sm">
+                <AppointmentScopeToggle
+                    value={localFilters.scope}
+                    onChange={(scope) => patchFilters({ scope })}
+                    translationRoot="admin.appointments"
+                    className="mb-4 sm:max-w-sm"
+                />
                 <div className="mb-3 lg:hidden">
                     <button
                         type="button"

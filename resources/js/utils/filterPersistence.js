@@ -13,9 +13,9 @@ export const FILTER_STORAGE_KEYS = {
 };
 
 export const FILTER_PARAM_KEYS = {
-    adminAppointments: ['employee_id', 'service_id', 'date_from', 'date_to', 'status', 'search', 'view', 'date'],
+    adminAppointments: ['employee_id', 'service_id', 'scope', 'date_from', 'date_to', 'status', 'search', 'view', 'date'],
     adminAnalytics: ['date_from', 'date_to', 'employee'],
-    employeeAppointments: ['service_id', 'date_from', 'date_to', 'status', 'search', 'view', 'date'],
+    employeeAppointments: ['service_id', 'scope', 'date_from', 'date_to', 'status', 'search', 'view', 'date'],
     employeeAnalytics: ['date_from', 'date_to', 'service_id'],
 };
 

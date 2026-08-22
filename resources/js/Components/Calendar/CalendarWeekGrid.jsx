@@ -11,7 +11,8 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import Icon from '@/Components/Icon';
 import { getEmployeeSlotStyles } from '@/utils/employeeCalendarColor';
-import { appointmentStatusValue, formatAppointmentDate, formatTimeHm, minutesToTimeHm, sqWeekdayName, timeToMinutes } from '@/utils/appointmentDate';
+import { trimPastColumnDates } from '@/utils/calendarPastTrim';
+import { appointmentStatusValue, formatTimeHm, minutesToTimeHm, sqWeekdayName, timeToMinutes } from '@/utils/appointmentDate';
 
 /** Busy / invalid slot while dragging — same for column bands and drop preview (matches hover feedback). */
 const BUSY_CONFLICT_OVERLAY_CLASS =
@@ -104,7 +105,7 @@ function buildTimeSegments(rangeStartMin, rangeEndMin, slotMinutes) {
     return segments;
 }
 
-function resolveCalendarRange(calendarHours, gridLineMinutesRaw) {
+function resolveCalendarRange(calendarHours, gridLineMinutesRaw, floorStartMin = null) {
     const gridLineMinutes = clampSlotMinutes(gridLineMinutesRaw);
     const src =
         calendarHours && calendarHours.start && calendarHours.end ? calendarHours : DEFAULT_CALENDAR_HOURS;
@@ -113,6 +114,11 @@ function resolveCalendarRange(calendarHours, gridLineMinutesRaw) {
     if (rangeEndMin <= rangeStartMin) {
         rangeStartMin = timeToMinutes(DEFAULT_CALENDAR_HOURS.start);
         rangeEndMin = timeToMinutes(DEFAULT_CALENDAR_HOURS.end);
+    }
+    if (floorStartMin != null && floorStartMin > rangeStartMin) {
+        // Snap down to the row grid so the hour labels stay aligned, and always keep one row visible.
+        const steps = Math.floor((floorStartMin - rangeStartMin) / gridLineMinutes);
+        rangeStartMin = Math.min(rangeStartMin + steps * gridLineMinutes, rangeEndMin - gridLineMinutes);
     }
     const minutesInView = rangeEndMin - rangeStartMin;
     const hourSlotCount = minutesInView / 60;
@@ -128,6 +134,33 @@ function resolveCalendarRange(calendarHours, gridLineMinutesRaw) {
         segments,
         gridLineMinutes,
     };
+}
+
+/**
+ * Every card shows the same two lines (client name, then "service - time"); only the
+ * type scale and padding shrink so a 15-minute block still fits both without clipping.
+ */
+const EVENT_DENSITY_CLASSES = {
+    tight: {
+        box: 'justify-center px-1.5 py-0.5 sm:px-2',
+        primary: 'text-[9px] leading-tight sm:text-[10px]',
+        secondary: 'text-[9px] leading-tight sm:text-[10px]',
+        icon: 'text-[13px]',
+        iconClass: 'leading-none',
+    },
+    normal: {
+        box: 'justify-center gap-0.5 px-2 py-1.5 sm:px-2.5 sm:py-2',
+        primary: 'text-[10px] leading-tight sm:text-xs',
+        secondary: 'text-[9px] leading-tight sm:text-[11px]',
+        icon: 'text-sm',
+        iconClass: 'leading-none sm:text-base',
+    },
+};
+
+/** Rendered pixel height of the block, since the grid scales at a fixed PX_PER_HOUR. */
+function eventDensity(durationMinutes) {
+    const px = (Math.max(Number(durationMinutes) || 0, 0) / 60) * PX_PER_HOUR;
+    return px < 46 ? 'tight' : 'normal';
 }
 
 /**
@@ -212,18 +245,18 @@ function DraggableEvent({
     readOnly,
     employeeColorMap,
     gridLineMinutes,
-    hideEmployeeName = false,
 }) {
-    const { localeBcp47 } = usePage().props;
     const cancelled = appointmentStatusValue(apt.status) === 'cancelled';
     const id = `appt-${apt.id}`;
     const startMin = timeToMinutes(apt.start_time);
     const endMin = timeToMinutes(apt.end_time);
-    const topPct = ((startMin - rangeStartMin) / minutesInView) * 100;
-    const heightPct = ((endMin - startMin) / minutesInView) * 100;
+    const visibleStartMin = Math.max(startMin, rangeStartMin);
+    const topPct = ((visibleStartMin - rangeStartMin) / minutesInView) * 100;
+    const heightPct = ((endMin - visibleStartMin) / minutesInView) * 100;
 
     const serviceDuration = apt.service?.duration != null ? Number(apt.service.duration) : null;
     const dragSnapMinutesValue = dragSnapMinutes(gridLineMinutes, serviceDuration);
+    const density = eventDensity(endMin - startMin);
 
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
         id,
@@ -254,19 +287,9 @@ function DraggableEvent({
     const employeeName = apt.employee?.name || apt.employee_name || 'Staff';
     const serviceName = apt.service?.name || apt.service_name || 'Appointment';
     const startHm = formatTimeHm(apt.start_time);
-    const endHm = formatTimeHm(apt.end_time);
-    const timeRangeLabel = startHm && endHm ? `${startHm}–${endHm}` : startHm;
-    const dateLabel = formatAppointmentDate(
-        dayDateStr || apt.date,
-        { day: 'numeric', month: 'short' },
-        localeBcp47,
-    );
-    const scheduleLabel = [dateLabel, timeRangeLabel].filter(Boolean).join(' · ');
     const clientName = [apt.client_first_name, apt.client_last_name].filter(Boolean).join(' ').trim();
-    const primaryLabel = hideEmployeeName
-        ? (clientName || serviceName)
-        : employeeName;
-    const showServiceLine = !hideEmployeeName || Boolean(clientName);
+    const primaryLabel = clientName || employeeName;
+    const secondaryLabel = [serviceName, startHm].filter(Boolean).join(' - ');
 
     return (
         <button
@@ -282,33 +305,26 @@ function DraggableEvent({
             }}
         >
             <span
-                className="pointer-events-none flex h-full min-h-0 flex-col rounded-md border-l-[3px] px-2 py-2 sm:px-2.5 sm:py-2.5"
+                className={`pointer-events-none flex h-full min-h-0 flex-col rounded-md border-l-[3px] ${EVENT_DENSITY_CLASSES[density].box}`}
                 style={{
                     backgroundColor: colors.bg,
                     borderLeftColor: colors.border,
                     color: colors.text,
                 }}
             >
-                <span className="flex items-start justify-between gap-1.5">
-                    <span className="min-w-0 truncate text-[10px] font-extrabold leading-snug sm:text-xs">
+                <span className="flex min-w-0 items-center justify-between gap-1">
+                    <span className={`min-w-0 truncate font-extrabold ${EVENT_DENSITY_CLASSES[density].primary}`}>
                         {primaryLabel}
                     </span>
                     <Icon
                         name={statusIconName(apt.status)}
-                        size="text-base"
-                        className={`shrink-0 sm:text-lg ${statusIconClassName(apt.status)}`}
+                        size={EVENT_DENSITY_CLASSES[density].icon}
+                        className={`shrink-0 ${EVENT_DENSITY_CLASSES[density].iconClass} ${statusIconClassName(apt.status)}`}
                     />
                 </span>
-                {scheduleLabel ? (
-                    <span className="mt-1 min-w-0 truncate text-[10px] font-bold leading-snug tabular-nums opacity-95 sm:text-xs">
-                        {scheduleLabel}
-                    </span>
-                ) : null}
-                {showServiceLine ? (
-                    <span className="mt-1 min-w-0 truncate text-[10px] font-semibold leading-snug opacity-95 sm:text-xs">
-                        {serviceName}
-                    </span>
-                ) : null}
+                <span className={`min-w-0 truncate font-semibold opacity-95 ${EVENT_DENSITY_CLASSES[density].secondary}`}>
+                    {secondaryLabel}
+                </span>
             </span>
         </button>
     );
@@ -646,8 +662,6 @@ export default function CalendarWeekGrid({
     columnDates = [],
     appointments,
     employeeColorMap,
-    /** Employee self-view: only their appointments — hide redundant staff name on cards. */
-    hideEmployeeName = false,
     onEventClick,
     onAppointmentMove,
     dragSavingId,
@@ -670,22 +684,10 @@ export default function CalendarWeekGrid({
     alwaysShowScheduleHighlights = false,
     /** Logged-in employee id in employee calendar — resolves per-employee break/day-off map when not dragging. */
     selfViewEmployeeId = null,
+    /** Drop elapsed days from the view, and start the hour axis at the current slot. */
+    hidePast = true,
 }) {
     const { localeBcp47 } = usePage().props;
-    const { rangeStartMin, rangeEndMin, minutesInView, gridMinHeight, gridWithHeaderMinHeight, segments, gridLineMinutes } = useMemo(
-        () => resolveCalendarRange(calendarHours, slotDurationMinutes),
-        [calendarHours?.start, calendarHours?.end, slotDurationMinutes],
-    );
-
-    const gridBodyRefs = useRef({});
-
-    const setGridBodyRef = (dateStr, el) => {
-        if (el) {
-            gridBodyRefs.current[dateStr] = el;
-        } else {
-            delete gridBodyRefs.current[dateStr];
-        }
-    };
 
     const [nowTick, setNowTick] = useState(0);
     useEffect(() => {
@@ -698,9 +700,36 @@ export default function CalendarWeekGrid({
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     }, [nowTick]);
 
+    const nowMinutes = useMemo(() => {
+        const d = new Date();
+        return d.getHours() * 60 + d.getMinutes();
+    }, [nowTick]);
+
+    const visibleColumnDates = useMemo(
+        () => (hidePast ? trimPastColumnDates(columnDates, todayStr) : columnDates),
+        [columnDates, todayStr, hidePast],
+    );
+
+    const axisFloorMin = hidePast && visibleColumnDates.includes(todayStr) ? nowMinutes : null;
+
+    const { rangeStartMin, rangeEndMin, minutesInView, gridMinHeight, gridWithHeaderMinHeight, segments, gridLineMinutes } = useMemo(
+        () => resolveCalendarRange(calendarHours, slotDurationMinutes, axisFloorMin),
+        [calendarHours?.start, calendarHours?.end, slotDurationMinutes, axisFloorMin],
+    );
+
+    const gridBodyRefs = useRef({});
+
+    const setGridBodyRef = (dateStr, el) => {
+        if (el) {
+            gridBodyRefs.current[dateStr] = el;
+        } else {
+            delete gridBodyRefs.current[dateStr];
+        }
+    };
+
     const appointmentsByDay = useMemo(() => {
         const map = new Map();
-        for (const d of columnDates) {
+        for (const d of visibleColumnDates) {
             map.set(d, []);
         }
         for (const apt of appointments) {
@@ -710,7 +739,7 @@ export default function CalendarWeekGrid({
             }
         }
         return map;
-    }, [appointments, columnDates]);
+    }, [appointments, visibleColumnDates]);
 
     const [dropPreview, setDropPreview] = useState(null);
     const [slotSetsByDate, setSlotSetsByDate] = useState(null);
@@ -876,7 +905,7 @@ export default function CalendarWeekGrid({
                 .then((data) => ({ date, slots: data.slots ?? [] }));
         };
 
-        Promise.all(columnDates.map((date) => fetchSlotsForDate(date)))
+        Promise.all(visibleColumnDates.map((date) => fetchSlotsForDate(date)))
             .then((results) => {
                 if (gen !== dragSlotFetchGen.current) {
                     return;
@@ -961,7 +990,7 @@ export default function CalendarWeekGrid({
     );
 
     const nowLinePct = useMemo(() => {
-        if (!columnDates.includes(todayStr)) {
+        if (!visibleColumnDates.includes(todayStr)) {
             return null;
         }
         const now = new Date();
@@ -970,7 +999,7 @@ export default function CalendarWeekGrid({
             return null;
         }
         return ((m - rangeStartMin) / minutesInView) * 100;
-    }, [columnDates, todayStr, minutesInView, rangeStartMin, rangeEndMin, nowTick]);
+    }, [visibleColumnDates, todayStr, minutesInView, rangeStartMin, rangeEndMin, nowTick]);
 
     const droppableHoverOutlineOnly = Boolean(dragOverlaySpec && slotSetsByDate);
 
@@ -1013,11 +1042,16 @@ export default function CalendarWeekGrid({
                 </div>
                 <div className="min-w-0 flex-1 overflow-hidden">
                     <div className="flex w-full min-w-0" style={{ minHeight: gridWithHeaderMinHeight }}>
-                        {columnDates.map((dateStr) => {
+                        {visibleColumnDates.map((dateStr) => {
                             const [y, mo, da] = dateStr.split('-').map(Number);
                             const dateObj = new Date(y, mo - 1, da);
                             const isToday = dateStr === todayStr;
-                            const dayApts = appointmentsByDay.get(dateStr) || [];
+                            // The axis already starts at the current slot; drop today's finished
+                            // appointments so nothing lingers on the first row.
+                            const pastUntilMin = hidePast && isToday ? nowMinutes : null;
+                            const dayApts = (appointmentsByDay.get(dateStr) || []).filter(
+                                (apt) => pastUntilMin == null || timeToMinutes(apt.end_time) > pastUntilMin,
+                            );
 
                             const forLayout = dayApts.map((apt) => ({
                                 id: apt.id,
@@ -1116,7 +1150,6 @@ export default function CalendarWeekGrid({
                                                 readOnly={readOnly}
                                                 disabled={dragSavingId === item.apt.id}
                                                 gridLineMinutes={gridLineMinutes}
-                                                hideEmployeeName={hideEmployeeName}
                                             />
                                         ))}
                                     </div>

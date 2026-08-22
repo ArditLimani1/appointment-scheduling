@@ -4,6 +4,7 @@ namespace App\Exports;
 
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
+use App\Support\AppointmentListScope;
 use Maatwebsite\Excel\Concerns\Exportable;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -68,7 +69,9 @@ class EmployeeAppointmentsExport implements FromQuery, WithHeadings, WithMapping
             }
         }
 
-        return $query->latest('date')->latest('start_time');
+        AppointmentListScope::applyUpcoming($query, $this->filters);
+
+        return AppointmentListScope::applyOrder($query, $this->filters);
     }
 
     public function headings(): array

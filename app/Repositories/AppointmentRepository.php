@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
 use App\Repositories\Interfaces\AppointmentRepositoryInterface;
+use App\Support\AppointmentListScope;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
@@ -20,13 +21,15 @@ class AppointmentRepository implements AppointmentRepositoryInterface
             $query->where('employee_id', (int) $filters['employee_id']);
         }
 
-        if (array_key_exists('date_from', $filters)) {
+        if (! empty($filters['date_from'])) {
             $query->whereDate('date', '>=', $filters['date_from']);
         }
 
-        if (array_key_exists('date_to', $filters)) {
+        if (! empty($filters['date_to'])) {
             $query->whereDate('date', '<=', $filters['date_to']);
         }
+
+        AppointmentListScope::applyUpcoming($query, $filters);
 
         if (array_key_exists('statuses', $filters) && is_array($filters['statuses']) && $filters['statuses'] !== []) {
             $cases = array_values(array_filter(array_map(
@@ -53,7 +56,7 @@ class AppointmentRepository implements AppointmentRepositoryInterface
             }
         }
 
-        return $query->latest('date')->latest('start_time')->paginate($perPage)->withQueryString();
+        return AppointmentListScope::applyOrder($query, $filters)->paginate($perPage)->withQueryString();
     }
 
     public function getForBusinessDateRange(int $businessId, string $from, string $to, array $filters = []): Collection

@@ -11,7 +11,7 @@ import {
     sanitizeBookingPlainText,
     validateBookingDetails,
 } from '@/utils/bookingClientDetails';
-import { patchSqMonthName } from '@/utils/appointmentDate';
+import { formatAppointmentDate, isSqLocale } from '@/utils/appointmentDate';
 import { resolveClientIdentifierType } from '@/utils/clientIdentification';
 
 function toDateString(d) {
@@ -78,22 +78,13 @@ function employeeWorksOnLocalDate(employee, d) {
 
 function formatDateLabel(ds, locale) {
     if (!ds) return null;
-    try {
-        const d = new Date(ds + 'T00:00:00');
-        const isSq = String(locale || '').toLowerCase().startsWith('sq');
-        const monthStyle = isSq ? 'long' : 'short';
-        let result = new Intl.DateTimeFormat(locale || 'sq-AL', {
-            weekday: 'short',
-            month: monthStyle,
-            day: 'numeric',
-        }).format(d);
-        if (isSq) {
-            result = patchSqMonthName(result, d, monthStyle);
-        }
-        return result;
-    } catch {
-        return ds;
-    }
+    const isSq = isSqLocale(locale);
+    const label = formatAppointmentDate(
+        ds,
+        { weekday: 'long', month: isSq ? 'long' : 'short', day: 'numeric' },
+        locale || 'sq-AL',
+    );
+    return label === '—' ? ds : label;
 }
 
 function addMinutesToTimeString(hm, addMins) {
@@ -173,8 +164,15 @@ export default function Index({
                 email,
                 notes,
                 identifierType,
+                // The booking confirmation goes out over WhatsApp, which needs a country code.
+                requirePhonePrefix: true,
+                messages: {
+                    phone_required: t('booking_ui.steps.phone_required_error'),
+                    phone_invalid: t('booking_ui.steps.phone_invalid_error'),
+                    phone_prefix_required: t('booking_ui.steps.phone_prefix_error'),
+                },
             }),
-        [fullName, phone, email, notes, identifierType]
+        [fullName, phone, email, notes, identifierType, t]
     );
 
     const prevEmployeeDateKeyRef = useRef('');

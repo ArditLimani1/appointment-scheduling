@@ -67,7 +67,8 @@ class InternalStoreAppointmentRequest extends FormRequest
     public function rules(): array
     {
         $business = $this->user()?->panelBusiness();
-        $clientFields = ClientIdentification::clientFieldRules($business?->client_identifier_type);
+        // Panel-created appointments send the WhatsApp confirmation, so the number needs a country code.
+        $clientFields = ClientIdentification::clientFieldRules($business?->client_identifier_type, true);
 
         $nameRegex = '/^[\p{L}\p{M}0-9\s\'.,-]+$/u';
 
@@ -93,7 +94,7 @@ class InternalStoreAppointmentRequest extends FormRequest
         return [
             'client_first_name.regex' => __('request_messages.booking.client_first_name_regex'),
             'client_last_name.regex' => __('request_messages.booking.client_last_name_regex'),
-            'client_phone.regex' => __('request_messages.booking.client_phone_regex'),
+            'client_phone.regex' => __('request_messages.booking.client_phone_country_code'),
             'client_email.email' => __('request_messages.booking.client_email_invalid'),
             'client_notes.regex' => __('request_messages.booking.client_notes_regex'),
         ];

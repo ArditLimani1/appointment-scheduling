@@ -133,7 +133,11 @@
     </div>
 
     <div class="filter-bar">
-        {{ __('exports.common.period') }}: <strong>{{ $dateFrom }}</strong> &mdash; <strong>{{ $dateTo }}</strong>
+        @if($dateFrom || $dateTo)
+            {{ __('exports.common.period') }}: <strong>{{ $dateFrom ?: '…' }}</strong> &mdash; <strong>{{ $dateTo ?: '…' }}</strong>
+        @else
+            {{ __('exports.common.period') }}: <strong>{{ $scopeLabel }}</strong>
+        @endif
         @if($serviceFilter) &nbsp;&bull;&nbsp; {{ __('exports.common.service') }}: <strong>{{ $serviceFilter }}</strong> @endif
         @if($statusFilter)   &nbsp;&bull;&nbsp; {{ __('exports.common.status') }}: <strong>{{ $statusFilter }}</strong> @endif
     </div>

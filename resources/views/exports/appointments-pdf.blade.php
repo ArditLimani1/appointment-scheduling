@@ -141,7 +141,11 @@
 
     {{-- Active filters --}}
     <div class="filter-bar">
-        {{ __('exports.common.period') }}: <strong>{{ $dateFrom }}</strong> &mdash; <strong>{{ $dateTo }}</strong>
+        @if($dateFrom || $dateTo)
+            {{ __('exports.common.period') }}: <strong>{{ $dateFrom ?: '…' }}</strong> &mdash; <strong>{{ $dateTo ?: '…' }}</strong>
+        @else
+            {{ __('exports.common.period') }}: <strong>{{ $scopeLabel }}</strong>
+        @endif
         @if($employeeFilter) &nbsp;&bull;&nbsp; {{ __('exports.common.employee') }}: <strong>{{ $employeeFilter }}</strong> @endif
         @if(!empty($serviceFilter)) &nbsp;&bull;&nbsp; {{ __('exports.common.service') }}: <strong>{{ $serviceFilter }}</strong> @endif
         @if($statusFilter)   &nbsp;&bull;&nbsp; {{ __('exports.common.status') }}: <strong>{{ $statusFilter }}</strong> @endif

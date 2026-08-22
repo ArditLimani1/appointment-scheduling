@@ -18,6 +18,7 @@ use App\Models\UserAppointmentViewPreference;
 use App\Services\Interfaces\AppointmentServiceInterface;
 use App\Services\Interfaces\BookingServiceInterface;
 use App\Services\Interfaces\ScheduleServiceInterface;
+use App\Support\AppointmentListScope;
 use App\Support\InternalRedirect;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -125,7 +126,9 @@ class AppointmentController extends Controller
             }
         }
 
-        $appointments = $query->latest('date')->latest('start_time')->get();
+        AppointmentListScope::applyUpcoming($query, $filters);
+
+        $appointments = AppointmentListScope::applyOrder($query, $filters)->get();
 
         $currencySymbol = $business->currency_symbol ?? '€';
 
@@ -146,6 +149,7 @@ class AppointmentController extends Controller
             'generatedAt' => Carbon::now()->locale(app()->getLocale())->translatedFormat('d F Y, H:i'),
             'dateFrom' => $filters['date_from'],
             'dateTo' => $filters['date_to'],
+            'scopeLabel' => __('exports.common.scope_'.$filters['scope']),
             'serviceFilter' => $serviceFilter,
             'statusFilter' => ! empty($filters['statuses']) && is_array($filters['statuses'])
                 ? implode(', ', array_values(array_filter(array_map(function ($s) {
@@ -163,8 +167,13 @@ class AppointmentController extends Controller
             'currencySymbol' => $currencySymbol,
         ])->setPaper('a4', 'landscape');
 
+        $fileSuffix = implode('_', array_filter([
+            $filters['date_from'] ?? null,
+            $filters['date_to'] ?? null,
+        ])) ?: $filters['scope'];
+
         return $pdf->download(
-            __('exports.files.my_appointments').'-'.$filters['date_from'].'_'.$filters['date_to'].'.pdf'
+            __('exports.files.my_appointments').'-'.$fileSuffix.'.pdf'
         );
     }
 
@@ -176,10 +185,7 @@ class AppointmentController extends Controller
         $business = $user->panelBusiness();
         abort_unless($business, 403);
 
-        $view = $request->query('view', 'week');
-        if (! is_string($view) || ! in_array($view, ['day', 'week'], true)) {
-            $view = 'week';
-        }
+        $view = $this->resolveCalendarView($request);
 
         $anchorDate = $this->resolveCalendarAnchorDate($request);
         $calendarFilters = $this->calendarFiltersFromRequest(
@@ -436,11 +442,9 @@ class AppointmentController extends Controller
         $business = $user->panelBusiness();
         abort_unless($business, 403);
 
-        $monthStart = Carbon::now()->startOfMonth()->toDateString();
-        $monthEnd = Carbon::now()->endOfMonth()->toDateString();
-
-        $from = $this->parseAppointmentsListDate($request->input('date_from'));
-        $to = $this->parseAppointmentsListDate($request->input('date_to'));
+        $scopeFilters = AppointmentListScope::filtersFromRequest($request, $business);
+        $from = $scopeFilters['date_from'];
+        $to = $scopeFilters['date_to'];
 
         if ($request->filled('date') && $from === null && $to === null) {
             $legacy = $this->parseAppointmentsListDate($request->input('date'));
@@ -448,12 +452,6 @@ class AppointmentController extends Controller
                 $from = $legacy;
                 $to = $legacy;
             }
-        }
-
-        $from ??= $monthStart;
-        $to ??= $monthEnd;
-        if ($from > $to) {
-            $to = $from;
         }
 
         $resolvedServiceId = null;
@@ -477,14 +475,14 @@ class AppointmentController extends Controller
             $search = substr($search, 0, 120);
         }
 
-        return [
+        return array_merge($scopeFilters, [
             'employee_id' => (int) $user->id,
             'date_from' => $from,
             'date_to' => $to,
             'statuses' => $this->resolveStatusFilterStrings($request, ['pending', 'confirmed', 'cancelled']),
             'service_id' => $resolvedServiceId,
             'search' => $search !== '' ? $search : null,
-        ];
+        ]);
     }
 
     private function parseAppointmentsListDate(mixed $value): ?string

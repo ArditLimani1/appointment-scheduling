@@ -16,6 +16,7 @@ return [
         'client_first_name_regex' => 'Emri mund të përmbajë vetëm shkronja, numra, hapësira dhe shenja të thjeshta interpunkcie.',
         'client_last_name_regex' => 'Mbiemri mund të përmbajë vetëm shkronja, numra, hapësira dhe shenja të thjeshta interpunkcie.',
         'client_phone_regex' => 'Futni një numër telefoni të vlefshëm: opsionalisht + dhe 6–20 shifra.',
+        'client_phone_country_code' => 'Numri i telefonit duhet të nisë me kodin e shtetit, p.sh. +383.',
         'client_email_invalid' => 'Ju lutemi futni një adresë email të vlefshme.',
         'client_notes_regex' => 'Shënimet nuk mund të përmbajnë kllapa trekëndëshe ose HTML.',
         'date_past' => 'Data duhet të jetë sot ose më vonë.',

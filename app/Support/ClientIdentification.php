@@ -39,15 +39,19 @@ class ClientIdentification
     }
 
     /**
+     * @param  bool  $requirePhoneCountryCode  Force a leading `+`; WhatsApp cannot deliver without it.
      * @return array{client_phone: array<int, mixed>, client_email: array<int, mixed>}
      */
-    public static function clientFieldRules(?string $storedType): array
+    public static function clientFieldRules(?string $storedType, bool $requirePhoneCountryCode = false): array
     {
         $identifierType = self::resolve($storedType);
+        $phoneRegex = $requirePhoneCountryCode
+            ? 'regex:/^\+[0-9]{6,20}$/'
+            : 'regex:/^\+?[0-9]{6,20}$/';
 
         return [
             'client_phone' => $identifierType === 'phone'
-                ? ['required', 'string', 'regex:/^\+?[0-9]{6,20}$/']
+                ? ['required', 'string', $phoneRegex]
                 : ['nullable', 'string', 'max:50'],
             'client_email' => $identifierType === 'email'
                 ? ['required', 'string', 'email:rfc', 'max:255', 'regex:/^[^<>"\'`]+$/u']

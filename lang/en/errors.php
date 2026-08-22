@@ -23,6 +23,7 @@ return [
         'slot_conflict_employee' => 'This time slot conflicts with another appointment for this employee. Please choose a different time or date where the employee is available.',
         'slot_conflict' => 'This time slot conflicts with another appointment. Please choose a different time or date.',
         'cannot_edit_cancelled' => 'Cannot edit a cancelled appointment.',
+        'delete_requires_cancelled' => 'Only cancelled appointments can be deleted. Cancel the appointment first.',
         'cannot_reschedule_cancelled' => 'Cannot reschedule a cancelled appointment.',
         'employee_service_not_offered' => 'You do not offer this service.',
         'outside_hours' => 'This time is outside working hours or is not available.',

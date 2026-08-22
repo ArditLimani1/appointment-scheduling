@@ -33,8 +33,10 @@ export function coercePhoneInput(raw) {
     return out.length > 24 ? out.slice(0, 24) : out;
 }
 
-export function isValidBookingPhone(normalized) {
-    return /^\+?[0-9]{6,20}$/.test(String(normalized ?? ''));
+/** `requirePlus` forces an international prefix — WhatsApp cannot deliver without a country code. */
+export function isValidBookingPhone(normalized, { requirePlus = false } = {}) {
+    const pattern = requirePlus ? /^\+[0-9]{6,20}$/ : /^\+?[0-9]{6,20}$/;
+    return pattern.test(String(normalized ?? ''));
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
@@ -46,39 +48,54 @@ export function isValidBookingEmail(s) {
     return !/[<>'"`]/.test(t);
 }
 
+const DEFAULT_MESSAGES = {
+    first_name_required: 'Please enter your full name.',
+    first_name_invalid: 'First name contains invalid characters.',
+    last_name_invalid: 'Last name contains invalid characters.',
+    phone_required: 'Please enter a phone number.',
+    phone_invalid: 'Use digits only, with an optional + at the start (6–20 digits).',
+    phone_prefix_required: 'Start with the country code, e.g. +383.',
+    email_required: 'Please enter your email address.',
+    email_invalid: 'Please enter a valid email address.',
+};
+
 /**
  * Client-side validation for booking details (mirrors backend intent).
- * @param {{ fullName: string, phone: string, email: string, notes: string, identifierType: 'phone'|'email' }} p
+ * `messages` lets a caller supply translated copy; anything missing falls back to English.
+ *
+ * @param {{ fullName: string, phone: string, email: string, notes: string, identifierType: 'phone'|'email', requirePhonePrefix?: boolean, messages?: Record<string, string> }} p
  */
 export function validateBookingDetails(p) {
     const errors = {};
+    const msg = { ...DEFAULT_MESSAGES, ...(p.messages ?? {}) };
     const full = sanitizeBookingPlainText(p.fullName, 200).trim();
     const parts = full.split(/\s+/).filter(Boolean);
     const first = parts[0] || '';
     const last = parts.length > 1 ? parts.slice(1).join(' ') : '-';
 
     if (!first) {
-        errors.client_first_name = 'Please enter your full name.';
+        errors.client_first_name = msg.first_name_required;
     } else if (!isValidNamePart(first)) {
-        errors.client_first_name = 'First name contains invalid characters.';
+        errors.client_first_name = msg.first_name_invalid;
     }
     if (!isValidNamePart(last)) {
-        errors.client_last_name = 'Last name contains invalid characters.';
+        errors.client_last_name = msg.last_name_invalid;
     }
 
     if (p.identifierType === 'phone') {
+        const requirePlus = Boolean(p.requirePhonePrefix);
         const ph = coercePhoneInput(p.phone);
         if (!ph || ph === '+') {
-            errors.client_phone = 'Please enter a phone number.';
-        } else if (!isValidBookingPhone(ph)) {
-            errors.client_phone = 'Use digits only, with an optional + at the start (6–20 digits).';
+            errors.client_phone = msg.phone_required;
+        } else if (!isValidBookingPhone(ph, { requirePlus })) {
+            errors.client_phone = requirePlus && !ph.startsWith('+') ? msg.phone_prefix_required : msg.phone_invalid;
         }
     } else {
         const em = sanitizeBookingPlainText(p.email, 255).trim();
         if (!em) {
-            errors.client_email = 'Please enter your email address.';
+            errors.client_email = msg.email_required;
         } else if (!isValidBookingEmail(em)) {
-            errors.client_email = 'Please enter a valid email address.';
+            errors.client_email = msg.email_invalid;
         }
     }
 

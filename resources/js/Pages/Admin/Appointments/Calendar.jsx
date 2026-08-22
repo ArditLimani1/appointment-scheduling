@@ -10,8 +10,13 @@ import DatePicker from '@/Components/DatePicker';
 import EditAppointmentModal from '@/Components/EditAppointmentModal';
 import CalendarWeekGrid from '@/Components/Calendar/CalendarWeekGrid';
 import { buildEmployeeColorMap, getEmployeeSlotStyles } from '@/utils/employeeCalendarColor';
+import { trimPastColumnDates } from '@/utils/calendarPastTrim';
+import AppointmentScopeToggle, {
+    APPOINTMENT_SCOPE_ALL,
+    APPOINTMENT_SCOPE_UPCOMING,
+} from '@/Components/AppointmentScopeToggle';
 import { buildAdminAppointmentPutPayload, buildEmployeeAppointmentPutPayload } from '@/utils/appointmentPutPayload';
-import { formatAppointmentDate, patchSqMonthName } from '@/utils/appointmentDate';
+import { formatAppointmentDate, formatLocalizedDate } from '@/utils/appointmentDate';
 import {
     appendAppointmentStatusParams,
     DEFAULT_APPOINTMENT_STATUS_FILTER,
@@ -24,6 +29,7 @@ import {
     FILTER_STORAGE_KEYS,
     appendQueryFlag,
     loadStoredFilters,
+    saveStoredFilters,
     urlHasFilterQuery,
     usePersistedFilters,
 } from '@/utils/filterPersistence';
@@ -33,6 +39,13 @@ const APPOINTMENT_STATUSES = ['pending', 'confirmed', 'cancelled'];
 
 /** Headless UI Listbox can mis-handle empty-string values; use a sentinel for “all services”. */
 const SERVICE_FILTER_ALL = 'all';
+
+/** `rolling` is a 7-day window centred on the anchor day — today keeps the middle column. */
+const CALENDAR_VIEWS = ['day', 'week', 'rolling'];
+
+function normalizeCalendarView(raw, fallback = 'week') {
+    return CALENDAR_VIEWS.includes(raw) ? raw : fallback;
+}
 
 function parseYmd(ymd) {
     const [y, m, d] = String(ymd).split('-').map(Number);
@@ -134,9 +147,7 @@ function formatRangeTitle(rangeStart, rangeEnd, view, localeBcp47) {
     const isSq = String(localeBcp47 || '').toLowerCase().startsWith('sq');
     const monthStyle = isSq ? 'long' : 'short';
     if (view === 'day') {
-        let result = a.toLocaleDateString(localeBcp47 || undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-        if (isSq) result = patchSqMonthName(result, a, 'long');
-        return result;
+        return formatLocalizedDate(a, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }, localeBcp47);
     }
     return `${formatAppointmentDate(rangeStart, { day: 'numeric', month: monthStyle }, localeBcp47)} – ${formatAppointmentDate(rangeEnd, {
         day: 'numeric',
@@ -243,7 +254,7 @@ export default function Calendar({
             ),
             service_id: normalizeServiceFilterForState(filtersProp.service_id),
             search: searchFromProps,
-            view: filtersProp.view === 'day' || filtersProp.view === 'week' ? filtersProp.view : calendar_view === 'day' ? 'day' : 'week',
+            view: normalizeCalendarView(filtersProp.view, normalizeCalendarView(calendar_view)),
             date:
                 filtersProp.date != null && String(filtersProp.date).match(/^\d{4}-\d{2}-\d{2}$/)
                     ? String(filtersProp.date).slice(0, 10)
@@ -296,7 +307,7 @@ export default function Calendar({
                 stored.date != null && String(stored.date).match(/^\d{4}-\d{2}-\d{2}$/)
                     ? String(stored.date).slice(0, 10)
                     : todayYmd();
-            const view = stored.view === 'day' || stored.view === 'week' ? stored.view : 'week';
+            const view = normalizeCalendarView(stored.view);
             return buildCalendarUrl(employeeCalendar, date, view, stored);
         },
         [employeeCalendar],
@@ -420,6 +431,7 @@ export default function Calendar({
         () => [
             { value: 'day', label: t('admin.calendar.day') },
             { value: 'week', label: t('admin.calendar.week') },
+            { value: 'rolling', label: t('admin.calendar.rolling') },
         ],
         [t],
     );
@@ -441,14 +453,35 @@ export default function Calendar({
         [services, t],
     );
 
+    /** Display-only, so it lives in sessionStorage instead of the query string the server reads. */
+    const viewOptionsStorageKey = employeeCalendar ? 'employee:calendar:options' : 'admin:calendar:options';
+    const [hidePast, setHidePast] = useState(
+        () => loadStoredFilters(viewOptionsStorageKey)?.hide_past !== false,
+    );
+
+    const changeScope = useCallback(
+        (scope) => {
+            const next = scope !== APPOINTMENT_SCOPE_ALL;
+            setHidePast(next);
+            saveStoredFilters(viewOptionsStorageKey, { hide_past: next });
+        },
+        [viewOptionsStorageKey],
+    );
+
+    // The grid drops elapsed days, so the header has to name the range that is actually on screen.
+    const visibleRangeStart = useMemo(
+        () => (hidePast ? (trimPastColumnDates(column_dates)[0] ?? range_start) : range_start),
+        [column_dates, range_start, hidePast],
+    );
+
     const titleMain = useMemo(
-        () => formatRangeTitle(range_start, range_end, localFilters.view, localeBcp47),
-        [range_start, range_end, localFilters.view, localeBcp47],
+        () => formatRangeTitle(visibleRangeStart, range_end, localFilters.view, localeBcp47),
+        [visibleRangeStart, range_end, localFilters.view, localeBcp47],
     );
 
     const titleSub = useMemo(
-        () => formatRangeSubtitle(range_start, range_end, localFilters.view, localeBcp47),
-        [range_start, range_end, localFilters.view, localeBcp47],
+        () => formatRangeSubtitle(visibleRangeStart, range_end, localFilters.view, localeBcp47),
+        [visibleRangeStart, range_end, localFilters.view, localeBcp47],
     );
 
     const employeeColorMap = useMemo(() => buildEmployeeColorMap(employees), [employees]);
@@ -574,6 +607,12 @@ export default function Calendar({
                 )}
 
                 <div className="mb-6 rounded-2xl bg-surface-container-lowest p-4 ring-1 ring-slate-100 shadow-sm">
+                    <AppointmentScopeToggle
+                        value={hidePast ? APPOINTMENT_SCOPE_UPCOMING : APPOINTMENT_SCOPE_ALL}
+                        onChange={changeScope}
+                        translationRoot="admin.calendar"
+                        className="mb-4 sm:max-w-sm"
+                    />
                     <div className={calendarFilterBarClasses.navWrap}>
                         <button
                             type="button"
@@ -758,10 +797,10 @@ export default function Calendar({
                 )}
 
                 <CalendarWeekGrid
+                    hidePast={hidePast}
                     columnDates={column_dates}
                     appointments={appointments}
                     employeeColorMap={employeeColorMap}
-                    hideEmployeeName={employeeCalendar}
                     onEventClick={(apt) => setSelected(apt)}
                     onAppointmentMove={onAppointmentMove}
                     dragSavingId={dragSavingId}

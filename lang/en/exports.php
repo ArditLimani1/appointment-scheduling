@@ -10,6 +10,8 @@ return [
     'common' => [
         'generated' => 'Generated',
         'period' => 'Period',
+        'scope_upcoming' => 'Upcoming appointments only',
+        'scope_all' => 'All appointments',
         'employee' => 'Employee',
         'service' => 'Service',
         'status' => 'Status',

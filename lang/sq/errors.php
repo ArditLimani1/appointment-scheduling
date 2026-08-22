@@ -23,6 +23,7 @@ return [
         'slot_conflict_employee' => 'Ky interval përputhet me një termin tjetër të këtij punonjësi. Zgjidhni datë ose orë tjetër kur punonjësi është i lirë.',
         'slot_conflict' => 'Ky interval përputhet me një termin tjetër. Zgjidhni datë ose orë tjetër.',
         'cannot_edit_cancelled' => 'Nuk mund të ndryshohet një termin i anuluar.',
+        'delete_requires_cancelled' => 'Vetëm terminet e anuluara mund të fshihen. Anuloni terminin së pari.',
         'cannot_reschedule_cancelled' => 'Nuk mund të riplanifikohet një termin i anuluar.',
         'employee_service_not_offered' => 'Ju nuk ofroni këtë shërbim.',
         'outside_hours' => 'Kjo orë është jashtë orarit të punës ose nuk është e disponueshme.',

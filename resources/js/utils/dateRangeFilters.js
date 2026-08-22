@@ -1,3 +1,15 @@
+/** Default list window: the calendar month the user is currently in. */
+export function currentMonthRange() {
+    const now = new Date();
+    const first = new Date(now.getFullYear(), now.getMonth(), 1);
+    const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return { from: ymd(first), to: ymd(last) };
+}
+
+function ymd(d) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 /**
  * Compare two YYYY-MM-DD strings. Returns -1 | 0 | 1. Empty strings sort as equal to each other, before non-empty.
  */

@@ -10,6 +10,8 @@ return [
     'common' => [
         'generated' => 'Gjeneruar',
         'period' => 'Periudha',
+        'scope_upcoming' => 'Vetem terminet e ardhshme',
+        'scope_all' => 'Te gjitha terminet',
         'employee' => 'Punonjesi',
         'service' => 'Sherbimi',
         'status' => 'Statusi',

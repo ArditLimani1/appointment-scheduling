@@ -18,6 +18,7 @@ use App\Repositories\Interfaces\ServiceRepositoryInterface;
 use App\Services\Interfaces\AppointmentServiceInterface;
 use App\Services\Interfaces\BookingServiceInterface;
 use App\Services\Interfaces\ScheduleServiceInterface;
+use App\Support\AppointmentListScope;
 use App\Support\InternalRedirect;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -77,10 +78,7 @@ class AppointmentController extends Controller
         $business = auth()->user()->panelBusiness();
         abort_unless($business, 403);
 
-        $view = $request->query('view', 'week');
-        if (! is_string($view) || ! in_array($view, ['day', 'week'], true)) {
-            $view = 'week';
-        }
+        $view = $this->resolveCalendarView($request);
 
         $anchorDate = $this->resolveCalendarAnchorDate($request);
         $calendarFilters = $this->calendarFiltersFromRequest($request, null, (int) $business->id);
@@ -313,7 +311,9 @@ class AppointmentController extends Controller
             $query->where('service_id', (int) $filters['service_id']);
         }
 
-        $appointments = $query->latest('date')->latest('start_time')->get();
+        AppointmentListScope::applyUpcoming($query, $filters);
+
+        $appointments = AppointmentListScope::applyOrder($query, $filters)->get();
 
         $currencySymbol = $business->currency_symbol ?? '€';
 
@@ -339,6 +339,7 @@ class AppointmentController extends Controller
             'generatedAt' => Carbon::now()->locale(app()->getLocale())->translatedFormat('d F Y, H:i'),
             'dateFrom' => $filters['date_from'],
             'dateTo' => $filters['date_to'],
+            'scopeLabel' => __('exports.common.scope_'.$filters['scope']),
             'employeeFilter' => $employeeFilter,
             'serviceFilter' => $serviceFilter,
             'statusFilter' => ! empty($filters['statuses']) && is_array($filters['statuses'])
@@ -357,13 +358,18 @@ class AppointmentController extends Controller
             'currencySymbol' => $currencySymbol,
         ])->setPaper('a4', 'landscape');
 
+        $fileSuffix = implode('_', array_filter([
+            $filters['date_from'] ?? null,
+            $filters['date_to'] ?? null,
+        ])) ?: $filters['scope'];
+
         return $pdf->download(
-            __('exports.files.appointments').'-'.$filters['date_from'].'_'.$filters['date_to'].'.pdf'
+            __('exports.files.appointments').'-'.$fileSuffix.'.pdf'
         );
     }
 
     /**
-     * @return array{employee_id?: int, date_from: string, date_to: string, statuses: list<string>, service_id?: int, search?: string}
+     * @return array{employee_id?: int, scope: string, date_from: ?string, date_to: ?string, statuses: list<string>, service_id?: int, search?: string}
      */
     private function filtersFromRequest(Request $request): array
     {
@@ -377,27 +383,15 @@ class AppointmentController extends Controller
             }
         }
 
-        $dateFrom = $request->query('date_from');
-        if (is_string($dateFrom) && $dateFrom !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom)) {
-            $filters['date_from'] = $dateFrom;
-        } else {
-            $filters['date_from'] = Carbon::now()->startOfMonth()->toDateString();
-        }
+        $business = $request->user()?->panelBusiness();
 
-        $dateTo = $request->query('date_to');
-        if (is_string($dateTo) && $dateTo !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo)) {
-            $filters['date_to'] = $dateTo;
-        } else {
-            $filters['date_to'] = Carbon::now()->endOfMonth()->toDateString();
-        }
-
-        if ($filters['date_from'] > $filters['date_to']) {
-            [$filters['date_from'], $filters['date_to']] = [$filters['date_to'], $filters['date_from']];
-        }
+        $filters = array_merge(
+            $filters,
+            AppointmentListScope::filtersFromRequest($request, $business),
+        );
 
         $filters['statuses'] = $this->resolveStatusFilterStrings($request);
 
-        $business = $request->user()?->panelBusiness();
         if ($business) {
             $rawServiceId = $request->query('service_id');
             if ($rawServiceId !== null && $rawServiceId !== '') {

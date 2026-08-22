@@ -5,15 +5,19 @@ import Icon from '@/Components/Icon';
 import DatePicker from '@/Components/DatePicker';
 import FilterListbox from '@/Components/FilterListbox';
 import FilterStatusMulti from '@/Components/FilterStatusMulti';
+import AppointmentScopeToggle, {
+    APPOINTMENT_SCOPE_UPCOMING,
+    normalizeAppointmentScope,
+} from '@/Components/AppointmentScopeToggle';
 import PageHeader from '@/Components/PageHeader';
 import EditAppointmentModal from '@/Components/EditAppointmentModal';
-import { appointmentStatusValue, formatAppointmentDate, formatTimeHm, patchSqMonthName } from '@/utils/appointmentDate';
+import { appointmentStatusValue, formatAppointmentDate, formatTimeHm, formatLocalizedDate } from '@/utils/appointmentDate';
 import {
     appendAppointmentStatusParams,
     EMPLOYEE_DEFAULT_APPOINTMENT_STATUS_FILTER,
     normalizeAppointmentStatusFilter,
 } from '@/utils/appointmentStatusFilter';
-import { mergeDateFromChange, mergeDateToChange } from '@/utils/dateRangeFilters';
+import { currentMonthRange, mergeDateFromChange, mergeDateToChange } from '@/utils/dateRangeFilters';
 import {
     FILTER_PARAM_KEYS,
     FILTER_STORAGE_KEYS,
@@ -34,16 +38,6 @@ const APPOINTMENT_STATUSES = ['pending', 'confirmed', 'cancelled'];
 /** Headless UI Listbox can mis-handle empty-string values; use a sentinel for “all services”. */
 const SERVICE_FILTER_ALL = 'all';
 
-function currentMonthStart() {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
-}
-
-function currentMonthEnd() {
-    const d = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
 function getRoutePathname(routeName) {
     try {
         return new URL(route(routeName), window.location.href).pathname;
@@ -54,6 +48,7 @@ function getRoutePathname(routeName) {
 
 function employeeAppointmentsFiltersToSearchParams(filters) {
     const params = new URLSearchParams();
+    params.set('scope', normalizeAppointmentScope(filters.scope));
     if (filters.date_from) {
         params.set('date_from', filters.date_from);
     }
@@ -119,11 +114,7 @@ function normalizeAppointments(appointments) {
 function fmt(d, opts, localeBcp47) {
     try {
         if (!d || Number.isNaN(d.getTime())) return '—';
-        let result = new Intl.DateTimeFormat(localeBcp47 || undefined, opts).format(d);
-        if (opts?.month && String(localeBcp47 || '').toLowerCase().startsWith('sq')) {
-            result = patchSqMonthName(result, d, opts.month);
-        }
-        return result;
+        return formatLocalizedDate(d, opts, localeBcp47);
     } catch {
         return '—';
     }
@@ -273,8 +264,9 @@ export default function EmployeeAppointmentsIndex({
     const searchFromServer = typeof filters.search === 'string' ? filters.search : '';
 
     const [localFilters, setLocalFilters] = useState({
-        date_from: filters.date_from ?? currentMonthStart(),
-        date_to: filters.date_to ?? currentMonthEnd(),
+        scope: normalizeAppointmentScope(filters.scope),
+        date_from: filters.date_from ?? currentMonthRange().from,
+        date_to: filters.date_to ?? currentMonthRange().to,
         status: normalizeAppointmentStatusFilter(filters.status, EMPLOYEE_DEFAULT_APPOINTMENT_STATUS_FILTER),
         service_id: normalizeServiceFilterForState(filters.service_id),
         search: searchFromServer,
@@ -291,15 +283,16 @@ export default function EmployeeAppointmentsIndex({
 
     useEffect(() => {
         setLocalFilters({
-            date_from: filters.date_from ?? currentMonthStart(),
-            date_to: filters.date_to ?? currentMonthEnd(),
+            scope: normalizeAppointmentScope(filters.scope),
+            date_from: filters.date_from ?? currentMonthRange().from,
+            date_to: filters.date_to ?? currentMonthRange().to,
             status: normalizeAppointmentStatusFilter(filters.status, EMPLOYEE_DEFAULT_APPOINTMENT_STATUS_FILTER),
             service_id: normalizeServiceFilterForState(filters.service_id),
             search: searchFromServer,
         });
         setClientSearchDraft(searchFromServer);
         clientSearchDraftRef.current = searchFromServer;
-    }, [filters.date_from, filters.date_to, filters.service_id, filters.search, statusFilterKey]);
+    }, [filters.scope, filters.date_from, filters.date_to, filters.service_id, filters.search, statusFilterKey]);
 
     useEffect(
         () => () => {
@@ -358,8 +351,9 @@ export default function EmployeeAppointmentsIndex({
             searchDebounceRef.current = null;
         }
         const defaultFilters = {
-            date_from: currentMonthStart(),
-            date_to: currentMonthEnd(),
+            scope: APPOINTMENT_SCOPE_UPCOMING,
+            date_from: currentMonthRange().from,
+            date_to: currentMonthRange().to,
             status: [...EMPLOYEE_DEFAULT_APPOINTMENT_STATUS_FILTER],
             service_id: SERVICE_FILTER_ALL,
             search: '',
@@ -415,10 +409,13 @@ export default function EmployeeAppointmentsIndex({
 
     const rangeLabel = useMemo(() => {
         const monthStyle = String(localeBcp47 || '').toLowerCase().startsWith('sq') ? 'long' : 'short';
-        const from = localFilters.date_from ?? currentMonthStart();
-        const to = localFilters.date_to ?? currentMonthEnd();
-        const d1 = new Date(`${from}T12:00:00`);
-        const d2 = new Date(`${to}T12:00:00`);
+        const from = localFilters.date_from;
+        const to = localFilters.date_to;
+        if (!from && !to) {
+            return t(`employee.appointments.scope_${normalizeAppointmentScope(localFilters.scope)}`);
+        }
+        const d1 = new Date(`${from || to}T12:00:00`);
+        const d2 = new Date(`${to || from}T12:00:00`);
         if (Number.isNaN(d1.getTime()) || Number.isNaN(d2.getTime())) {
             return '—';
         }
@@ -426,7 +423,7 @@ export default function EmployeeAppointmentsIndex({
             return fmt(d1, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }, localeBcp47);
         }
         return `${fmt(d1, { day: 'numeric', month: monthStyle, year: 'numeric' }, localeBcp47)} – ${fmt(d2, { day: 'numeric', month: monthStyle, year: 'numeric' }, localeBcp47)}`;
-    }, [localFilters.date_from, localFilters.date_to, isRange, localeBcp47]);
+    }, [localFilters.scope, localFilters.date_from, localFilters.date_to, isRange, localeBcp47, t]);
 
     const handleConfirm = (apt) => {
         router.patch(route('employee.appointments.update', apt.id), { status: 'confirmed' }, { preserveScroll: true });
@@ -527,6 +524,12 @@ export default function EmployeeAppointmentsIndex({
             </PageHeader>
 
             <div className="mb-6 rounded-2xl bg-surface-container-lowest p-4 ring-1 ring-slate-100 shadow-sm">
+                <AppointmentScopeToggle
+                    value={localFilters.scope}
+                    onChange={(scope) => patchFilters({ scope })}
+                    translationRoot="employee.appointments"
+                    className="mb-4 sm:max-w-sm"
+                />
                 <div className="mb-3 xl:hidden">
                     <button
                         type="button"

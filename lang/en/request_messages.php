@@ -16,6 +16,7 @@ return [
         'client_first_name_regex' => 'The first name may only include letters, numbers, spaces, and simple punctuation.',
         'client_last_name_regex' => 'The last name may only include letters, numbers, spaces, and simple punctuation.',
         'client_phone_regex' => 'Enter a valid phone number: optional + followed by 6–20 digits only.',
+        'client_phone_country_code' => 'The phone number must start with the country code, e.g. +383.',
         'client_email_invalid' => 'Please enter a valid email address.',
         'client_notes_regex' => 'Notes cannot contain angle brackets or HTML.',
         'date_past' => 'The date must be today or later.',

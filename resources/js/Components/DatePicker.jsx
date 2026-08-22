@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { usePage } from '@inertiajs/react';
 import Icon from '@/Components/Icon';
-import { sqMonthName, patchSqMonthName } from '@/utils/appointmentDate';
+import { sqMonthName, patchSqMonthName, patchSqWeekdayName } from '@/utils/appointmentDate';
 
 function buildDateString(year, month, day) {
     return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -106,7 +106,10 @@ export default function DatePicker({
     const weekdayLabels = Array.from({ length: 7 }, (_, index) => {
         const weekdayShift = weekStartsOn === 'monday' ? 1 : 0;
         const reference = new Date(2024, 0, 7 + ((index + weekdayShift) % 7)); // 2024-01-07 is Sunday.
-        return reference.toLocaleDateString(effectiveLocale, { weekday: 'short' });
+        const label = reference.toLocaleDateString(effectiveLocale, { weekday: 'short' });
+        return String(effectiveLocale || '').toLowerCase().startsWith('sq')
+            ? patchSqWeekdayName(label, reference, 'short')
+            : label;
     });
     const monthHeaderDate = new Date(viewYear, viewMonth, 1);
     const monthHeaderLabel = isSqLocale
