@@ -45,6 +45,7 @@ return [
 
     'auth' => [
         'email_not_verified' => 'Ju lutemi, verifikoni emailin përpara se të hyni. Ju kemi dërguar një lidhje të re verifikimi.',
+        'onboarding_required' => 'Përfundoni konfigurimin fillestar në web përpara se të përdorni aplikacionin.',
     ],
 
 ];

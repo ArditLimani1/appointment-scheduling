@@ -1,19 +1,17 @@
 <?php
 
-namespace App\Http\Controllers\Employee;
+namespace App\Http\Controllers\Api\V1\Employee;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Employee\UpdateScheduleOverrideRequest;
 use App\Http\Requests\Employee\UpdateScheduleRequest;
-use App\Support\StaffBookingSlug;
 use App\Services\Interfaces\ScheduleServiceInterface;
+use App\Support\StaffBookingSlug;
 use Carbon\Carbon;
-use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class ScheduleController extends Controller
 {
@@ -21,14 +19,10 @@ class ScheduleController extends Controller
         private ScheduleServiceInterface $scheduleService,
     ) {}
 
-    /**
-     * Date-range availability override view.
-     * Shows a 7-day week (defaulting to current week) pre-filled from overrides
-     * or the base schedule, ready for date-specific customisation.
-     */
-    public function index(Request $request): Response
+    /** Date-range availability override view (a 7-day week snapped to Monday). */
+    public function index(Request $request): JsonResponse
     {
-        $user = auth()->user();
+        $user = $request->user();
         $dateFrom = $this->resolveWeekStart($request->query('date_from'));
         $dateTo = Carbon::parse($dateFrom)->addDays(6)->toDateString();
 
@@ -46,7 +40,7 @@ class ScheduleController extends Controller
             ])
             ->keyBy('day_of_week');
 
-        return Inertia::render('Employee/Schedule/Index', [
+        return response()->json([
             'days' => $days,
             'dateFrom' => $dateFrom,
             'dateTo' => $dateTo,
@@ -54,60 +48,48 @@ class ScheduleController extends Controller
         ]);
     }
 
-    /**
-     * Save date-specific availability overrides for a week.
-     */
-    public function saveOverrides(UpdateScheduleOverrideRequest $request): RedirectResponse
+    /** Save date-specific availability overrides for a week. */
+    public function saveOverrides(UpdateScheduleOverrideRequest $request): JsonResponse
     {
         $validated = $request->validated();
-        $context = $validated['success_context'];
 
-        $this->scheduleService->saveOverrides(auth()->user(), Arr::only($validated, ['days']));
+        $this->scheduleService->saveOverrides($request->user(), Arr::only($validated, ['days']));
 
-        $message = match ($context) {
-            'day_on' => __('messages.schedule.day_on'),
-            'day_off' => __('messages.schedule.day_off'),
-            'break_added' => __('messages.schedule.break_added'),
-            'break_updated' => __('messages.schedule.break_updated'),
-            'break_removed' => __('messages.schedule.break_removed'),
-            'day_time_updated' => __('messages.schedule.day_time_updated'),
-        };
-
-        return redirect()->back()
-            ->with('success', $message)
-            ->with('flash_nonce', uniqid('', true));
+        return response()->json(['message' => __('messages.settings.saved')]);
     }
 
-    /**
-     * Default (base) weekly schedule configuration.
-     */
-    public function configuration(): Response
+    /** Default (base) weekly schedule configuration. */
+    public function configuration(Request $request): JsonResponse
     {
-        $user = auth()->user();
+        $user = $request->user();
         $business = $user->business;
         $schedules = $this->scheduleService->getSchedules($user);
 
         $employeeSlug = $user->booking_slug ?: Str::slug($user->name);
-        $bookingUrl = $business ? "/book/{$business->slug}" : null;
-        $employeeBookingUrl = $business ? "/book/{$business->slug}/{$employeeSlug}" : null;
 
-        return Inertia::render('Employee/Schedule/Configuration', [
+        return response()->json([
             'schedules' => $schedules,
             'business_name' => $business?->name,
             'employee_email' => $user->email,
-            'booking_url' => $bookingUrl,
-            'employee_booking_url' => $employeeBookingUrl,
+            'booking_url' => $business ? "/book/{$business->slug}" : null,
+            'employee_booking_url' => $business ? "/book/{$business->slug}/{$employeeSlug}" : null,
             'booking_slug' => $employeeSlug,
             'business_slug' => $business?->slug,
         ]);
     }
 
-    /**
-     * Save the employee's custom booking slug (Personal Booking URL).
-     */
-    public function updateInfo(Request $request): RedirectResponse
+    /** Save the base weekly schedule. */
+    public function update(UpdateScheduleRequest $request): JsonResponse
     {
-        $user = auth()->user();
+        $this->scheduleService->updateSchedules($request->user(), $request->validated());
+
+        return response()->json(['message' => __('messages.settings.saved')]);
+    }
+
+    /** Save the employee's custom booking slug (Personal Booking URL). */
+    public function updateInfo(Request $request): JsonResponse
+    {
+        $user = $request->user();
 
         $slug = strtolower(trim((string) $request->input('booking_slug', '')));
         $request->merge(['booking_slug' => $slug]);
@@ -129,23 +111,12 @@ class ScheduleController extends Controller
             ],
         ]);
 
-        $user->update(['booking_slug' => $request->validated('booking_slug')]);
+        $user->update(['booking_slug' => $slug]);
 
-        return redirect()->back()
-            ->with('success', __('messages.settings.saved'))
-            ->with('flash_nonce', uniqid('', true));
-    }
-
-    /**
-     * Save the base weekly schedule.
-     */
-    public function update(UpdateScheduleRequest $request): RedirectResponse
-    {
-        $this->scheduleService->updateSchedules(auth()->user(), $request->validated());
-
-        return redirect()->back()
-            ->with('success', __('messages.settings.saved'))
-            ->with('flash_nonce', uniqid('', true));
+        return response()->json([
+            'message' => __('messages.settings.saved'),
+            'booking_slug' => $slug,
+        ]);
     }
 
     private function resolveWeekStart(?string $dateFrom): string

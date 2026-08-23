@@ -18,7 +18,7 @@ class EnsureAdminPanelAccess
         abort_unless((bool) $user->is_active, 403);
 
         if (! $user->hasAdminPanelAccess()) {
-            if ($user->isEmployee()) {
+            if ($user->isEmployee() && ! $request->expectsJson()) {
                 return redirect()->route('employee.dashboard');
             }
 

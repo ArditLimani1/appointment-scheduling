@@ -45,6 +45,7 @@ return [
 
     'auth' => [
         'email_not_verified' => 'Please verify your email before logging in. We sent you a fresh verification link.',
+        'onboarding_required' => 'Finish onboarding on the web before using the app.',
     ],
 
 ];

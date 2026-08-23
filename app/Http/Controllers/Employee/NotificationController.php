@@ -44,21 +44,21 @@ class NotificationController extends Controller
         ]);
     }
 
-    public function markRead(Request $request, string $id): RedirectResponse
+    public function markRead(Request $request, string $id): RedirectResponse|JsonResponse
     {
         $notification = $request->user()->notifications()->whereKey($id)->first();
         if ($notification !== null && $notification->read_at === null) {
             $notification->markAsRead();
         }
 
-        return back();
+        return $request->expectsJson() ? response()->json(['message' => 'ok']) : back();
     }
 
-    public function markAllRead(Request $request): RedirectResponse
+    public function markAllRead(Request $request): RedirectResponse|JsonResponse
     {
         $request->user()->unreadNotifications->markAsRead();
 
-        return back();
+        return $request->expectsJson() ? response()->json(['message' => 'ok']) : back();
     }
 
     /**

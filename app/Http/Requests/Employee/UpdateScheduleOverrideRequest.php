@@ -15,7 +15,7 @@ class UpdateScheduleOverrideRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'success_context' => ['required', 'string', Rule::in(['day_on', 'day_off', 'break_added', 'break_updated', 'break_removed', 'day_time_updated'])],
+            'success_context' => [$this->expectsJson() ? 'sometimes' : 'required', 'string', Rule::in(['day_on', 'day_off', 'break_added', 'break_updated', 'break_removed', 'day_time_updated'])],
             'days' => ['required', 'array'],
             'days.*.date' => ['required', 'date_format:Y-m-d'],
             'days.*.is_active' => ['required', 'boolean'],

@@ -17,6 +17,13 @@ class EnsureBusinessExists
                 return $next($request);
             }
 
+            if ($request->expectsJson()) {
+                abort(response()->json([
+                    'message' => __('messages.business.setup_required'),
+                    'code' => 'business_setup_required',
+                ], 409));
+            }
+
             return redirect()->route('admin.settings.index')
                 ->with('info', __('messages.business.setup_required'));
         }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Employee;
 
 use App\Exports\EmployeeAnalyticsExport;
+use App\Http\Controllers\Concerns\ResolvesAnalyticsDateFilters;
 use App\Http\Controllers\Controller;
 use App\Services\Interfaces\EmployeeAnalyticsServiceInterface;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -16,13 +17,15 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class AnalyticsController extends Controller
 {
+    use ResolvesAnalyticsDateFilters;
+
     public function __construct(
         private EmployeeAnalyticsServiceInterface $employeeAnalyticsService,
     ) {}
 
     public function index(Request $request): Response
     {
-        $filters = $this->filtersFromRequest($request);
+        $filters = $this->analyticsFiltersFromRequest($request);
         $data = $this->employeeAnalyticsService->getAnalyticsData(auth()->user(), $filters);
 
         return Inertia::render('Employee/Analytics/Index', $data);
@@ -30,7 +33,7 @@ class AnalyticsController extends Controller
 
     public function export(Request $request): BinaryFileResponse
     {
-        $filters = $this->filtersFromRequest($request);
+        $filters = $this->analyticsFiltersFromRequest($request);
         $data = $this->employeeAnalyticsService->getAnalyticsData(auth()->user(), $filters);
 
         return Excel::download(
@@ -44,7 +47,7 @@ class AnalyticsController extends Controller
 
     public function exportPdf(Request $request): HttpResponse
     {
-        $filters = $this->filtersFromRequest($request);
+        $filters = $this->analyticsFiltersFromRequest($request);
         $data = $this->employeeAnalyticsService->getAnalyticsData(auth()->user(), $filters);
 
         $user = auth()->user();
@@ -68,29 +71,4 @@ class AnalyticsController extends Controller
         );
     }
 
-    /**
-     * @return array{date_from: string, date_to: string, service_id: mixed}
-     */
-    private function filtersFromRequest(Request $request): array
-    {
-        $dateFrom = $request->query('date_from');
-        if (! is_string($dateFrom) || ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom)) {
-            $dateFrom = Carbon::now()->startOfMonth()->toDateString();
-        }
-
-        $dateTo = $request->query('date_to');
-        if (! is_string($dateTo) || ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo)) {
-            $dateTo = Carbon::now()->endOfMonth()->toDateString();
-        }
-
-        if ($dateFrom > $dateTo) {
-            [$dateFrom, $dateTo] = [$dateTo, $dateFrom];
-        }
-
-        return [
-            'date_from' => $dateFrom,
-            'date_to' => $dateTo,
-            'service_id' => $request->query('service_id'),
-        ];
-    }
 }

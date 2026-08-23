@@ -26,6 +26,13 @@ class EnsureOnboardingCompleted
             return $next($request);
         }
 
+        if ($request->expectsJson()) {
+            abort(response()->json([
+                'message' => __('request_messages.auth.onboarding_required'),
+                'code' => 'onboarding_required',
+            ], 409));
+        }
+
         return redirect()->route('onboarding.show');
     }
 }
