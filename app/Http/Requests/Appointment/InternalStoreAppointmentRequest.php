@@ -158,7 +158,7 @@ class InternalStoreAppointmentRequest extends FormRequest
     {
         $name = (string) ($this->route()?->getName() ?? '');
 
-        return str_starts_with($name, 'employee.');
+        return str_starts_with($name, 'employee.') || str_starts_with($name, 'api.v1.employee.');
     }
 
     private function requiredPermission(): string

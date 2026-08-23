@@ -62,4 +62,8 @@ return [
         'verification_link_sent' => 'Ju kemi dërguar një lidhje verifikimi. Ju lutemi, verifikoni emailin përpara se të hyni.',
     ],
 
+    'push' => [
+        'new_appointment_title' => 'Termin i ri',
+        'new_appointment_body' => ':client — :service, :date :time',
+    ],
 ];

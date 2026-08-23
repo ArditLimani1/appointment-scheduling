@@ -62,4 +62,8 @@ return [
         'verification_link_sent' => 'We sent you a verification link. Please verify your email before signing in.',
     ],
 
+    'push' => [
+        'new_appointment_title' => 'New appointment',
+        'new_appointment_body' => ':client — :service, :date :time',
+    ],
 ];

@@ -18,7 +18,7 @@ class TranslationController extends Controller
      */
     private const GROUPS = [
         'admin', 'auth', 'common', 'components', 'employee',
-        'errors', 'layout', 'messages', 'profile', 'request_messages', 'validation',
+        'errors', 'layout', 'messages', 'mobile', 'profile', 'request_messages', 'validation',
     ];
 
     public function index(Request $request): JsonResponse

@@ -252,6 +252,30 @@ class AdminAreaTest extends TestCase
             ->assertStatus(403);
     }
 
+    public function test_admin_can_create_appointment_for_employee(): void
+    {
+        config(['queue.default' => 'sync']);
+        \Illuminate\Support\Facades\Http::fake();
+        \Illuminate\Support\Facades\Mail::fake();
+
+        $date = now()->addDays(3)->toDateString();
+
+        $this->withToken($this->token())
+            ->postJson('/api/v1/admin/appointments', [
+                'employee_id' => $this->employee->id,
+                'service_ids' => [$this->service->id],
+                'date' => $date,
+                'start_time' => '11:00',
+                'client_first_name' => 'Test',
+                'client_last_name' => 'Client',
+                'client_email' => 'client@example.com',
+                'client_phone' => '+38344123456',
+            ])
+            ->assertCreated();
+
+        $this->assertSame(1, Appointment::query()->whereDate('date', $date)->count());
+    }
+
     public function test_roles_index_lists_permission_groups(): void
     {
         $this->withToken($this->token())

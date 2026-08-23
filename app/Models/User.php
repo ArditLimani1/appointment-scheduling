@@ -190,6 +190,11 @@ class User extends Authenticatable implements MustVerifyEmailContract, HasLocale
         return $this->belongsTo(Business::class);
     }
 
+    public function deviceTokens(): HasMany
+    {
+        return $this->hasMany(DeviceToken::class);
+    }
+
     public function businessRole(): BelongsTo
     {
         return $this->belongsTo(BusinessRole::class);

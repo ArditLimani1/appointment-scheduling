@@ -89,7 +89,7 @@ class AppointmentController extends Controller
 
         return response()->json([
             'message' => __('messages.appointment.created'),
-            'appointments' => $appointments->load('service'),
+            'appointments' => $appointments->each(fn ($a) => $a->loadMissing('service'))->values(),
         ], 201);
     }
 

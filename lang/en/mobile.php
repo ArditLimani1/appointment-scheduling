@@ -1,0 +1,202 @@
+<?php
+
+return [
+
+    'login' => [
+        'title' => 'Welcome back',
+        'subtitle' => 'Sign in to manage your appointments.',
+        'email' => 'Email',
+        'password' => 'Password',
+        'submit' => 'Sign in',
+        'error_generic' => 'Could not sign in. Check your connection and try again.',
+    ],
+
+    'tabs' => [
+        'dashboard' => 'Home',
+        'calendar' => 'Calendar',
+        'appointments' => 'Appointments',
+        'manage' => 'Manage',
+        'more' => 'More',
+    ],
+
+    'dashboard' => [
+        'today' => 'Today',
+        'appointments' => 'Appointments',
+        'confirmed' => 'Confirmed',
+        'cancelled' => 'Cancelled',
+        'revenue' => 'Revenue',
+        'empty' => 'No appointments for this day.',
+    ],
+
+    'appointments' => [
+        'title' => 'Appointments',
+        'search' => 'Search clients…',
+        'empty' => 'No appointments match these filters.',
+        'scope_upcoming' => 'Upcoming',
+        'scope_all' => 'All',
+        'create' => 'New appointment',
+    ],
+
+    'sheet' => [
+        'date' => 'Date',
+        'time' => 'Time',
+        'employee' => 'Employee',
+        'phone' => 'Phone',
+        'email' => 'Email',
+        'notes' => 'Notes',
+        'reschedule' => 'Reschedule',
+        'no_slots' => 'No free slots on this day.',
+        'confirm' => 'Confirm appointment',
+        'cancel_appointment' => 'Cancel appointment',
+        'delete' => 'Delete',
+        'delete_confirm' => 'This permanently deletes the cancelled appointment. Continue?',
+        'back' => 'Back',
+        'error' => 'Something went wrong',
+    ],
+
+    'create' => [
+        'title' => 'New appointment',
+        'service' => 'Service',
+        'employee' => 'Employee',
+        'date' => 'Date',
+        'slot' => 'Time',
+        'first_name' => 'First name',
+        'last_name' => 'Last name',
+        'phone' => 'Phone',
+        'email' => 'Email (optional)',
+        'notes' => 'Notes (optional)',
+        'submit' => 'Create appointment',
+        'pick_service_first' => 'Pick a service to see available times.',
+        'created' => 'Appointment created.',
+    ],
+
+    'schedule' => [
+        'title' => 'My schedule',
+        'base_config' => 'Weekly configuration',
+        'day_active' => 'Working',
+        'day_off' => 'Off',
+        'from' => 'From',
+        'to' => 'To',
+        'breaks' => 'Breaks',
+        'add_break' => 'Add break',
+        'save' => 'Save',
+        'saved' => 'Saved.',
+        'booking_url' => 'Personal booking link',
+    ],
+
+    'calendar' => [
+        'title' => 'Calendar',
+        'view_day' => 'Day',
+        'view_week' => 'Week',
+        'all_employees' => 'All employees',
+        'day_off' => 'Day off',
+        'move_confirm_title' => 'Move appointment',
+        'move_confirm' => 'Move :client to :time?',
+    ],
+
+    'manage' => [
+        'title' => 'Manage',
+        'employees' => 'Employees',
+        'services' => 'Services',
+        'roles' => 'Roles',
+        'resources' => 'Shared resources',
+        'settings' => 'Settings',
+        'analytics' => 'Analytics',
+    ],
+
+    'employees' => [
+        'title' => 'Employees',
+        'add' => 'Add employee',
+        'name' => 'Name',
+        'email' => 'Email',
+        'password' => 'Password',
+        'password_hint' => 'Leave empty to keep the current password.',
+        'phone' => 'Phone',
+        'job_title' => 'Title',
+        'role' => 'Role',
+        'services' => 'Services',
+        'delete_confirm' => 'Delete this employee?',
+        'delete_appointments_too' => 'Also delete their appointments',
+    ],
+
+    'services' => [
+        'title' => 'Services',
+        'add' => 'Add service',
+        'name' => 'Name',
+        'description' => 'Description',
+        'duration' => 'Duration (min)',
+        'price' => 'Price',
+        'active' => 'Active',
+        'delete_confirm' => 'Delete this service?',
+    ],
+
+    'roles' => [
+        'title' => 'Roles',
+        'add' => 'Add role',
+        'name' => 'Name',
+        'permissions' => 'Permissions',
+        'delete_confirm' => 'Delete this role?',
+    ],
+
+    'resources' => [
+        'title' => 'Shared resources',
+        'add' => 'Add resource',
+        'name' => 'Name',
+        'quantity' => 'Quantity',
+        'delete_confirm' => 'Delete this resource?',
+    ],
+
+    'settings' => [
+        'title' => 'Settings',
+        'business_name' => 'Business name',
+        'phone' => 'Phone',
+        'email' => 'Email',
+        'location' => 'Location',
+        'description' => 'Description',
+        'save' => 'Save settings',
+        'saved' => 'Settings saved.',
+        'web_note' => 'Advanced settings (logo, booking rules, WhatsApp) are managed on the web.',
+    ],
+
+    'analytics' => [
+        'title' => 'Analytics',
+        'summary' => 'Summary',
+        'total_appointments' => 'Appointments',
+        'total_revenue' => 'Revenue',
+        'by_service' => 'By service',
+        'by_employee' => 'By employee',
+    ],
+
+    'notifications' => [
+        'title' => 'Notifications',
+        'empty' => 'Nothing new.',
+        'mark_all' => 'Mark all read',
+        'unread' => 'Unread',
+        'all' => 'All',
+    ],
+
+    'more' => [
+        'title' => 'More',
+        'profile' => 'Profile',
+        'language' => 'Language',
+        'logout' => 'Sign out',
+        'logout_confirm' => 'Sign out of this device?',
+        'schedule' => 'My schedule',
+        'schedule_config' => 'Weekly configuration',
+        'analytics' => 'My analytics',
+        'notifications' => 'Notifications',
+    ],
+
+    'common' => [
+        'error' => 'Something went wrong',
+        'retry' => 'Retry',
+        'save' => 'Save',
+        'cancel' => 'Cancel',
+        'delete' => 'Delete',
+        'confirm' => 'Confirm',
+        'back' => 'Back',
+        'loading' => 'Loading…',
+        'offline' => 'You appear to be offline.',
+    ],
+
+];
