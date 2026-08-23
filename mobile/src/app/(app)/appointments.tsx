@@ -26,8 +26,8 @@ export default function AppointmentsScreen() {
   const [selected, setSelected] = useState<Appointment | null>(null);
 
   const filters = { scope, search: search || undefined, page };
-  const adminQuery = useAdminAppointments(filters);
-  const employeeQuery = useEmployeeAppointments(filters);
+  const adminQuery = useAdminAppointments(filters, isAdminArea);
+  const employeeQuery = useEmployeeAppointments(filters, !isAdminArea);
   const query = isAdminArea ? adminQuery : employeeQuery;
 
   const paginator = query.data?.appointments;

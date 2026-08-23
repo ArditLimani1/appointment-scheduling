@@ -3,9 +3,25 @@ import type { Appointment } from '@/api/types';
 export const HOUR_HEIGHT = 64;
 export const SNAP_MINUTES = 15;
 
-export function timeToMinutes(time: string): number {
+export function timeToMinutes(time: string | null | undefined): number {
+  if (!time) return 0;
   const [h, m] = time.split(':').map((v) => parseInt(v, 10));
   return (h || 0) * 60 + (m || 0);
+}
+
+/**
+ * The API returns break intervals as {start, end} (ScheduleService), while the
+ * schedule editor uses {start_time, end_time}. Accept either.
+ */
+export interface BreakInterval {
+  start?: string;
+  end?: string;
+  start_time?: string;
+  end_time?: string;
+}
+
+export function breakBounds(b: BreakInterval): { start: string; end: string } {
+  return { start: b.start ?? b.start_time ?? '00:00', end: b.end ?? b.end_time ?? '00:00' };
 }
 
 export function minutesToTime(minutes: number): string {

@@ -31,8 +31,8 @@ export default function AnalyticsScreen() {
   const monthStart = DateTime.fromISO(anchor, { zone }).startOf('month').toISODate() ?? undefined;
   const monthEnd = DateTime.fromISO(anchor, { zone }).endOf('month').toISODate() ?? undefined;
 
-  const adminQuery = useAdminAnalytics({ date_from: monthStart, date_to: monthEnd });
-  const employeeQuery = useEmployeeAnalytics({ date_from: monthStart, date_to: monthEnd });
+  const adminQuery = useAdminAnalytics({ date_from: monthStart, date_to: monthEnd }, isAdminArea);
+  const employeeQuery = useEmployeeAnalytics({ date_from: monthStart, date_to: monthEnd }, !isAdminArea);
   const query = isAdminArea ? adminQuery : employeeQuery;
 
   if (query.isLoading) return <LoadingView />;

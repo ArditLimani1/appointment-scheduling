@@ -11,6 +11,7 @@ import { Button, ErrorView, LoadingView, Segmented } from '@/components/ui';
 import { AppointmentSheet } from '@/features/appointments/AppointmentSheet';
 import { DayTimeline } from '@/features/calendar/DayTimeline';
 import { WeekGrid } from '@/features/calendar/WeekGrid';
+import type { BreakInterval } from '@/features/calendar/layout';
 import { useT } from '@/i18n';
 import { palette, radius, spacing, typography } from '@/theme/tokens';
 
@@ -31,8 +32,9 @@ export default function CalendarScreen() {
   const [employeeFilter, setEmployeeFilter] = useState<number | undefined>(undefined);
   const [selected, setSelected] = useState<Appointment | null>(null);
 
-  const employeeQuery = useEmployeeCalendar(view, date);
-  const adminQuery = useAdminCalendar(view, date, employeeFilter);
+  // Only the query for the current area runs; the other stays idle.
+  const employeeQuery = useEmployeeCalendar(view, date, !isAdminArea);
+  const adminQuery = useAdminCalendar(view, date, employeeFilter, isAdminArea);
   const query = isAdminArea ? adminQuery : employeeQuery;
   const reschedule = useRescheduleOwn();
 
@@ -52,15 +54,14 @@ export default function CalendarScreen() {
   const hours = (data?.calendar_hours as { start: string; end: string } | undefined) ?? DEFAULT_HOURS;
   const columnDates = (data?.column_dates as string[] | undefined) ?? [date];
 
-  const uid = String(me?.user.id ?? '');
   const employeeBreaks = !isAdminArea
-    ? (data?.calendar_day_breaks as Record<string, { start_time: string; end_time: string }[]> | undefined)
+    ? (data?.calendar_day_breaks as Record<string, BreakInterval[]> | undefined)
     : undefined;
   const dayOffs = !isAdminArea ? ((data?.calendar_day_offs as string[] | undefined) ?? []) : [];
 
   const adminEmployeeBreaks =
     isAdminArea && employeeFilter
-      ? ((data?.calendar_employee_day_breaks as Record<string, Record<string, { start_time: string; end_time: string }[]>> | undefined)?.[
+      ? ((data?.calendar_employee_day_breaks as Record<string, Record<string, BreakInterval[]>> | undefined)?.[
           String(employeeFilter)
         ] ?? {})
       : {};
@@ -147,7 +148,7 @@ export default function CalendarScreen() {
             hours={hours}
             breaks={
               isAdminArea
-                ? (adminEmployeeBreaks[date] ?? (data?.calendar_day_breaks as Record<string, { start_time: string; end_time: string }[]> | undefined)?.[date] ?? [])
+                ? (adminEmployeeBreaks[date] ?? (data?.calendar_day_breaks as Record<string, BreakInterval[]> | undefined)?.[date] ?? [])
                 : (employeeBreaks?.[date] ?? [])
             }
             isDayOff={(isAdminArea ? adminDayOffs : dayOffs).includes(date)}

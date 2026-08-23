@@ -3,7 +3,8 @@ import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, type TextStyle } from 'react-native';
 import { palette, radius, statusColors, typography } from '@/theme/tokens';
 import type { Appointment } from '@/api/types';
-import { HOUR_HEIGHT, hoursRange, layoutDay, timeToMinutes } from './layout';
+import { HOUR_HEIGHT, breakBounds, hoursRange, layoutDay, timeToMinutes } from './layout';
+import type { BreakInterval } from './layout';
 
 const AXIS_WIDTH = 48;
 const MIN_COLUMN_WIDTH = 120;
@@ -28,7 +29,7 @@ export function WeekGrid({
   hours: { start: string; end: string };
   zone: string;
   locale: string;
-  dayBreaksByDate?: Record<string, { start_time: string; end_time: string }[]>;
+  dayBreaksByDate?: Record<string, BreakInterval[]>;
   dayOffs?: string[];
   onPressAppointment: (appointment: Appointment) => void;
   onPressDay?: (date: string) => void;
@@ -109,11 +110,11 @@ export function WeekGrid({
                     <View key={h} style={[styles.gridLine, { top: i * HOUR_HEIGHT }]} />
                   ))}
                   {isOff ? <View style={styles.dayOff} /> : null}
-                  {(dayBreaksByDate[date] ?? []).map((b, i) => {
-                    const top = ((timeToMinutes(b.start_time) - dayStart) / 60) * HOUR_HEIGHT;
-                    const height =
-                      ((timeToMinutes(b.end_time) - timeToMinutes(b.start_time)) / 60) * HOUR_HEIGHT;
-                    return <View key={`${b.start_time}-${i}`} style={[styles.breakBlock, { top, height }]} />;
+                  {(dayBreaksByDate[date] ?? []).map((raw, i) => {
+                    const b = breakBounds(raw);
+                    const top = ((timeToMinutes(b.start) - dayStart) / 60) * HOUR_HEIGHT;
+                    const height = ((timeToMinutes(b.end) - timeToMinutes(b.start)) / 60) * HOUR_HEIGHT;
+                    return <View key={`${b.start}-${i}`} style={[styles.breakBlock, { top, height }]} />;
                   })}
                   {blocks.map((block) => {
                     const colors = statusColors[block.appointment.status] ?? statusColors.pending;

@@ -9,9 +9,11 @@ import Animated, {
 } from 'react-native-reanimated';
 import { palette, radius, statusColors, typography } from '@/theme/tokens';
 import type { Appointment } from '@/api/types';
+import type { BreakInterval } from './layout';
 import {
   HOUR_HEIGHT,
   SNAP_MINUTES,
+  breakBounds,
   hoursRange,
   layoutDay,
   minutesToTime,
@@ -24,7 +26,7 @@ const AXIS_WIDTH = 48;
 interface Props {
   appointments: Appointment[];
   hours: { start: string; end: string };
-  breaks?: { start_time: string; end_time: string }[];
+  breaks?: BreakInterval[];
   isDayOff?: boolean;
   dayOffLabel?: string;
   onPressAppointment: (appointment: Appointment) => void;
@@ -81,10 +83,11 @@ export function DayTimeline({
             </View>
           ) : null}
 
-          {breaks.map((b, i) => {
-            const top = ((timeToMinutes(b.start_time) - dayStart) / 60) * HOUR_HEIGHT;
-            const height = ((timeToMinutes(b.end_time) - timeToMinutes(b.start_time)) / 60) * HOUR_HEIGHT;
-            return <View key={`${b.start_time}-${i}`} style={[styles.breakBlock, { top, height }]} />;
+          {breaks.map((raw, i) => {
+            const b = breakBounds(raw);
+            const top = ((timeToMinutes(b.start) - dayStart) / 60) * HOUR_HEIGHT;
+            const height = ((timeToMinutes(b.end) - timeToMinutes(b.start)) / 60) * HOUR_HEIGHT;
+            return <View key={`${b.start}-${i}`} style={[styles.breakBlock, { top, height }]} />;
           })}
 
           {blocks.map((block) => (

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from './client';
+import type { BreakInterval } from '@/features/calendar/layout';
 import type {
   Appointment,
   EmployeeSummary,
@@ -20,9 +21,9 @@ export interface CalendarPayload {
   employees: EmployeeSummary[];
   services?: ServiceSummary[];
   calendar_hours?: { start: string; end: string };
-  calendar_day_breaks?: Record<string, { start_time: string; end_time: string }[]>;
+  calendar_day_breaks?: Record<string, BreakInterval[]>;
   calendar_day_offs?: string[];
-  calendar_employee_day_breaks?: Record<string, Record<string, { start_time: string; end_time: string }[]>>;
+  calendar_employee_day_breaks?: Record<string, Record<string, BreakInterval[]>>;
   calendar_employee_day_offs?: Record<string, string[]>;
   filters: Record<string, unknown>;
   [key: string]: unknown;
@@ -66,17 +67,19 @@ export function useEmployeeDashboard(params: { date_from?: string; date_to?: str
   });
 }
 
-export function useEmployeeAppointments(filters: ListFilters) {
+export function useEmployeeAppointments(filters: ListFilters, enabled = true) {
   return useQuery({
     queryKey: ['employee', 'appointments', filters],
     queryFn: () => api<AppointmentListPayload>('/employee/appointments', { query: { ...filters } }),
+    enabled,
   });
 }
 
-export function useEmployeeCalendar(view: string, date: string) {
+export function useEmployeeCalendar(view: string, date: string, enabled = true) {
   return useQuery({
     queryKey: ['employee', 'calendar', view, date],
     queryFn: () => api<CalendarPayload>('/employee/appointments/calendar', { query: { view, date } }),
+    enabled,
   });
 }
 
@@ -117,10 +120,14 @@ export function useEmployeeScheduleConfig() {
   });
 }
 
-export function useEmployeeAnalytics(params: { date_from?: string; date_to?: string; service_id?: number }) {
+export function useEmployeeAnalytics(
+  params: { date_from?: string; date_to?: string; service_id?: number },
+  enabled = true,
+) {
   return useQuery({
     queryKey: ['employee', 'analytics', params],
     queryFn: () => api<Record<string, unknown>>('/employee/analytics', { query: { ...params } }),
+    enabled,
   });
 }
 
@@ -144,18 +151,20 @@ export function useAdminDashboard() {
   });
 }
 
-export function useAdminAppointments(filters: ListFilters) {
+export function useAdminAppointments(filters: ListFilters, enabled = true) {
   return useQuery({
     queryKey: ['admin', 'appointments', filters],
     queryFn: () => api<AppointmentListPayload>('/admin/appointments', { query: { ...filters } }),
+    enabled,
   });
 }
 
-export function useAdminCalendar(view: string, date: string, employeeId?: number) {
+export function useAdminCalendar(view: string, date: string, employeeId?: number, enabled = true) {
   return useQuery({
     queryKey: ['admin', 'calendar', view, date, employeeId ?? null],
     queryFn: () =>
       api<CalendarPayload>('/admin/appointments/calendar', { query: { view, date, employee_id: employeeId } }),
+    enabled,
   });
 }
 
@@ -222,10 +231,14 @@ export function useAdminSettings() {
   });
 }
 
-export function useAdminAnalytics(params: { date_from?: string; date_to?: string; employee_id?: number }) {
+export function useAdminAnalytics(
+  params: { date_from?: string; date_to?: string; employee_id?: number },
+  enabled = true,
+) {
   return useQuery({
     queryKey: ['admin', 'analytics', params],
     queryFn: () => api<Record<string, unknown>>('/admin/analytics', { query: { ...params } }),
+    enabled,
   });
 }
 
