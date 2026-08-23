@@ -4,6 +4,7 @@ namespace App\Mail;
 
 use Carbon\Carbon;
 use App\Models\Appointment;
+use App\Support\BusinessMention;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -45,14 +46,14 @@ class CustomerAppointmentUpdateMail extends Mailable
 
     private function subjectForType(): string
     {
-        $businessName = $this->appointment->business?->name ?? 'NiTermin';
+        $atBusiness = BusinessMention::at($this->appointment->business?->name ?? 'NiTermin');
 
         return match ($this->notificationType) {
-            'cancelled' => __('mail.appointment_update.subject_cancelled', ['business' => $businessName]),
-            'confirmed' => __('mail.appointment_update.subject_confirmed', ['business' => $businessName]),
-            'rescheduled' => __('mail.appointment_update.subject_rescheduled', ['business' => $businessName]),
-            'reminder' => __('mail.appointment_update.subject_reminder', ['business' => $businessName]),
-            default => __('mail.appointment_update.subject_updated', ['business' => $businessName]),
+            'cancelled' => __('mail.appointment_update.subject_cancelled', ['at_business' => $atBusiness]),
+            'confirmed' => __('mail.appointment_update.subject_confirmed', ['at_business' => $atBusiness]),
+            'rescheduled' => __('mail.appointment_update.subject_rescheduled', ['at_business' => $atBusiness]),
+            'reminder' => __('mail.appointment_update.subject_reminder', ['at_business' => $atBusiness]),
+            default => __('mail.appointment_update.subject_updated', ['at_business' => $atBusiness]),
         };
     }
 

@@ -1,12 +1,14 @@
 <?php
 
 return [
+    'at_business' => 'with :business',
+    'at_business_vowel' => 'with :business',
     'appointment_update' => [
-        'subject_cancelled' => 'Your appointment with :business has been cancelled',
-        'subject_confirmed' => 'Your appointment with :business has been confirmed',
-        'subject_rescheduled' => 'Your appointment with :business has been rescheduled',
-        'subject_updated' => 'Your appointment with :business has been updated',
-        'subject_reminder' => 'Reminder: your appointment with :business is today',
+        'subject_cancelled' => 'Your appointment :at_business has been cancelled',
+        'subject_confirmed' => 'Your appointment :at_business has been confirmed',
+        'subject_rescheduled' => 'Your appointment :at_business has been rescheduled',
+        'subject_updated' => 'Your appointment :at_business has been updated',
+        'subject_reminder' => 'Reminder: your appointment :at_business is today',
         'eyebrow' => 'Appointment update',
         'eyebrow_reminder' => 'Appointment reminder',
         'eyebrow_confirmed' => 'Appointment confirmed',
@@ -19,7 +21,6 @@ return [
         'intro_confirmed' => 'Your appointment:with_business is confirmed. Here are the details.',
         'intro_cancelled' => 'We wanted to let you know that your appointment:with_business has been cancelled.',
         'intro_rescheduled' => 'Your appointment:with_business has been rescheduled. Here are the new details.',
-        'intro_with_business' => ' with :business',
         'details_title' => 'Appointment details',
         'service' => 'Service',
         'staff' => 'Staff',

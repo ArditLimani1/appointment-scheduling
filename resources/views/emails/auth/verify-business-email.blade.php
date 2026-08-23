@@ -1,13 +1,18 @@
 @php
 @endphp
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ __('mail.verify_business.subject', ['business' => $businessName]) }}</title>
 </head>
 <body style="margin:0; padding:0; background:#f5f6f8; font-family:Inter, Arial, Helvetica, sans-serif; color:#0a0a0f;">
+    {{-- Inbox preview text: without it, mail clients show the "nitermin." wordmark from the header. --}}
+    <div style="display:none; max-height:0; max-width:0; overflow:hidden; mso-hide:all; font-size:1px; line-height:1px; color:#f5f6f8; opacity:0;">
+        {{ __('mail.verify_business.intro') }}
+        <span>&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;</span>
+    </div>
     <div style="max-width:640px; margin:0 auto; padding:32px 20px;">
         <div style="background:#ffffff; border:1px solid #e6e6eb; border-radius:28px; overflow:hidden; box-shadow:0 24px 48px -24px rgba(11, 23, 48, 0.22);">
             <div style="padding:26px 24px 18px; border-bottom:1px solid #efeff3; background:#ffffff;">
