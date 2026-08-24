@@ -70,6 +70,7 @@ return [
             'subtitle' => 'Appointment statistics by employee',
             'total_appointments' => 'Total Appointments',
             'total_revenue' => 'Total Revenue',
+            'revenue_confirmed_only' => 'Calculated only from confirmed appointments',
             'employee' => 'Employee',
             'cancelled' => 'Cancelled',
             'pending' => 'Pending',

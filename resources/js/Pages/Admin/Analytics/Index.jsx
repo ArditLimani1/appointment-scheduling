@@ -104,6 +104,9 @@ function ExportDropdown({ filters }) {
 
 export default function Index({
     total_appointments,
+    confirmed_count = 0,
+    cancelled_count = 0,
+    pending_count = 0,
     total_revenue,
     employee_stats,
     monthly_performance = [],
@@ -236,23 +239,47 @@ export default function Index({
                 </div>
             </section>
 
-            {/* Summary — same compact grid as admin dashboard */}
+            {/* Summary — same MetricCard grid as employee analytics */}
             <section className="mb-8">
-                <div className="grid grid-cols-2 gap-2 sm:gap-6">
+                <div className="grid grid-cols-2 gap-x-2 gap-y-3 sm:gap-6">
                     <MetricCard
                         icon="event_available"
                         iconBg="bg-primary-fixed"
                         iconClass="text-on-primary-fixed-variant"
                         label={t('admin.analytics.total_appointments')}
-                        value={total_appointments.toLocaleString()}
+                        value={(total_appointments ?? 0).toLocaleString()}
                     />
                     <MetricCard
-                        variant="primary"
-                        icon="payments"
-                        label={t('admin.analytics.total_revenue')}
-                        value={`${fmt(total_revenue)} ${symbol}`}
-                        badge={t('admin.analytics.confirmed_base')}
+                        icon="check_circle"
+                        iconBg="bg-tertiary-fixed"
+                        iconClass="text-on-tertiary-fixed-variant"
+                        label={t('admin.analytics.confirmed')}
+                        value={(confirmed_count ?? 0).toLocaleString()}
                     />
+                    <MetricCard
+                        icon="schedule"
+                        iconBg="bg-secondary-container"
+                        iconClass="text-on-secondary-container"
+                        label={t('admin.analytics.pending')}
+                        value={(pending_count ?? 0).toLocaleString()}
+                    />
+                    <MetricCard
+                        icon="cancel"
+                        iconBg="bg-error-container"
+                        iconClass="text-on-error-container"
+                        label={t('admin.analytics.cancelled')}
+                        value={(cancelled_count ?? 0).toLocaleString()}
+                    />
+                    <div className="col-span-2 max-sm:mt-2 sm:mt-0">
+                        <MetricCard
+                            variant="primary"
+                            layout="wide"
+                            icon="payments"
+                            label={t('admin.analytics.total_revenue')}
+                            value={`${fmt(total_revenue)} ${symbol}`}
+                            badge={t('admin.analytics.confirmed_base')}
+                        />
+                    </div>
                 </div>
             </section>
 

@@ -279,6 +279,7 @@ export default function Index({
                     <div className="col-span-2 max-sm:mt-2 sm:mt-0">
                         <MetricCard
                             variant="primary"
+                            layout="wide"
                             icon="payments"
                             label={t('employee.analytics.total_earnings')}
                             value={`${fmt(summary.revenue ?? 0)} ${symbol}`}
