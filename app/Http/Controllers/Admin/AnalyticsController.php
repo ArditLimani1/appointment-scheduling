@@ -63,10 +63,10 @@ class AnalyticsController extends Controller
             $employeeFilter = $employee?->name;
         }
 
-        $totalCancelled = (int) array_sum(array_column($stats, 'cancelled_count'));
-        $totalPending = (int) array_sum(array_column($stats, 'pending_count'));
-        $totalConfirmed = (int) array_sum(array_column($stats, 'confirmed_count'));
-        $totalRevenue = (float) array_sum(array_column($stats, 'revenue'));
+        $totalCancelled = (int) ($data['cancelled_count'] ?? 0);
+        $totalPending = (int) ($data['pending_count'] ?? 0);
+        $totalConfirmed = (int) ($data['confirmed_count'] ?? 0);
+        $totalRevenue = (float) ($data['total_revenue'] ?? 0);
 
         $pdf = Pdf::loadView('exports.analytics-pdf', [
             'businessName' => $business->name,

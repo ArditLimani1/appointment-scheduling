@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Repositories\Interfaces\BusinessRepositoryInterface;
 use App\Services\Interfaces\BusinessServiceInterface;
 use App\Support\ClientIdentification;
+use Illuminate\Validation\ValidationException;
 
 class BusinessService implements BusinessServiceInterface
 {
@@ -42,7 +43,46 @@ class BusinessService implements BusinessServiceInterface
             'owner_email' => $user->email,
             'show_owner_staff_toggle' => $showOwnerStaffToggle,
             'owner_also_works_as_staff' => $showOwnerStaffToggle && $user->also_works_as_staff,
+            'has_hired_employees' => $business->exists && $business->hasHiredEmployees(),
         ];
+    }
+
+    public function syncTeamMode(User $user, Business $business, ?bool $singleEmployeeMode, ?bool $ownerWorksAsStaff): void
+    {
+        if (! $user->isOwnerOf($business)) {
+            return;
+        }
+
+        if ($singleEmployeeMode === true) {
+            if ($business->hasHiredEmployees()) {
+                throw ValidationException::withMessages([
+                    'single_employee_mode' => __('errors.business.single_employee_requires_solo_owner'),
+                ]);
+            }
+
+            $business->forceFill(['single_employee_mode' => true])->save();
+            $user->syncAlsoWorksAsStaff($business, true);
+
+            return;
+        }
+
+        if ($singleEmployeeMode === false) {
+            $business->forceFill(['single_employee_mode' => false])->save();
+        }
+
+        $business->refresh();
+
+        if ($ownerWorksAsStaff === null) {
+            return;
+        }
+
+        if ($business->single_employee_mode && $ownerWorksAsStaff === false) {
+            throw ValidationException::withMessages([
+                'owner_also_works_as_staff' => __('errors.business.owner_staff_locked_in_single_employee'),
+            ]);
+        }
+
+        $user->syncAlsoWorksAsStaff($business, $ownerWorksAsStaff);
     }
 
     public function updateSettings(User $user, array $data): Business

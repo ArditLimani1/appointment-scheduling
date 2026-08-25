@@ -233,7 +233,8 @@ export default function Calendar({
 }) {
     const t = useT();
     const page = usePage();
-    const { localeBcp47 } = page.props;
+    const { localeBcp47, auth } = page.props;
+    const soloMode = auth?.business?.single_employee_mode === true;
     const inertiaUrl = typeof page.url === 'string' ? page.url : `${window.location.pathname}${window.location.search}`;
     const [selected, setSelected] = useState(null);
     const [dragSavingId, setDragSavingId] = useState(null);
@@ -655,7 +656,7 @@ export default function Calendar({
                     </div>
 
                     <div className={`${showMobileFilters ? 'flex' : 'hidden'} md:flex ${calendarFilterBarClasses.row}`}>
-                        {!employeeCalendar && (
+                        {!employeeCalendar && !soloMode && (
                             <FilterListbox
                                 label={t('admin.calendar.employee')}
                                 value={localFilters.employee_id}
@@ -767,7 +768,7 @@ export default function Calendar({
                         </div>
                     </div>
 
-                    {!employeeCalendar && (
+                    {!employeeCalendar && !soloMode && (
                         <div className={`${showMobileFilters ? 'flex' : 'hidden'} mt-4 flex-wrap items-center gap-4 border-t border-slate-100 pt-4 md:flex`}>
                             <span className="text-[10px] font-bold uppercase tracking-widest text-outline">{t('admin.calendar.staff')}</span>
                             <div className="flex flex-wrap gap-4">

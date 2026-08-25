@@ -57,8 +57,14 @@ return [
 
         'step_staff_title' => "I'm part of the staff",
         'step_staff_sub' => 'Enable this if you also provide services and want to be bookable.',
-        'staff_toggle_label' => 'Show me on the booking page as a service provider',
-        'staff_toggle_help' => 'You can change this later from Settings if you change your mind.',
+        'staff_toggle_label' => 'Show me on the booking page',
+        'staff_toggle_help' => 'You can change this later in Configuration.',
+
+        'step_solo_title' => 'Only one employee',
+        'step_solo_sub' => 'Turn this on if you are both the admin and the only person who takes appointments. You will not switch between Admin and Employee views.',
+        'solo_toggle_label' => 'I am the only employee and the admin',
+        'staff_locked_title' => 'Cannot turn this off',
+        'staff_locked_body' => 'While “only one employee” is on, you stay listed as staff. Turn that option off first.',
 
         'step_service_title' => 'Allow staff to change service',
         'step_service_sub' => 'Decide whether staff can change the service after a booking.',

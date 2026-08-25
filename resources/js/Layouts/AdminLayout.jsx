@@ -47,17 +47,41 @@ export default function AdminLayout({ children }) {
     const t = useT();
     useLockBodyScroll(sidebarOpen);
 
+    const soloMode = business?.single_employee_mode === true;
+
     const visibleNav = useMemo(
-        () =>
-            navItems
+        () => {
+            const items = navItems
                 .filter((item) => {
                     if (item.permission === 'admin.shared_resources' && business?.uses_shared_resources === false) {
                         return false;
                     }
+                    if (soloMode && item.route === 'admin.roles.index') {
+                        return false;
+                    }
                     return can(item.permission);
                 })
-                .map((item) => ({ ...item, label: t(item.labelKey) })),
-        [permissions, t, business?.uses_shared_resources],
+                .map((item) => ({ ...item, label: t(item.labelKey) }));
+
+            if (soloMode && can('employee.schedule')) {
+                const scheduleItem = {
+                    labelKey: 'layout.admin.nav.schedule',
+                    icon: 'calendar_view_week',
+                    route: 'employee.schedule.index',
+                    permission: 'employee.schedule',
+                    label: t('layout.admin.nav.schedule'),
+                };
+                const apptIdx = items.findIndex((item) => item.route === 'admin.appointments.index');
+                if (apptIdx >= 0) {
+                    items.splice(apptIdx + 1, 0, scheduleItem);
+                } else {
+                    items.push(scheduleItem);
+                }
+            }
+
+            return items;
+        },
+        [permissions, t, business?.uses_shared_resources, business?.single_employee_mode, soloMode],
     );
     const visibleMobileNav = useMemo(
         () =>
@@ -67,9 +91,11 @@ export default function AdminLayout({ children }) {
         [permissions, t],
     );
 
-    const showEmployeeSection = user?.role === 'employee'
-        ? permissions.some(p => p.startsWith('employee.'))
-        : user?.also_works_as_staff === true;
+    const showEmployeeSection = soloMode
+        ? false
+        : user?.role === 'employee'
+            ? permissions.some(p => p.startsWith('employee.'))
+            : user?.also_works_as_staff === true;
     const visibleEmployeeNav = useMemo(
         () =>
             showEmployeeSection
@@ -88,8 +114,14 @@ export default function AdminLayout({ children }) {
             if (routeName === 'employee.appointments.index') {
                 return route().current('employee.appointments.index') || route().current('employee.appointments.calendar');
             }
+            if (soloMode && routeName === 'admin.settings.index') {
+                return route().current('admin.settings.index') || route().current('employee.schedule.configuration');
+            }
             if (routeName === 'employee.schedule.index') {
-                return route().current('employee.schedule.index');
+                if (soloMode) {
+                    return route().current('employee.schedule.index');
+                }
+                return route().current('employee.schedule.index') || route().current('employee.schedule.configuration');
             }
             return route().current(routeName) || route().current(routeName + '.*');
         } catch {

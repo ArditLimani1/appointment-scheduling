@@ -1,6 +1,7 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import { useId, useMemo, useState } from 'react';
 import Icon from '@/Components/Icon';
+import NoticeModal from '@/Components/NoticeModal';
 import OnboardingShell from './OnboardingShell';
 import { useT } from '@/i18n/useT';
 import { resolveClientIdentifierType } from '@/utils/clientIdentification';
@@ -79,7 +80,7 @@ function SegmentedChoice({ options, value, onChange }) {
     );
 }
 
-function ToggleCard({ icon, title, help, label, value, onChange, children }) {
+function ToggleCard({ icon, title, help, label, value, onChange, disabled = false, lockedNote, errorMessage, children }) {
     const toggleId = useId();
     return (
         <div className="rounded-2xl border border-outline-variant/40 bg-surface p-6 sm:p-7">
@@ -93,10 +94,10 @@ function ToggleCard({ icon, title, help, label, value, onChange, children }) {
                 </div>
             </div>
 
-            <div className="mt-5 flex items-center justify-between gap-4 rounded-2xl border border-outline-variant/60 bg-surface-container-lowest px-5 py-4">
+            <div className={`mt-5 flex items-center justify-between gap-4 rounded-2xl border border-outline-variant/60 bg-surface-container-lowest px-5 py-4 ${disabled ? 'opacity-70' : ''}`}>
                 <label
                     htmlFor={toggleId}
-                    className="text-sm font-bold text-on-surface cursor-pointer select-none"
+                    className={`text-sm font-bold text-on-surface select-none ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                 >
                     {label}
                 </label>
@@ -105,10 +106,14 @@ function ToggleCard({ icon, title, help, label, value, onChange, children }) {
                     type="button"
                     role="switch"
                     aria-checked={value}
-                    onClick={() => onChange(!value)}
+                    aria-disabled={disabled}
+                    disabled={disabled}
+                    onClick={() => {
+                        if (!disabled) onChange(!value);
+                    }}
                     className={`relative h-6 w-11 shrink-0 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-on-surface/30 ${
                         value ? 'bg-on-surface' : 'bg-surface-container-highest'
-                    }`}
+                    } ${disabled ? 'cursor-not-allowed' : ''}`}
                 >
                     <span
                         className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-all ${
@@ -117,6 +122,13 @@ function ToggleCard({ icon, title, help, label, value, onChange, children }) {
                     />
                 </button>
             </div>
+
+            {lockedNote && (
+                <p className="mt-3 text-xs font-medium text-on-surface-variant leading-relaxed">{lockedNote}</p>
+            )}
+            {errorMessage && (
+                <p className="mt-3 text-xs font-medium text-error leading-relaxed">{errorMessage}</p>
+            )}
 
             {children}
         </div>
@@ -129,6 +141,7 @@ export default function Admin({ settings }) {
     const whatsappEnabled = features?.whatsapp ?? false;
     const [stepIndex, setStepIndex] = useState(0);
     const [processing, setProcessing] = useState(false);
+    const [staffLockedNotice, setStaffLockedNotice] = useState(false);
 
     const [data, setData] = useState({
         slot_duration: settings.slot_duration ?? 30,
@@ -139,6 +152,7 @@ export default function Admin({ settings }) {
             whatsappEnabled,
         ),
         owner_also_works_as_staff: !!settings.owner_also_works_as_staff,
+        single_employee_mode: !!settings.single_employee_mode,
         allow_employee_service_edit: settings.allow_employee_service_edit ?? true,
         uses_shared_resources: !!settings.uses_shared_resources,
         auto_confirm_appointments: !!settings.auto_confirm_appointments,
@@ -223,6 +237,7 @@ export default function Admin({ settings }) {
     const handleStepJump = (idx) => setStepIndex(idx);
 
     return (
+        <>
         <OnboardingShell
             eyebrow={t('onboarding.shared.eyebrow')}
             heroTitle={t('onboarding.admin.hero_title')}
@@ -350,12 +365,33 @@ export default function Admin({ settings }) {
             {currentStepId === 'operations' && (
                 <div className="space-y-4">
                     <ToggleCard
+                        icon="person"
+                        title={t('onboarding.admin.step_solo_title')}
+                        help={t('onboarding.admin.step_solo_sub')}
+                        label={t('onboarding.admin.solo_toggle_label')}
+                        value={data.single_employee_mode}
+                        onChange={(v) => {
+                            setData((prev) => ({
+                                ...prev,
+                                single_employee_mode: v,
+                                owner_also_works_as_staff: v ? true : prev.owner_also_works_as_staff,
+                            }));
+                        }}
+                        errorMessage={errors?.single_employee_mode}
+                    />
+                    <ToggleCard
                         icon="workspaces"
                         title={t('onboarding.admin.step_staff_title')}
-                        help={t('onboarding.admin.staff_toggle_help')}
+                        help={t('onboarding.admin.step_staff_sub')}
                         label={t('onboarding.admin.staff_toggle_label')}
                         value={data.owner_also_works_as_staff}
-                        onChange={(v) => updateField('owner_also_works_as_staff', v)}
+                        onChange={(v) => {
+                            if (data.single_employee_mode && !v) {
+                                setStaffLockedNotice(true);
+                                return;
+                            }
+                            updateField('owner_also_works_as_staff', v);
+                        }}
                     />
                     <ToggleCard
                         icon="edit"
@@ -376,5 +412,12 @@ export default function Admin({ settings }) {
                 </div>
             )}
         </OnboardingShell>
+            <NoticeModal
+                show={staffLockedNotice}
+                title={t('onboarding.admin.staff_locked_title')}
+                body={t('onboarding.admin.staff_locked_body')}
+                onClose={() => setStaffLockedNotice(false)}
+            />
+        </>
     );
 }

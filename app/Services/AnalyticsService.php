@@ -50,6 +50,9 @@ class AnalyticsService implements AnalyticsServiceInterface
         );
 
         $totalAppointments = $appointments->count();
+        $confirmedCount = $appointments->where('status', AppointmentStatus::Confirmed)->count();
+        $cancelledCount = $appointments->where('status', AppointmentStatus::Cancelled)->count();
+        $pendingCount = $appointments->where('status', AppointmentStatus::Pending)->count();
         $totalRevenue = $appointments->where('status', AppointmentStatus::Confirmed)->sum('price');
 
         $groupedByEmployee = $appointments->groupBy(function (Appointment $apt) {
@@ -84,6 +87,9 @@ class AnalyticsService implements AnalyticsServiceInterface
 
         return [
             'total_appointments' => $totalAppointments,
+            'confirmed_count' => $confirmedCount,
+            'cancelled_count' => $cancelledCount,
+            'pending_count' => $pendingCount,
             'total_revenue' => (float) $totalRevenue,
             'employee_stats' => $employeeStats,
             'monthly_performance' => $monthlyPerformance,

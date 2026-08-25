@@ -37,4 +37,10 @@ return [
         'services_mismatch' => 'The selected staff member does not offer all of the chosen services.',
     ],
 
+    'business' => [
+        'single_employee_requires_solo_owner' => 'To use this option the business must have only one employee, and that person must also be the admin. Disable this only after you have a single owner-admin, or turn it off first if you already have other employees registered.',
+        'owner_staff_locked_in_single_employee' => 'While “only one employee” is on, you stay on the booking page as staff. Turn that option off first if you no longer take appointments yourself.',
+        'single_employee_add_blocked' => 'Turn off “This business has only one employee” in Configuration before adding another team member. Existing data is kept.',
+    ],
+
 ];

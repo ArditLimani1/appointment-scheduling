@@ -1,6 +1,33 @@
 import Icon from '@/Components/Icon';
 
-export default function MetricCard({ icon, iconBg, iconClass, label, value, badge, variant = 'default' }) {
+export default function MetricCard({ icon, iconBg, iconClass, label, value, badge, variant = 'default', layout = 'card' }) {
+    if (variant === 'primary' && layout === 'wide') {
+        return (
+            <div className="relative flex flex-col gap-3 overflow-hidden rounded-xl bg-primary-container p-3 shadow-xl transition-transform duration-300 hover:-translate-y-1 sm:gap-4 sm:p-8">
+                <div className="absolute top-0 right-0 h-24 w-24 rounded-full bg-white/5 blur-3xl sm:h-32 sm:w-32 -mr-12 -mt-12 sm:-mr-16 sm:-mt-16" />
+                <div className="z-10 flex items-start justify-between gap-3">
+                    <span className="shrink-0 rounded-lg bg-on-primary-container/20 p-2 sm:p-3">
+                        <Icon name={icon} size="text-lg" className="text-on-primary-container sm:text-xl" />
+                    </span>
+                    <Icon name="trending_up" size="text-lg" className="shrink-0 text-on-primary-container sm:text-xl" />
+                </div>
+                <div className="z-10 min-w-0">
+                    <p className="mb-0.5 text-xs font-bold uppercase tracking-wider text-on-primary-container/80 sm:mb-1 sm:text-sm sm:tracking-widest">
+                        {label}
+                    </p>
+                    <h3 className="break-words text-xl font-extrabold leading-tight tracking-tight text-white font-headline sm:text-4xl">
+                        {value}
+                    </h3>
+                    {badge ? (
+                        <p className="mt-2 text-sm font-medium leading-snug text-on-primary-container sm:mt-3 sm:text-base">
+                            {badge}
+                        </p>
+                    ) : null}
+                </div>
+            </div>
+        );
+    }
+
     if (variant === 'primary') {
         return (
             <div className="relative flex min-h-[7.25rem] flex-col justify-between overflow-hidden rounded-xl bg-primary-container p-3 shadow-xl transition-transform duration-300 hover:-translate-y-1 sm:min-h-0 sm:h-48 sm:p-8">

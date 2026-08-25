@@ -122,7 +122,7 @@ return [
         'cancelled' => 'Cancelled',
         'pending' => 'Pending',
         'total_earnings' => 'Total earnings',
-        'earnings_hint' => 'From confirmed appointments in this period',
+        'earnings_hint' => 'Total earnings are calculated only from confirmed appointments',
         'filtered_service' => 'Filtered service',
         'service_earnings_period' => 'Earnings for this service (period)',
         'performance_by_service' => 'Performance by service',

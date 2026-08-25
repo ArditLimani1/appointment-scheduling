@@ -9,6 +9,7 @@ use App\Http\Middleware\EnsureOnboardingCompleted;
 use App\Http\Middleware\EnsurePermission;
 use App\Http\Middleware\EnsureSuperAdmin;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\RedirectSingleEmployeeWorkspace;
 use App\Http\Middleware\RoleMiddleware;
 use App\Http\Middleware\SetLocale;
 use Illuminate\Foundation\Application;
@@ -40,6 +41,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'super_admin' => EnsureSuperAdmin::class,
             'business_uses_shared_resources' => EnsureBusinessUsesSharedResources::class,
             'onboarding_completed' => EnsureOnboardingCompleted::class,
+            'single_employee_workspace' => RedirectSingleEmployeeWorkspace::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

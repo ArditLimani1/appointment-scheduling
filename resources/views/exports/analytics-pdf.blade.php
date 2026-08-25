@@ -177,23 +177,28 @@
     </div>
 
     {{-- Summary widgets (dompdf doesn't support CSS flex well — use a table for layout) --}}
-    <table style="width:100%; margin-bottom:24px; border-collapse:separate; border-spacing:8px 0;">
+    <table style="width:100%; margin-bottom:24px; border-collapse:separate; border-spacing:6px 0;">
         <tr>
-            <td style="width:25%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px 16px; text-align:center;">
-                <div style="font-size:20px; font-weight:700; color:#1e293b;">{{ $totalAppointments }}</div>
-                <div style="font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:#94a3b8; margin-top:4px;">{{ __('exports.pdf.analytics.total_appointments') }}</div>
+            <td style="width:20%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px 10px; text-align:center;">
+                <div style="font-size:18px; font-weight:700; color:#1e293b;">{{ $totalAppointments }}</div>
+                <div style="font-size:8px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:#94a3b8; margin-top:4px;">{{ __('exports.pdf.analytics.total_appointments') }}</div>
             </td>
-            <td style="width:25%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px 16px; text-align:center;">
-                <div style="font-size:20px; font-weight:700; color:#1e293b;">{{ $totalConfirmed }}</div>
-                <div style="font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:#94a3b8; margin-top:4px;">{{ __('exports.pdf.analytics.confirmed') }}</div>
+            <td style="width:20%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px 10px; text-align:center;">
+                <div style="font-size:18px; font-weight:700; color:#166534;">{{ $totalConfirmed }}</div>
+                <div style="font-size:8px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:#94a3b8; margin-top:4px;">{{ __('exports.pdf.analytics.confirmed') }}</div>
             </td>
-            <td style="width:25%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px 16px; text-align:center;">
-                <div style="font-size:20px; font-weight:700; color:#1e293b;">{{ $totalCancelled }}</div>
-                <div style="font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:#94a3b8; margin-top:4px;">{{ __('exports.pdf.analytics.cancelled') }}</div>
+            <td style="width:20%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px 10px; text-align:center;">
+                <div style="font-size:18px; font-weight:700; color:#92400e;">{{ $totalPending }}</div>
+                <div style="font-size:8px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:#94a3b8; margin-top:4px;">{{ __('exports.pdf.analytics.pending') }}</div>
             </td>
-            <td style="width:25%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px 16px; text-align:center;">
-                <div style="font-size:20px; font-weight:700; color:#1e293b;">{{ number_format($totalRevenue, 2) }} {{ $currencySymbol }}</div>
-                <div style="font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:#94a3b8; margin-top:4px;">{{ __('exports.pdf.analytics.total_revenue') }}</div>
+            <td style="width:20%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px 10px; text-align:center;">
+                <div style="font-size:18px; font-weight:700; color:#991b1b;">{{ $totalCancelled }}</div>
+                <div style="font-size:8px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:#94a3b8; margin-top:4px;">{{ __('exports.pdf.analytics.cancelled') }}</div>
+            </td>
+            <td style="width:20%; background:#1e293b; border-radius:8px; padding:12px 10px; text-align:center;">
+                <div style="font-size:16px; font-weight:700; color:#fff;">{{ number_format($totalRevenue, 2) }} {{ $currencySymbol }}</div>
+                <div style="font-size:8px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:#cbd5e1; margin-top:4px;">{{ __('exports.pdf.analytics.total_revenue') }}</div>
+                <div style="font-size:7px; font-weight:600; color:#94a3b8; margin-top:3px;">{{ __('exports.pdf.analytics.revenue_confirmed_only') }}</div>
             </td>
         </tr>
     </table>

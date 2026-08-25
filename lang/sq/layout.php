@@ -24,6 +24,7 @@ return [
             'appointments' => 'Terminet',
             'analytics' => 'Statistika',
             'configuration' => 'Konfigurimi',
+            'schedule' => 'Orari',
             'my_dashboard' => 'Paneli im',
             'my_appointments' => 'Terminet e mia',
             'my_schedule' => 'Orari im',

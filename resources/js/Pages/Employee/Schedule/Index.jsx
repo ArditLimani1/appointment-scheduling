@@ -1,6 +1,6 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useState } from 'react';
-import EmployeeLayout from '@/Layouts/EmployeeLayout';
+import StaffWorkspaceLayout from '@/Layouts/StaffWorkspaceLayout';
 import Icon from '@/Components/Icon';
 import TimeSelect from '@/Components/TimeSelect';
 import useLockBodyScroll from '@/hooks/useLockBodyScroll';
@@ -545,7 +545,7 @@ export default function Index({ days: initialDays, dateFrom, dateTo }) {
     const breakModalDay = breakModalDate ? days.find((d) => d.date === breakModalDate) : null;
 
     return (
-        <EmployeeLayout>
+        <StaffWorkspaceLayout>
             <Head title={t('employee.schedule.head_title')} />
 
             <div className="mb-6">
@@ -649,6 +649,6 @@ export default function Index({ days: initialDays, dateFrom, dateTo }) {
                 />
             ) : null}
 
-        </EmployeeLayout>
+        </StaffWorkspaceLayout>
     );
 }

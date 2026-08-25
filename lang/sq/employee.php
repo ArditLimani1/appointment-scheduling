@@ -122,7 +122,7 @@ return [
         'cancelled' => 'Anuluar',
         'pending' => 'Në pritje',
         'total_earnings' => 'Të ardhurat gjithsej',
-        'earnings_hint' => 'Nga terminet e konfirmuara në këtë periudhë',
+        'earnings_hint' => 'Të ardhurat gjithsej llogariten vetëm nga terminet e konfirmuara',
         'filtered_service' => 'Shërbimi i filtruar',
         'service_earnings_period' => 'Të ardhurat për këtë shërbim (periudha)',
         'performance_by_service' => 'Performanca sipas shërbimit',

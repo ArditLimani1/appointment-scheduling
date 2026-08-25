@@ -214,6 +214,7 @@ export default function Index({
     const inertiaUrl = typeof page.url === 'string' ? page.url : `${window.location.pathname}${window.location.search}`;
     const CURRENCY_SYMBOLS = { EUR: '€', USD: '$', GBP: '£', CHF: 'CHF' };
     const currencySymbol = CURRENCY_SYMBOLS[auth?.business?.currency] ?? auth?.business?.currency_symbol ?? '€';
+    const soloMode = auth?.business?.single_employee_mode === true;
 
     const { rows, meta } = useMemo(() => normalizeAppointments(appointments), [appointments]);
     const totalCount = meta?.total ?? rows.length;
@@ -563,6 +564,7 @@ export default function Index({
                     </button>
                 </div>
                 <div className={`${showMobileFilters ? 'flex' : 'hidden'} min-w-0 flex-col gap-4 lg:flex lg:flex-row lg:flex-nowrap lg:items-end lg:gap-3 lg:w-full`}>
+                    {!soloMode && (
                     <FilterListbox
                         label={t('admin.appointments.employee')}
                         value={localFilters.employee_id}
@@ -571,6 +573,7 @@ export default function Index({
                         minWidthClass="min-w-0"
                         wrapperClassName="flex w-full min-w-0 flex-col gap-1.5 lg:flex-1"
                     />
+                    )}
                     <FilterListbox
                         label={t('admin.appointments.service')}
                         value={localFilters.service_id}
@@ -648,7 +651,9 @@ export default function Index({
                                         >
                                             <div className="min-w-0">
                                                 <p className="font-headline text-sm font-bold leading-snug text-on-surface">
-                                                    {apt.employee?.name ?? '—'}
+                                                    {soloMode
+                                                        ? `${apt.client_first_name} ${apt.client_last_name}`
+                                                        : (apt.employee?.name ?? '—')}
                                                 </p>
 
                                                 <dl className="mt-3 space-y-2 text-xs">
@@ -720,9 +725,11 @@ export default function Index({
                                         <th className="px-4 py-4 text-[11px] font-bold uppercase tracking-widest text-outline sm:px-6 lg:px-8">
                                             {t('admin.appointments.th_client')}
                                         </th>
+                                        {!soloMode && (
                                         <th className="px-4 py-4 text-[11px] font-bold uppercase tracking-widest text-outline sm:px-6 lg:px-8">
                                             {t('admin.appointments.th_employee')}
                                         </th>
+                                        )}
                                         <th className="px-4 py-4 text-[11px] font-bold uppercase tracking-widest text-outline sm:px-6 lg:px-8">
                                             {t('admin.appointments.th_service')}
                                         </th>
@@ -749,7 +756,9 @@ export default function Index({
                                                 </p>
                                                 <p className="text-xs text-on-surface-variant">{apt.client_email || apt.client_phone || '—'}</p>
                                             </td>
+                                            {!soloMode && (
                                             <td className="px-4 py-5 text-sm text-on-surface-variant sm:px-6 lg:px-8">{apt.employee?.name ?? '—'}</td>
+                                            )}
                                             <td className="px-4 py-5 text-sm text-on-surface-variant sm:px-6 lg:px-8">{apt.service?.name ?? apt.service_name ?? '—'}</td>
                                             <td className="px-4 py-5 sm:px-6 lg:px-8">
                                                 <p className="text-sm font-semibold text-on-surface">

@@ -1,21 +1,32 @@
 import { useState } from 'react';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import Icon from '@/Components/Icon';
 import PageHeader from '@/Components/PageHeader';
 import DeleteConfirmModal from '@/Components/DeleteConfirmModal';
+import NoticeModal from '@/Components/NoticeModal';
 import { useT } from '@/i18n/useT';
 import EmployeeModal from './EmployeeModal';
 
 export default function Index({ employees, services, businessRoles = [], businessOwnerId }) {
     const t = useT();
+    const soloMode = usePage().props.auth?.business?.single_employee_mode === true;
     const [showModal, setShowModal] = useState(false);
     const [editing, setEditing] = useState(null);
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [deleteStep, setDeleteStep] = useState(1);
     const [deleteError, setDeleteError] = useState(null);
 
-    const openCreate = () => { setEditing(null); setShowModal(true); };
+    const [showAddBlocked, setShowAddBlocked] = useState(false);
+
+    const openCreate = () => {
+        if (soloMode) {
+            setShowAddBlocked(true);
+            return;
+        }
+        setEditing(null);
+        setShowModal(true);
+    };
     const openEdit = (emp) => { setEditing(emp); setShowModal(true); };
 
     const closeDeleteFlow = () => {
@@ -344,6 +355,13 @@ export default function Index({ employees, services, businessRoles = [], busines
                     businessOwnerId={businessOwnerId}
                 />
             ) : null}
+
+            <NoticeModal
+                show={showAddBlocked}
+                title={t('admin.employees.add_blocked_title')}
+                body={t('admin.employees.add_blocked_body')}
+                onClose={() => setShowAddBlocked(false)}
+            />
         </AdminLayout>
     );
 }

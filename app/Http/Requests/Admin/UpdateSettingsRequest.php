@@ -43,6 +43,7 @@ class UpdateSettingsRequest extends FormRequest
             'max_booking_window' => ['sometimes', 'required', 'integer', 'min:1'],
             'client_identifier_type' => ClientIdentification::storedTypeRules(required: false),
             'owner_also_works_as_staff' => ['sometimes', 'boolean'],
+            'single_employee_mode' => ['sometimes', 'boolean'],
             'allow_employee_service_edit' => ['sometimes', 'boolean'],
             'uses_shared_resources' => ['sometimes', 'boolean'],
             'auto_confirm_appointments' => ['sometimes', 'boolean'],

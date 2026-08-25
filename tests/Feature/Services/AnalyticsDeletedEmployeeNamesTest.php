@@ -111,5 +111,15 @@ class AnalyticsDeletedEmployeeNamesTest extends TestCase
         $this->assertCount(1, $filtered['employee_stats']);
         $this->assertSame('John', $filtered['employee_stats'][0]['name']);
         $this->assertSame(1, $filtered['total_appointments']);
+        $this->assertSame(0, $filtered['confirmed_count']);
+        $this->assertSame(1, $filtered['pending_count']);
+        $this->assertSame(0, $filtered['cancelled_count']);
+        $this->assertSame(0.0, $filtered['total_revenue']);
+
+        $this->assertSame(2, $data['total_appointments']);
+        $this->assertSame(1, $data['confirmed_count']);
+        $this->assertSame(1, $data['pending_count']);
+        $this->assertSame(0, $data['cancelled_count']);
+        $this->assertSame(40.0, $data['total_revenue']);
     }
 }

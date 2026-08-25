@@ -104,6 +104,9 @@ function ExportDropdown({ filters }) {
 
 export default function Index({
     total_appointments,
+    confirmed_count = 0,
+    cancelled_count = 0,
+    pending_count = 0,
     total_revenue,
     employee_stats,
     monthly_performance = [],
@@ -117,6 +120,7 @@ export default function Index({
     const { auth } = page.props;
     const CURRENCY_SYMBOLS = { EUR: '€', USD: '$', GBP: '£', CHF: 'CHF' };
     const symbol = CURRENCY_SYMBOLS[auth?.business?.currency] ?? currency_symbol ?? '€';
+    const soloMode = auth?.business?.single_employee_mode === true;
 
     const [localFilters, setLocalFilters] = useState({
         date_from: filters.date_from ?? currentMonthStart(),
@@ -216,6 +220,7 @@ export default function Index({
                         placeholder={t('admin.analytics.end_date_ph')}
                         buttonClassName="max-lg:!min-w-0"
                     />
+                    {!soloMode && (
                     <FilterListbox
                         label={t('admin.analytics.employee')}
                         value={localFilters.employee}
@@ -224,6 +229,7 @@ export default function Index({
                         minWidthClass="min-w-0"
                         wrapperClassName="flex w-full min-w-0 flex-col gap-1.5 lg:flex-1"
                     />
+                    )}
                     <div className="flex w-full shrink-0 items-end justify-stretch lg:w-auto lg:flex-none">
                         <button
                             type="button"
@@ -236,27 +242,52 @@ export default function Index({
                 </div>
             </section>
 
-            {/* Summary — same compact grid as admin dashboard */}
+            {/* Summary — same MetricCard grid as employee analytics */}
             <section className="mb-8">
-                <div className="grid grid-cols-2 gap-2 sm:gap-6">
+                <div className="grid grid-cols-2 gap-x-2 gap-y-3 sm:gap-6">
                     <MetricCard
                         icon="event_available"
                         iconBg="bg-primary-fixed"
                         iconClass="text-on-primary-fixed-variant"
                         label={t('admin.analytics.total_appointments')}
-                        value={total_appointments.toLocaleString()}
+                        value={(total_appointments ?? 0).toLocaleString()}
                     />
                     <MetricCard
-                        variant="primary"
-                        icon="payments"
-                        label={t('admin.analytics.total_revenue')}
-                        value={`${fmt(total_revenue)} ${symbol}`}
-                        badge={t('admin.analytics.confirmed_base')}
+                        icon="check_circle"
+                        iconBg="bg-tertiary-fixed"
+                        iconClass="text-on-tertiary-fixed-variant"
+                        label={t('admin.analytics.confirmed')}
+                        value={(confirmed_count ?? 0).toLocaleString()}
                     />
+                    <MetricCard
+                        icon="schedule"
+                        iconBg="bg-secondary-container"
+                        iconClass="text-on-secondary-container"
+                        label={t('admin.analytics.pending')}
+                        value={(pending_count ?? 0).toLocaleString()}
+                    />
+                    <MetricCard
+                        icon="cancel"
+                        iconBg="bg-error-container"
+                        iconClass="text-on-error-container"
+                        label={t('admin.analytics.cancelled')}
+                        value={(cancelled_count ?? 0).toLocaleString()}
+                    />
+                    <div className="col-span-2 max-sm:mt-2 sm:mt-0">
+                        <MetricCard
+                            variant="primary"
+                            layout="wide"
+                            icon="payments"
+                            label={t('admin.analytics.total_revenue')}
+                            value={`${fmt(total_revenue)} ${symbol}`}
+                            badge={t('admin.analytics.confirmed_base')}
+                        />
+                    </div>
                 </div>
             </section>
 
             {/* Table */}
+            {!soloMode && (
             <section className="min-w-0 overflow-hidden rounded-2xl bg-surface-container-lowest ring-1 ring-slate-100 shadow-sm">
                 <div className="flex items-center justify-between border-b border-slate-50 bg-white px-4 py-4 sm:px-6 md:px-8">
                     <div className="min-w-0 pr-2">
@@ -358,6 +389,7 @@ export default function Index({
                     </>
                 )}
             </section>
+            )}
 
             {/* Monthly overview — same logic as employee analytics */}
             <section className="mt-8 min-w-0 overflow-hidden rounded-2xl bg-surface-container-lowest ring-1 ring-slate-100 shadow-sm">

@@ -37,4 +37,10 @@ return [
         'services_mismatch' => 'Punonjësi i zgjedhur nuk i ofron të gjitha shërbimet e zgjedhura.',
     ],
 
+    'business' => [
+        'single_employee_requires_solo_owner' => 'Për ta përdorur këtë opsion, biznesi duhet të ketë vetëm një punonjës dhe ai duhet të jetë edhe administrator. Nëse keni punonjës të tjerë të regjistruar, çaktivizojeni këtë opsion përpara se të shtoni ose mbani ekipin.',
+        'owner_staff_locked_in_single_employee' => 'Kur “vetëm një punonjës” është aktiv, ju mbeteni edhe ofrues shërbimi. Çaktivizojeni atë opsion së pari nëse nuk doni të shfaqeni në rezervime.',
+        'single_employee_add_blocked' => 'Çaktivizoni “Ky biznes ka vetëm një punonjës” te Konfigurimi përpara se të shtoni një anëtar tjetër. Të dhënat ekzistuese nuk fshihen.',
+    ],
+
 ];

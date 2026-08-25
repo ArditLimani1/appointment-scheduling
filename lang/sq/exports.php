@@ -70,6 +70,7 @@ return [
             'subtitle' => 'Statistikat e termineve sipas punonjesit',
             'total_appointments' => 'Terminet gjithsej',
             'total_revenue' => 'Te ardhurat gjithsej',
+            'revenue_confirmed_only' => 'Llogariten vetem nga terminet e konfirmuara',
             'employee' => 'Punonjesi',
             'cancelled' => 'Anuluar',
             'pending' => 'Ne pritje',
