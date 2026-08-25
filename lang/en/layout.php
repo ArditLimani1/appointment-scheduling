@@ -24,6 +24,7 @@ return [
             'appointments' => 'Appointments',
             'analytics' => 'Analytics',
             'configuration' => 'Configuration',
+            'schedule' => 'Schedule',
             'my_dashboard' => 'My Dashboard',
             'my_appointments' => 'My Appointments',
             'my_schedule' => 'My Schedule',

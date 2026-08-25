@@ -56,9 +56,15 @@ return [
         'step_operations_sub' => 'Disa rregullime të fundit për mënyrën se si do të punoni dhe si do të menaxhoni burimet.',
 
         'step_staff_title' => 'Jam pjesë e stafit',
-        'step_staff_sub' => 'Aktivizojeni nëse ju vetë ofroni shërbime dhe duhet të shfaqeni në faqen e rezervimeve.',
-        'staff_toggle_label' => 'Më shfaq në faqen e rezervimeve si ofrues shërbimi',
-        'staff_toggle_help' => 'Mund ta aktivizoni më vonë te Konfigurimi nëse ndryshoni mendje.',
+        'step_staff_sub' => 'Aktivizojeni nëse ju vetë ofroni shërbime dhe doni të jeni të rezervueshëm.',
+        'staff_toggle_label' => 'Më shfaq në faqen e rezervimeve',
+        'staff_toggle_help' => 'Mund ta ndryshoni më vonë te Konfigurimi.',
+
+        'step_solo_title' => 'Vetëm një punonjës',
+        'step_solo_sub' => 'Aktivizojeni nëse jeni administrator dhe i vetmi që merrni termine. Nuk do të ndërroni pamjen Admin / Punonjës.',
+        'solo_toggle_label' => 'Jam i vetmi punonjës dhe administrator',
+        'staff_locked_title' => 'Nuk mund të çaktivizohet',
+        'staff_locked_body' => 'Kur “vetëm një punonjës” është aktiv, ju mbeteni si staf. Çaktivizojeni atë opsion së pari.',
 
         'step_service_title' => 'Lejo ndryshimin e shërbimit nga stafi',
         'step_service_sub' => 'Vendosni nëse stafi mund të ndryshojë shërbimin pas rezervimit.',

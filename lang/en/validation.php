@@ -235,6 +235,7 @@ return [
         'uses_shared_resources' => 'uses shared resources',
         'auto_confirm_appointments' => 'auto-confirm appointments',
         'owner_also_works_as_staff' => 'owner also works as staff',
+        'single_employee_mode' => 'single employee mode',
         'also_works_as_staff' => 'also works as staff',
         'locale' => 'language',
         'permissions' => 'permissions',

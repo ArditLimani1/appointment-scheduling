@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\UserRole;
 use App\Support\ClientIdentification;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
@@ -15,7 +16,7 @@ class Business extends Model
         'description', 'logo', 'timezone', 'currency', 'currency_symbol',
         'slot_duration', 'min_booking_notice', 'max_booking_window',
         'is_active', 'client_identifier_type', 'allow_employee_service_edit',
-        'uses_shared_resources', 'auto_confirm_appointments',
+        'uses_shared_resources', 'auto_confirm_appointments', 'single_employee_mode',
         'reminders_enabled', 'reminder_time',
     ];
 
@@ -26,6 +27,7 @@ class Business extends Model
             'allow_employee_service_edit' => 'boolean',
             'uses_shared_resources' => 'boolean',
             'auto_confirm_appointments' => 'boolean',
+            'single_employee_mode' => 'boolean',
             'reminders_enabled' => 'boolean',
         ];
     }
@@ -53,6 +55,19 @@ class Business extends Model
     public function employees(): HasMany
     {
         return $this->hasMany(User::class, 'business_id');
+    }
+
+    /**
+     * Hired team members (not the owner-as-staff account).
+     */
+    public function hiredEmployees(): HasMany
+    {
+        return $this->employees()->where('role', UserRole::Employee);
+    }
+
+    public function hasHiredEmployees(): bool
+    {
+        return $this->hiredEmployees()->exists();
     }
 
     public function services(): HasMany

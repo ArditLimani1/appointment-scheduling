@@ -62,13 +62,18 @@ export default function EmployeeLayout({ children }) {
     const visibleAdminNav = useMemo(
         () =>
             adminNavItems
-                .filter((item) => can(item.permission))
+                .filter((item) => {
+                    if (business?.single_employee_mode === true && item.route === 'admin.roles.index') {
+                        return false;
+                    }
+                    return can(item.permission);
+                })
                 .map((item) => ({ ...item, label: t(item.labelKey) })),
-        [permissions, t],
+        [permissions, t, business?.single_employee_mode],
     );
 
     const [workspace, setWorkspace] = useWorkspace();
-    const showTabs = visibleAdminNav.length > 0;
+    const showTabs = visibleAdminNav.length > 0 && business?.single_employee_mode !== true;
     const effectiveWorkspace = showTabs ? workspace : 'employee';
     const sidebarItems = effectiveWorkspace === 'admin' ? visibleAdminNav : visibleNav;
 

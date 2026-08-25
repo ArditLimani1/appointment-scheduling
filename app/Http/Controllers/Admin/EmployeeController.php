@@ -33,6 +33,11 @@ class EmployeeController extends Controller
     {
         $business = auth()->user()->panelBusiness();
         abort_unless($business, 403);
+        if ($business->single_employee_mode) {
+            return redirect()->back()
+                ->withErrors(['employee' => __('errors.business.single_employee_add_blocked')])
+                ->with('flash_nonce', uniqid('', true));
+        }
         $this->employeeService->store($business, $request->validated());
 
         return redirect()->back()

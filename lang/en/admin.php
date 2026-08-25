@@ -118,6 +118,8 @@ return [
         'title' => 'Employees',
         'description' => 'Manage your team members. Assign services and control their access and availability.',
         'add_employee' => 'Add Employee',
+        'add_blocked_title' => 'Turn off single-employee mode first',
+        'add_blocked_body' => 'This business is set to one employee. Turn that option off in Configuration, then add more team members. Existing data is kept.',
         'team_title' => 'Team Members',
         'count_one' => '1 employee total',
         'count_many' => ':count employees total',
@@ -384,6 +386,7 @@ return [
         'tabs' => [
             'identity' => 'Business Identity',
             'rules' => 'Client Identification & Rules',
+            'hours' => 'Default hours',
         ],
         'identity_section' => 'Business Identity',
         'label_business_name' => 'Business Name',
@@ -429,7 +432,15 @@ return [
         'reminders_help_email' => 'When on, clients with a confirmed appointment today automatically receive an email reminder at the time you choose. The channel follows client identification above, so it becomes WhatsApp if you switch to phone.',
         'reminder_time_label' => 'Reminder time',
         'owner_staff_title' => 'I also work as staff',
-        'owner_staff_help' => 'Turn this on if you take appointments yourself.',
+        'owner_staff_help' => 'Show you on the booking page as a service provider.',
+        'single_employee_title' => 'Only one employee',
+        'single_employee_help' => 'You are both the admin and the only person who takes appointments.',
+        'notice' => [
+            'solo_employees_title' => 'Cannot turn this on',
+            'solo_employees_body' => 'This option needs a business with only one employee, and that person must also be the admin. Other employees are already registered.',
+            'staff_locked_title' => 'Cannot turn this off',
+            'staff_locked_body' => 'While “only one employee” is on, you stay listed as staff. Turn that option off first.',
+        ],
         'confirm' => [
             'identity_title' => 'Save Business Identity?',
             'identity_body' => 'Are you sure you want to save the changes to Business Identity? This will update your configuration immediately.',

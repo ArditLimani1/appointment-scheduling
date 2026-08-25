@@ -55,8 +55,10 @@ export default function InternalAppointmentForm({
     backHref: backHrefProp,
 }) {
     const t = useT();
-    const { localeBcp47, features } = usePage().props;
+    const { localeBcp47, features, auth } = usePage().props;
     const isEmployeeContext = context === 'employee';
+    const soloMode = auth?.business?.single_employee_mode === true;
+    const hideEmployeePicker = isEmployeeContext || soloMode;
     const backHref =
         backHrefProp
         ?? (isEmployeeContext ? route('employee.appointments.index') : route('admin.appointments.index'));
@@ -64,10 +66,10 @@ export default function InternalAppointmentForm({
 
     const STEP = useMemo(
         () =>
-            isEmployeeContext
+            hideEmployeePicker
                 ? { services: 1, datetime: 2, client: 3 }
                 : { employee: 1, services: 2, datetime: 3, client: 4 },
-        [isEmployeeContext],
+        [hideEmployeePicker],
     );
 
     const currencySymbol =
@@ -82,8 +84,11 @@ export default function InternalAppointmentForm({
         if (preselectedEmployeeId) {
             return employees.find((e) => Number(e.id) === Number(preselectedEmployeeId)) ?? null;
         }
+        if (hideEmployeePicker && employees.length > 0) {
+            return employees[0];
+        }
         return null;
-    }, [employees, preselectedEmployeeId]);
+    }, [employees, preselectedEmployeeId, hideEmployeePicker]);
 
     const [selectedEmployee, setSelectedEmployee] = useState(initialEmployee);
     const [selectedServices, setSelectedServices] = useState([]);
@@ -228,7 +233,7 @@ export default function InternalAppointmentForm({
     ]);
 
     useEffect(() => {
-        if (isEmployeeContext) return;
+        if (hideEmployeePicker) return;
         const empId = selectedEmployee?.id ?? null;
         if (empId && prevEmployeeIdRef.current !== empId) {
             setExpandedSection(STEP.services);
@@ -237,7 +242,7 @@ export default function InternalAppointmentForm({
             setExpandedSection(STEP.employee);
         }
         prevEmployeeIdRef.current = empId;
-    }, [isEmployeeContext, selectedEmployee?.id, STEP.services, STEP.employee]);
+    }, [hideEmployeePicker, selectedEmployee?.id, STEP.services, STEP.employee]);
 
     useEffect(() => {
         const n = selectedServices.length;
@@ -383,7 +388,7 @@ export default function InternalAppointmentForm({
 
                 <div className="grid grid-cols-1 gap-12 lg:grid-cols-12">
                     <div className="space-y-3 lg:col-span-8">
-                        {!isEmployeeContext && (
+                        {!hideEmployeePicker && (
                             <BookingAccordionStep
                                 id={STEP.employee}
                                 number={1}
@@ -455,7 +460,7 @@ export default function InternalAppointmentForm({
 
                         <BookingAccordionStep
                             id={STEP.services}
-                            number={isEmployeeContext ? 1 : 2}
+                            number={hideEmployeePicker ? 1 : 2}
                             title={t('booking_ui.steps.services')}
                             summary={sectionServicesSummary}
                             expanded={expandedSection === STEP.services}
@@ -536,7 +541,7 @@ export default function InternalAppointmentForm({
 
                         <BookingAccordionStep
                             id={STEP.datetime}
-                            number={isEmployeeContext ? 2 : 3}
+                            number={hideEmployeePicker ? 2 : 3}
                             title={t('booking_ui.steps.datetime')}
                             summary={sectionDatetimeSummary}
                             expanded={expandedSection === STEP.datetime}
@@ -620,7 +625,7 @@ export default function InternalAppointmentForm({
 
                         <BookingAccordionStep
                             id={STEP.client}
-                            number={isEmployeeContext ? 3 : 4}
+                            number={hideEmployeePicker ? 3 : 4}
                             title={t('booking_ui.steps.details')}
                             summary={sectionClientSummary}
                             expanded={expandedSection === STEP.client}
@@ -750,7 +755,7 @@ export default function InternalAppointmentForm({
                                     </div>
                                 </div>
 
-                                {!isEmployeeContext ? (
+                                {!hideEmployeePicker ? (
                                     <div className="flex items-start gap-4">
                                         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-surface-container-low">
                                             <Icon name="person" className="text-on-surface-variant" />

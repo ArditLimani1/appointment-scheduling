@@ -1,6 +1,6 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
-import EmployeeLayout from '@/Layouts/EmployeeLayout';
+import StaffWorkspaceLayout from '@/Layouts/StaffWorkspaceLayout';
 import Icon from '@/Components/Icon';
 import TimeSelect from '@/Components/TimeSelect';
 import useLockBodyScroll from '@/hooks/useLockBodyScroll';
@@ -411,13 +411,14 @@ export default function Configuration({
     business_slug,
 }) {
     const t = useT();
-    const { errors, localeBcp47 } = usePage().props;
+    const { errors, localeBcp47, auth } = usePage().props;
+    const soloMode = auth?.business?.single_employee_mode === true;
     const dateLocale = localeBcp47 ?? 'en-GB';
     const bookingSlugError = errors?.booking_slug
         ? (Array.isArray(errors.booking_slug) ? errors.booking_slug[0] : errors.booking_slug)
         : undefined;
 
-    const [activeTab, setActiveTab] = useState('info');
+    const [activeTab, setActiveTab] = useState(soloMode ? 'schedule' : 'info');
     const [days, setDays] = useState(() => buildEmployeeScheduleDays(initialSchedules));
     const [breakModalDayIndex, setBreakModalDayIndex] = useState(null);
     const [bookingSlug, setBookingSlug] = useState(initialBookingSlug ?? '');
@@ -537,36 +538,71 @@ export default function Configuration({
         [t],
     );
 
-    return (
-        <EmployeeLayout>
-            <Head title={t('employee.schedule.configuration_title')} />
+    const tabBtnClass = (active) =>
+        `flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-all border-b-2 -mb-px ${
+            active
+                ? 'border-on-surface text-on-surface'
+                : 'border-transparent text-on-surface-variant hover:text-on-surface'
+        }`;
 
+    return (
+        <StaffWorkspaceLayout>
+            <Head title={soloMode ? t('admin.settings.head_title') : t('employee.schedule.configuration_title')} />
+
+            {soloMode ? (
+                <header className="mb-10">
+                    <h1 className="text-4xl font-extrabold font-headline tracking-tight text-on-surface mb-2">{t('admin.settings.page_title')}</h1>
+                    <p className="text-on-surface-variant max-w-2xl text-base leading-relaxed">{t('admin.settings.page_subtitle')}</p>
+                </header>
+            ) : (
             <div className="mb-8">
                 <h1 className="text-4xl font-extrabold font-headline tracking-tight text-on-surface mb-2">{t('employee.schedule.configuration_title')}</h1>
                 <p className="text-on-surface-variant text-base">{t('employee.schedule.configuration_sub')}</p>
             </div>
+            )}
 
             {/* ── Tabs ──────────────────────────────────────────── */}
             <div className="flex gap-1 mb-8 border-b border-outline-variant/40">
-                {tabs.map((tab) => (
+                {soloMode ? (
+                    <>
+                        <button
+                            type="button"
+                            onClick={() => router.get(route('admin.settings.index'))}
+                            className={tabBtnClass(false)}
+                        >
+                            <Icon name="domain" size="text-base" />
+                            {t('admin.settings.tabs.identity')}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => router.get(route('admin.settings.index'), { tab: 'rules' })}
+                            className={tabBtnClass(false)}
+                        >
+                            <Icon name="rule" size="text-base" />
+                            {t('admin.settings.tabs.rules')}
+                        </button>
+                        <button type="button" className={tabBtnClass(true)}>
+                            <Icon name="calendar_today" size="text-base" />
+                            {t('admin.settings.tabs.hours')}
+                        </button>
+                    </>
+                ) : (
+                    tabs.map((tab) => (
                     <button
                         key={tab.id}
                         type="button"
                         onClick={() => setActiveTab(tab.id)}
-                        className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-all border-b-2 -mb-px ${
-                            activeTab === tab.id
-                                ? 'border-on-surface text-on-surface'
-                                : 'border-transparent text-on-surface-variant hover:text-on-surface'
-                        }`}
+                        className={tabBtnClass(activeTab === tab.id)}
                     >
                         <Icon name={tab.icon} size="text-base" />
                         {tab.label}
                     </button>
-                ))}
+                    ))
+                )}
             </div>
 
             {/* ── Business Information tab ───────────────────────── */}
-            {activeTab === 'info' && (
+            {activeTab === 'info' && !soloMode && (
                 <form onSubmit={handleSaveInfo}>
                     <section className="rounded-2xl border border-outline-variant/40 bg-surface-container-lowest p-6 sm:p-8">
                         <div className="mb-6 flex items-center gap-3">
@@ -678,6 +714,6 @@ export default function Configuration({
                 />
             ) : null}
 
-        </EmployeeLayout>
+        </StaffWorkspaceLayout>
     );
 }

@@ -51,6 +51,7 @@ export default function EditAppointmentModal({
     );
     const { auth, features } = usePage().props;
     const currencySymbol = CURRENCY_SYMBOLS[auth?.business?.currency] ?? auth?.business?.currency_symbol ?? '€';
+    const soloMode = auth?.business?.single_employee_mode === true;
     const clientIdentifierType = resolveClientIdentifierType(
         auth?.business?.client_identifier_type,
         features?.whatsapp ?? false,
@@ -481,6 +482,7 @@ export default function EditAppointmentModal({
                                 {errors.status && <p className="text-xs text-error">{errors.status}</p>}
 
                                 <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2">
+                                    {!soloMode && (
                                     <FilterListbox
                                         label={t('components.edit_appointment.employee')}
                                         compact
@@ -489,7 +491,8 @@ export default function EditAppointmentModal({
                                         options={eligibleEmployees.map((e) => ({ value: String(e.id), label: e.name }))}
                                         minWidthClass="w-full"
                                     />
-                                    <div>
+                                    )}
+                                    <div className={soloMode ? 'sm:col-span-2' : ''}>
                                         <span className={labelCls}>{t('components.edit_appointment.payment')}</span>
                                         <div className="flex h-[42px] items-center rounded-xl border border-slate-100 bg-slate-50 px-3 text-sm font-bold text-on-surface">
                                             {Number(appointment.price ?? 0).toFixed(2)}

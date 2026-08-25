@@ -120,6 +120,7 @@ export default function Index({
     const { auth } = page.props;
     const CURRENCY_SYMBOLS = { EUR: '€', USD: '$', GBP: '£', CHF: 'CHF' };
     const symbol = CURRENCY_SYMBOLS[auth?.business?.currency] ?? currency_symbol ?? '€';
+    const soloMode = auth?.business?.single_employee_mode === true;
 
     const [localFilters, setLocalFilters] = useState({
         date_from: filters.date_from ?? currentMonthStart(),
@@ -219,6 +220,7 @@ export default function Index({
                         placeholder={t('admin.analytics.end_date_ph')}
                         buttonClassName="max-lg:!min-w-0"
                     />
+                    {!soloMode && (
                     <FilterListbox
                         label={t('admin.analytics.employee')}
                         value={localFilters.employee}
@@ -227,6 +229,7 @@ export default function Index({
                         minWidthClass="min-w-0"
                         wrapperClassName="flex w-full min-w-0 flex-col gap-1.5 lg:flex-1"
                     />
+                    )}
                     <div className="flex w-full shrink-0 items-end justify-stretch lg:w-auto lg:flex-none">
                         <button
                             type="button"
@@ -284,6 +287,7 @@ export default function Index({
             </section>
 
             {/* Table */}
+            {!soloMode && (
             <section className="min-w-0 overflow-hidden rounded-2xl bg-surface-container-lowest ring-1 ring-slate-100 shadow-sm">
                 <div className="flex items-center justify-between border-b border-slate-50 bg-white px-4 py-4 sm:px-6 md:px-8">
                     <div className="min-w-0 pr-2">
@@ -385,6 +389,7 @@ export default function Index({
                     </>
                 )}
             </section>
+            )}
 
             {/* Monthly overview — same logic as employee analytics */}
             <section className="mt-8 min-w-0 overflow-hidden rounded-2xl bg-surface-container-lowest ring-1 ring-slate-100 shadow-sm">

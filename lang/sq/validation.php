@@ -225,6 +225,7 @@ return [
         'uses_shared_resources' => 'përdorimi i burimeve të përbashkëta',
         'auto_confirm_appointments' => 'konfirmimi automatik i termineve',
         'owner_also_works_as_staff' => 'pronari punon si pjesë e stafit',
+        'single_employee_mode' => 'vetëm një punonjës',
         'also_works_as_staff' => 'punon si pjesë e stafit',
         'locale' => 'gjuha',
         'permissions' => 'lejet',

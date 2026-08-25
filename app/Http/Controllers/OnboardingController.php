@@ -49,19 +49,19 @@ class OnboardingController extends Controller
             'allow_employee_service_edit' => ['required', 'boolean'],
             'uses_shared_resources' => ['required', 'boolean'],
             'owner_also_works_as_staff' => ['required', 'boolean'],
+            'single_employee_mode' => ['required', 'boolean'],
             'auto_confirm_appointments' => ['required', 'boolean'],
             'reminders_enabled' => ['required', 'boolean'],
             'reminder_time' => ['required_if:reminders_enabled,true', 'nullable', 'date_format:H:i'],
         ]);
 
         $ownerStaff = (bool) $validated['owner_also_works_as_staff'];
-        unset($validated['owner_also_works_as_staff']);
+        $singleEmployeeMode = (bool) $validated['single_employee_mode'];
+        unset($validated['owner_also_works_as_staff'], $validated['single_employee_mode']);
 
         $business = $this->businessService->updateSettings($user, $validated);
 
-        if ((int) $business->owner_id === (int) $user->id) {
-            $user->syncAlsoWorksAsStaff($business, $ownerStaff);
-        }
+        $this->businessService->syncTeamMode($user, $business, $singleEmployeeMode, $ownerStaff);
 
         return redirect()
             ->route('onboarding.show')
@@ -159,7 +159,9 @@ class OnboardingController extends Controller
                 'client_identifier_type' => ClientIdentification::resolve($business->client_identifier_type),
                 'allow_employee_service_edit' => (bool) ($business->allow_employee_service_edit ?? true),
                 'uses_shared_resources' => false,
-                'owner_also_works_as_staff' => false,
+                'owner_also_works_as_staff' => (bool) $user->also_works_as_staff,
+                'single_employee_mode' => (bool) ($user->ownedBusiness?->single_employee_mode ?? false),
+                'single_employee_mode' => false,
                 'auto_confirm_appointments' => (bool) ($business->auto_confirm_appointments ?? false),
                 'reminders_enabled' => (bool) ($business->reminders_enabled ?? false),
                 'reminder_time' => $business->reminder_time ?: '08:00',

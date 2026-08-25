@@ -60,7 +60,7 @@ Route::get('/book/{slug}/slots', [BookingController::class, 'getAvailableSlots']
 Route::get('/book/{slug}/{employeeSlug}', [BookingController::class, 'indexEmployee'])->name('booking.employee');
 Route::post('/book/{slug}', [BookingController::class, 'store'])->middleware('throttle:10,1')->name('booking.store');
 
-Route::middleware(['auth', 'admin_panel', 'onboarding_completed', 'has_business'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'admin_panel', 'onboarding_completed', 'has_business', 'single_employee_workspace'])->prefix('admin')->name('admin.')->group(function () {
     Route::middleware('permission:admin.dashboard')->group(function () {
         Route::get('/dashboard', [Admin\DashboardController::class, 'index'])->name('dashboard');
     });
@@ -138,7 +138,7 @@ Route::post('/super-admin/stop-impersonating', [SuperAdmin\UserController::class
     ->middleware('auth')
     ->name('super-admin.stop-impersonating');
 
-Route::middleware(['auth', 'employee_area', 'onboarding_completed'])->prefix('employee')->name('employee.')->group(function () {
+Route::middleware(['auth', 'employee_area', 'onboarding_completed', 'single_employee_workspace'])->prefix('employee')->name('employee.')->group(function () {
     Route::get('/notifications/feed', [Employee\NotificationController::class, 'feed'])->name('notifications.feed');
     Route::post('/notifications/read-all', [Employee\NotificationController::class, 'markAllRead'])->name('notifications.read-all');
     Route::post('/notifications/{id}/read', [Employee\NotificationController::class, 'markRead'])->whereUuid('id')->name('notifications.read');

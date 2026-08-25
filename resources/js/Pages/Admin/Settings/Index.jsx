@@ -1,7 +1,8 @@
-import { Head, useForm, usePage } from '@inertiajs/react';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import Icon from '@/Components/Icon';
+import NoticeModal from '@/Components/NoticeModal';
 import useLockBodyScroll from '@/hooks/useLockBodyScroll';
 import { useT } from '@/i18n/useT';
 
@@ -65,14 +66,20 @@ export default function Index({
     settings,
     show_owner_staff_toggle = false,
     owner_also_works_as_staff = false,
+    has_hired_employees = false,
 }) {
     const t = useT();
-    const { flash, features } = usePage().props;
+    const { flash, features, auth } = usePage().props;
     const whatsappEnabled = features?.whatsapp ?? false;
-    const [activeTab, setActiveTab] = useState('identity');
+    const soloMode = auth?.business?.single_employee_mode === true;
+    const [activeTab, setActiveTab] = useState(() => {
+        const search = typeof window !== 'undefined' ? window.location.search : '';
+        return new URLSearchParams(search).get('tab') === 'rules' ? 'rules' : 'identity';
+    });
 
     // Which confirm modal is open: null | 'identity' | 'rules'
     const [confirmSection, setConfirmSection] = useState(null);
+    const [noticeKind, setNoticeKind] = useState(null);
 
     // Form 1 — Business Identity (editable)
     const identity = useForm({
@@ -137,6 +144,7 @@ export default function Index({
         auto_confirm_appointments: settings.auto_confirm_appointments ?? false,
         reminders_enabled: settings.reminders_enabled ?? false,
         reminder_time: settings.reminder_time || '08:00',
+        single_employee_mode: !!settings.single_employee_mode,
         ...(show_owner_staff_toggle ? { owner_also_works_as_staff: !!owner_also_works_as_staff } : {}),
     });
 
@@ -221,6 +229,16 @@ export default function Index({
                     <Icon name="rule" size="text-base" />
                     {t('admin.settings.tabs.rules')}
                 </button>
+                {soloMode && (
+                    <button
+                        type="button"
+                        onClick={() => router.get(route('employee.schedule.configuration'))}
+                        className="flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-all border-b-2 -mb-px border-transparent text-on-surface-variant hover:text-on-surface"
+                    >
+                        <Icon name="calendar_today" size="text-base" />
+                        {t('admin.settings.tabs.hours')}
+                    </button>
+                )}
             </div>
 
             <div className="space-y-8">
@@ -580,26 +598,73 @@ export default function Index({
 
                             {/* I also work as staff — optional second-row card */}
                             {show_owner_staff_toggle && (
-                                <div className="bg-surface rounded-xl p-6 flex items-center justify-between gap-4">
-                                    <div>
-                                        <p className="text-sm font-bold text-on-surface">{t('admin.settings.owner_staff_title')}</p>
-                                        <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">
-                                            {t('admin.settings.owner_staff_help')}
-                                        </p>
+                                <>
+                                    <div className="bg-surface rounded-xl p-6 flex items-center justify-between gap-4">
+                                        <div>
+                                            <p className="text-sm font-bold text-on-surface">{t('admin.settings.single_employee_title')}</p>
+                                            <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">
+                                                {t('admin.settings.single_employee_help')}
+                                            </p>
+                                            {rulesErrors.single_employee_mode && (
+                                                <p className="text-xs text-error mt-2">{rulesErrors.single_employee_mode}</p>
+                                            )}
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (has_hired_employees && !data.single_employee_mode) {
+                                                    setNoticeKind('solo_employees');
+                                                    return;
+                                                }
+                                                const next = !data.single_employee_mode;
+                                                setData({
+                                                    ...data,
+                                                    single_employee_mode: next,
+                                                    ...(show_owner_staff_toggle
+                                                        ? { owner_also_works_as_staff: next ? true : data.owner_also_works_as_staff }
+                                                        : {}),
+                                                });
+                                            }}
+                                            className={`relative shrink-0 w-12 h-6 rounded-full transition-colors duration-200 ${
+                                                data.single_employee_mode ? 'bg-on-surface' : 'bg-surface-container-highest'
+                                            }`}
+                                            aria-pressed={data.single_employee_mode}
+                                        >
+                                            <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all duration-200 ${
+                                                data.single_employee_mode ? 'right-1' : 'left-1'
+                                            }`} />
+                                        </button>
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setData('owner_also_works_as_staff', !data.owner_also_works_as_staff)}
-                                        className={`relative shrink-0 w-12 h-6 rounded-full transition-colors duration-200 ${
-                                            data.owner_also_works_as_staff ? 'bg-on-surface' : 'bg-surface-container-highest'
-                                        }`}
-                                        aria-pressed={data.owner_also_works_as_staff}
-                                    >
-                                        <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all duration-200 ${
-                                            data.owner_also_works_as_staff ? 'right-1' : 'left-1'
-                                        }`} />
-                                    </button>
-                                </div>
+                                    <div className="bg-surface rounded-xl p-6 flex items-center justify-between gap-4">
+                                        <div>
+                                            <p className="text-sm font-bold text-on-surface">{t('admin.settings.owner_staff_title')}</p>
+                                            <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">
+                                                {t('admin.settings.owner_staff_help')}
+                                            </p>
+                                            {rulesErrors.owner_also_works_as_staff && (
+                                                <p className="text-xs text-error mt-2">{rulesErrors.owner_also_works_as_staff}</p>
+                                            )}
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (data.single_employee_mode && data.owner_also_works_as_staff) {
+                                                    setNoticeKind('staff_locked');
+                                                    return;
+                                                }
+                                                setData('owner_also_works_as_staff', !data.owner_also_works_as_staff);
+                                            }}
+                                            className={`relative shrink-0 w-12 h-6 rounded-full transition-colors duration-200 ${
+                                                data.owner_also_works_as_staff ? 'bg-on-surface' : 'bg-surface-container-highest'
+                                            }`}
+                                            aria-pressed={data.owner_also_works_as_staff}
+                                        >
+                                            <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all duration-200 ${
+                                                data.owner_also_works_as_staff ? 'right-1' : 'left-1'
+                                            }`} />
+                                        </button>
+                                    </div>
+                                </>
                             )}
                         </div>
 
@@ -639,6 +704,19 @@ export default function Index({
                     onCancel={() => setConfirmSection(null)}
                 />
             )}
+
+            <NoticeModal
+                show={noticeKind === 'solo_employees'}
+                title={t('admin.settings.notice.solo_employees_title')}
+                body={t('admin.settings.notice.solo_employees_body')}
+                onClose={() => setNoticeKind(null)}
+            />
+            <NoticeModal
+                show={noticeKind === 'staff_locked'}
+                title={t('admin.settings.notice.staff_locked_title')}
+                body={t('admin.settings.notice.staff_locked_body')}
+                onClose={() => setNoticeKind(null)}
+            />
         </AdminLayout>
     );
 }

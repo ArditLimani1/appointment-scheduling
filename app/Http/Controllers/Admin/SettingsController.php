@@ -29,9 +29,14 @@ class SettingsController extends Controller
 
         $validated = $request->validated();
         $ownerStaff = null;
+        $singleEmployeeMode = null;
         if (array_key_exists('owner_also_works_as_staff', $validated)) {
             $ownerStaff = (bool) $validated['owner_also_works_as_staff'];
             unset($validated['owner_also_works_as_staff']);
+        }
+        if (array_key_exists('single_employee_mode', $validated)) {
+            $singleEmployeeMode = (bool) $validated['single_employee_mode'];
+            unset($validated['single_employee_mode']);
         }
 
         $user = auth()->user();
@@ -45,9 +50,7 @@ class SettingsController extends Controller
 
         $business = $this->businessService->updateSettings($user, $validated);
 
-        if ($user->isAdmin() && $ownerStaff !== null && (int) $business->owner_id === (int) $user->id) {
-            $user->syncAlsoWorksAsStaff($business, $ownerStaff);
-        }
+        $this->businessService->syncTeamMode($user, $business, $singleEmployeeMode, $ownerStaff);
 
         if (! $hadBusiness) {
             return redirect()
