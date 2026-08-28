@@ -1,5 +1,22 @@
 import Constants from 'expo-constants';
+import { NativeModules, Platform } from 'react-native';
 import type { ApiErrorBody } from './types';
+
+/**
+ * Where is the dev machine? Expo Go exposes `expoConfig.hostUri`, but a
+ * development build often does not, so fall back to the Metro script URL —
+ * that is present in every dev context because it is how the JS got here.
+ */
+function resolveDevHost(): string | null {
+  const hostUri = Constants.expoConfig?.hostUri;
+  if (hostUri) return hostUri.split(':')[0];
+
+  const scriptURL = (NativeModules as { SourceCode?: { scriptURL?: string } }).SourceCode?.scriptURL;
+  const match = scriptURL?.match(/^https?:\/\/([^/:]+)/);
+  if (match) return match[1];
+
+  return null;
+}
 
 /**
  * Base URL resolution:
@@ -10,13 +27,15 @@ function resolveBaseUrl(): string {
   const fromEnv = process.env.EXPO_PUBLIC_API_URL;
   if (fromEnv) return fromEnv.replace(/\/$/, '');
 
-  const hostUri = Constants.expoConfig?.hostUri;
-  if (hostUri) {
-    const host = hostUri.split(':')[0];
-    return `http://${host}:8000`;
-  }
+  // Dev: reuse the Metro host (so the LAN IP follows the dev server) with the
+  // API port, which can move when something else already owns 8000.
+  const port = process.env.EXPO_PUBLIC_API_PORT ?? '8000';
 
-  return 'http://localhost:8000';
+  const host = resolveDevHost();
+  if (host) return `http://${host}:${port}`;
+
+  // Last resort: on an Android emulator the host machine is 10.0.2.2, not localhost.
+  return `http://${Platform.OS === 'android' ? '10.0.2.2' : 'localhost'}:${port}`;
 }
 
 export const BASE_URL = resolveBaseUrl();

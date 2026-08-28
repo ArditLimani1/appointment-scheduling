@@ -163,7 +163,10 @@ function DraggableBlock({
     return {
       transform: [{ translateY: dragging.value ? snapped : translateY.value }],
       zIndex: dragging.value ? 10 : 1,
+      // iOS lifts via shadowOpacity; Android stacks siblings by elevation, so
+      // both have to move or the dragged block renders under its neighbours.
       shadowOpacity: dragging.value ? 0.25 : 0,
+      elevation: dragging.value ? 12 : 2,
       opacity: dragging.value ? 0.92 : 1,
     };
   });

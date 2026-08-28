@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -40,6 +41,9 @@ function Router() {
 
   return (
     <I18nProvider key={locale ?? 'sq'} initialLocale={locale ?? 'sq'}>
+      {/* Android 15+ is edge-to-edge, so only the icon style applies here;
+          the surface colour comes from the Stack contentStyle below. */}
+      <StatusBar style="dark" />
       <Stack
         screenOptions={{
           headerShown: false,
