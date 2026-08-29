@@ -1,6 +1,8 @@
 import type { Appointment } from '@/api/types';
 
-export const HOUR_HEIGHT = 64;
+// The web grid gives an hour 130px; matching it is what stops blocks from
+// looking squeezed and lets a slot label breathe.
+export const HOUR_HEIGHT = 120;
 export const SNAP_MINUTES = 15;
 
 export function timeToMinutes(time: string | null | undefined): number {
@@ -98,4 +100,68 @@ export function hoursRange(start: string, end: string): number[] {
   const hours: number[] = [];
   for (let h = startHour; h <= endHour; h += 1) hours.push(h);
   return hours;
+}
+
+/* ------------------------------ slot segments ------------------------------ */
+
+/** Same clamp the web grid applies to `businesses.slot_duration`. */
+export const DEFAULT_SLOT_MINUTES = 30;
+
+export function clampSlotMinutes(raw: unknown): number {
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return DEFAULT_SLOT_MINUTES;
+  return Math.min(120, Math.max(5, Math.round(n)));
+}
+
+export interface Segment {
+  startMin: number;
+  endMin: number;
+}
+
+/**
+ * Split the visible day into `slotMinutes` rows, mirroring `buildTimeSegments`
+ * in the web's CalendarWeekGrid. Rows carry no availability of their own — a
+ * slot is only free *relative to* the appointment being dragged, and the server
+ * decides that (service length, working hours, breaks, shared resources), so
+ * the drag layer colours them from the slots API instead.
+ */
+export function buildSegments(rangeStart: string, rangeEnd: string, slotMinutes: number): Segment[] {
+  const startMin = timeToMinutes(rangeStart);
+  const endMin = timeToMinutes(rangeEnd);
+  const step = clampSlotMinutes(slotMinutes);
+
+  const segments: Segment[] = [];
+  for (let t = startMin; t < endMin; t += step) {
+    segments.push({ startMin: t, endMin: Math.min(t + step, endMin) });
+  }
+  return segments;
+}
+
+/**
+ * Web parity (`dragSnapMinutes`): snap to the finer cadence between the grid
+ * step and the service length, which is how the backend steps slots too.
+ */
+export function dragSnapMinutes(slotMinutes: number, serviceDurationMinutes: number): number {
+  const grid = clampSlotMinutes(slotMinutes);
+  if (!Number.isFinite(serviceDurationMinutes) || serviceDurationMinutes < 1) return grid;
+  return Math.min(grid, clampSlotMinutes(serviceDurationMinutes));
+}
+
+/**
+ * Web parity (`snapPreviewToNearestAllowedSlot`): a drop lands on the nearest
+ * start the server allows, so an invalid target pulls to a valid one instead of
+ * being submitted and rejected. Returns null when nothing is allowed that day.
+ */
+export function snapToNearestAllowed(targetMin: number, allowed: Set<string>): number | null {
+  let nearest: number | null = null;
+  let best = Infinity;
+  for (const time of allowed) {
+    const m = timeToMinutes(time);
+    const dist = Math.abs(m - targetMin);
+    if (dist < best) {
+      best = dist;
+      nearest = m;
+    }
+  }
+  return nearest;
 }

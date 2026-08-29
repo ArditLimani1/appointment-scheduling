@@ -1,8 +1,9 @@
 import { DateTime } from 'luxon';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, ScrollView, Pressable, StyleSheet, Text, View, useWindowDimensions, type TextStyle } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useAdminCalendar, useEditAppointment, useEmployeeCalendar, useRescheduleOwn } from '@/api/queries';
+import { fetchAdminSlots, useAdminCalendar, useEditAppointment, useEmployeeCalendar, useRescheduleOwn } from '@/api/queries';
+import { api } from '@/api/client';
 import type { Appointment, EmployeeSummary } from '@/api/types';
 import { useAuth } from '@/auth/store';
 import { DateBar } from '@/components/DateBar';
@@ -57,6 +58,43 @@ export default function CalendarScreen() {
   );
 
   const hours = (data?.calendar_hours as { start: string; end: string } | undefined) ?? DEFAULT_HOURS;
+  // `getCalendarView` already clamps this server-side; the grid rows follow it.
+  const slotMinutes = (data?.slot_duration as number | undefined) ?? 30;
+
+  // Drop targets are per-appointment, so the allowed starts come from the same
+  // slots API the web drag uses — the server knows about service length,
+  // working hours, breaks and shared resources; we must not guess locally.
+  const [dragging, setDragging] = useState<Appointment | null>(null);
+  const [allowedStarts, setAllowedStarts] = useState<Set<string> | null>(null);
+
+  useEffect(() => {
+    if (!dragging) {
+      setAllowedStarts(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = isAdminArea
+          ? await fetchAdminSlots({
+              employee_id: dragging.employee_id ?? 0,
+              service_id: dragging.service_id ?? 0,
+              date,
+              exclude_id: dragging.id,
+            })
+          : await api<{ slots: string[] }>(`/employee/appointments/${dragging.id}/slots`, {
+              query: { date },
+            });
+        if (!cancelled) setAllowedStarts(new Set(response.slots));
+      } catch {
+        // Leaving it null keeps every row plain rather than colouring a guess.
+        if (!cancelled) setAllowedStarts(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [dragging?.id, date, isAdminArea]);
   const columnDates = (data?.column_dates as string[] | undefined) ?? [date];
 
   const employeeBreaks = !isAdminArea
@@ -186,6 +224,11 @@ export default function CalendarScreen() {
             isDayOff={(isAdminArea ? adminDayOffs : dayOffs).includes(date)}
             dayOffLabel={t('mobile.calendar.day_off')}
             onPressAppointment={setSelected}
+            slotMinutes={slotMinutes}
+            onDragStart={setDragging}
+            onDragEnd={() => setDragging(null)}
+            allowedStarts={allowedStarts}
+            draggingId={dragging?.id ?? null}
             onMoveAppointment={onMove}
             canMove={(a) => a.status !== 'cancelled'}
             employeeColors={employeeColors}

@@ -8,7 +8,7 @@ import { employeeName } from '@/components/AppointmentCard';
 import { toIsoDate, toHm } from '@/utils/datetime';
 import { getEmployeeSlotStyles, type EmployeeColorMap } from './employeeColors';
 import { statusIcon } from './statusIcon';
-import { HOUR_HEIGHT, breakBounds, hoursRange, layoutDay, timeToMinutes } from './layout';
+import { HOUR_HEIGHT, breakBounds, buildSegments, hoursRange, layoutDay, timeToMinutes } from './layout';
 import type { BreakInterval } from './layout';
 
 const AXIS_WIDTH = 48;
@@ -27,6 +27,7 @@ export function WeekGrid({
   dayBreaksByDate = {},
   dayOffs = [],
   employeeColors,
+  slotMinutes,
   onPressAppointment,
   onPressDay,
 }: {
@@ -39,6 +40,8 @@ export function WeekGrid({
   dayOffs?: string[];
   /** Per-employee block colours, as on the web calendar. */
   employeeColors?: EmployeeColorMap;
+  /** `businesses.slot_duration`; rows follow it, matching the day view and web. */
+  slotMinutes?: number;
   onPressAppointment: (appointment: Appointment) => void;
   onPressDay?: (date: string) => void;
 }) {
@@ -110,10 +113,24 @@ export function WeekGrid({
             </View>
 
             {columnDates.map((date) => {
-              const blocks = layoutDay(byDate[date] ?? [], dayStart);
+              const dayAppointments = byDate[date] ?? [];
+              const blocks = layoutDay(dayAppointments, dayStart);
               const isOff = dayOffs.includes(date);
+              const segments = buildSegments(hours.start, hours.end, slotMinutes ?? 30);
               return (
                 <View key={date} style={styles.column}>
+                  {segments.map((seg) => (
+                    <View
+                      key={seg.startMin}
+                      style={[
+                        styles.segment,
+                        {
+                          top: ((seg.startMin - dayStart) / 60) * HOUR_HEIGHT,
+                          height: ((seg.endMin - seg.startMin) / 60) * HOUR_HEIGHT,
+                        },
+                      ]}
+                    />
+                  ))}
                   {hourMarks.map((h, i) => (
                     <View key={h} style={[styles.gridLine, { top: i * HOUR_HEIGHT }]} />
                   ))}
@@ -196,6 +213,16 @@ const styles = StyleSheet.create({
     width: MIN_COLUMN_WIDTH,
     borderLeftWidth: StyleSheet.hairlineWidth,
     borderLeftColor: palette.outlineVariant,
+  },
+  // Every row is the shaded default; a bookable one is punched out in white, so
+  // open time reads as a gap rather than as another tint on a tinted surface.
+  segment: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    backgroundColor: palette.surfaceContainerLowest,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: palette.slate100,
   },
   gridLine: {
     position: 'absolute',
