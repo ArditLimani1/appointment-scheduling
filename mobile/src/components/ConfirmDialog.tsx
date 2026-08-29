@@ -72,7 +72,11 @@ function ConfirmDialog({
       visible={options != null}
       transparent
       animationType="none"
+      // Android 15+ is edge-to-edge: without both of these the modal window
+      // stops short of the system bars, so the tab bar stays undimmed and the
+      // screen below re-lays out for a frame as the dialog opens and closes.
       statusBarTranslucent
+      navigationBarTranslucent
       onRequestClose={onClose}
     >
       {options ? (
