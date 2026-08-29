@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Alert, FlatList, RefreshControl, View } from 'react-native';
+import { FlatList, RefreshControl, View } from 'react-native';
 import { ApiError } from '@/api/client';
 import { useAdminResources, useDeleteResource, useSaveResource } from '@/api/queries';
 import { useToast } from '@/components/Toast';
+import { useConfirm } from '@/components/ConfirmDialog';
 import { Screen } from '@/components/Screen';
 import { Button, Card, EmptyState, ErrorView, ListRow, LoadingView, TextField } from '@/components/ui';
 import { FormSheet } from '@/features/manage/FormSheet';
@@ -21,6 +22,7 @@ export default function ResourcesScreen() {
   const query = useAdminResources();
   const save = useSaveResource();
   const remove = useDeleteResource();
+  const { ask, dialog } = useConfirm();
 
   const [form, setForm] = useState<ResourceForm | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
@@ -50,14 +52,13 @@ export default function ResourcesScreen() {
   };
 
   const confirmDelete = (id: number) => {
-    Alert.alert(t('mobile.common.confirm'), t('mobile.resources.delete_confirm'), [
-      { text: t('mobile.common.cancel'), style: 'cancel' },
-      {
-        text: t('mobile.common.delete'),
-        style: 'destructive',
-        onPress: () => remove.mutate({ id }, { onError: (e) => showError(e.message) }),
-      },
-    ]);
+    ask({
+      title: t('mobile.common.confirm'),
+      message: t('mobile.resources.delete_confirm'),
+      confirmLabel: t('mobile.common.delete'),
+      destructive: true,
+      onConfirm: () => remove.mutate({ id }, { onError: (e) => showError(e.message) }),
+    });
   };
 
   return (
@@ -116,6 +117,7 @@ export default function ResourcesScreen() {
           />
         </FormSheet>
       ) : null}
+      {dialog}
     </Screen>
   );
 }

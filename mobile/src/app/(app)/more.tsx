@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { Alert, ScrollView, Text, View, type TextStyle } from 'react-native';
+import { ScrollView, Text, View, type TextStyle } from 'react-native';
 import { api, setApiLocale } from '@/api/client';
 import { useAuth } from '@/auth/store';
+import { useConfirm } from '@/components/ConfirmDialog';
 import { Screen } from '@/components/Screen';
 import { Button, Card, ListRow, Segmented } from '@/components/ui';
 import { useT } from '@/i18n';
@@ -16,6 +17,7 @@ export default function MoreScreen() {
   const signOut = useAuth((s) => s.signOut);
   const refreshMe = useAuth((s) => s.refreshMe);
   const hasPermission = useAuth((s) => s.hasPermission);
+  const { ask, dialog } = useConfirm();
 
   const isAdminArea = me?.features.admin_panel ?? false;
   const showEmployeeSection = !isAdminArea || (me?.user.also_works_as_staff ?? false);
@@ -31,10 +33,13 @@ export default function MoreScreen() {
   };
 
   const confirmLogout = () => {
-    Alert.alert(t('mobile.more.logout'), t('mobile.more.logout_confirm'), [
-      { text: t('mobile.common.cancel'), style: 'cancel' },
-      { text: t('mobile.more.logout'), style: 'destructive', onPress: () => void signOut() },
-    ]);
+    ask({
+      title: t('mobile.more.logout'),
+      message: t('mobile.more.logout_confirm'),
+      confirmLabel: t('mobile.more.logout'),
+      destructive: true,
+      onConfirm: () => void signOut(),
+    });
   };
 
   return (
@@ -92,6 +97,7 @@ export default function MoreScreen() {
 
         <Button title={t('mobile.more.logout')} variant="danger" onPress={confirmLogout} />
       </ScrollView>
+      {dialog}
     </Screen>
   );
 }

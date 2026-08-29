@@ -1,10 +1,11 @@
 import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useState } from 'react';
-import { Alert, Image, ScrollView, Switch, Text, View, type TextStyle } from 'react-native';
+import { Image, ScrollView, Switch, Text, View, type TextStyle } from 'react-native';
 import { ApiError, BASE_URL } from '@/api/client';
 import { useAdminSettings, useSaveNotificationPreferences, useSaveSettings, useUploadLogo } from '@/api/queries';
 import type { BusinessSettings } from '@/api/types';
 import { useAuth } from '@/auth/store';
+import { useConfirm } from '@/components/ConfirmDialog';
 import { Screen } from '@/components/Screen';
 import { useToast } from '@/components/Toast';
 import { Button, Card, ErrorView, LoadingView, Segmented, TextField } from '@/components/ui';
@@ -41,6 +42,7 @@ interface RulesForm {
 export default function SettingsScreen() {
   const { t } = useT();
   const { showSuccess, showError } = useToast();
+  const { ask, dialog } = useConfirm();
   const refreshMe = useAuth((s) => s.refreshMe);
   const whatsappEnabled = useAuth((s) => s.me?.features.whatsapp ?? false);
 
@@ -148,14 +150,13 @@ export default function SettingsScreen() {
 
   /** Web confirms each section before saving; keep that guard here. */
   const confirmSave = (section: 'identity' | 'rules') => {
-    Alert.alert(
-      t(section === 'identity' ? 'admin.settings.confirm.identity_title' : 'admin.settings.confirm.rules_title'),
-      t(section === 'identity' ? 'admin.settings.confirm.identity_body' : 'admin.settings.confirm.rules_body'),
-      [
-        { text: t('admin.settings.confirm.cancel'), style: 'cancel' },
-        { text: t('admin.settings.confirm.yes_save'), onPress: () => submit(section) },
-      ],
-    );
+    ask({
+      title: t(section === 'identity' ? 'admin.settings.confirm.identity_title' : 'admin.settings.confirm.rules_title'),
+      message: t(section === 'identity' ? 'admin.settings.confirm.identity_body' : 'admin.settings.confirm.rules_body'),
+      cancelLabel: t('admin.settings.confirm.cancel'),
+      confirmLabel: t('admin.settings.confirm.yes_save'),
+      onConfirm: () => submit(section),
+    });
   };
 
   const pickLogo = async () => {
@@ -435,6 +436,7 @@ export default function SettingsScreen() {
           )}
         </ScrollView>
       </View>
+      {dialog}
     </Screen>
   );
 }

@@ -1,12 +1,13 @@
 import { DateTime } from 'luxon';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, ScrollView, Pressable, StyleSheet, Text, View, useWindowDimensions, type TextStyle } from 'react-native';
+import { ScrollView, Pressable, StyleSheet, Text, View, useWindowDimensions, type TextStyle } from 'react-native';
 import { useRouter } from 'expo-router';
 import { fetchAdminSlots, useAdminCalendar, useEditAppointment, useEmployeeCalendar, useRescheduleOwn } from '@/api/queries';
 import { api } from '@/api/client';
 import type { Appointment, EmployeeSummary } from '@/api/types';
 import { useAuth } from '@/auth/store';
 import { DateBar } from '@/components/DateBar';
+import { useConfirm } from '@/components/ConfirmDialog';
 import { Screen } from '@/components/Screen';
 import { useToast } from '@/components/Toast';
 import { Button, ErrorView, LoadingView, Segmented } from '@/components/ui';
@@ -43,6 +44,7 @@ export default function CalendarScreen() {
   const reschedule = useRescheduleOwn();
   const editAppointment = useEditAppointment('admin');
   const { showError } = useToast();
+  const { ask, dialog } = useConfirm();
 
   const data = query.data;
 
@@ -157,17 +159,14 @@ export default function CalendarScreen() {
       );
     };
 
-    Alert.alert(
-      t('mobile.calendar.move_confirm_title'),
-      t('mobile.calendar.move_confirm', {
+    ask({
+      title: t('mobile.calendar.move_confirm_title'),
+      message: t('mobile.calendar.move_confirm', {
         client: [appointment.client_first_name, appointment.client_last_name].filter(Boolean).join(' '),
         time: newTime,
       }),
-      [
-        { text: t('mobile.common.cancel'), style: 'cancel' },
-        { text: t('mobile.common.confirm'), onPress: apply },
-      ],
-    );
+      onConfirm: apply,
+    });
   };
 
   const employees = (data?.employees ?? []) as EmployeeSummary[];
@@ -279,6 +278,7 @@ export default function CalendarScreen() {
           onClose={() => setSelected(null)}
         />
       ) : null}
+      {dialog}
     </Screen>
   );
 }

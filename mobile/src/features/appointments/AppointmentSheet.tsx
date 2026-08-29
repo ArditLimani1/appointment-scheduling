@@ -1,7 +1,6 @@
 import { DateTime } from 'luxon';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -26,6 +25,7 @@ import {
 import type { Appointment, AppointmentStatus } from '@/api/types';
 import { useAuth } from '@/auth/store';
 import { clientName, employeeName, serviceName } from '@/components/AppointmentCard';
+import { useConfirm } from '@/components/ConfirmDialog';
 import { ToastHost, useToast } from '@/components/Toast';
 import { Button, Segmented, StatusPill, TextField } from '@/components/ui';
 import { useT } from '@/i18n';
@@ -71,6 +71,7 @@ export function AppointmentSheet({
   const edit = useEditAppointment(area);
   const deleteAppointment = useDeleteAppointment();
   const { showError } = useToast();
+  const { ask, dialog } = useConfirm();
 
   const isAdmin = area === 'admin';
   const canEditService = isAdmin || (me?.business?.allow_employee_service_edit ?? true);
@@ -205,18 +206,17 @@ export function AppointmentSheet({
   };
 
   const confirmDelete = () => {
-    Alert.alert(t('mobile.common.confirm'), t('mobile.sheet.delete_confirm'), [
-      { text: t('mobile.common.cancel'), style: 'cancel' },
-      {
-        text: t('mobile.sheet.delete'),
-        style: 'destructive',
-        onPress: () =>
-          deleteAppointment.mutate(
-            { id: appointment.id },
-            { onSuccess: onClose, onError: (e) => showError(e.message) },
-          ),
-      },
-    ]);
+    ask({
+      title: t('mobile.common.confirm'),
+      message: t('mobile.sheet.delete_confirm'),
+      confirmLabel: t('mobile.sheet.delete'),
+      destructive: true,
+      onConfirm: () =>
+        deleteAppointment.mutate(
+          { id: appointment.id },
+          { onSuccess: onClose, onError: (e) => showError(e.message) },
+        ),
+    });
   };
 
   const shiftDate = (delta: number) => {
@@ -240,6 +240,7 @@ export function AppointmentSheet({
     >
       <SheetBackdrop onPress={onClose} />
       <ToastHost />
+      {dialog}
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <Animated.View entering={SlideInDown.duration(SHEET_SLIDE_MS)} style={styles.sheet}>
           <View style={styles.grabber} />

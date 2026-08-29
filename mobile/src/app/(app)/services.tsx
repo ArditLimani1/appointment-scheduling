@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Alert, FlatList, RefreshControl, Switch, Text, View, type TextStyle } from 'react-native';
+import { FlatList, RefreshControl, Switch, Text, View, type TextStyle } from 'react-native';
 import { ApiError } from '@/api/client';
 import { useAdminServices, useDeleteService, useSaveService } from '@/api/queries';
 import type { ServiceSummary } from '@/api/types';
 import { useAuth } from '@/auth/store';
 import { useToast } from '@/components/Toast';
+import { useConfirm } from '@/components/ConfirmDialog';
 import { Screen } from '@/components/Screen';
 import { Button, Card, EmptyState, ErrorView, ListRow, LoadingView, TextField } from '@/components/ui';
 import { FormSheet } from '@/features/manage/FormSheet';
@@ -29,6 +30,7 @@ export default function ServicesScreen() {
   const query = useAdminServices();
   const save = useSaveService();
   const remove = useDeleteService();
+  const { ask, dialog } = useConfirm();
 
   const [form, setForm] = useState<ServiceForm | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
@@ -79,15 +81,13 @@ export default function ServicesScreen() {
   };
 
   const confirmDelete = (service: ServiceSummary) => {
-    Alert.alert(t('mobile.common.confirm'), t('mobile.services.delete_confirm'), [
-      { text: t('mobile.common.cancel'), style: 'cancel' },
-      {
-        text: t('mobile.common.delete'),
-        style: 'destructive',
-        onPress: () =>
-          remove.mutate({ id: service.id }, { onError: (e) => showError(e.message) }),
-      },
-    ]);
+    ask({
+      title: t('mobile.common.confirm'),
+      message: t('mobile.services.delete_confirm'),
+      confirmLabel: t('mobile.common.delete'),
+      destructive: true,
+      onConfirm: () => remove.mutate({ id: service.id }, { onError: (e) => showError(e.message) }),
+    });
   };
 
   return (
@@ -163,6 +163,7 @@ export default function ServicesScreen() {
           </View>
         </FormSheet>
       ) : null}
+      {dialog}
     </Screen>
   );
 }

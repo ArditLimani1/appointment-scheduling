@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Alert, FlatList, RefreshControl, Switch, Text, View, type TextStyle } from 'react-native';
+import { FlatList, RefreshControl, Switch, Text, View, type TextStyle } from 'react-native';
 import { ApiError } from '@/api/client';
 import { useAdminEmployees, useDeleteEmployee, useSaveEmployee } from '@/api/queries';
 import type { EmployeeSummary } from '@/api/types';
 import { useToast } from '@/components/Toast';
+import { useConfirm } from '@/components/ConfirmDialog';
 import { Screen } from '@/components/Screen';
 import { Button, Card, EmptyState, ErrorView, ListRow, LoadingView, TextField } from '@/components/ui';
 import { ChipPicker, FormSheet } from '@/features/manage/FormSheet';
@@ -37,6 +38,7 @@ export default function EmployeesScreen() {
   const query = useAdminEmployees();
   const save = useSaveEmployee();
   const remove = useDeleteEmployee();
+  const { ask, dialog } = useConfirm();
 
   const [form, setForm] = useState<EmployeeForm | null>(null);
   const [deleteAppointments, setDeleteAppointments] = useState(false);
@@ -99,18 +101,17 @@ export default function EmployeesScreen() {
 
   const confirmDelete = (employee: EmployeeSummary) => {
     setDeleteAppointments(false);
-    Alert.alert(t('mobile.common.confirm'), t('mobile.employees.delete_confirm'), [
-      { text: t('mobile.common.cancel'), style: 'cancel' },
-      {
-        text: t('mobile.common.delete'),
-        style: 'destructive',
-        onPress: () =>
-          remove.mutate(
-            { id: employee.id, delete_appointments: false },
-            { onError: (e) => showError(e.message) },
-          ),
-      },
-    ]);
+    ask({
+      title: t('mobile.common.confirm'),
+      message: t('mobile.employees.delete_confirm'),
+      confirmLabel: t('mobile.common.delete'),
+      destructive: true,
+      onConfirm: () =>
+        remove.mutate(
+          { id: employee.id, delete_appointments: false },
+          { onError: (e) => showError(e.message) },
+        ),
+    });
   };
 
   return (
@@ -201,6 +202,7 @@ export default function EmployeesScreen() {
           ) : null}
         </FormSheet>
       ) : null}
+      {dialog}
     </Screen>
   );
 }
