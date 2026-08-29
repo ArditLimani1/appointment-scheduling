@@ -129,7 +129,8 @@ Dev accounts (local sqlite): `admin@stratos.com`, `pronari@example.com` (admin),
   never re-parse those values through a zoned DateTime — the day slips by one.
 - **Toasts, not `Alert`, for notices.** `ToastProvider` (mounted in
   `src/app/_layout.tsx`) mirrors the web's `SuccessToastProvider`; use
-  `useToast().showSuccess/showError`. `Alert` stays only for *confirm* dialogs.
+  `useToast().showSuccess/showError`. Confirms go through `useConfirm()` in
+  `components/ConfirmDialog.tsx` — `Alert` is no longer used anywhere.
   A `<Modal>` renders in its own window, so the root host cannot paint over an
   open sheet — every modal that can raise a toast while staying open needs its
   own `<ToastHost />` (AppointmentSheet and FormSheet have one).
