@@ -194,7 +194,6 @@ return [
         'schedule' => 'My schedule',
         'schedule_config' => 'Weekly configuration',
         'analytics' => 'My analytics',
-        'notifications' => 'Notifications',
     ],
 
     'common' => [

@@ -194,7 +194,6 @@ return [
         'schedule' => 'Orari im',
         'schedule_config' => 'Konfigurimi javor',
         'analytics' => 'Analitika ime',
-        'notifications' => 'Njoftimet',
     ],
 
     'common' => [

@@ -19,6 +19,8 @@ export default function MoreScreen() {
 
   const isAdminArea = me?.features.admin_panel ?? false;
   const showEmployeeSection = !isAdminArea || (me?.user.also_works_as_staff ?? false);
+  const showSchedule = showEmployeeSection && hasPermission('employee.schedule');
+  const showAnalytics = showEmployeeSection && !isAdminArea && hasPermission('employee.analytics');
 
   const changeLocale = (next: string) => {
     setLocale(next);
@@ -46,9 +48,11 @@ export default function MoreScreen() {
           ) : null}
         </Card>
 
-        {showEmployeeSection ? (
+        {/* Notifications are not listed here: the bell in the header of every
+            screen is the single entry point, as on the web. */}
+        {showSchedule || showAnalytics ? (
           <Card style={{ padding: 0, overflow: 'hidden' }}>
-            {hasPermission('employee.schedule') ? (
+            {showSchedule ? (
               <>
                 <ListRow
                   title={t('mobile.more.schedule')}
@@ -62,28 +66,15 @@ export default function MoreScreen() {
                 />
               </>
             ) : null}
-            {!isAdminArea && hasPermission('employee.analytics') ? (
+            {showAnalytics ? (
               <ListRow
                 title={t('mobile.more.analytics')}
                 onPress={() => router.push('/(app)/analytics')}
                 right={<Ionicons name="bar-chart-outline" size={20} color={palette.onSurfaceVariant} />}
               />
             ) : null}
-            <ListRow
-              title={t('mobile.more.notifications')}
-              onPress={() => router.push('/(app)/notifications')}
-              right={<Ionicons name="notifications-outline" size={20} color={palette.onSurfaceVariant} />}
-            />
           </Card>
-        ) : (
-          <Card style={{ padding: 0, overflow: 'hidden' }}>
-            <ListRow
-              title={t('mobile.more.notifications')}
-              onPress={() => router.push('/(app)/notifications')}
-              right={<Ionicons name="notifications-outline" size={20} color={palette.onSurfaceVariant} />}
-            />
-          </Card>
-        )}
+        ) : null}
 
         <Card style={{ gap: spacing.sm }}>
           <Text style={[typography.label as TextStyle, { color: palette.onSurfaceVariant }]}>
