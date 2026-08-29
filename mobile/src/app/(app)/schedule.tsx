@@ -1,10 +1,11 @@
 import { DateTime } from 'luxon';
 import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView } from 'react-native';
+import { ScrollView } from 'react-native';
 import { useEmployeeSchedule, useSaveScheduleOverrides } from '@/api/queries';
 import type { ScheduleDay } from '@/api/types';
 import { useAuth } from '@/auth/store';
 import { DateBar } from '@/components/DateBar';
+import { useToast } from '@/components/Toast';
 import { Screen } from '@/components/Screen';
 import { Button, ErrorView, LoadingView } from '@/components/ui';
 import { DayEditor, isValidTime } from '@/features/schedule/DayEditor';
@@ -14,6 +15,7 @@ import { spacing } from '@/theme/tokens';
 /** Week-specific overrides of the base weekly schedule. */
 export default function ScheduleScreen() {
   const { t, locale } = useT();
+  const { showSuccess, showError } = useToast();
   const me = useAuth((s) => s.me);
   const zone = me?.business?.timezone ?? 'UTC';
 
@@ -62,8 +64,8 @@ export default function ScheduleScreen() {
         })) as ScheduleDay[],
       },
       {
-        onSuccess: () => Alert.alert('', t('mobile.schedule.saved')),
-        onError: (e) => Alert.alert(t('mobile.common.error'), e.message),
+        onSuccess: () => showSuccess(t('mobile.schedule.saved')),
+        onError: (e) => showError(e.message),
       },
     );
   };

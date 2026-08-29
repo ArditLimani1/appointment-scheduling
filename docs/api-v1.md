@@ -54,7 +54,7 @@ conventional REST on the same paths as web.
 |---|---|---|
 | POST | `/auth/login` | `{email, password, device_name}` → `{token, user}`. Rejects unverified email (`403 email_unverified`) and suspended business. Throttled. |
 | DELETE | `/auth/logout` | Revokes current token and its device registration. |
-| GET | `/me` | `{user, business, permissions[], locale, features}` — the app's boot payload. `business` includes `timezone`, `currency_symbol`, `uses_shared_resources`, `allow_employee_service_edit`, `auto_confirm_appointments`. `features` flags what nav to show (mirrors `hasAdminPanelAccess`). |
+| GET | `/me` | `{user, business, permissions[], locale, features}` — the app's boot payload. `business` includes `timezone`, `currency_symbol`, `uses_shared_resources`, `allow_employee_service_edit`, `auto_confirm_appointments`. `features` flags what nav to show (`admin_panel` mirrors `hasAdminPanelAccess`, `employee_area`) plus `whatsapp` (mirrors the web's shared `features.whatsapp` prop — it gates the client-identifier choice in settings). |
 | PATCH | `/me` | Profile update (reuses `ProfileUpdateRequest`). |
 | PUT | `/me/password` | Current + new password. Revokes other tokens. |
 | PUT | `/me/locale` | `{locale: sq|en}`. |
@@ -128,8 +128,10 @@ plus `permission:` per group.
 | GET/POST/PUT/DELETE | `/admin/shared-resources[/{id}]` | gated by `business_uses_shared_resources` |
 | GET/POST/PUT/DELETE | `/admin/roles[/{id}]` | business roles CRUD |
 | GET | `/admin/analytics?…` | analytics |
-| GET | `/admin/settings` | settings payload |
-| PUT | `/admin/settings` | update settings |
+| GET | `/admin/settings` | `{settings, owner_email, show_owner_staff_toggle, owner_also_works_as_staff}` — `settings` is the business row (identity + every booking rule). |
+| PUT | `/admin/settings` | Update settings. Every field is `sometimes`, so a client may send one section at a time (the web sends identity and booking rules as two separate forms). |
+| PUT | `/admin/settings/notifications` | `{notify_others_appointments}` — the caller's **personal** opt-in to be notified about bookings assigned to other staff. Gated on `admin.appointments`, not `admin.settings`, and `GET /admin/settings` is open to either permission (it returns `can_manage_settings` / `can_manage_appointments` so the client renders only the sections that user may change). |
+| POST | `/admin/settings` | Same action, for a **multipart** `logo` upload — PHP does not populate `$_FILES` on a PUT, so a file has to arrive over POST. |
 
 ## 6. Response shapes
 

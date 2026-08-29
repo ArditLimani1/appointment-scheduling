@@ -4,6 +4,7 @@ import { ApiError } from '@/api/client';
 import { useAdminServices, useDeleteService, useSaveService } from '@/api/queries';
 import type { ServiceSummary } from '@/api/types';
 import { useAuth } from '@/auth/store';
+import { useToast } from '@/components/Toast';
 import { Screen } from '@/components/Screen';
 import { Button, Card, EmptyState, ErrorView, ListRow, LoadingView, TextField } from '@/components/ui';
 import { FormSheet } from '@/features/manage/FormSheet';
@@ -21,6 +22,7 @@ interface ServiceForm {
 
 export default function ServicesScreen() {
   const { t } = useT();
+  const { showError } = useToast();
   const me = useAuth((s) => s.me);
   const currency = me?.business?.currency_symbol ?? '';
 
@@ -70,7 +72,7 @@ export default function ServicesScreen() {
         onSuccess: () => setForm(null),
         onError: (e) => {
           if (e instanceof ApiError && e.errors) setFieldErrors(e.errors);
-          else Alert.alert(t('mobile.common.error'), e.message);
+          else showError(e.message);
         },
       },
     );
@@ -83,7 +85,7 @@ export default function ServicesScreen() {
         text: t('mobile.common.delete'),
         style: 'destructive',
         onPress: () =>
-          remove.mutate({ id: service.id }, { onError: (e) => Alert.alert(t('mobile.common.error'), e.message) }),
+          remove.mutate({ id: service.id }, { onError: (e) => showError(e.message) }),
       },
     ]);
   };

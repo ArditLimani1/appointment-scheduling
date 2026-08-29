@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Api;
 
 use App\Models\User;
+use App\Support\ClientIdentification;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -55,6 +56,9 @@ class MeResource extends JsonResource
             'features' => [
                 'admin_panel' => $user->hasAdminPanelAccess(),
                 'employee_area' => $user->isEmployee() || ($user->isAdmin() && (bool) $user->also_works_as_staff),
+                // Mirrors the web's shared `features.whatsapp` Inertia prop: it
+                // gates the client-identifier choice in settings.
+                'whatsapp' => ClientIdentification::whatsappEnabled(),
             ],
         ];
     }

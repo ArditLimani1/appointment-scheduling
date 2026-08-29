@@ -11,11 +11,16 @@ import {
   type TextStyle,
   type ViewStyle,
 } from 'react-native';
-import { palette, radius, spacing, statusColors, typography } from '@/theme/tokens';
+import { elevation, hairline, palette, radius, spacing, statusColors, typography } from '@/theme/tokens';
 import type { AppointmentStatus } from '@/api/types';
 
 /* --------------------------------- Button ---------------------------------- */
 
+/**
+ * Mirrors the web's action buttons. The primary action is near-black
+ * (`bg-on-surface text-surface`), the secondary is a grey container, and the
+ * destructive one is the soft red-50/red-200 pair — not a solid red fill.
+ */
 export function Button({
   title,
   onPress,
@@ -33,18 +38,18 @@ export function Button({
 }) {
   const bg =
     variant === 'primary'
-      ? palette.primary
+      ? palette.onSurface
       : variant === 'danger'
-        ? palette.error
+        ? palette.red50
         : variant === 'secondary'
-          ? palette.secondaryContainer
+          ? palette.surfaceContainerHigh
           : 'transparent';
   const fg =
-    variant === 'primary' || variant === 'danger'
-      ? palette.onPrimary
-      : variant === 'secondary'
-        ? palette.onSecondaryContainer
-        : palette.primary;
+    variant === 'primary'
+      ? palette.surface
+      : variant === 'danger'
+        ? palette.red950
+        : palette.onSurface;
 
   return (
     <Pressable
@@ -52,15 +57,22 @@ export function Button({
       disabled={disabled || loading}
       style={({ pressed }) => [
         styles.button,
-        { backgroundColor: bg, opacity: disabled || loading ? 0.5 : pressed ? 0.85 : 1 },
+        { backgroundColor: bg },
+        variant === 'primary' && elevation.sm,
+        variant === 'danger' && { borderWidth: 1, borderColor: palette.red200 },
         variant === 'ghost' && { paddingHorizontal: spacing.sm },
+        // The web pairs `hover:opacity-90` with `active:scale-95`.
+        { opacity: disabled || loading ? 0.4 : pressed ? 0.9 : 1 },
+        pressed && !disabled && !loading && { transform: [{ scale: 0.97 }] },
         style,
       ]}
     >
       {loading ? (
         <ActivityIndicator color={fg} size="small" />
       ) : (
-        <Text style={[typography.bodyStrong as TextStyle, { color: fg }]}>{title}</Text>
+        <Text style={[typography.labelStrong as TextStyle, { color: fg, fontSize: 14 }]} numberOfLines={1}>
+          {title}
+        </Text>
       )}
     </Pressable>
   );
@@ -89,6 +101,7 @@ export function TextField({
 
 /* ---------------------------------- Card ------------------------------------ */
 
+/** The web's panel: `rounded-2xl ring-1 ring-slate-100 shadow-sm`. */
 export function Card({ children, style }: { children: React.ReactNode; style?: StyleProp<ViewStyle> }) {
   return <View style={[styles.card, style]}>{children}</View>;
 }
@@ -98,9 +111,9 @@ export function Card({ children, style }: { children: React.ReactNode; style?: S
 export function StatusPill({ status, label }: { status: AppointmentStatus; label?: string }) {
   const colors = statusColors[status] ?? statusColors.pending;
   return (
-    <View style={[styles.pill, { backgroundColor: colors.bg }]}>
+    <View style={[styles.pill, { backgroundColor: colors.bg, borderColor: colors.ring }]}>
       <View style={[styles.pillDot, { backgroundColor: colors.dot }]} />
-      <Text style={[typography.caption as TextStyle, { color: colors.fg }]}>{label ?? status}</Text>
+      <Text style={[typography.overline as TextStyle, { color: colors.fg }]}>{label ?? status}</Text>
     </View>
   );
 }
@@ -110,7 +123,7 @@ export function StatusPill({ status, label }: { status: AppointmentStatus; label
 export function MetricCard({ label, value, accent }: { label: string; value: string | number; accent?: string }) {
   return (
     <Card style={styles.metric}>
-      <Text style={[typography.caption as TextStyle, { color: palette.onSurfaceVariant }]} numberOfLines={1}>
+      <Text style={[typography.overline as TextStyle, { color: palette.onSurfaceVariant }]} numberOfLines={1}>
         {label}
       </Text>
       <Text style={[typography.headline as TextStyle, { color: accent ?? palette.onSurface }]} numberOfLines={1}>
@@ -122,6 +135,10 @@ export function MetricCard({ label, value, accent }: { label: string; value: str
 
 /* ------------------------------ SegmentedControl ----------------------------- */
 
+/**
+ * The web's segmented switch: a grey track with a white, ringed, slightly
+ * raised pill for the active option — not a filled primary-colour segment.
+ */
 export function Segmented<T extends string>({
   options,
   value,
@@ -143,9 +160,10 @@ export function Segmented<T extends string>({
           >
             <Text
               style={[
-                typography.label as TextStyle,
-                { color: active ? palette.onPrimary : palette.onSurfaceVariant },
+                typography.labelStrong as TextStyle,
+                { color: active ? palette.onSurface : palette.onSurfaceVariant },
               ]}
+              numberOfLines={1}
             >
               {option.label}
             </Text>
@@ -161,7 +179,7 @@ export function Segmented<T extends string>({
 export function LoadingView() {
   return (
     <View style={styles.center}>
-      <ActivityIndicator size="large" color={palette.primary} />
+      <ActivityIndicator size="large" color={palette.onSurface} />
     </View>
   );
 }
@@ -207,14 +225,14 @@ export function ListRow({
     <Pressable
       onPress={onPress}
       disabled={!onPress}
-      style={({ pressed }) => [styles.listRow, pressed && { backgroundColor: palette.surfaceContainer }]}
+      style={({ pressed }) => [styles.listRow, pressed && { backgroundColor: palette.slate50 }]}
     >
       <View style={{ flex: 1, gap: 2 }}>
-        <Text style={[typography.bodyStrong as TextStyle, { color: palette.onSurface }]} numberOfLines={1}>
+        <Text style={[typography.title as TextStyle, { color: palette.onSurface, fontSize: 15 }]} numberOfLines={1}>
           {title}
         </Text>
         {subtitle ? (
-          <Text style={[typography.label as TextStyle, { color: palette.onSurfaceVariant }]} numberOfLines={2}>
+          <Text style={[typography.caption as TextStyle, { color: palette.onSurfaceVariant }]} numberOfLines={2}>
             {subtitle}
           </Text>
         ) : null}
@@ -226,37 +244,40 @@ export function ListRow({
 
 const styles = StyleSheet.create({
   button: {
-    minHeight: 46,
-    borderRadius: radius.lg,
+    minHeight: 48,
+    borderRadius: radius.xl,
     paddingHorizontal: spacing.xl,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
   },
-  fieldLabel: { ...(typography.label as TextStyle), color: palette.onSurfaceVariant },
+  fieldLabel: { ...(typography.overline as TextStyle), color: palette.outline },
   fieldError: { ...(typography.caption as TextStyle), color: palette.error },
   input: {
-    minHeight: 46,
+    minHeight: 48,
     borderWidth: 1,
     borderColor: palette.outlineVariant,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     paddingHorizontal: spacing.md,
     backgroundColor: palette.surfaceContainerLowest,
     color: palette.onSurface,
-    fontSize: 15,
+    ...(typography.body as TextStyle),
   },
   card: {
     backgroundColor: palette.surfaceContainerLowest,
-    borderRadius: radius.xl,
+    borderRadius: radius['2xl'],
     padding: spacing.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: palette.outlineVariant,
+    // `ring-1 ring-slate-100` — a full-width ring, not a hairline border.
+    borderWidth: 1,
+    borderColor: palette.slate100,
+    ...elevation.sm,
   },
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
     borderRadius: radius.full,
+    borderWidth: 1,
     paddingHorizontal: spacing.sm,
     paddingVertical: 3,
     alignSelf: 'flex-start',
@@ -265,17 +286,25 @@ const styles = StyleSheet.create({
   metric: { flex: 1, gap: spacing.xs, padding: spacing.md },
   segmented: {
     flexDirection: 'row',
-    backgroundColor: palette.surfaceContainer,
-    borderRadius: radius.full,
-    padding: 3,
+    backgroundColor: palette.surfaceContainerHigh,
+    borderRadius: radius.xl,
+    padding: 4,
+    gap: 4,
   },
   segment: {
     flex: 1,
-    borderRadius: radius.full,
-    paddingVertical: 7,
+    borderRadius: radius.lg,
+    paddingVertical: 8,
+    minHeight: 36,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  segmentActive: { backgroundColor: palette.primary },
+  segmentActive: {
+    backgroundColor: palette.surfaceContainerLowest,
+    borderWidth: 1,
+    borderColor: palette.slate200,
+    ...elevation.sm,
+  },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   listRow: {
     flexDirection: 'row',
@@ -283,5 +312,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: hairline.faint,
   },
 });

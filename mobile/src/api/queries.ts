@@ -8,6 +8,7 @@ import type {
   Paginated,
   ScheduleDay,
   ServiceSummary,
+  SettingsPayload,
 } from './types';
 
 /* ---------------------------------- shared --------------------------------- */
@@ -131,6 +132,23 @@ export function useEmployeeAnalytics(
   });
 }
 
+/**
+ * Unread badge count for the header bell. The web polls its bell prop; do the
+ * same here so a push that arrives while the app is open updates the badge.
+ * `per_page: 1` keeps it to a count — only `meta.total` is read.
+ */
+export function useUnreadNotificationCount() {
+  return useQuery({
+    queryKey: ['notifications', 'unread-count'],
+    queryFn: () =>
+      api<{ meta: { total: number } }>('/employee/notifications', {
+        query: { scope: 'unread', per_page: 1 },
+      }),
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
+  });
+}
+
 export function useNotifications(scope: 'unread' | 'all', page = 1) {
   return useQuery({
     queryKey: ['notifications', scope, page],
@@ -227,7 +245,7 @@ export function useAdminResources() {
 export function useAdminSettings() {
   return useQuery({
     queryKey: ['admin', 'settings'],
-    queryFn: () => api<Record<string, unknown>>('/admin/settings'),
+    queryFn: () => api<SettingsPayload>('/admin/settings'),
   });
 }
 
@@ -412,10 +430,30 @@ export function useDeleteResource() {
   );
 }
 
+/** Personal notification preference — its own endpoint, gated on admin.appointments. */
+export function useSaveNotificationPreferences() {
+  return useInvalidatingMutation([['admin', 'settings'], ['me']], (body: { notify_others_appointments: boolean }) =>
+    api('/admin/settings/notifications', { method: 'PUT', body }),
+  );
+}
+
 export function useSaveSettings() {
   return useInvalidatingMutation([['admin', 'settings']], (body: Record<string, unknown>) =>
     api('/admin/settings', { method: 'PUT', body }),
   );
+}
+
+/**
+ * Logo upload. Multipart has to go over POST — PHP leaves `$_FILES` empty on a
+ * PUT — so this hits the POST alias of the same controller action.
+ */
+export function useUploadLogo() {
+  return useInvalidatingMutation([['admin', 'settings']], (file: { uri: string; name: string; type: string }) => {
+    const form = new FormData();
+    // React Native's FormData takes this {uri, name, type} shape for files.
+    form.append('logo', file as unknown as Blob);
+    return api('/admin/settings', { method: 'POST', body: form });
+  });
 }
 
 export function useRegisterDevice() {

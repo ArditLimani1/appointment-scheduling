@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View, type TextStyle } from 'react-native';
-import { palette, radius, spacing, typography } from '@/theme/tokens';
+import { elevation, palette, radius, spacing, typography } from '@/theme/tokens';
 
 /**
  * Horizontal prev/next date navigator used by the calendar and dashboard.
@@ -53,13 +53,17 @@ export function DateBar({
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  // The web's period chevrons: `rounded-xl border border-slate-200 bg-white`.
   arrow: {
-    width: 38,
-    height: 38,
-    borderRadius: radius.lg,
-    backgroundColor: palette.surfaceContainer,
+    width: 40,
+    height: 40,
+    borderRadius: radius.xl,
+    backgroundColor: palette.surfaceContainerLowest,
+    borderWidth: 1,
+    borderColor: palette.slate200,
     alignItems: 'center',
     justifyContent: 'center',
+    ...elevation.sm,
   },
   arrowText: { fontSize: 22, color: palette.onSurface, marginTop: -2 },
   label: { textAlign: 'center', color: palette.onSurface, textTransform: 'capitalize' },

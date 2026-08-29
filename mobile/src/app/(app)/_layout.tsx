@@ -4,7 +4,7 @@ import React from 'react';
 import { useAuth } from '@/auth/store';
 import { useT } from '@/i18n';
 import { usePushRegistration } from '@/push/usePushRegistration';
-import { palette } from '@/theme/tokens';
+import { fonts, hairline, palette } from '@/theme/tokens';
 
 export default function AppLayout() {
   const { t } = useT();
@@ -30,9 +30,15 @@ export default function AppLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: palette.primary,
+        // The web's bottom bar sits on `bg-surface` with a hairline top border,
+        // and marks the active item with `on-surface` — not the primary blue.
+        tabBarActiveTintColor: palette.onSurface,
         tabBarInactiveTintColor: palette.onSurfaceVariant,
-        tabBarStyle: { backgroundColor: palette.surfaceContainerLowest },
+        tabBarStyle: {
+          backgroundColor: palette.surface,
+          borderTopColor: hairline.medium,
+        },
+        tabBarLabelStyle: { fontFamily: fonts.bodyBold, fontSize: 10 },
       }}
     >
       <Tabs.Screen

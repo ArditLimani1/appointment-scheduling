@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\DisableHtmlCachingInLocal;
 use App\Http\Middleware\EnsureAdminPanelAccess;
+use App\Http\Middleware\EnsureAnyPermission;
 use App\Http\Middleware\EnsureBusinessExists;
 use App\Http\Middleware\EnsureBusinessUsesSharedResources;
 use App\Http\Middleware\EnsureEmployeeOrAdmin;
@@ -37,6 +38,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin_panel' => EnsureAdminPanelAccess::class,
             'employee_area' => EnsureEmployeeOrAdmin::class,
             'permission' => EnsurePermission::class,
+            'permission_any' => EnsureAnyPermission::class,
             'super_admin' => EnsureSuperAdmin::class,
             'business_uses_shared_resources' => EnsureBusinessUsesSharedResources::class,
             'onboarding_completed' => EnsureOnboardingCompleted::class,

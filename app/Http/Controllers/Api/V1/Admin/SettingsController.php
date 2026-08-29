@@ -20,6 +20,25 @@ class SettingsController extends Controller
         return response()->json($this->businessService->getSettingsForUser($request->user()));
     }
 
+    /**
+     * Personal notification preference — gated on `admin.appointments`, not
+     * `admin.settings`, because it is the viewer's own choice about watching
+     * other staff's bookings. Mirrors the web endpoint.
+     */
+    public function updateNotificationPreferences(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'notify_others_appointments' => ['required', 'boolean'],
+        ]);
+
+        $request->user()->update($validated);
+
+        return response()->json([
+            'message' => __('messages.settings.saved'),
+            'notify_others_appointments' => (bool) $request->user()->notify_others_appointments,
+        ]);
+    }
+
     public function update(UpdateSettingsRequest $request): JsonResponse
     {
         $user = $request->user();

@@ -204,6 +204,7 @@ return [
         'mark_all' => 'Mark all read',
         'unread_subtitle' => ':count unread',
         'new_booking_title' => 'New appointment',
+        'new_booking_for_title' => 'New appointment for :employee',
         'generic' => 'Notification',
         'view_cta' => 'View in appointments',
         'see_all' => 'See all appointments',

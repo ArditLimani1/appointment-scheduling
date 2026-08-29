@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateSettingsRequest;
 use App\Services\Interfaces\BusinessServiceInterface;
+use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -21,6 +22,24 @@ class SettingsController extends Controller
         $data = $this->businessService->getSettingsForUser(auth()->user());
 
         return Inertia::render('Admin/Settings/Index', $data);
+    }
+
+    /**
+     * Personal notification preference. Lives on the settings screen but is a
+     * per-user value, so it is gated on `admin.appointments` (who may watch other
+     * staff) rather than `admin.settings` (who may change the business).
+     */
+    public function updateNotificationPreferences(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'notify_others_appointments' => ['required', 'boolean'],
+        ]);
+
+        $request->user()->update($validated);
+
+        return redirect()->back()
+            ->with('success', __('messages.settings.saved'))
+            ->with('flash_nonce', uniqid('', true));
     }
 
     public function update(UpdateSettingsRequest $request): RedirectResponse

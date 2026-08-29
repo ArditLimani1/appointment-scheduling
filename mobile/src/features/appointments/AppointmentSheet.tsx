@@ -1,8 +1,10 @@
 import { DateTime } from 'luxon';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -10,17 +12,47 @@ import {
   View,
   type TextStyle,
 } from 'react-native';
-import { api } from '@/api/client';
-import { useDeleteAppointment, useRescheduleOwn, useUpdateStatus, fetchAdminSlots } from '@/api/queries';
-import type { Appointment } from '@/api/types';
-import { clientName, serviceName } from '@/components/AppointmentCard';
-import { Button, StatusPill } from '@/components/ui';
+import Animated, { SlideInDown } from 'react-native-reanimated';
+import { SHEET_SLIDE_MS, SheetBackdrop } from '@/components/SheetBackdrop';
+import { ApiError, api } from '@/api/client';
+import {
+  fetchAdminSlots,
+  useAdminCreateData,
+  useDeleteAppointment,
+  useEditAppointment,
+  useEmployeeCreateData,
+  useUpdateStatus,
+} from '@/api/queries';
+import type { Appointment, AppointmentStatus } from '@/api/types';
+import { useAuth } from '@/auth/store';
+import { clientName, employeeName, serviceName } from '@/components/AppointmentCard';
+import { ToastHost, useToast } from '@/components/Toast';
+import { Button, Segmented, StatusPill, TextField } from '@/components/ui';
 import { useT } from '@/i18n';
 import { palette, radius, spacing, typography } from '@/theme/tokens';
+import { toIsoDate, toHm } from '@/utils/datetime';
+
+const STATUSES: AppointmentStatus[] = ['pending', 'confirmed', 'cancelled'];
+
+interface EditForm {
+  employee_id: number | null;
+  service_id: number | null;
+  status: AppointmentStatus;
+  date: string;
+  start_time: string;
+  client_first_name: string;
+  client_last_name: string;
+  client_phone: string;
+  client_email: string;
+  client_notes: string;
+}
 
 /**
- * Bottom-sheet style modal with the appointment's details and the actions the
- * current area allows: status changes, reschedule (slot picker), delete.
+ * Bottom-sheet modal for one appointment: details, quick status actions, and a
+ * full edit form. The editable field set mirrors the web exactly — an admin may
+ * change everything (`Admin\UpdateAppointmentRequest`), while an employee gets
+ * status, date and time, plus the service when the business allows it
+ * (`Employee\UpdateEmployeeAppointmentRequest`).
  */
 export function AppointmentSheet({
   appointment,
@@ -34,40 +66,77 @@ export function AppointmentSheet({
   onClose: () => void;
 }) {
   const { t, locale } = useT();
+  const me = useAuth((s) => s.me);
   const updateStatus = useUpdateStatus(area);
-  const reschedule = useRescheduleOwn();
+  const edit = useEditAppointment(area);
   const deleteAppointment = useDeleteAppointment();
+  const { showError } = useToast();
 
-  const [mode, setMode] = useState<'view' | 'reschedule'>('view');
-  const [slotDate, setSlotDate] = useState<string>('');
+  const isAdmin = area === 'admin';
+  const canEditService = isAdmin || (me?.business?.allow_employee_service_edit ?? true);
+
+  const [mode, setMode] = useState<'view' | 'edit'>('view');
+  // The admin form is long; split it the way the create flow reads — what is
+  // being booked, then who it is for. Employees only get the first half.
+  const [editTab, setEditTab] = useState<'booking' | 'client'>('booking');
+  const [form, setForm] = useState<EditForm | null>(null);
   const [slots, setSlots] = useState<string[] | null>(null);
   const [slotsLoading, setSlotsLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
+
+  // Pickers only need their lists once the form is open.
+  const adminLists = useAdminCreateData(isAdmin && mode === 'edit');
+  const employeeLists = useEmployeeCreateData(!isAdmin && mode === 'edit');
+  const lists = isAdmin ? adminLists.data : employeeLists.data;
+
+  const services = lists?.services ?? [];
+  const employees = lists?.employees ?? [];
 
   useEffect(() => {
-    if (appointment) {
-      setMode('view');
-      setSlotDate(appointment.date.slice(0, 10));
-      setSlots(null);
-    }
+    setMode('view');
+    setEditTab('booking');
+    setForm(null);
+    setSlots(null);
+    setFieldErrors({});
   }, [appointment?.id]);
 
+  const openEdit = () => {
+    if (!appointment) return;
+    setFieldErrors({});
+    setEditTab('booking');
+    setForm({
+      employee_id: appointment.employee_id,
+      service_id: appointment.service_id,
+      status: appointment.status,
+      date: toIsoDate(appointment.date),
+      start_time: toHm(appointment.start_time),
+      client_first_name: appointment.client_first_name ?? '',
+      client_last_name: appointment.client_last_name ?? '',
+      client_phone: appointment.client_phone ?? '',
+      client_email: appointment.client_email ?? '',
+      client_notes: appointment.client_notes ?? '',
+    });
+    setMode('edit');
+  };
+
+  // Free times depend on who, what and when — reload whenever any of those move.
+  const slotKey = form ? `${form.employee_id}|${form.service_id}|${form.date}` : '';
   useEffect(() => {
-    if (mode !== 'reschedule' || !appointment) return;
+    if (mode !== 'edit' || !appointment || !form) return;
     let cancelled = false;
     setSlotsLoading(true);
     (async () => {
       try {
-        const response =
-          area === 'employee'
-            ? await api<{ slots: string[] }>(`/employee/appointments/${appointment.id}/slots`, {
-                query: { date: slotDate },
-              })
-            : await fetchAdminSlots({
-                employee_id: appointment.employee_id ?? 0,
-                service_id: appointment.service_id ?? 0,
-                date: slotDate,
-                exclude_id: appointment.id,
-              });
+        const response = isAdmin
+          ? await fetchAdminSlots({
+              employee_id: form.employee_id ?? 0,
+              service_id: form.service_id ?? 0,
+              date: form.date,
+              exclude_id: appointment.id,
+            })
+          : await api<{ slots: string[] }>(`/employee/appointments/${appointment.id}/slots`, {
+              query: { date: form.date, service_id: form.service_id ?? undefined },
+            });
         if (!cancelled) setSlots(response.slots);
       } catch {
         if (!cancelled) setSlots([]);
@@ -78,40 +147,61 @@ export function AppointmentSheet({
     return () => {
       cancelled = true;
     };
-  }, [mode, slotDate, appointment?.id]);
+  }, [mode, slotKey, appointment?.id, isAdmin]);
+
+  // An employee only offers the services they are assigned to.
+  const selectableServices = useMemo(() => {
+    if (!isAdmin || !form?.employee_id) return services;
+    const employee = employees.find((e) => e.id === form.employee_id);
+    const offered = employee?.services?.map((s) => s.id) ?? employee?.service_ids;
+    return offered ? services.filter((s) => offered.includes(s.id)) : services;
+  }, [isAdmin, form?.employee_id, services, employees]);
 
   if (!appointment) return null;
 
-  const busy = updateStatus.isPending || reschedule.isPending || deleteAppointment.isPending;
+  const busy = updateStatus.isPending || edit.isPending || deleteAppointment.isPending;
 
   const setStatus = (status: 'confirmed' | 'cancelled') => {
     updateStatus.mutate(
       { id: appointment.id, status },
-      { onSuccess: onClose, onError: (e) => Alert.alert(t('mobile.sheet.error'), e.message) },
+      { onSuccess: onClose, onError: (e) => showError(e.message) },
     );
   };
 
-  const doReschedule = (time: string) => {
-    if (area === 'employee') {
-      reschedule.mutate(
-        { id: appointment.id, date: slotDate, start_time: time },
-        { onSuccess: onClose, onError: (e) => Alert.alert(t('mobile.sheet.error'), e.message) },
-      );
-    } else {
-      // Admin uses the full-edit endpoint with same service/employee, new time.
-      void api(`/admin/appointments/${appointment.id}`, {
-        method: 'PUT',
-        body: {
-          employee_id: appointment.employee_id,
-          service_id: appointment.service_id,
-          status: appointment.status,
-          date: slotDate,
-          start_time: time,
+  const submitEdit = () => {
+    if (!form) return;
+    setFieldErrors({});
+    edit.mutate(
+      {
+        id: appointment.id,
+        ...(isAdmin
+          ? {
+              employee_id: form.employee_id,
+              service_id: form.service_id,
+              status: form.status,
+              date: form.date,
+              start_time: form.start_time,
+              client_first_name: form.client_first_name,
+              client_last_name: form.client_last_name,
+              client_phone: form.client_phone || null,
+              client_email: form.client_email || null,
+              client_notes: form.client_notes || null,
+            }
+          : {
+              service_id: form.service_id,
+              status: form.status,
+              date: form.date,
+              start_time: form.start_time,
+            }),
+      },
+      {
+        onSuccess: onClose,
+        onError: (e) => {
+          if (e instanceof ApiError && e.errors) setFieldErrors(e.errors);
+          else showError(e.message);
         },
-      })
-        .then(onClose)
-        .catch((e: Error) => Alert.alert(t('mobile.sheet.error'), e.message));
-    }
+      },
+    );
   };
 
   const confirmDelete = () => {
@@ -123,109 +213,282 @@ export function AppointmentSheet({
         onPress: () =>
           deleteAppointment.mutate(
             { id: appointment.id },
-            { onSuccess: onClose, onError: (e) => Alert.alert(t('mobile.sheet.error'), e.message) },
+            { onSuccess: onClose, onError: (e) => showError(e.message) },
           ),
       },
     ]);
   };
 
-  const shiftSlotDate = (delta: number) => {
-    const next = DateTime.fromISO(slotDate, { zone }).plus({ days: delta }).toISODate();
-    if (next) setSlotDate(next);
+  const shiftDate = (delta: number) => {
+    if (!form) return;
+    const next = DateTime.fromISO(form.date, { zone }).plus({ days: delta }).toISODate();
+    if (next) setForm({ ...form, date: next });
   };
 
   return (
-    <Modal visible transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose} />
-      <View style={styles.sheet}>
-        <View style={styles.grabber} />
-        <ScrollView contentContainerStyle={{ gap: spacing.lg, paddingBottom: spacing.xxl }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-            <View style={{ flex: 1 }}>
-              <Text style={[typography.headline as TextStyle, { color: palette.onSurface }]}>
-                {clientName(appointment)}
-              </Text>
-              <Text style={[typography.body as TextStyle, { color: palette.onSurfaceVariant }]}>
-                {serviceName(appointment)}
-              </Text>
-            </View>
-            <StatusPill status={appointment.status} label={t(`common.status.${appointment.status}`)} />
-          </View>
-
-          <View style={styles.detailRows}>
-            <DetailRow
-              label={t('mobile.sheet.date')}
-              value={DateTime.fromISO(appointment.date.slice(0, 10), { zone })
-                .setLocale(locale)
-                .toFormat('cccc, d MMMM yyyy')}
-            />
-            <DetailRow label={t('mobile.sheet.time')} value={`${appointment.start_time} – ${appointment.end_time}`} />
-            {appointment.employee_name ? (
-              <DetailRow label={t('mobile.sheet.employee')} value={appointment.employee_name} />
-            ) : null}
-            {appointment.client_phone ? <DetailRow label={t('mobile.sheet.phone')} value={appointment.client_phone} /> : null}
-            {appointment.client_email ? <DetailRow label={t('mobile.sheet.email')} value={appointment.client_email} /> : null}
-            {appointment.client_notes ? <DetailRow label={t('mobile.sheet.notes')} value={appointment.client_notes} /> : null}
-          </View>
-
-          {mode === 'view' ? (
-            <View style={{ gap: spacing.sm }}>
-              {appointment.status !== 'confirmed' ? (
-                <Button title={t('mobile.sheet.confirm')} onPress={() => setStatus('confirmed')} loading={busy} />
-              ) : null}
-              {appointment.status !== 'cancelled' ? (
-                <Button
-                  title={t('mobile.sheet.cancel_appointment')}
-                  variant="danger"
-                  onPress={() => setStatus('cancelled')}
-                  loading={busy}
-                />
-              ) : null}
-              {appointment.status !== 'cancelled' ? (
-                <Button
-                  title={t('mobile.sheet.reschedule')}
-                  variant="secondary"
-                  onPress={() => setMode('reschedule')}
-                />
-              ) : null}
-              {area === 'admin' && appointment.status === 'cancelled' ? (
-                <Button title={t('mobile.sheet.delete')} variant="danger" onPress={confirmDelete} loading={busy} />
-              ) : null}
-            </View>
-          ) : (
-            <View style={{ gap: spacing.md }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-                <Button title="‹" variant="secondary" onPress={() => shiftSlotDate(-1)} />
-                <Text style={[typography.bodyStrong as TextStyle, { flex: 1, textAlign: 'center', color: palette.onSurface }]}>
-                  {DateTime.fromISO(slotDate, { zone }).setLocale(locale).toFormat('ccc, d MMM')}
+    <Modal
+      visible
+      transparent
+      // `slide` would animate the whole window, dragging the backdrop up with
+      // the sheet. Show the backdrop separately and slide only the sheet.
+      animationType="none"
+      onRequestClose={onClose}
+      // Android 15 is edge-to-edge: without these the modal window stops short of
+      // the system bars and the tab bar shows through below the sheet.
+      statusBarTranslucent
+      navigationBarTranslucent
+    >
+      <SheetBackdrop onPress={onClose} />
+      <ToastHost />
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <Animated.View entering={SlideInDown.duration(SHEET_SLIDE_MS)} style={styles.sheet}>
+          <View style={styles.grabber} />
+          <ScrollView
+            contentContainerStyle={{ gap: spacing.lg, paddingBottom: spacing.xxl }}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[typography.headline as TextStyle, { color: palette.onSurface }]}>
+                  {clientName(appointment)}
                 </Text>
-                <Button title="›" variant="secondary" onPress={() => shiftSlotDate(1)} />
-              </View>
-
-              {slotsLoading ? (
-                <Text style={[typography.body as TextStyle, { color: palette.onSurfaceVariant }]}>…</Text>
-              ) : slots && slots.length > 0 ? (
-                <View style={styles.slotGrid}>
-                  {slots.map((slot) => (
-                    <Pressable key={slot} style={styles.slot} onPress={() => doReschedule(slot)}>
-                      <Text style={[typography.label as TextStyle, { color: palette.onSecondaryContainer }]}>
-                        {slot}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              ) : (
                 <Text style={[typography.body as TextStyle, { color: palette.onSurfaceVariant }]}>
-                  {t('mobile.sheet.no_slots')}
+                  {serviceName(appointment)}
                 </Text>
-              )}
-
-              <Button title={t('mobile.sheet.back')} variant="ghost" onPress={() => setMode('view')} />
+              </View>
+              <StatusPill status={appointment.status} label={t(`common.status.${appointment.status}`)} />
             </View>
-          )}
-        </ScrollView>
-      </View>
+
+            {mode === 'view' ? (
+              <>
+                <View style={styles.detailRows}>
+                  <DetailRow
+                    label={t('mobile.sheet.date')}
+                    value={DateTime.fromISO(toIsoDate(appointment.date), { zone })
+                      .setLocale(locale)
+                      .toFormat('cccc, d MMMM yyyy')}
+                  />
+                  <DetailRow
+                    label={t('mobile.sheet.time')}
+                    value={`${toHm(appointment.start_time)} – ${toHm(appointment.end_time)}`}
+                  />
+                  {employeeName(appointment) ? (
+                    <DetailRow label={t('mobile.sheet.employee')} value={employeeName(appointment) as string} />
+                  ) : null}
+                  {appointment.client_phone ? (
+                    <DetailRow label={t('mobile.sheet.phone')} value={appointment.client_phone} />
+                  ) : null}
+                  {appointment.client_email ? (
+                    <DetailRow label={t('mobile.sheet.email')} value={appointment.client_email} />
+                  ) : null}
+                  {appointment.client_notes ? (
+                    <DetailRow label={t('mobile.sheet.notes')} value={appointment.client_notes} />
+                  ) : null}
+                </View>
+
+                <View style={{ gap: spacing.sm }}>
+                  {appointment.status !== 'confirmed' ? (
+                    <Button title={t('mobile.sheet.confirm')} onPress={() => setStatus('confirmed')} loading={busy} />
+                  ) : null}
+                  {appointment.status !== 'cancelled' ? (
+                    <Button
+                      title={t('mobile.sheet.cancel_appointment')}
+                      variant="danger"
+                      onPress={() => setStatus('cancelled')}
+                      loading={busy}
+                    />
+                  ) : null}
+                  <Button title={t('mobile.sheet.edit')} variant="secondary" onPress={openEdit} />
+                  {isAdmin && appointment.status === 'cancelled' ? (
+                    <Button title={t('mobile.sheet.delete')} variant="danger" onPress={confirmDelete} loading={busy} />
+                  ) : null}
+                </View>
+              </>
+            ) : form ? (
+              <View style={{ gap: spacing.lg }}>
+                {isAdmin ? (
+                  <Segmented
+                    options={[
+                      { value: 'booking' as const, label: t('mobile.sheet.tab_booking') },
+                      { value: 'client' as const, label: t('mobile.sheet.tab_client') },
+                    ]}
+                    value={editTab}
+                    onChange={setEditTab}
+                  />
+                ) : null}
+
+                {editTab === 'booking' ? (
+                <>
+                <ChipGroup
+                  label={t('mobile.sheet.status')}
+                  options={STATUSES.map((s) => ({ value: s, label: t(`common.status.${s}`) }))}
+                  selected={form.status}
+                  onSelect={(status) => setForm({ ...form, status })}
+                />
+
+                {isAdmin && employees.length > 0 ? (
+                  <ChipGroup
+                    label={t('mobile.create.employee')}
+                    options={employees.map((e) => ({ value: e.id, label: e.name }))}
+                    selected={form.employee_id}
+                    onSelect={(employee_id) => setForm({ ...form, employee_id, start_time: '' })}
+                    error={fieldErrors.employee_id?.[0]}
+                  />
+                ) : null}
+
+                {canEditService && selectableServices.length > 0 ? (
+                  <ChipGroup
+                    label={t('mobile.create.service')}
+                    options={selectableServices.map((s) => ({ value: s.id, label: s.name }))}
+                    selected={form.service_id}
+                    onSelect={(service_id) => setForm({ ...form, service_id, start_time: '' })}
+                    error={fieldErrors.service_id?.[0]}
+                  />
+                ) : null}
+
+                <View style={{ gap: spacing.sm }}>
+                  <Text style={styles.groupLabel}>{t('mobile.create.date')}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+                    <Button title="‹" variant="secondary" onPress={() => shiftDate(-1)} />
+                    <Text
+                      style={[
+                        typography.bodyStrong as TextStyle,
+                        { flex: 1, textAlign: 'center', color: palette.onSurface, textTransform: 'capitalize' },
+                      ]}
+                    >
+                      {DateTime.fromISO(form.date, { zone }).setLocale(locale).toFormat('ccc, d MMM')}
+                    </Text>
+                    <Button title="›" variant="secondary" onPress={() => shiftDate(1)} />
+                  </View>
+                </View>
+
+                <View style={{ gap: spacing.sm }}>
+                  <Text style={styles.groupLabel}>{t('mobile.create.slot')}</Text>
+                  {slotsLoading ? (
+                    <Text style={[typography.body as TextStyle, { color: palette.onSurfaceVariant }]}>…</Text>
+                  ) : slots && slots.length > 0 ? (
+                    <View style={styles.chipWrap}>
+                      {slots.map((slot) => (
+                        <Chip
+                          key={slot}
+                          label={slot}
+                          active={form.start_time === slot}
+                          onPress={() => setForm({ ...form, start_time: slot })}
+                        />
+                      ))}
+                    </View>
+                  ) : (
+                    <Text style={[typography.body as TextStyle, { color: palette.onSurfaceVariant }]}>
+                      {t('mobile.sheet.no_slots')}
+                    </Text>
+                  )}
+                  {fieldErrors.start_time ? (
+                    <Text style={styles.error}>{fieldErrors.start_time[0]}</Text>
+                  ) : null}
+                </View>
+
+                </>
+                ) : null}
+
+                {isAdmin && editTab === 'client' ? (
+                  <View style={{ gap: spacing.md }}>
+                    <TextField
+                      label={t('mobile.create.first_name')}
+                      value={form.client_first_name}
+                      onChangeText={(v) => setForm({ ...form, client_first_name: v })}
+                      error={fieldErrors.client_first_name?.[0]}
+                    />
+                    <TextField
+                      label={t('mobile.create.last_name')}
+                      value={form.client_last_name}
+                      onChangeText={(v) => setForm({ ...form, client_last_name: v })}
+                      error={fieldErrors.client_last_name?.[0]}
+                    />
+                    <TextField
+                      label={t('mobile.sheet.phone')}
+                      value={form.client_phone}
+                      onChangeText={(v) => setForm({ ...form, client_phone: v })}
+                      keyboardType="phone-pad"
+                      error={fieldErrors.client_phone?.[0]}
+                    />
+                    <TextField
+                      label={t('mobile.sheet.email')}
+                      value={form.client_email}
+                      onChangeText={(v) => setForm({ ...form, client_email: v })}
+                      autoCapitalize="none"
+                      keyboardType="email-address"
+                      error={fieldErrors.client_email?.[0]}
+                    />
+                    <TextField
+                      label={t('mobile.sheet.notes')}
+                      value={form.client_notes}
+                      onChangeText={(v) => setForm({ ...form, client_notes: v })}
+                      multiline
+                      style={{ minHeight: 70 }}
+                      error={fieldErrors.client_notes?.[0]}
+                    />
+                  </View>
+                ) : null}
+
+                <View style={{ gap: spacing.sm }}>
+                  <Button
+                    title={t('mobile.sheet.save')}
+                    onPress={submitEdit}
+                    disabled={!form.start_time}
+                    loading={edit.isPending}
+                  />
+                  <Button title={t('mobile.sheet.back')} variant="ghost" onPress={() => setMode('view')} />
+                </View>
+              </View>
+            ) : null}
+          </ScrollView>
+        </Animated.View>
+      </KeyboardAvoidingView>
     </Modal>
+  );
+}
+
+function ChipGroup<T extends string | number>({
+  label,
+  options,
+  selected,
+  onSelect,
+  error,
+}: {
+  label: string;
+  options: { value: T; label: string }[];
+  selected: T | null;
+  onSelect: (value: T) => void;
+  error?: string;
+}) {
+  return (
+    <View style={{ gap: spacing.sm }}>
+      <Text style={styles.groupLabel}>{label}</Text>
+      <View style={styles.chipWrap}>
+        {options.map((option) => (
+          <Chip
+            key={String(option.value)}
+            label={option.label}
+            active={selected === option.value}
+            onPress={() => onSelect(option.value)}
+          />
+        ))}
+      </View>
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+    </View>
+  );
+}
+
+function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} style={[styles.chip, active && styles.chipActive]}>
+      <Text
+        style={[typography.labelStrong as TextStyle, { color: active ? palette.surface : palette.onSurface }]}
+        numberOfLines={1}
+      >
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -239,13 +502,12 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)' },
   sheet: {
     backgroundColor: palette.surfaceContainerLowest,
-    borderTopLeftRadius: radius.xxl,
-    borderTopRightRadius: radius.xxl,
+    borderTopLeftRadius: radius['3xl'],
+    borderTopRightRadius: radius['3xl'],
     padding: spacing.xl,
-    maxHeight: '85%',
+    maxHeight: '88%',
   },
   grabber: {
     alignSelf: 'center',
@@ -258,15 +520,20 @@ const styles = StyleSheet.create({
   detailRows: {
     gap: spacing.sm,
     backgroundColor: palette.surfaceContainerLow,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     padding: spacing.md,
   },
   detailRow: { flexDirection: 'row', gap: spacing.sm },
-  slotGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  slot: {
-    backgroundColor: palette.secondaryContainer,
-    borderRadius: radius.md,
+  groupLabel: { ...(typography.overline as TextStyle), color: palette.outline },
+  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  chip: {
+    backgroundColor: palette.surfaceContainerHigh,
+    borderWidth: 1,
+    borderColor: palette.slate200,
+    borderRadius: radius.lg,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
+  chipActive: { backgroundColor: palette.onSurface, borderColor: palette.onSurface },
+  error: { ...(typography.caption as TextStyle), color: palette.error },
 });

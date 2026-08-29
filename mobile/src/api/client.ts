@@ -78,6 +78,11 @@ export function setOnUnauthorized(handler: (() => void) | null) {
 
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  /**
+   * JSON-encoded, unless it is `FormData` — then it is sent as multipart and
+   * the Content-Type (with its boundary) is left to the runtime. PHP only
+   * populates `$_FILES` on POST, so multipart bodies must use `method: 'POST'`.
+   */
   body?: unknown;
   query?: Record<string, string | number | boolean | (string | number)[] | undefined | null>;
   headers?: Record<string, string>;
@@ -101,16 +106,18 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
     if (qs) url += `?${qs}`;
   }
 
+  const isMultipart = typeof FormData !== 'undefined' && body instanceof FormData;
+
   const response = await fetch(url, {
     method,
     headers: {
       Accept: 'application/json',
       'Accept-Language': currentLocale,
-      ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+      ...(body !== undefined && !isMultipart ? { 'Content-Type': 'application/json' } : {}),
       ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       ...headers,
     },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    body: body === undefined ? undefined : isMultipart ? (body as FormData) : JSON.stringify(body),
   });
 
   if (response.status === 401 && authToken) {

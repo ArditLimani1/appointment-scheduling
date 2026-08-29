@@ -40,6 +40,12 @@ return [
         'step_automation_title' => 'Automatizimet',
         'step_automation_sub' => 'Vendos nëse rezervimet online konfirmohen vetë dhe nëse klientët marrin kujtesë automatike.',
 
+        'notify_others_title' => 'Njoftimet për stafin tjetër',
+
+        'notify_others_help' => 'E fikur si parazgjedhje. Kur aktivizohet, njoftoheni edhe për rezervimet e caktuara te stafi juaj, jo vetëm për tuajat. Mund ta ndryshoni kurdo te Cilësimet.',
+
+        'notify_others_label' => 'Njoftomë për terminet e stafit tjetër',
+
         'auto_confirm_title' => 'Konfirmim automatik i termineve',
         'auto_confirm_help' => 'Kur është aktiv, rezervimet online konfirmohen menjëherë dhe klienti njoftohet në çast. Kur është joaktiv, terminet e reja mbeten në pritje derisa dikush t’i konfirmojë manualisht.',
         'auto_confirm_label' => 'Konfirmo automatikisht rezervimet online',

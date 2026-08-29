@@ -55,26 +55,40 @@ export function joinRouteWithQuery(base, params) {
     return `${base}${sep}${qs}`;
 }
 
-export function buildEmployeeNotificationAppointmentsUrl(dateYmd, preferCalendar) {
+/**
+ * Which appointment screens a notification should link to. Watchers who are not
+ * bookable staff cannot open the employee ones — those abort on `worksAsStaff()`.
+ *
+ * @param {boolean} worksAsStaff
+ */
+function appointmentRoutes(worksAsStaff) {
+    return worksAsStaff
+        ? { calendar: 'employee.appointments.calendar', index: 'employee.appointments.index' }
+        : { calendar: 'admin.appointments.calendar', index: 'admin.appointments.index' };
+}
+
+export function buildEmployeeNotificationAppointmentsUrl(dateYmd, preferCalendar, worksAsStaff = true) {
+    const routes = appointmentRoutes(worksAsStaff);
     try {
         if (preferCalendar) {
             const params = new URLSearchParams();
             params.set('date', dateYmd);
             params.set('view', 'day');
             appendPendingOnly(params);
-            return joinRouteWithQuery(route('employee.appointments.calendar'), params);
+            return joinRouteWithQuery(route(routes.calendar), params);
         }
         const params = new URLSearchParams();
         params.set('date_from', dateYmd);
         params.set('date_to', dateYmd);
         appendPendingOnly(params);
-        return joinRouteWithQuery(route('employee.appointments.index'), params);
+        return joinRouteWithQuery(route(routes.index), params);
     } catch {
         return '#';
     }
 }
 
-export function buildEmployeeNotificationAppointmentsFallback(preferCalendar) {
+export function buildEmployeeNotificationAppointmentsFallback(preferCalendar, worksAsStaff = true) {
+    const routes = appointmentRoutes(worksAsStaff);
     try {
         const params = new URLSearchParams();
         appendPendingOnly(params);
@@ -83,9 +97,9 @@ export function buildEmployeeNotificationAppointmentsFallback(preferCalendar) {
             const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
             params.set('date', ymd);
             params.set('view', 'day');
-            return joinRouteWithQuery(route('employee.appointments.calendar'), params);
+            return joinRouteWithQuery(route(routes.calendar), params);
         }
-        return joinRouteWithQuery(route('employee.appointments.index'), params);
+        return joinRouteWithQuery(route(routes.index), params);
     } catch {
         return '#';
     }

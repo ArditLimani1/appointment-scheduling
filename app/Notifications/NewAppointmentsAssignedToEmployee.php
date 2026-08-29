@@ -9,9 +9,13 @@ class NewAppointmentsAssignedToEmployee extends Notification
 {
     /**
      * @param  array<string, mixed>  $payload
+     * @param  bool  $forOtherStaff  True when the recipient is a watcher reading about
+     *                               someone else's appointment rather than their own —
+     *                               the copy then names the assigned employee.
      */
     public function __construct(
         public readonly array $payload,
+        public readonly bool $forOtherStaff = false,
     ) {}
 
     /**
@@ -27,7 +31,7 @@ class NewAppointmentsAssignedToEmployee extends Notification
      */
     public function toDatabase(object $notifiable): array
     {
-        return $this->payload;
+        return $this->payload + ['for_other_staff' => $this->forOtherStaff];
     }
 
     /**
@@ -44,8 +48,14 @@ class NewAppointmentsAssignedToEmployee extends Notification
             ->filter()
             ->implode(', ');
 
+        $employeeName = (string) ($this->payload['employee_name'] ?? '');
+
+        $useOtherCopy = $this->forOtherStaff && $employeeName !== '';
+
         return [
-            'title' => __('messages.push.new_appointment_title', [], $locale),
+            'title' => $useOtherCopy
+                ? __('messages.push.new_appointment_for_title', ['employee' => $employeeName], $locale)
+                : __('messages.push.new_appointment_title', [], $locale),
             'body' => __('messages.push.new_appointment_body', [
                 'client' => $this->payload['client_name'] ?? '',
                 'service' => $serviceNames,
@@ -56,6 +66,7 @@ class NewAppointmentsAssignedToEmployee extends Notification
                 'type' => 'appointment.created',
                 'appointment_ids' => $this->payload['appointment_ids'] ?? [],
                 'date' => $this->payload['date'] ?? null,
+                'for_other_staff' => $this->forOtherStaff,
             ],
         ];
     }

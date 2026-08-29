@@ -65,11 +65,16 @@ export default function Index({
     settings,
     show_owner_staff_toggle = false,
     owner_also_works_as_staff = false,
+    can_manage_appointments = false,
+    can_manage_settings = true,
+    notify_others_appointments = false,
 }) {
     const t = useT();
     const { flash, features } = usePage().props;
     const whatsappEnabled = features?.whatsapp ?? false;
-    const [activeTab, setActiveTab] = useState('identity');
+    // Someone may reach this screen on `admin.appointments` alone (to set their
+    // personal notification preference), so start on a tab they can actually use.
+    const [activeTab, setActiveTab] = useState(can_manage_settings ? 'identity' : 'notifications');
 
     // Which confirm modal is open: null | 'identity' | 'rules'
     const [confirmSection, setConfirmSection] = useState(null);
@@ -140,6 +145,17 @@ export default function Index({
         ...(show_owner_staff_toggle ? { owner_also_works_as_staff: !!owner_also_works_as_staff } : {}),
     });
 
+    // Form 3 — personal notification preference. Separate endpoint because it is
+    // gated on `admin.appointments`, not `admin.settings`.
+    const notifications = useForm({
+        notify_others_appointments: !!notify_others_appointments,
+    });
+
+    const handleNotificationsSubmit = (e) => {
+        e.preventDefault();
+        notifications.put(route('admin.settings.notifications.update'), { preserveScroll: true });
+    };
+
     useEffect(() => {
         if (!whatsappEnabled) {
             setData('client_identifier_type', 'email');
@@ -195,8 +211,11 @@ export default function Index({
                 </div>
             )}
 
-            {/* Tabs — Business Identity | Booking Rules */}
+            {/* Tabs — Business Identity | Booking Rules | Notifications.
+                The business tabs need `admin.settings`; the notification tab only
+                needs `admin.appointments`, so a role may see just that one. */}
             <div className="flex gap-1 mb-8 border-b border-outline-variant/40">
+                {can_manage_settings && (<>
                 <button
                     type="button"
                     onClick={() => setActiveTab('identity')}
@@ -221,6 +240,21 @@ export default function Index({
                     <Icon name="rule" size="text-base" />
                     {t('admin.settings.tabs.rules')}
                 </button>
+                </>)}
+                {can_manage_appointments && (
+                <button
+                    type="button"
+                    onClick={() => setActiveTab('notifications')}
+                    className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-all border-b-2 -mb-px ${
+                        activeTab === 'notifications'
+                            ? 'border-on-surface text-on-surface'
+                            : 'border-transparent text-on-surface-variant hover:text-on-surface'
+                    }`}
+                >
+                    <Icon name="notifications" size="text-base" />
+                    {t('admin.settings.tabs.notifications')}
+                </button>
+                )}
             </div>
 
             <div className="space-y-8">
@@ -617,6 +651,54 @@ export default function Index({
                             >
                                 {processing ? t('admin.settings.saving') : t('admin.settings.save_configuration')}
                             </button>
+                        </div>
+                    </section>
+                </form>
+                )}
+
+                {/* Personal notification preference — saved through its own endpoint. */}
+                {activeTab === 'notifications' && can_manage_appointments && (
+                <form onSubmit={handleNotificationsSubmit}>
+                    <section className="bg-surface-container-low p-8 rounded-xl">
+                        <div className="flex items-center gap-3 mb-8">
+                            <Icon name="notifications" size="text-xl" className="text-on-surface" />
+                            <div>
+                                <h3 className="text-xl font-bold font-headline text-on-surface">{t('admin.settings.notify_others_title')}</h3>
+                            </div>
+                        </div>
+
+                        <div className="bg-surface rounded-xl p-6 flex items-center justify-between gap-4">
+                            <div>
+                                <p className="text-sm font-bold text-on-surface">{t('admin.settings.notify_others_label')}</p>
+                                <p className="text-xs text-on-surface-variant mt-1 leading-relaxed max-w-2xl">
+                                    {t('admin.settings.notify_others_help')}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => notifications.setData('notify_others_appointments', !notifications.data.notify_others_appointments)}
+                                className={`relative shrink-0 w-12 h-6 rounded-full transition-colors duration-200 ${
+                                    notifications.data.notify_others_appointments ? 'bg-on-surface' : 'bg-surface-container-highest'
+                                }`}
+                                aria-pressed={notifications.data.notify_others_appointments}
+                            >
+                                <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all duration-200 ${
+                                    notifications.data.notify_others_appointments ? 'right-1' : 'left-1'
+                                }`} />
+                            </button>
+                        </div>
+
+                        <div className="mt-8 flex items-center gap-4">
+                            <button
+                                type="submit"
+                                disabled={notifications.processing}
+                                className="px-6 py-3 rounded-xl bg-on-surface text-surface text-sm font-bold hover:opacity-90 active:scale-95 transition disabled:opacity-40"
+                            >
+                                {notifications.processing ? t('admin.settings.saving') : t('admin.settings.save_configuration')}
+                            </button>
+                            {notifications.recentlySuccessful && (
+                                <span className="text-sm text-on-surface-variant">{t('admin.settings.saved_success')}</span>
+                            )}
                         </div>
                     </section>
                 </form>

@@ -109,15 +109,17 @@ export default function EmployeeNotificationBell() {
     }, [showReadAlso, open, fetchAllNotifications]);
 
     const preferCalendar = Boolean(employeeAppointmentUi?.default_calendar);
+    // A watcher who is not bookable staff gets 403 on the employee screens.
+    const worksAsStaff = employeeAppointmentUi?.works_as_staff ?? true;
 
     const appointmentHrefFor = useCallback(
         (dateYmd) => {
             if (dateYmd) {
-                return buildEmployeeNotificationAppointmentsUrl(dateYmd, preferCalendar);
+                return buildEmployeeNotificationAppointmentsUrl(dateYmd, preferCalendar, worksAsStaff);
             }
-            return buildEmployeeNotificationAppointmentsFallback(preferCalendar);
+            return buildEmployeeNotificationAppointmentsFallback(preferCalendar, worksAsStaff);
         },
-        [preferCalendar],
+        [preferCalendar, worksAsStaff],
     );
 
     const unreadItems = useMemo(() => recent.map((n) => normalizeEmployeeNotification(n)), [recent]);

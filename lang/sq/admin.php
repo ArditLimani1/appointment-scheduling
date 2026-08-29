@@ -381,6 +381,7 @@ return [
         'tabs' => [
             'identity' => 'Identiteti i biznesit',
             'rules' => 'Identifikimi dhe rregullat',
+            'notifications' => 'Njoftimet',
         ],
         'identity_section' => 'Identiteti i biznesit',
         'label_business_name' => 'Emri i biznesit',
@@ -418,6 +419,9 @@ return [
         'allow_service_edit_help' => 'Nëse është e çaktivizuar, punonjësit mund të ndryshojnë vetëm datën dhe orën e terminit.',
         'uses_shared_resources_title' => 'Burime të përbashkëta',
         'uses_shared_resources_help' => 'Aktivizojeni kur terminet varen nga dhoma, karrige, pajisje ose burime të tjera me kapacitet të kufizuar. Kalendari e ndalon automatikisht tejkalimin e kapacitetit.',
+        'notify_others_title' => 'Njoftimet për stafin tjetër',
+        'notify_others_help' => 'Kur është aktiv, merrni njoftimin e terminit të ri edhe për rezervimet e caktuara te stafi tjetër.',
+        'notify_others_label' => 'Njoftomë për terminet e stafit tjetër',
         'auto_confirm_title' => 'Konfirmim automatik i termineve',
         'auto_confirm_help' => 'Kur është aktiv, rezervimet online konfirmohen menjëherë dhe klienti merr email konfirmimi. Kur është joaktiv, terminet e reja mbeten në pritje derisa dikush t’i konfirmojë manualisht.',
         'reminders_title_phone' => 'Kujtesa automatike në WhatsApp',

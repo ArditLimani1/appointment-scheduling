@@ -82,6 +82,9 @@ class HandleInertiaRequests extends Middleware
 
                     return [
                         'default_calendar' => (bool) ($pref?->is_calendar_default ?? false),
+                        // Watchers who are not bookable staff must be sent to the
+                        // admin screens; the employee ones abort for them.
+                        'works_as_staff' => $user->worksAsStaff(),
                     ];
                 }
                 : null,
@@ -98,7 +101,8 @@ class HandleInertiaRequests extends Middleware
 
     /**
      * Staff appointment notifications: employee routes always; admin routes when the user can be
-     * assigned as bookable staff (employee role or owner/staff “also works as staff”).
+     * assigned as bookable staff (employee role or owner/staff “also works as staff”), or when
+     * they opted into watching other staff's bookings.
      */
     private function shouldShareEmployeeNotifications(?User $user, Request $request): bool
     {
@@ -111,6 +115,12 @@ class HandleInertiaRequests extends Middleware
         }
 
         if ($request->routeIs('admin.*') && ($user->also_works_as_staff || $user->isEmployee())) {
+            return true;
+        }
+
+        // Watchers opted into other staff's bookings receive notifications without
+        // being bookable themselves, so the bell has to render for them too.
+        if ($request->routeIs('admin.*') && $user->notify_others_appointments) {
             return true;
         }
 

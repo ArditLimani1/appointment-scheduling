@@ -40,6 +40,12 @@
       [
         "expo-notifications",
         {}
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "NiTermin needs access to your photos so you can set your business logo."
+        }
       ]
     ],
     "experiments": {

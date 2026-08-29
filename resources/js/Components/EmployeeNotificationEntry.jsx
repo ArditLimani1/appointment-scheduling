@@ -45,6 +45,12 @@ export default function EmployeeNotificationEntry({ item, appointmentHrefFor, on
     const dateLabel = data.date ? formatNotificationDateLine(data.date, localeBcp47) : '';
     const whenLine = [dateLabel, timeOnly].filter(Boolean).join(' · ');
     const clientAndService = [data.client_name, servicesText].filter(Boolean).join(' - ');
+    // Watchers (admins opted into other staff's bookings) need to know whose
+    // appointment this is; for your own the plain title reads better.
+    const watchedEmployee = data.for_other_staff ? (data.employee_name ?? '') : '';
+    const title = watchedEmployee
+        ? t('employee.notifications.new_booking_for_title', { employee: watchedEmployee })
+        : t('employee.notifications.new_booking_title');
 
     return (
         <li>
@@ -64,7 +70,7 @@ export default function EmployeeNotificationEntry({ item, appointmentHrefFor, on
                         <Icon name="calendar_month" size="text-lg" filled={isUnread} />
                     </div>
                     <div className="min-w-0 flex-1">
-                        <p className="text-xs font-bold leading-tight text-on-surface">{t('employee.notifications.new_booking_title')}</p>
+                        <p className="text-xs font-bold leading-tight text-on-surface">{title}</p>
                         {clientAndService ? (
                             <p className="mt-0.5 line-clamp-2 text-xs font-semibold leading-snug text-on-surface">{clientAndService}</p>
                         ) : null}

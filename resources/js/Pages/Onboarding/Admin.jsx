@@ -142,6 +142,7 @@ export default function Admin({ settings }) {
         allow_employee_service_edit: settings.allow_employee_service_edit ?? true,
         uses_shared_resources: !!settings.uses_shared_resources,
         auto_confirm_appointments: !!settings.auto_confirm_appointments,
+        notify_others_appointments: !!settings.notify_others_appointments,
         reminders_enabled: !!settings.reminders_enabled,
         reminder_time: settings.reminder_time || '08:00',
     });
@@ -302,6 +303,16 @@ export default function Admin({ settings }) {
                         label={t('onboarding.admin.auto_confirm_label')}
                         value={data.auto_confirm_appointments}
                         onChange={(v) => updateField('auto_confirm_appointments', v)}
+                    />
+                    {/* Personal preference, not a business setting — the owner decides
+                        here whether they hear about their staff's bookings too. */}
+                    <ToggleCard
+                        icon="notifications"
+                        title={t('onboarding.admin.notify_others_title')}
+                        help={t('onboarding.admin.notify_others_help')}
+                        label={t('onboarding.admin.notify_others_label')}
+                        value={data.notify_others_appointments}
+                        onChange={(v) => updateField('notify_others_appointments', v)}
                     />
                     <ToggleCard
                         icon="alarm"

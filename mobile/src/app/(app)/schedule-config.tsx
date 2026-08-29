@@ -1,8 +1,9 @@
 import { DateTime } from 'luxon';
 import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, Text, type TextStyle } from 'react-native';
+import { ScrollView, Text, type TextStyle } from 'react-native';
 import { useEmployeeScheduleConfig, useSaveScheduleConfig } from '@/api/queries';
 import type { ScheduleDay } from '@/api/types';
+import { useToast } from '@/components/Toast';
 import { Screen } from '@/components/Screen';
 import { Button, Card, ErrorView, LoadingView } from '@/components/ui';
 import { DayEditor, isValidTime } from '@/features/schedule/DayEditor';
@@ -13,6 +14,7 @@ import { BASE_URL } from '@/api/client';
 /** Base weekly schedule (applies from tomorrow; overrides win per-date). */
 export default function ScheduleConfigScreen() {
   const { t, locale } = useT();
+  const { showSuccess, showError } = useToast();
   const query = useEmployeeScheduleConfig();
   const save = useSaveScheduleConfig();
 
@@ -62,8 +64,8 @@ export default function ScheduleConfigScreen() {
     save.mutate(
       { schedules: days },
       {
-        onSuccess: () => Alert.alert('', t('mobile.schedule.saved')),
-        onError: (e) => Alert.alert(t('mobile.common.error'), e.message),
+        onSuccess: () => showSuccess(t('mobile.schedule.saved')),
+        onError: (e) => showError(e.message),
       },
     );
   };
@@ -82,7 +84,7 @@ export default function ScheduleConfigScreen() {
             <Text style={[typography.label as TextStyle, { color: palette.onSurfaceVariant }]}>
               {t('mobile.schedule.booking_url')}
             </Text>
-            <Text style={[typography.body as TextStyle, { color: palette.primary }]} numberOfLines={1}>
+            <Text style={[typography.bodyStrong as TextStyle, { color: palette.onSurface }]} numberOfLines={1}>
               {bookingUrl}
             </Text>
           </Card>

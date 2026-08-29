@@ -27,18 +27,47 @@ before touching anything API-shaped instead of re-deriving it from controllers.
 expo-router (file routes in `src/app/`) · TypeScript strict · TanStack Query
 (server state) · Zustand (session) · Luxon (all date math in the *business*
 timezone from `/me → business.timezone`) · Reanimated + Gesture Handler
-(calendar drag) · expo-secure-store (token) · expo-notifications (Expo Push).
+(calendar drag) · expo-secure-store (token) · expo-notifications (Expo Push) ·
+expo-image-picker (business logo).
 
-Design tokens in `src/theme/tokens.ts` are the web app's Material 3 palette
-copied 1:1 from the root `tailwind.config.js` — keep them in sync, don't invent colours.
+Design tokens in `src/theme/tokens.ts` follow the web. The colour ramp is copied
+1:1 from the root `tailwind.config.js`; the radius scale is **named like the
+web's** (`DEFAULT/lg/xl/2xl/3xl`) so a Tailwind class ports over directly. Keep
+them in sync, don't invent colours.
+
+**The house style is not "Material defaults over that palette".** Read how the
+Inertia pages actually use the ramp before styling anything new:
+
+- The primary action is **`onSurface` (near-black) on `surface` text** —
+  `bg-on-surface text-surface rounded-xl font-bold`. `primary` (#006398) is a
+  tint, never a button fill. Secondary is `surfaceContainerHigh`; destructive is
+  the soft `red50` fill with a `red200` border, not a solid red.
+- Panels are **ringed, not bordered**: `rounded-2xl ring-1 ring-slate-100
+  shadow-sm` on `surfaceContainerLowest` (`Card` in `components/ui.tsx`).
+- Selected states (segmented control, filter chips, today's column) are white
+  with a `slate200` ring, or near-black when they read as an action — never a
+  primary-blue fill.
+- Field labels are the web's `overline`: 10px Inter bold, uppercase, wide
+  tracking, `outline` colour.
+- Status colours live in `statusColors` and come from `AppointmentStatusMenu.jsx`:
+  pending is neutral grey, confirmed is the bright `tertiaryFixed` green,
+  cancelled is `errorContainer`. Not amber/blue.
+
+Fonts are **Manrope (headings) + Inter (body)**, loaded in `src/app/_layout.tsx`.
+Import the per-weight subpaths (`@expo-google-fonts/inter/600SemiBold`) — the
+package root re-exports all 25 faces and Metro bundles every one (~8 MB). Every
+`typography.*` token names a family, so **never override `fontWeight`** on top of
+one; a static font ignores it and falls back. Set `fontFamily` from `fonts.*`.
 
 ## Layout
 
     src/api        client.ts (fetch + auth + base URL), types.ts, queries.ts (all hooks)
     src/auth       zustand store, SecureStore-backed
     src/i18n       translations from GET /translations, cached on disk
-    src/components Screen, ui.tsx kit, AppointmentCard, DateBar
-    src/features   calendar/ (DayTimeline, WeekGrid, layout.ts), appointments/, manage/, schedule/
+    src/components Screen, ui.tsx kit, AppointmentCard, DateBar, Toast
+    src/features   calendar/ (DayTimeline, WeekGrid, layout.ts, employeeColors.ts,
+                   statusIcon.ts), appointments/, manage/, schedule/
+    src/utils      datetime.ts (display normalisers for API date/time strings)
     src/app        login + (app)/ tab routes
 
 ## Running locally
@@ -85,6 +114,52 @@ Dev accounts (local sqlite): `admin@stratos.com`, `pronari@example.com` (admin),
   `features/calendar/layout.ts` accepts either — use it, don't index raw.
 - Admin and employee query hooks each take an `enabled` flag; gate them by area
   or the wrong one fires and 403s on every load.
+- **New lang keys need an app restart, not a reload.** Translations are fetched
+  once on boot from `GET /translations` and cached on disk, so a fast refresh
+  keeps serving the old copy and the new key renders as `mobile.sheet.edit`.
+  Force-stop and relaunch (or reinstall) after touching `lang/`.
+- **Adding a native package needs a rebuild, not a reload.** Installing something
+  like `expo-image-picker` and hot-reloading gives
+  `Cannot find native module 'Exponent…'` — the installed dev-build APK was
+  compiled without it. Re-run `npx expo run:android`. Only JS changes hot-reload.
+- **`Appointment.date` is not always `Y-m-d`.** Services format it, but a raw
+  serialised model (create / status-update responses) yields
+  `2026-08-29T00:00:00.000000Z`; times come as `H:i` *or* `H:i:s`. Always render
+  through `toIsoDate` / `toHm` / `toTimeRange` in `src/utils/datetime.ts`, and
+  never re-parse those values through a zoned DateTime — the day slips by one.
+- **Toasts, not `Alert`, for notices.** `ToastProvider` (mounted in
+  `src/app/_layout.tsx`) mirrors the web's `SuccessToastProvider`; use
+  `useToast().showSuccess/showError`. `Alert` stays only for *confirm* dialogs.
+  A `<Modal>` renders in its own window, so the root host cannot paint over an
+  open sheet — every modal that can raise a toast while staying open needs its
+  own `<ToastHost />` (AppointmentSheet and FormSheet have one).
+- **`employee_name` / `service_name` on an appointment are deletion snapshots**,
+  not the live values — they are null while the employee or service row exists.
+  The live name is on the eager-loaded relation (`employee.name`), which the list
+  and calendar payloads both carry. Use `employeeName()` / `serviceName()` from
+  `components/AppointmentCard.tsx`; they mirror `Appointment::resolvedEmployeeName()`.
+- **Business settings are at full web parity** — `(app)/settings.tsx` mirrors
+  `Pages/Admin/Settings/Index.jsx` section for section and reuses the
+  `admin.settings.*` lang group, so add new options to both or neither. The
+  client-identifier choice is gated on `me.features.whatsapp`, and the
+  owner-works-as-staff toggle on the payload's `show_owner_staff_toggle`.
+- **Logo upload must go over `POST /admin/settings`**, not the `PUT` the rest of
+  the form uses: PHP leaves `$_FILES` empty on a PUT, so the route has a POST
+  alias onto the same controller action. `api()` sends a `FormData` body as
+  multipart and leaves the Content-Type boundary to the runtime.
+- **Calendar blocks are coloured by employee, not by status** — same as the web.
+  `features/calendar/employeeColors.ts` is a 1:1 port of
+  `resources/js/utils/employeeCalendarColor.js` (roster order by id), and status
+  is carried by the corner icon from `statusIcon.ts`. Keep both in sync with the
+  web when either changes; `statusColors` in the theme is for pills only.
+
+- **The settings screen hosts one non-business field.**
+  `notify_others_appointments` is a per-user opt-in (users column) to receive the
+  new-appointment notice for *other* staff's bookings — default off. It saves
+  through `PUT /admin/settings/notifications`, gated on `admin.appointments`,
+  while the business form still needs `admin.settings`. `GET /admin/settings`
+  opens for either and returns `can_manage_settings` / `can_manage_appointments`;
+  render only the tabs the viewer may actually change.
 
 ## State of play
 

@@ -118,9 +118,22 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 Route::get('/analytics', [V1\Admin\AnalyticsController::class, 'index'])->name('analytics.index');
             });
 
-            Route::middleware('permission:admin.settings')->group(function () {
+            // The settings screen opens for either permission; each section saves
+            // under its own gate (the web routes make the same split).
+            Route::middleware('permission_any:admin.settings,admin.appointments')->group(function () {
                 Route::get('/settings', [V1\Admin\SettingsController::class, 'index'])->name('settings.index');
+            });
+
+            Route::middleware('permission:admin.appointments')->group(function () {
+                Route::put('/settings/notifications', [V1\Admin\SettingsController::class, 'updateNotificationPreferences'])
+                    ->name('settings.notifications.update');
+            });
+
+            Route::middleware('permission:admin.settings')->group(function () {
                 Route::put('/settings', [V1\Admin\SettingsController::class, 'update'])->name('settings.update');
+                // Same action over POST: PHP does not populate $_FILES on PUT,
+                // so a logo upload has to arrive as multipart on a POST.
+                Route::post('/settings', [V1\Admin\SettingsController::class, 'update'])->name('settings.upload');
             });
         });
 });

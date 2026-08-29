@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Alert, FlatList, RefreshControl, View } from 'react-native';
 import { ApiError } from '@/api/client';
 import { useAdminResources, useDeleteResource, useSaveResource } from '@/api/queries';
+import { useToast } from '@/components/Toast';
 import { Screen } from '@/components/Screen';
 import { Button, Card, EmptyState, ErrorView, ListRow, LoadingView, TextField } from '@/components/ui';
 import { FormSheet } from '@/features/manage/FormSheet';
@@ -16,6 +17,7 @@ interface ResourceForm {
 
 export default function ResourcesScreen() {
   const { t } = useT();
+  const { showError } = useToast();
   const query = useAdminResources();
   const save = useSaveResource();
   const remove = useDeleteResource();
@@ -41,7 +43,7 @@ export default function ResourcesScreen() {
         onSuccess: () => setForm(null),
         onError: (e) => {
           if (e instanceof ApiError && e.errors) setFieldErrors(e.errors);
-          else Alert.alert(t('mobile.common.error'), e.message);
+          else showError(e.message);
         },
       },
     );
@@ -53,7 +55,7 @@ export default function ResourcesScreen() {
       {
         text: t('mobile.common.delete'),
         style: 'destructive',
-        onPress: () => remove.mutate({ id }, { onError: (e) => Alert.alert(t('mobile.common.error'), e.message) }),
+        onPress: () => remove.mutate({ id }, { onError: (e) => showError(e.message) }),
       },
     ]);
   };

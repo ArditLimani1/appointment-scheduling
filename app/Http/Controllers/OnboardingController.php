@@ -52,10 +52,17 @@ class OnboardingController extends Controller
             'auto_confirm_appointments' => ['required', 'boolean'],
             'reminders_enabled' => ['required', 'boolean'],
             'reminder_time' => ['required_if:reminders_enabled,true', 'nullable', 'date_format:H:i'],
+            'notify_others_appointments' => ['sometimes', 'boolean'],
         ]);
 
         $ownerStaff = (bool) $validated['owner_also_works_as_staff'];
         unset($validated['owner_also_works_as_staff']);
+
+        // Personal preference, not a business column.
+        if (array_key_exists('notify_others_appointments', $validated)) {
+            $user->update(['notify_others_appointments' => (bool) $validated['notify_others_appointments']]);
+            unset($validated['notify_others_appointments']);
+        }
 
         $business = $this->businessService->updateSettings($user, $validated);
 
@@ -163,6 +170,9 @@ class OnboardingController extends Controller
                 'auto_confirm_appointments' => (bool) ($business->auto_confirm_appointments ?? false),
                 'reminders_enabled' => (bool) ($business->reminders_enabled ?? false),
                 'reminder_time' => $business->reminder_time ?: '08:00',
+                // Personal preference (users column), surfaced here so the owner can
+                // opt in while setting the business up. Off unless they say otherwise.
+                'notify_others_appointments' => (bool) $user->notify_others_appointments,
             ],
         ]);
     }

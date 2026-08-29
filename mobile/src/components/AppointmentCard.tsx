@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, type TextStyle } from 'react-native';
 import { Card, StatusPill } from '@/components/ui';
 import { useT } from '@/i18n';
 import { palette, spacing, typography } from '@/theme/tokens';
+import { toIsoDate, toTimeRange } from '@/utils/datetime';
 import type { Appointment } from '@/api/types';
 
 export function clientName(a: Appointment): string {
@@ -11,6 +12,15 @@ export function clientName(a: Appointment): string {
 
 export function serviceName(a: Appointment): string {
   return a.service?.name ?? a.service_name ?? '—';
+}
+
+/**
+ * Mirrors `Appointment::resolvedEmployeeName()` and the web pages: the live
+ * relation first, and `employee_name` only as the snapshot it is — that column
+ * is written when the employee row is deleted, so it is null for active staff.
+ */
+export function employeeName(a: Appointment): string | null {
+  return a.employee?.name || a.employee_name || null;
 }
 
 export function AppointmentCard({
@@ -35,7 +45,7 @@ export function AppointmentCard({
           </Text>
           <Text style={[typography.label as TextStyle, { color: palette.onSurfaceVariant }]} numberOfLines={1}>
             {serviceName(appointment)}
-            {showEmployee && appointment.employee_name ? ` · ${appointment.employee_name}` : ''}
+            {showEmployee && employeeName(appointment) ? ` · ${employeeName(appointment)}` : ''}
           </Text>
         </View>
         <StatusPill
@@ -45,10 +55,10 @@ export function AppointmentCard({
       </View>
       <View style={styles.footer}>
         <Text style={[typography.label as TextStyle, { color: palette.onSurface }]}>
-          {appointment.date} · {appointment.start_time}–{appointment.end_time}
+          {toIsoDate(appointment.date)} · {toTimeRange(appointment.start_time, appointment.end_time)}
         </Text>
         {appointment.price != null && appointment.price !== '' ? (
-          <Text style={[typography.bodyStrong as TextStyle, { color: palette.onPrimaryContainer }]}>
+          <Text style={[typography.numeric as TextStyle, { color: palette.onSurface }]}>
             {String(appointment.price)}
             {currencySymbol ? ` ${currencySymbol}` : ''}
           </Text>

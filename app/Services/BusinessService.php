@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\Permission;
 use App\Models\Business;
 use App\Models\User;
 use App\Repositories\Interfaces\BusinessRepositoryInterface;
@@ -42,6 +43,11 @@ class BusinessService implements BusinessServiceInterface
             'owner_email' => $user->email,
             'show_owner_staff_toggle' => $showOwnerStaffToggle,
             'owner_also_works_as_staff' => $showOwnerStaffToggle && $user->also_works_as_staff,
+            // Personal (not business) preference, shown to anyone who can manage
+            // appointments so they can opt into other staff's booking notices.
+            'can_manage_appointments' => $user->hasPermission(Permission::AdminAppointments->value),
+            'can_manage_settings' => $user->hasPermission(Permission::AdminSettings->value),
+            'notify_others_appointments' => (bool) $user->notify_others_appointments,
         ];
     }
 

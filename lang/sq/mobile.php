@@ -44,7 +44,12 @@ return [
         'phone' => 'Telefoni',
         'email' => 'Email',
         'notes' => 'Shënime',
-        'reschedule' => 'Rishkojo',
+        'reschedule' => 'Riplanifiko',
+        'edit' => 'Ndrysho',
+        'save' => 'Ruaj ndryshimet',
+        'status' => 'Statusi',
+        'tab_booking' => 'Shërbimi dhe ora',
+        'tab_client' => 'Të dhënat e klientit',
         'no_slots' => 'S’ka orare të lira këtë ditë.',
         'confirm' => 'Konfirmo terminin',
         'cancel_appointment' => 'Anulo terminin',
@@ -155,7 +160,8 @@ return [
         'description' => 'Përshkrimi',
         'save' => 'Ruaj cilësimet',
         'saved' => 'Cilësimet u ruajtën.',
-        'web_note' => 'Cilësimet e avancuara (logoja, rregullat e rezervimit, WhatsApp) menaxhohen në web.',
+        'logo_uploaded' => 'Logoja u përditësua.',
+        'logo_permission' => 'Duhet leje për të hapur galerinë e fotove.',
     ],
 
     'analytics' => [

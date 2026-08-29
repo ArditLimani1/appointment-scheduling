@@ -18,6 +18,17 @@ class UpdateSettingsRequest extends FormRequest
         if (! ClientIdentification::whatsappEnabled()) {
             $this->merge(['client_identifier_type' => 'email']);
         }
+
+        // `businesses.reminder_time` is NOT NULL with an 08:00 default, so a null
+        // would pass validation and then fail at the database. Drop it instead
+        // and let the stored value stand.
+        if ($this->exists('reminder_time') && $this->input('reminder_time') === null) {
+            $input = $this->all();
+            unset($input['reminder_time']);
+            // replace() goes through getInputSource(), so this covers JSON bodies
+            // too — $this->request is only the form bag.
+            $this->replace($input);
+        }
     }
 
     public function rules(): array

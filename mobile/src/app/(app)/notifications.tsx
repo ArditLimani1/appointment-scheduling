@@ -5,6 +5,7 @@ import type { NotificationItem } from '@/api/types';
 import { Screen } from '@/components/Screen';
 import { Button, Card, EmptyState, LoadingView, Segmented } from '@/components/ui';
 import { useT } from '@/i18n';
+import { toIsoDate, toHm } from '@/utils/datetime';
 import { palette, spacing, typography } from '@/theme/tokens';
 import { DateTime } from 'luxon';
 
@@ -20,6 +21,7 @@ export default function NotificationsScreen() {
 
   return (
     <Screen
+      hideBell
       title={t('mobile.notifications.title')}
       right={
         rows.length > 0 && scope === 'unread' ? (
@@ -77,17 +79,26 @@ function NotificationCard({
   locale: string;
   onPress: () => void;
 }) {
+  const { t } = useT();
   const services = (item.data.services ?? []).map((s) => s.name).filter(Boolean).join(', ');
   const when = DateTime.fromISO(item.created_at).setLocale(locale).toRelative() ?? '';
+  // Watchers need to know whose appointment it is; your own reads better plain.
+  const watchedEmployee = item.data.for_other_staff ? (item.data.employee_name ?? '') : '';
+  const title = watchedEmployee
+    ? t('employee.notifications.new_booking_for_title', { employee: watchedEmployee })
+    : t('employee.notifications.new_booking_title');
 
   return (
     <Card style={[styles.card, !item.read_at && styles.unread]}>
       <View style={{ flex: 1, gap: 2 }} onTouchEnd={onPress}>
+        <Text style={[typography.overline as TextStyle, { color: palette.onSurfaceVariant }]} numberOfLines={1}>
+          {title}
+        </Text>
         <Text style={[typography.bodyStrong as TextStyle, { color: palette.onSurface }]} numberOfLines={1}>
           {item.data.client_name ?? item.data.business_name ?? '—'}
         </Text>
         <Text style={[typography.label as TextStyle, { color: palette.onSurfaceVariant }]} numberOfLines={2}>
-          {[services, item.data.date, item.data.start_time].filter(Boolean).join(' · ')}
+          {[services, toIsoDate(item.data.date), toHm(item.data.start_time)].filter(Boolean).join(' · ')}
         </Text>
         <Text style={[typography.caption as TextStyle, { color: palette.outline }]}>{when}</Text>
       </View>
@@ -98,6 +109,6 @@ function NotificationCard({
 
 const styles = StyleSheet.create({
   card: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  unread: { borderColor: palette.primary },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: palette.primary },
+  unread: { borderColor: palette.primaryFixedDim },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: palette.onPrimaryFixedVariant },
 });

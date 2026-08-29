@@ -40,6 +40,12 @@ return [
         'step_automation_title' => 'Automations',
         'step_automation_sub' => 'Decide whether online bookings confirm themselves and whether clients get an automatic reminder.',
 
+        'notify_others_title' => 'Notifications for other staff',
+
+        'notify_others_help' => 'Off by default. When on, you also hear about bookings assigned to your staff, not only your own. You can change this any time in Settings.',
+
+        'notify_others_label' => 'Notify me about appointments for other staff',
+
         'auto_confirm_title' => 'Auto-confirm appointments',
         'auto_confirm_help' => 'When on, online bookings are confirmed immediately and the client is notified straight away. When off, new bookings stay pending until someone confirms them manually.',
         'auto_confirm_label' => 'Confirm online bookings automatically',

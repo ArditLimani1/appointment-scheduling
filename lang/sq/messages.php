@@ -64,6 +64,7 @@ return [
 
     'push' => [
         'new_appointment_title' => 'Termin i ri',
+        'new_appointment_for_title' => 'Termin i ri për :employee',
         'new_appointment_body' => ':client — :service, :date :time',
     ],
 ];

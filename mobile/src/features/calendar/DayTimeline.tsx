@@ -1,3 +1,4 @@
+import { MaterialIcons } from '@expo/vector-icons';
 import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View, type TextStyle } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -7,8 +8,12 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import { palette, radius, statusColors, typography } from '@/theme/tokens';
+import { fonts, palette, radius, typography } from '@/theme/tokens';
 import type { Appointment } from '@/api/types';
+import { employeeName } from '@/components/AppointmentCard';
+import { toHm } from '@/utils/datetime';
+import { getEmployeeSlotStyles, type EmployeeColorMap } from './employeeColors';
+import { statusIcon } from './statusIcon';
 import type { BreakInterval } from './layout';
 import {
   HOUR_HEIGHT,
@@ -33,6 +38,8 @@ interface Props {
   /** When provided, blocks can be long-pressed and dragged to a new start time. */
   onMoveAppointment?: (appointment: Appointment, newStartTime: string) => void;
   canMove?: (appointment: Appointment) => boolean;
+  /** Per-employee block colours, as on the web calendar. */
+  employeeColors?: EmployeeColorMap;
 }
 
 export function DayTimeline({
@@ -44,6 +51,7 @@ export function DayTimeline({
   onPressAppointment,
   onMoveAppointment,
   canMove,
+  employeeColors,
 }: Props) {
   const dayStart = timeToMinutes(hours.start);
   const hourMarks = hoursRange(hours.start, hours.end);
@@ -94,6 +102,7 @@ export function DayTimeline({
             <DraggableBlock
               key={block.appointment.id}
               block={block}
+              colors={getEmployeeSlotStyles(employeeColors, block.appointment.employee_id)}
               draggable={Boolean(onMoveAppointment) && (canMove?.(block.appointment) ?? true)}
               dayStart={dayStart}
               onPress={() => onPressAppointment(block.appointment)}
@@ -114,12 +123,14 @@ export function DayTimeline({
 
 function DraggableBlock({
   block,
+  colors,
   draggable,
   dayStart,
   onPress,
   onDrop,
 }: {
   block: ReturnType<typeof layoutDay>[number];
+  colors: { bg: string; border: string; text: string };
   draggable: boolean;
   dayStart: number;
   onPress: () => void;
@@ -129,7 +140,7 @@ function DraggableBlock({
   const dragging = useSharedValue(false);
 
   const appointment = block.appointment;
-  const colors = statusColors[appointment.status] ?? statusColors.pending;
+  const icon = statusIcon(appointment.status);
 
   const pan = Gesture.Pan()
     .enabled(draggable)
@@ -184,17 +195,27 @@ function DraggableBlock({
             left: `${block.lane * laneWidth}%`,
             width: `${laneWidth}%`,
             backgroundColor: colors.bg,
-            borderLeftColor: colors.dot,
+            borderLeftColor: colors.border,
           },
           animatedStyle,
         ]}
       >
-        <Text style={[typography.caption as TextStyle, { color: colors.fg, fontWeight: '700' }]} numberOfLines={1}>
-          {appointment.start_time} {[appointment.client_first_name, appointment.client_last_name].filter(Boolean).join(' ')}
-        </Text>
+        <View style={styles.blockHeader}>
+          <Text
+            style={[typography.caption as TextStyle, { color: colors.text, fontFamily: fonts.bodyBold, flex: 1 }]}
+            numberOfLines={1}
+          >
+            {[appointment.client_first_name, appointment.client_last_name].filter(Boolean).join(' ') ||
+              employeeName(appointment) ||
+              '—'}
+          </Text>
+          <MaterialIcons name={icon.name} size={13} color={icon.color} />
+        </View>
         {block.height > 40 ? (
-          <Text style={[typography.caption as TextStyle, { color: colors.fg }]} numberOfLines={1}>
-            {appointment.service?.name ?? appointment.service_name ?? ''}
+          <Text style={[typography.caption as TextStyle, { color: colors.text }]} numberOfLines={1}>
+            {[appointment.service?.name ?? appointment.service_name, toHm(appointment.start_time)]
+              .filter(Boolean)
+              .join(' - ')}
           </Text>
         ) : null}
       </Animated.View>
@@ -210,9 +231,10 @@ const styles = StyleSheet.create({
     height: StyleSheet.hairlineWidth,
     backgroundColor: palette.outlineVariant,
   },
+  blockHeader: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   block: {
     position: 'absolute',
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderLeftWidth: 3,
     paddingHorizontal: 6,
     paddingVertical: 3,

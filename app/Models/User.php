@@ -27,6 +27,7 @@ class User extends Authenticatable implements MustVerifyEmailContract, HasLocale
 
     protected $fillable = [
         'name', 'email', 'password', 'phone', 'title', 'avatar', 'booking_slug', 'locale', 'onboarding_completed_at',
+        'notify_others_appointments',
     ];
 
     protected $hidden = [
@@ -41,6 +42,7 @@ class User extends Authenticatable implements MustVerifyEmailContract, HasLocale
             'password' => 'hashed',
             'is_active' => 'boolean',
             'also_works_as_staff' => 'boolean',
+            'notify_others_appointments' => 'boolean',
             'role' => UserRole::class,
             'user_type' => UserType::class,
         ];

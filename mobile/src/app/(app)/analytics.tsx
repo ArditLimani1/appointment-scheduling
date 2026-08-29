@@ -154,5 +154,5 @@ const styles = StyleSheet.create({
     backgroundColor: palette.surfaceContainer,
     overflow: 'hidden',
   },
-  barFill: { height: 6, borderRadius: radius.full, backgroundColor: palette.primary },
+  barFill: { height: 6, borderRadius: radius.full, backgroundColor: palette.primaryContainer },
 });

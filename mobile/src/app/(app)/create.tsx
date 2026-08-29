@@ -2,7 +2,6 @@ import { DateTime } from 'luxon';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -21,6 +20,7 @@ import {
 } from '@/api/queries';
 import type { EmployeeSummary, ServiceSummary } from '@/api/types';
 import { useAuth } from '@/auth/store';
+import { useToast } from '@/components/Toast';
 import { Screen } from '@/components/Screen';
 import { Button, Card, ErrorView, LoadingView, TextField } from '@/components/ui';
 import { useT } from '@/i18n';
@@ -28,6 +28,7 @@ import { palette, radius, spacing, typography } from '@/theme/tokens';
 
 export default function CreateAppointmentScreen() {
   const { t, locale } = useT();
+  const { showSuccess, showError } = useToast();
   const router = useRouter();
   const me = useAuth((s) => s.me);
 
@@ -133,14 +134,14 @@ export default function CreateAppointmentScreen() {
       },
       {
         onSuccess: () => {
-          Alert.alert('', t('mobile.create.created'));
+          showSuccess(t('mobile.create.created'));
           router.back();
         },
         onError: (e) => {
           if (e instanceof ApiError && e.errors) {
             setFieldErrors(e.errors);
           } else {
-            Alert.alert(t('mobile.common.error'), e.message);
+            showError(e.message);
           }
         },
       },
@@ -269,7 +270,7 @@ function Chip({ label, active, onPress }: { label: string; active: boolean; onPr
   return (
     <Pressable onPress={onPress} style={[styles.chip, active && styles.chipActive]}>
       <Text
-        style={[typography.label as TextStyle, { color: active ? palette.onPrimary : palette.onSurfaceVariant }]}
+        style={[typography.labelStrong as TextStyle, { color: active ? palette.surface : palette.onSurfaceVariant }]}
         numberOfLines={1}
       >
         {label}
@@ -285,8 +286,10 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     paddingHorizontal: spacing.md,
     paddingVertical: 7,
-    backgroundColor: palette.surfaceContainer,
+    backgroundColor: palette.surfaceContainerHigh,
+    borderWidth: 1,
+    borderColor: palette.slate200,
   },
-  chipActive: { backgroundColor: palette.primary },
+  chipActive: { backgroundColor: palette.onSurface, borderColor: palette.onSurface },
   error: { ...(typography.caption as TextStyle), color: palette.error },
 });

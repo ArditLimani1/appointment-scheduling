@@ -7,12 +7,15 @@ import type { Appointment, EmployeeSummary } from '@/api/types';
 import { useAuth } from '@/auth/store';
 import { DateBar } from '@/components/DateBar';
 import { Screen } from '@/components/Screen';
+import { useToast } from '@/components/Toast';
 import { Button, ErrorView, LoadingView, Segmented } from '@/components/ui';
 import { AppointmentSheet } from '@/features/appointments/AppointmentSheet';
 import { DayTimeline } from '@/features/calendar/DayTimeline';
 import { WeekGrid } from '@/features/calendar/WeekGrid';
+import { buildEmployeeColorMap, getEmployeeSlotStyles } from '@/features/calendar/employeeColors';
 import type { BreakInterval } from '@/features/calendar/layout';
 import { useT } from '@/i18n';
+import { toIsoDate } from '@/utils/datetime';
 import { palette, radius, spacing, typography } from '@/theme/tokens';
 
 const DEFAULT_HOURS = { start: '08:00', end: '20:00' };
@@ -37,6 +40,7 @@ export default function CalendarScreen() {
   const adminQuery = useAdminCalendar(view, date, employeeFilter, isAdminArea);
   const query = isAdminArea ? adminQuery : employeeQuery;
   const reschedule = useRescheduleOwn();
+  const { showError } = useToast();
 
   const data = query.data;
 
@@ -47,7 +51,7 @@ export default function CalendarScreen() {
   }, [data?.appointments]);
 
   const dayAppointments = useMemo(
-    () => appointments.filter((a) => a.date.slice(0, 10) === date),
+    () => appointments.filter((a) => toIsoDate(a.date) === date),
     [appointments, date],
   );
 
@@ -84,8 +88,8 @@ export default function CalendarScreen() {
               text: t('mobile.common.confirm'),
               onPress: () =>
                 reschedule.mutate(
-                  { id: appointment.id, date: appointment.date.slice(0, 10), start_time: newTime },
-                  { onError: (e) => Alert.alert(t('mobile.common.error'), e.message) },
+                  { id: appointment.id, date: toIsoDate(appointment.date), start_time: newTime },
+                  { onError: (e) => showError(e.message) },
                 ),
             },
           ],
@@ -94,6 +98,9 @@ export default function CalendarScreen() {
     : undefined;
 
   const employees = (data?.employees ?? []) as EmployeeSummary[];
+  // Same roster-order colour assignment as the web calendar, so a staff member
+  // is the same colour in both apps.
+  const employeeColors = useMemo(() => buildEmployeeColorMap(employees), [employees]);
 
   return (
     <Screen title={t('mobile.calendar.title')} noPadding>
@@ -125,6 +132,7 @@ export default function CalendarScreen() {
               <FilterChip
                 key={employee.id}
                 label={employee.name}
+                swatch={getEmployeeSlotStyles(employeeColors, employee.id).swatch}
                 active={employeeFilter === employee.id}
                 onPress={() => setEmployeeFilter(employee.id)}
               />
@@ -156,6 +164,7 @@ export default function CalendarScreen() {
             onPressAppointment={setSelected}
             onMoveAppointment={onMove}
             canMove={(a) => a.status !== 'cancelled'}
+            employeeColors={employeeColors}
           />
         ) : (
           <WeekGrid
@@ -166,6 +175,7 @@ export default function CalendarScreen() {
             locale={locale}
             dayBreaksByDate={isAdminArea ? adminEmployeeBreaks : (employeeBreaks ?? {})}
             dayOffs={isAdminArea ? adminDayOffs : dayOffs}
+            employeeColors={employeeColors}
             onPressAppointment={setSelected}
             onPressDay={(day) => {
               setDate(day);
@@ -187,13 +197,24 @@ export default function CalendarScreen() {
   );
 }
 
-function FilterChip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+function FilterChip({
+  label,
+  active,
+  swatch,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  swatch?: string;
+  onPress: () => void;
+}) {
   return (
     <Pressable onPress={onPress} style={[styles.chip, active && styles.chipActive]}>
+      {swatch ? <View style={[styles.chipSwatch, { backgroundColor: swatch }]} /> : null}
       <Text
         style={[
           typography.label as TextStyle,
-          { color: active ? palette.onPrimary : palette.onSurfaceVariant },
+          { color: active ? palette.surface : palette.onSurfaceVariant },
         ]}
         numberOfLines={1}
       >
@@ -205,10 +226,22 @@ function FilterChip({ label, active, onPress }: { label: string; active: boolean
 
 const styles = StyleSheet.create({
   chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     borderRadius: radius.full,
     paddingHorizontal: spacing.md,
     paddingVertical: 6,
-    backgroundColor: palette.surfaceContainer,
+    backgroundColor: palette.surfaceContainerHigh,
+    borderWidth: 1,
+    borderColor: palette.slate200,
   },
-  chipActive: { backgroundColor: palette.primary },
+  chipActive: { backgroundColor: palette.onSurface, borderColor: palette.onSurface },
+  chipSwatch: {
+    height: 10,
+    width: 10,
+    borderRadius: 5,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(0, 0, 0, 0.15)',
+  },
 });

@@ -45,6 +45,11 @@ return [
         'email' => 'Email',
         'notes' => 'Notes',
         'reschedule' => 'Reschedule',
+        'edit' => 'Edit',
+        'save' => 'Save changes',
+        'status' => 'Status',
+        'tab_booking' => 'Service & time',
+        'tab_client' => 'Client details',
         'no_slots' => 'No free slots on this day.',
         'confirm' => 'Confirm appointment',
         'cancel_appointment' => 'Cancel appointment',
@@ -155,7 +160,8 @@ return [
         'description' => 'Description',
         'save' => 'Save settings',
         'saved' => 'Settings saved.',
-        'web_note' => 'Advanced settings (logo, booking rules, WhatsApp) are managed on the web.',
+        'logo_uploaded' => 'Logo updated.',
+        'logo_permission' => 'Photo library permission is required.',
     ],
 
     'analytics' => [

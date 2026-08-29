@@ -12,6 +12,8 @@ use App\Models\Service;
 use App\Models\User;
 use Database\Seeders\BusinessTypeSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class AdminAreaTest extends TestCase
@@ -110,15 +112,19 @@ class AdminAreaTest extends TestCase
     {
         $appointment = $this->makeAppointment();
 
+        // `employee_name` is only the deletion snapshot, so the app reads the
+        // live name off the eager-loaded relation — it has to be in the payload.
         $this->withToken($this->token())
             ->getJson('/api/v1/admin/appointments?scope=all')
             ->assertOk()
-            ->assertJsonStructure(['appointments', 'employees', 'services']);
+            ->assertJsonStructure(['appointments', 'employees', 'services'])
+            ->assertJsonPath('appointments.data.0.employee.name', $this->employee->name);
 
         $this->withToken($this->token())
             ->getJson('/api/v1/admin/appointments/calendar?view=week&date='.$appointment->date->toDateString())
             ->assertOk()
-            ->assertJsonStructure(['range_start', 'range_end', 'filters', 'employees', 'calendar_employee_day_breaks']);
+            ->assertJsonStructure(['range_start', 'range_end', 'filters', 'employees', 'calendar_employee_day_breaks'])
+            ->assertJsonPath('appointments.0.employee.name', $this->employee->name);
     }
 
     public function test_status_update_and_delete(): void
@@ -223,7 +229,76 @@ class AdminAreaTest extends TestCase
     {
         $this->withToken($this->token())
             ->getJson('/api/v1/admin/settings')
+            ->assertOk()
+            ->assertJsonStructure([
+                'settings' => [
+                    'name', 'phone', 'location', 'slug', 'logo',
+                    'slot_duration', 'min_booking_notice', 'max_booking_window',
+                    'client_identifier_type', 'allow_employee_service_edit',
+                    'uses_shared_resources', 'auto_confirm_appointments',
+                    'reminders_enabled', 'reminder_time',
+                ],
+                'owner_email',
+                'show_owner_staff_toggle',
+                'owner_also_works_as_staff',
+            ]);
+    }
+
+    public function test_settings_update_persists_every_booking_rule(): void
+    {
+        $this->withToken($this->token())
+            ->putJson('/api/v1/admin/settings', [
+                'slot_duration' => 45,
+                'min_booking_notice' => 90,
+                'max_booking_window' => 21,
+                'allow_employee_service_edit' => false,
+                'uses_shared_resources' => true,
+                'auto_confirm_appointments' => true,
+                'reminders_enabled' => true,
+                'reminder_time' => '09:30',
+            ])
             ->assertOk();
+
+        $business = $this->business->fresh();
+
+        $this->assertSame(45, (int) $business->slot_duration);
+        $this->assertSame(90, (int) $business->min_booking_notice);
+        $this->assertSame(21, (int) $business->max_booking_window);
+        $this->assertFalse((bool) $business->allow_employee_service_edit);
+        $this->assertTrue((bool) $business->uses_shared_resources);
+        $this->assertTrue((bool) $business->auto_confirm_appointments);
+        $this->assertTrue((bool) $business->reminders_enabled);
+        $this->assertSame('09:30', substr((string) $business->reminder_time, 0, 5));
+    }
+
+    public function test_settings_ignores_a_null_reminder_time(): void
+    {
+        // The column is NOT NULL with an 08:00 default, so a null must never
+        // reach the database — it used to pass validation and 500.
+        $this->withToken($this->token())
+            ->putJson('/api/v1/admin/settings', [
+                'reminders_enabled' => false,
+                'reminder_time' => null,
+            ])
+            ->assertOk();
+
+        $this->assertNotNull($this->business->fresh()->reminder_time);
+    }
+
+    public function test_settings_accepts_a_logo_upload_over_post(): void
+    {
+        Storage::fake('public');
+
+        $this->withToken($this->token())
+            ->post('/api/v1/admin/settings', [
+                'logo' => UploadedFile::fake()->image('logo.png'),
+            ], ['Accept' => 'application/json'])
+            ->assertOk();
+
+        $logo = $this->business->fresh()->logo;
+
+        $this->assertNotNull($logo);
+        Storage::disk('public')->assertExists($logo);
     }
 
     public function test_analytics_returns_payload(): void
@@ -274,6 +349,50 @@ class AdminAreaTest extends TestCase
             ->assertCreated();
 
         $this->assertSame(1, Appointment::query()->whereDate('date', $date)->count());
+    }
+
+    public function test_notification_preference_defaults_off_and_can_be_toggled(): void
+    {
+        $this->withToken($this->token())
+            ->getJson('/api/v1/admin/settings')
+            ->assertOk()
+            ->assertJsonPath('notify_others_appointments', false)
+            ->assertJsonPath('can_manage_appointments', true);
+
+        $this->withToken($this->token())
+            ->putJson('/api/v1/admin/settings/notifications', ['notify_others_appointments' => true])
+            ->assertOk()
+            ->assertJsonPath('notify_others_appointments', true);
+
+        $this->assertTrue((bool) $this->admin->fresh()->notify_others_appointments);
+    }
+
+    public function test_notification_preference_needs_appointments_permission_not_settings(): void
+    {
+        $role = \App\Models\BusinessRole::create([
+            'business_id' => $this->business->id,
+            'name' => 'Front desk',
+            'permissions' => [\App\Enums\Permission::AdminAppointments->value],
+        ]);
+        // business_role_id is not fillable, so assign it explicitly.
+        $this->employee->forceFill(['business_role_id' => $role->id])->save();
+        $token = $this->employee->createToken('t')->plainTextToken;
+
+        // No admin.settings, so the business form stays closed...
+        $this->withToken($token)
+            ->putJson('/api/v1/admin/settings', ['name' => 'Hacked'])
+            ->assertStatus(403);
+
+        // Sanctum caches the resolved user (and its loaded relations) per app
+        // instance; drop it so the permission check re-reads the role.
+        app('auth')->forgetGuards();
+
+        // ...but the personal preference is theirs to set.
+        $this->withToken($token)
+            ->putJson('/api/v1/admin/settings/notifications', ['notify_others_appointments' => true])
+            ->assertOk();
+
+        $this->assertTrue((bool) $this->employee->fresh()->notify_others_appointments);
     }
 
     public function test_roles_index_lists_permission_groups(): void

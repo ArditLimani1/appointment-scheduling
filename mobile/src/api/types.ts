@@ -51,7 +51,42 @@ export interface Me {
   user: MeUser;
   business: MeBusiness | null;
   permissions: PermissionKey[];
-  features: { admin_panel: boolean; employee_area: boolean };
+  features: {
+    admin_panel: boolean;
+    employee_area: boolean;
+    /** WHATSAPP_ENABLED — gates the client-identifier choice in settings. */
+    whatsapp: boolean;
+  };
+}
+
+/** `GET /admin/settings` → the business row plus the owner-toggle context. */
+export interface BusinessSettings {
+  name?: string;
+  phone?: string | null;
+  location?: string | null;
+  slug?: string;
+  logo?: string | null;
+  slot_duration?: number | null;
+  min_booking_notice?: number | null;
+  max_booking_window?: number | null;
+  client_identifier_type?: 'phone' | 'email' | null;
+  allow_employee_service_edit?: boolean;
+  uses_shared_resources?: boolean;
+  auto_confirm_appointments?: boolean;
+  reminders_enabled?: boolean;
+  reminder_time?: string | null;
+}
+
+export interface SettingsPayload {
+  settings: BusinessSettings;
+  owner_email: string;
+  show_owner_staff_toggle: boolean;
+  owner_also_works_as_staff: boolean;
+  /** Gates the personal notification toggle — `admin.appointments`, not `admin.settings`. */
+  can_manage_appointments: boolean;
+  can_manage_settings: boolean;
+  /** Personal opt-in to hear about other staff's bookings. */
+  notify_others_appointments: boolean;
 }
 
 export interface Appointment {
@@ -64,6 +99,9 @@ export interface Appointment {
   service_name?: string | null;
   service?: { id: number; name: string; duration?: number; price?: number | string } | null;
   employee_id: number | null;
+  /** Live employee, eager-loaded on the list and calendar payloads. */
+  employee?: { id: number; name: string } | null;
+  /** Snapshot written only when the employee row is deleted — not the live name. */
   employee_name?: string | null;
   client_first_name?: string | null;
   client_last_name?: string | null;
@@ -130,6 +168,9 @@ export interface NotificationItem {
     end_time?: string;
     services?: { id: number; name: string }[];
     business_name?: string;
+    /** True when the recipient is watching another employee's appointment. */
+    for_other_staff?: boolean;
+    employee_name?: string | null;
     [key: string]: unknown;
   };
 }

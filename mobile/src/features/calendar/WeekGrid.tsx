@@ -1,8 +1,13 @@
+import { MaterialIcons } from '@expo/vector-icons';
 import { DateTime } from 'luxon';
 import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, type TextStyle } from 'react-native';
-import { palette, radius, statusColors, typography } from '@/theme/tokens';
+import { fonts, palette, radius, typography } from '@/theme/tokens';
 import type { Appointment } from '@/api/types';
+import { employeeName } from '@/components/AppointmentCard';
+import { toIsoDate, toHm } from '@/utils/datetime';
+import { getEmployeeSlotStyles, type EmployeeColorMap } from './employeeColors';
+import { statusIcon } from './statusIcon';
 import { HOUR_HEIGHT, breakBounds, hoursRange, layoutDay, timeToMinutes } from './layout';
 import type { BreakInterval } from './layout';
 
@@ -21,6 +26,7 @@ export function WeekGrid({
   locale,
   dayBreaksByDate = {},
   dayOffs = [],
+  employeeColors,
   onPressAppointment,
   onPressDay,
 }: {
@@ -31,6 +37,8 @@ export function WeekGrid({
   locale: string;
   dayBreaksByDate?: Record<string, BreakInterval[]>;
   dayOffs?: string[];
+  /** Per-employee block colours, as on the web calendar. */
+  employeeColors?: EmployeeColorMap;
   onPressAppointment: (appointment: Appointment) => void;
   onPressDay?: (date: string) => void;
 }) {
@@ -41,7 +49,7 @@ export function WeekGrid({
   const byDate = useMemo(() => {
     const map: Record<string, Appointment[]> = {};
     for (const appointment of appointments) {
-      const key = appointment.date.slice(0, 10);
+      const key = toIsoDate(appointment.date);
       (map[key] ??= []).push(appointment);
     }
     return map;
@@ -67,7 +75,7 @@ export function WeekGrid({
                   <Text
                     style={[
                       typography.caption as TextStyle,
-                      { color: isToday ? palette.onPrimary : palette.onSurfaceVariant, textTransform: 'capitalize' },
+                      { color: isToday ? palette.surface : palette.onSurfaceVariant, textTransform: 'capitalize' },
                     ]}
                   >
                     {dt.toFormat('ccc')}
@@ -75,7 +83,7 @@ export function WeekGrid({
                   <Text
                     style={[
                       typography.bodyStrong as TextStyle,
-                      { color: isToday ? palette.onPrimary : palette.onSurface },
+                      { color: isToday ? palette.surface : palette.onSurface },
                     ]}
                   >
                     {dt.toFormat('d')}
@@ -117,7 +125,8 @@ export function WeekGrid({
                     return <View key={`${b.start}-${i}`} style={[styles.breakBlock, { top, height }]} />;
                   })}
                   {blocks.map((block) => {
-                    const colors = statusColors[block.appointment.status] ?? statusColors.pending;
+                    const colors = getEmployeeSlotStyles(employeeColors, block.appointment.employee_id);
+                    const icon = statusIcon(block.appointment.status);
                     const laneWidth = 100 / block.lanes;
                     return (
                       <Pressable
@@ -131,21 +140,34 @@ export function WeekGrid({
                             left: `${block.lane * laneWidth}%`,
                             width: `${laneWidth}%`,
                             backgroundColor: colors.bg,
-                            borderLeftColor: colors.dot,
+                            borderLeftColor: colors.border,
                           },
                         ]}
                       >
-                        <Text
-                          style={[typography.caption as TextStyle, { color: colors.fg, fontWeight: '700' }]}
-                          numberOfLines={1}
-                        >
-                          {block.appointment.start_time}
-                        </Text>
-                        {block.height > 36 ? (
-                          <Text style={[typography.caption as TextStyle, { color: colors.fg }]} numberOfLines={2}>
+                        <View style={styles.blockHeader}>
+                          <Text
+                            style={[
+                              typography.caption as TextStyle,
+                              { color: colors.text, fontFamily: fonts.bodyBold, flex: 1 },
+                            ]}
+                            numberOfLines={1}
+                          >
                             {[block.appointment.client_first_name, block.appointment.client_last_name]
                               .filter(Boolean)
-                              .join(' ')}
+                              .join(' ') ||
+                              employeeName(block.appointment) ||
+                              '—'}
+                          </Text>
+                          <MaterialIcons name={icon.name} size={12} color={icon.color} />
+                        </View>
+                        {block.height > 36 ? (
+                          <Text style={[typography.caption as TextStyle, { color: colors.text }]} numberOfLines={2}>
+                            {[
+                              block.appointment.service?.name ?? block.appointment.service_name,
+                              toHm(block.appointment.start_time),
+                            ]
+                              .filter(Boolean)
+                              .join(' - ')}
                           </Text>
                         ) : null}
                       </Pressable>
@@ -167,9 +189,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 6,
     gap: 1,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
   },
-  dayHeaderToday: { backgroundColor: palette.primary },
+  dayHeaderToday: { backgroundColor: palette.onSurface },
   column: {
     width: MIN_COLUMN_WIDTH,
     borderLeftWidth: StyleSheet.hairlineWidth,
@@ -182,9 +204,10 @@ const styles = StyleSheet.create({
     height: StyleSheet.hairlineWidth,
     backgroundColor: palette.outlineVariant,
   },
+  blockHeader: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   block: {
     position: 'absolute',
-    borderRadius: radius.sm,
+    borderRadius: radius.DEFAULT,
     borderLeftWidth: 3,
     paddingHorizontal: 4,
     paddingVertical: 2,

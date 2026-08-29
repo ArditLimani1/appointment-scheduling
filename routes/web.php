@@ -98,8 +98,19 @@ Route::middleware(['auth', 'admin_panel', 'onboarding_completed', 'has_business'
     });
 
     Route::middleware('permission:admin.settings')->group(function () {
-        Route::get('/settings', [Admin\SettingsController::class, 'index'])->name('settings.index');
         Route::put('/settings', [Admin\SettingsController::class, 'update'])->name('settings.update');
+    });
+
+    // The personal notification preference lives on this screen but is gated on
+    // appointments, so the page opens for either permission and renders only the
+    // sections the viewer may actually change.
+    Route::middleware('permission_any:admin.settings,admin.appointments')->group(function () {
+        Route::get('/settings', [Admin\SettingsController::class, 'index'])->name('settings.index');
+    });
+
+    Route::middleware('permission:admin.appointments')->group(function () {
+        Route::put('/settings/notifications', [Admin\SettingsController::class, 'updateNotificationPreferences'])
+            ->name('settings.notifications.update');
     });
 
     Route::middleware('permission:admin.roles')->group(function () {

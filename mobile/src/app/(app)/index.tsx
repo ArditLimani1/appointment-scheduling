@@ -10,7 +10,7 @@ import { Screen } from '@/components/Screen';
 import { EmptyState, ErrorView, LoadingView, MetricCard } from '@/components/ui';
 import { AppointmentSheet } from '@/features/appointments/AppointmentSheet';
 import { useT } from '@/i18n';
-import { palette, spacing } from '@/theme/tokens';
+import { spacing } from '@/theme/tokens';
 
 export default function DashboardScreen() {
   const me = useAuth((s) => s.me);
@@ -55,7 +55,6 @@ function EmployeeDashboard() {
           <MetricCard
             label={t('mobile.dashboard.confirmed')}
             value={data.confirmed_appointments}
-            accent={palette.onTertiaryContainer}
           />
           <MetricCard
             label={t('mobile.dashboard.revenue')}
@@ -146,7 +145,6 @@ function AdminDashboard() {
           <MetricCard
             label={t('mobile.manage.employees')}
             value={data.active_employees ?? 0}
-            accent={palette.onTertiaryContainer}
           />
           <MetricCard
             label={t('mobile.dashboard.revenue')}

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\AppointmentStatus;
+use App\Enums\Permission;
 use App\Models\Appointment;
 use App\Models\Business;
 use App\Models\Service;
@@ -1159,12 +1160,52 @@ class BookingService implements BookingServiceInterface
             'business_name' => $first->business?->name,
         ];
 
-        DB::afterCommit(function () use ($employeeId, $payload): void {
-            $user = User::query()->find($employeeId);
-            if ($user !== null) {
-                $user->notify(new NewAppointmentsAssignedToEmployee($payload));
+        $businessId = (int) $first->business_id;
+
+        DB::afterCommit(function () use ($employeeId, $businessId, $payload, $actorUserId): void {
+            $assigned = User::query()->find($employeeId);
+            if ($assigned !== null) {
+                $assigned->notify(new NewAppointmentsAssignedToEmployee($payload));
+            }
+
+            // Watchers: staff who hold `admin.appointments` and opted in to hear
+            // about *other* people's appointments. The assignee is excluded (they
+            // were just notified above) and so is whoever made the booking.
+            $watcherPayload = $payload + ['employee_name' => $assigned?->name];
+
+            foreach ($this->appointmentWatchers($businessId, $employeeId, $actorUserId) as $watcher) {
+                $watcher->notify(new NewAppointmentsAssignedToEmployee($watcherPayload, forOtherStaff: true));
             }
         });
+    }
+
+    /**
+     * Business staff who asked to be notified about appointments assigned to
+     * someone else. Gated on the same `admin.appointments` permission that
+     * exposes the toggle, so revoking the permission silently stops the notices.
+     *
+     * @return list<User>
+     */
+    private function appointmentWatchers(int $businessId, int $assignedEmployeeId, ?int $actorUserId): array
+    {
+        $business = Business::query()->find($businessId);
+        if ($business === null) {
+            return [];
+        }
+
+        $candidates = User::query()
+            ->where('notify_others_appointments', true)
+            ->where('is_active', true)
+            ->whereKeyNot($assignedEmployeeId)
+            ->where(fn ($q) => $q->where('business_id', $businessId)->orWhere('id', $business->owner_id))
+            ->with('businessRole')
+            ->get();
+
+        return $candidates
+            ->reject(fn (User $u) => $actorUserId !== null && (int) $u->id === $actorUserId)
+            ->filter(fn (User $u) => $u->hasPermission(Permission::AdminAppointments->value))
+            ->values()
+            ->all();
     }
 
 }

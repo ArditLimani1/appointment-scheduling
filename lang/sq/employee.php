@@ -204,6 +204,7 @@ return [
         'mark_all' => 'Shëno të gjitha si të lexuara',
         'unread_subtitle' => ':count të palexuara',
         'new_booking_title' => 'Termin i ri',
+        'new_booking_for_title' => 'Termin i ri për :employee',
         'generic' => 'Njoftim',
         'view_cta' => 'Shiko te terminet',
         'see_all' => 'Shiko të gjitha terminet',

@@ -3,6 +3,7 @@ import { Alert, FlatList, RefreshControl, Switch, Text, View, type TextStyle } f
 import { ApiError } from '@/api/client';
 import { useAdminEmployees, useDeleteEmployee, useSaveEmployee } from '@/api/queries';
 import type { EmployeeSummary } from '@/api/types';
+import { useToast } from '@/components/Toast';
 import { Screen } from '@/components/Screen';
 import { Button, Card, EmptyState, ErrorView, ListRow, LoadingView, TextField } from '@/components/ui';
 import { ChipPicker, FormSheet } from '@/features/manage/FormSheet';
@@ -32,6 +33,7 @@ const emptyForm: EmployeeForm = {
 
 export default function EmployeesScreen() {
   const { t } = useT();
+  const { showError } = useToast();
   const query = useAdminEmployees();
   const save = useSaveEmployee();
   const remove = useDeleteEmployee();
@@ -89,7 +91,7 @@ export default function EmployeesScreen() {
         onSuccess: () => setForm(null),
         onError: (e) => {
           if (e instanceof ApiError && e.errors) setFieldErrors(e.errors);
-          else Alert.alert(t('mobile.common.error'), e.message);
+          else showError(e.message);
         },
       },
     );
@@ -105,7 +107,7 @@ export default function EmployeesScreen() {
         onPress: () =>
           remove.mutate(
             { id: employee.id, delete_appointments: false },
-            { onError: (e) => Alert.alert(t('mobile.common.error'), e.message) },
+            { onError: (e) => showError(e.message) },
           ),
       },
     ]);

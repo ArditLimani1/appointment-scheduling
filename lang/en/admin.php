@@ -381,6 +381,7 @@ return [
         'tabs' => [
             'identity' => 'Business Identity',
             'rules' => 'Client Identification & Rules',
+            'notifications' => 'Notifications',
         ],
         'identity_section' => 'Business Identity',
         'label_business_name' => 'Business Name',
@@ -418,6 +419,9 @@ return [
         'allow_service_edit_help' => 'If off, employees can only edit appointment date and time.',
         'uses_shared_resources_title' => 'Shared resources (rooms, equipment)',
         'uses_shared_resources_help' => 'Turn this on when bookings depend on rooms, chairs, devices, or other limited-capacity resources. The calendar will then prevent overbooking automatically.',
+        'notify_others_title' => 'Notifications for other staff',
+        'notify_others_help' => 'When on, you also get the new-appointment notification for bookings assigned to other staff.',
+        'notify_others_label' => 'Notify me about appointments for other staff',
         'auto_confirm_title' => 'Auto-confirm appointments',
         'auto_confirm_help' => 'When on, online bookings are confirmed immediately and the client receives a confirmation email. When off, new bookings stay pending until someone confirms them manually.',
         'reminders_title_phone' => 'Automatic WhatsApp reminders',

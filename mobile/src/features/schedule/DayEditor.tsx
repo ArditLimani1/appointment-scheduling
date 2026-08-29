@@ -85,7 +85,7 @@ export function DayEditor({
             <Pressable
               onPress={() => onChange({ ...day, breaks: [...day.breaks, { start_time: '12:00', end_time: '13:00' }] })}
             >
-              <Text style={[typography.label as TextStyle, { color: palette.primary }]}>
+              <Text style={[typography.labelStrong as TextStyle, { color: palette.onSurface }]}>
                 + {t('mobile.schedule.add_break')}
               </Text>
             </Pressable>
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
   timeInput: {
     borderWidth: 1,
     borderColor: palette.outlineVariant,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     paddingHorizontal: spacing.md,
     paddingVertical: 8,
     backgroundColor: palette.surfaceContainerLowest,
