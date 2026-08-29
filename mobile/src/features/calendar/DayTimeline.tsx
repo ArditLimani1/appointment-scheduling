@@ -44,12 +44,14 @@ interface Props {
   dayOffLabel?: string;
   onPressAppointment: (appointment: Appointment) => void;
   /** When provided, blocks can be long-pressed and dragged to a new start time. */
-  onMoveAppointment?: (appointment: Appointment, newStartTime: string) => void;
+  onMoveAppointment?: (appointment: Appointment, date: string, newStartTime: string) => void;
   canMove?: (appointment: Appointment) => boolean;
   /** Per-employee block colours, as on the web calendar. */
   employeeColors?: EmployeeColorMap;
   /** `businesses.slot_duration`; the grid rows follow it, as the web's does. */
   slotMinutes?: number;
+  /** The day being shown; a day-view drop never leaves it. */
+  date: string;
   /** Raised when a block is picked up / released, so the parent can load the
    *  allowed start times for that appointment from the slots API. */
   onDragStart?: (appointment: Appointment) => void;
@@ -70,6 +72,7 @@ export function DayTimeline({
   canMove,
   employeeColors,
   slotMinutes,
+  date,
   onDragStart,
   onDragEnd,
   allowedStarts,
@@ -234,7 +237,7 @@ export function DayTimeline({
                 // an off-grid drop corrects itself instead of being rejected.
                 const next = allowedStarts ? snapToNearestAllowed(raw, allowedStarts) : raw;
                 if (next != null && next !== startMin) {
-                  onMoveAppointment?.(block.appointment, minutesToTime(next));
+                  onMoveAppointment?.(block.appointment, date, minutesToTime(next));
                 }
               }}
             />
