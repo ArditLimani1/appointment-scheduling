@@ -1,5 +1,5 @@
 import { DateTime } from 'luxon';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, ScrollView, Pressable, StyleSheet, Text, View, useWindowDimensions, type TextStyle } from 'react-native';
 import { useRouter } from 'expo-router';
 import { fetchAdminSlots, useAdminCalendar, useEditAppointment, useEmployeeCalendar, useRescheduleOwn } from '@/api/queries';
@@ -64,38 +64,50 @@ export default function CalendarScreen() {
   // Drop targets are per-appointment, so the allowed starts come from the same
   // slots API the web drag uses — the server knows about service length,
   // working hours, breaks and shared resources; we must not guess locally.
+
+  const columnDates = (data?.column_dates as string[] | undefined) ?? [date];
+
   const [dragging, setDragging] = useState<Appointment | null>(null);
-  const [allowedStarts, setAllowedStarts] = useState<Set<string> | null>(null);
+  const [allowedByDate, setAllowedByDate] = useState<Record<string, Set<string>> | null>(null);
+  // Guards against a slower earlier drag answering after a newer one, the way
+  // the web's dragSlotFetchGen does.
+  const slotFetchGen = useRef(0);
 
   useEffect(() => {
+    slotFetchGen.current += 1;
+    const gen = slotFetchGen.current;
+
     if (!dragging) {
-      setAllowedStarts(null);
+      setAllowedByDate(null);
       return;
     }
-    let cancelled = false;
-    (async () => {
-      try {
+
+    // Every visible day, so a card can cross columns in the week view.
+    void Promise.all(
+      columnDates.map(async (day) => {
         const response = isAdminArea
           ? await fetchAdminSlots({
               employee_id: dragging.employee_id ?? 0,
               service_id: dragging.service_id ?? 0,
-              date,
+              date: day,
               exclude_id: dragging.id,
             })
           : await api<{ slots: string[] }>(`/employee/appointments/${dragging.id}/slots`, {
-              query: { date },
+              query: { date: day, service_id: dragging.service_id ?? undefined },
             });
-        if (!cancelled) setAllowedStarts(new Set(response.slots));
-      } catch {
+        return [day, new Set(response.slots)] as const;
+      }),
+    )
+      .then((entries) => {
+        if (gen !== slotFetchGen.current) return;
+        setAllowedByDate(Object.fromEntries(entries));
+      })
+      .catch(() => {
         // Leaving it null keeps every row plain rather than colouring a guess.
-        if (!cancelled) setAllowedStarts(null);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [dragging?.id, date, isAdminArea]);
-  const columnDates = (data?.column_dates as string[] | undefined) ?? [date];
+        if (gen !== slotFetchGen.current) return;
+        setAllowedByDate(null);
+      });
+  }, [dragging?.id, columnDates.join(','), isAdminArea]);
 
   const employeeBreaks = !isAdminArea
     ? (data?.calendar_day_breaks as Record<string, BreakInterval[]> | undefined)
@@ -116,8 +128,7 @@ export default function CalendarScreen() {
   // Both areas may drag; only the endpoint differs. An employee reschedules
   // their own appointment; an admin goes through the full-edit endpoint, which
   // is what the web calendar does for them too.
-  const onMove = (appointment: Appointment, newTime: string) => {
-    const day = toIsoDate(appointment.date);
+  const onMove = (appointment: Appointment, day: string, newTime: string) => {
 
     const apply = () => {
       if (isAdminArea) {
@@ -225,9 +236,10 @@ export default function CalendarScreen() {
             dayOffLabel={t('mobile.calendar.day_off')}
             onPressAppointment={setSelected}
             slotMinutes={slotMinutes}
+            date={date}
             onDragStart={setDragging}
             onDragEnd={() => setDragging(null)}
-            allowedStarts={allowedStarts}
+            allowedStarts={allowedByDate?.[date] ?? null}
             draggingId={dragging?.id ?? null}
             onMoveAppointment={onMove}
             canMove={(a) => a.status !== 'cancelled'}
@@ -243,6 +255,13 @@ export default function CalendarScreen() {
             dayBreaksByDate={isAdminArea ? adminEmployeeBreaks : (employeeBreaks ?? {})}
             dayOffs={isAdminArea ? adminDayOffs : dayOffs}
             employeeColors={employeeColors}
+            slotMinutes={slotMinutes}
+            allowedByDate={allowedByDate}
+            draggingId={dragging?.id ?? null}
+            onDragStart={setDragging}
+            onDragEnd={() => setDragging(null)}
+            onMoveAppointment={onMove}
+            canMove={(a) => a.status !== 'cancelled'}
             onPressAppointment={setSelected}
             onPressDay={(day) => {
               setDate(day);
