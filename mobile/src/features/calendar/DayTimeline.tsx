@@ -7,7 +7,6 @@ import Animated, {
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
-  withTiming,
 } from 'react-native-reanimated';
 import { fonts, palette, radius, typography } from '@/theme/tokens';
 import type { Appointment } from '@/api/types';
@@ -290,7 +289,9 @@ function DraggableBlock({
     .onEnd((event) => {
       const minutesDelta = (event.translationY / HOUR_HEIGHT) * 60;
       dragActive.value = false;
-      dragY.value = withTiming(0, { duration: 120 });
+      // Snap back in the same frame the drag decorations disappear; easing it
+      // back leaves the card at the drop slot while the dialog fades in.
+      dragY.value = 0;
       runOnJS(onDrop)(minutesDelta);
     })
     .onFinalize(() => {

@@ -17,7 +17,6 @@ import Animated, {
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
-  withTiming,
 } from 'react-native-reanimated';
 import { fonts, palette, radius, typography } from '@/theme/tokens';
 import type { Appointment } from '@/api/types';
@@ -431,8 +430,12 @@ function WeekBlock({
       if (!mine.value) return;
       mine.value = false;
       dragActive.value = false;
-      dragX.value = withTiming(0, { duration: 120 });
-      dragY.value = withTiming(0, { duration: 120 });
+      // Snap back in the same frame the drag decorations disappear. Easing it
+      // back leaves the card sitting at the drop slot in plain styling while
+      // the confirm dialog fades in — three visual states in a fifth of a
+      // second, which reads as a glitch.
+      dragX.value = 0;
+      dragY.value = 0;
       runOnJS(onRelease)();
     });
 
