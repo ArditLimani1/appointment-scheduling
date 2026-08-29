@@ -118,7 +118,7 @@ export default function ServicesScreen() {
           </Card>
         )}
         ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
-        ListEmptyComponent={<EmptyState title={t('mobile.appointments.empty')} />}
+        ListEmptyComponent={<EmptyState title={t('mobile.services.empty')} />}
         refreshControl={<RefreshControl refreshing={query.isRefetching} onRefresh={() => void query.refetch()} />}
         contentContainerStyle={{ paddingBottom: spacing.xxl, flexGrow: 1 }}
         showsVerticalScrollIndicator={false}

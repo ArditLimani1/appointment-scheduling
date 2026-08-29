@@ -2,7 +2,7 @@ import { DateTime } from 'luxon';
 import React, { useMemo, useState } from 'react';
 import { Alert, ScrollView, Pressable, StyleSheet, Text, View, useWindowDimensions, type TextStyle } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useAdminCalendar, useEmployeeCalendar, useRescheduleOwn } from '@/api/queries';
+import { useAdminCalendar, useEditAppointment, useEmployeeCalendar, useRescheduleOwn } from '@/api/queries';
 import type { Appointment, EmployeeSummary } from '@/api/types';
 import { useAuth } from '@/auth/store';
 import { DateBar } from '@/components/DateBar';
@@ -40,6 +40,7 @@ export default function CalendarScreen() {
   const adminQuery = useAdminCalendar(view, date, employeeFilter, isAdminArea);
   const query = isAdminArea ? adminQuery : employeeQuery;
   const reschedule = useRescheduleOwn();
+  const editAppointment = useEditAppointment('admin');
   const { showError } = useToast();
 
   const data = query.data;
@@ -74,28 +75,51 @@ export default function CalendarScreen() {
       ? ((data?.calendar_employee_day_offs as Record<string, string[]> | undefined)?.[String(employeeFilter)] ?? [])
       : [];
 
-  const onMove = !isAdminArea
-    ? (appointment: Appointment, newTime: string) => {
-        Alert.alert(
-          t('mobile.calendar.move_confirm_title'),
-          t('mobile.calendar.move_confirm', {
-            client: [appointment.client_first_name, appointment.client_last_name].filter(Boolean).join(' '),
-            time: newTime,
-          }),
-          [
-            { text: t('mobile.common.cancel'), style: 'cancel' },
-            {
-              text: t('mobile.common.confirm'),
-              onPress: () =>
-                reschedule.mutate(
-                  { id: appointment.id, date: toIsoDate(appointment.date), start_time: newTime },
-                  { onError: (e) => showError(e.message) },
-                ),
-            },
-          ],
+  // Both areas may drag; only the endpoint differs. An employee reschedules
+  // their own appointment; an admin goes through the full-edit endpoint, which
+  // is what the web calendar does for them too.
+  const onMove = (appointment: Appointment, newTime: string) => {
+    const day = toIsoDate(appointment.date);
+
+    const apply = () => {
+      if (isAdminArea) {
+        editAppointment.mutate(
+          {
+            id: appointment.id,
+            employee_id: appointment.employee_id,
+            service_id: appointment.service_id,
+            status: appointment.status,
+            date: day,
+            start_time: newTime,
+            client_first_name: appointment.client_first_name,
+            client_last_name: appointment.client_last_name,
+            client_phone: appointment.client_phone || null,
+            client_email: appointment.client_email || null,
+            client_notes: appointment.client_notes || null,
+          },
+          { onError: (e) => showError(e.message) },
         );
+        return;
       }
-    : undefined;
+
+      reschedule.mutate(
+        { id: appointment.id, date: day, start_time: newTime },
+        { onError: (e) => showError(e.message) },
+      );
+    };
+
+    Alert.alert(
+      t('mobile.calendar.move_confirm_title'),
+      t('mobile.calendar.move_confirm', {
+        client: [appointment.client_first_name, appointment.client_last_name].filter(Boolean).join(' '),
+        time: newTime,
+      }),
+      [
+        { text: t('mobile.common.cancel'), style: 'cancel' },
+        { text: t('mobile.common.confirm'), onPress: apply },
+      ],
+    );
+  };
 
   const employees = (data?.employees ?? []) as EmployeeSummary[];
   // Same roster-order colour assignment as the web calendar, so a staff member

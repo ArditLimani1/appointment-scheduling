@@ -136,7 +136,7 @@ export default function EmployeesScreen() {
           </Card>
         )}
         ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
-        ListEmptyComponent={<EmptyState title={t('mobile.appointments.empty')} />}
+        ListEmptyComponent={<EmptyState title={t('mobile.employees.empty')} />}
         refreshControl={<RefreshControl refreshing={query.isRefetching} onRefresh={() => void query.refetch()} />}
         contentContainerStyle={{ paddingBottom: spacing.xxl, flexGrow: 1 }}
         showsVerticalScrollIndicator={false}

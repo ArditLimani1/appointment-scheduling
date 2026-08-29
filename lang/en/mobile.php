@@ -111,6 +111,7 @@ return [
 
     'employees' => [
         'title' => 'Employees',
+        'empty' => 'No staff yet. Add the first one with +.',
         'add' => 'Add employee',
         'name' => 'Name',
         'email' => 'Email',
@@ -126,6 +127,7 @@ return [
 
     'services' => [
         'title' => 'Services',
+        'empty' => 'No services yet. Add the first one with +.',
         'add' => 'Add service',
         'name' => 'Name',
         'description' => 'Description',
@@ -137,6 +139,7 @@ return [
 
     'roles' => [
         'title' => 'Roles',
+        'empty' => 'No roles yet. Roles decide what each employee can see.',
         'add' => 'Add role',
         'name' => 'Name',
         'permissions' => 'Permissions',
@@ -145,6 +148,7 @@ return [
 
     'resources' => [
         'title' => 'Shared resources',
+        'empty' => 'No resources yet. Resources are equipment or rooms that services share.',
         'add' => 'Add resource',
         'name' => 'Name',
         'quantity' => 'Quantity',

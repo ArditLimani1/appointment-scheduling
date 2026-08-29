@@ -111,6 +111,7 @@ return [
 
     'employees' => [
         'title' => 'Punonjësit',
+        'empty' => 'Asnjë punonjës ende. Shtoni të parin me +.',
         'add' => 'Shto punonjës',
         'name' => 'Emri',
         'email' => 'Email',
@@ -126,6 +127,7 @@ return [
 
     'services' => [
         'title' => 'Shërbimet',
+        'empty' => 'Asnjë shërbim ende. Shtoni të parin me +.',
         'add' => 'Shto shërbim',
         'name' => 'Emri',
         'description' => 'Përshkrimi',
@@ -137,6 +139,7 @@ return [
 
     'roles' => [
         'title' => 'Rolet',
+        'empty' => 'Asnjë rol ende. Rolet përcaktojnë çfarë sheh secili punonjës.',
         'add' => 'Shto rol',
         'name' => 'Emri',
         'permissions' => 'Lejet',
@@ -145,6 +148,7 @@ return [
 
     'resources' => [
         'title' => 'Resurset e përbashkëta',
+        'empty' => 'Asnjë resurs ende. Resurset janë pajisje ose hapësira që shërbimet i ndajnë mes tyre.',
         'add' => 'Shto resurs',
         'name' => 'Emri',
         'quantity' => 'Sasia',
