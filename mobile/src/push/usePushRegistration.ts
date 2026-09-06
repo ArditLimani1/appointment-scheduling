@@ -26,7 +26,9 @@ export function usePushRegistration() {
 
   useEffect(() => {
     if (status !== 'signedIn' || registered.current) return;
-    if (!Device.isDevice) return; // simulators have no push tokens
+    // Real devices always; in dev also the Android emulator, which does get an FCM
+    // token when Play Services are present. iOS simulators never get an APNs one.
+    if (!Device.isDevice && !(__DEV__ && Platform.OS === 'android')) return;
 
     (async () => {
       const permissions = await Notifications.getPermissionsAsync();
