@@ -30,7 +30,7 @@ return [
         'phone_invalid_error' => 'The number must have 6–20 digits.',
         'phone_prefix_error' => 'Start with the country code, e.g. +383.',
         'email' => 'Email Address',
-        'notes' => 'Notes (optional)',
+        'notes' => 'Notes',
         'notes_placeholder' => 'Anything we should know?',
         'confirm' => 'Confirm booking',
         'submitting' => 'Booking…',

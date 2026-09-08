@@ -30,7 +30,7 @@ return [
         'phone_invalid_error' => 'Numri duhet të ketë 6–20 shifra.',
         'phone_prefix_error' => 'Nisni me kodin e shtetit, p.sh. +383.',
         'email' => 'E-Mail',
-        'notes' => 'Shënime (opsionale)',
+        'notes' => 'Shënime',
         'notes_placeholder' => 'Shënime për ekipin (opsionale)',
         'confirm' => 'Konfirmoni rezervimin',
         'submitting' => 'Duke rezervuar…',
