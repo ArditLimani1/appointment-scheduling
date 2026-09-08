@@ -17,7 +17,7 @@ class Business extends Model
         'slot_duration', 'min_booking_notice', 'max_booking_window',
         'is_active', 'client_identifier_type', 'allow_employee_service_edit',
         'uses_shared_resources', 'auto_confirm_appointments', 'single_employee_mode',
-        'reminders_enabled', 'reminder_time',
+        'reminders_enabled', 'reminder_hours_before',
     ];
 
     protected function casts(): array
@@ -29,17 +29,8 @@ class Business extends Model
             'auto_confirm_appointments' => 'boolean',
             'single_employee_mode' => 'boolean',
             'reminders_enabled' => 'boolean',
+            'reminder_hours_before' => 'integer',
         ];
-    }
-
-    /**
-     * Normalise the stored time (e.g. "08:00:00") to "H:i" for forms and comparisons.
-     */
-    protected function reminderTime(): Attribute
-    {
-        return Attribute::get(
-            static fn (?string $value): string => $value ? substr($value, 0, 5) : '08:00',
-        );
     }
 
     public function owner(): BelongsTo

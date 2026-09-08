@@ -157,7 +157,7 @@ export default function Admin({ settings }) {
         uses_shared_resources: !!settings.uses_shared_resources,
         auto_confirm_appointments: !!settings.auto_confirm_appointments,
         reminders_enabled: !!settings.reminders_enabled,
-        reminder_time: settings.reminder_time || '08:00',
+        reminder_hours_before: settings.reminder_hours_before ?? 24,
     });
 
     const updateField = (key, value) => setData((prev) => ({ ...prev, [key]: value }));
@@ -341,22 +341,24 @@ export default function Admin({ settings }) {
                         {data.reminders_enabled && (
                             <div className="mt-4 flex flex-wrap items-center gap-3">
                                 <label
-                                    htmlFor="onboarding_reminder_time"
+                                    htmlFor="onboarding_reminder_hours_before"
                                     className="text-xs font-bold uppercase tracking-widest text-on-surface-variant"
                                 >
-                                    {t('onboarding.admin.reminder_time_label')}
+                                    {t('onboarding.admin.reminder_hours_before_label')}
                                 </label>
                                 <input
-                                    id="onboarding_reminder_time"
-                                    type="time"
-                                    value={data.reminder_time}
-                                    onChange={(e) => updateField('reminder_time', e.target.value)}
+                                    id="onboarding_reminder_hours_before"
+                                    type="number"
+                                    min="0"
+                                    max="8760"
+                                    value={data.reminder_hours_before}
+                                    onChange={(e) => updateField('reminder_hours_before', e.target.value)}
                                     className="border-0 rounded-xl py-3 px-4 text-base font-extrabold text-on-surface bg-surface-container-lowest ring-1 ring-outline-variant focus:outline-none focus:ring-2 focus:ring-on-surface/20 transition-shadow"
                                 />
                             </div>
                         )}
-                        {errors?.reminder_time && (
-                            <p className="mt-2 text-xs font-medium text-error">{errors.reminder_time}</p>
+                        {errors?.reminder_hours_before && (
+                            <p className="mt-2 text-xs font-medium text-error">{errors.reminder_hours_before}</p>
                         )}
                     </ToggleCard>
                 </div>

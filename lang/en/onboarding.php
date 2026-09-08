@@ -50,7 +50,7 @@ return [
         'reminders_help_email' => 'When on, clients with a confirmed appointment today automatically receive an email reminder at the time you choose. The channel follows the client identification you picked, so it changes to WhatsApp if you switch to phone.',
         'reminders_label_phone' => 'Send a WhatsApp reminder on the day of the appointment',
         'reminders_label_email' => 'Send an email reminder on the day of the appointment',
-        'reminder_time_label' => 'Reminder time',
+        'reminder_hours_before_label' => 'Hours before appointment',
 
         'step_operations_title' => 'Operating preferences',
         'step_operations_sub' => 'A few last preferences for how you work and how you manage shared resources.',

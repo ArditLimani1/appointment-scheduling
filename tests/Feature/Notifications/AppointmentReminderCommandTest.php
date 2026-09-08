@@ -10,6 +10,7 @@ use App\Models\Business;
 use App\Models\BusinessType;
 use App\Models\Service;
 use App\Models\User;
+use App\Services\Interfaces\BusinessServiceInterface;
 use App\Services\Interfaces\WhatsAppSenderInterface;
 use Carbon\Carbon;
 use Database\Seeders\BusinessTypeSeeder;
@@ -32,7 +33,7 @@ class AppointmentReminderCommandTest extends TestCase
             'owner_id' => $admin->id,
             'business_type_id' => BusinessType::query()->value('id'),
             'name' => 'Reminder Biz',
-            'slug' => 'reminder-biz-'.$identifierType,
+            'slug' => 'reminder-biz-'.$identifierType.'-'.$admin->id,
             'timezone' => 'UTC',
             'currency' => 'EUR',
             'currency_symbol' => '€',
@@ -42,7 +43,7 @@ class AppointmentReminderCommandTest extends TestCase
             'max_booking_window' => 30,
             'client_identifier_type' => $identifierType,
             'reminders_enabled' => true,
-            'reminder_time' => '08:00',
+            'reminder_hours_before' => 4,
         ]);
     }
 
@@ -97,6 +98,7 @@ class AppointmentReminderCommandTest extends TestCase
     public function test_phone_business_reminds_over_whatsapp(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-08-22 10:00:00', 'UTC'));
+        config(['features.whatsapp' => true]);
 
         $whatsApp = Mockery::mock(WhatsAppSenderInterface::class);
         $whatsApp->shouldReceive('isConfigured')->andReturnTrue();
@@ -114,9 +116,9 @@ class AppointmentReminderCommandTest extends TestCase
         $this->assertNotNull($appointment->fresh()->reminder_sent_at);
     }
 
-    public function test_nothing_is_sent_before_the_configured_reminder_time(): void
+    public function test_nothing_is_sent_before_the_appointment_reminder_at_timestamp(): void
     {
-        Carbon::setTestNow(Carbon::parse('2026-08-22 06:00:00', 'UTC'));
+        Carbon::setTestNow(Carbon::parse('2026-08-22 09:59:00', 'UTC'));
         Mail::fake();
 
         $business = $this->makeBusiness('email');
@@ -126,6 +128,57 @@ class AppointmentReminderCommandTest extends TestCase
 
         Mail::assertNothingSent();
         $this->assertNull($appointment->fresh()->reminder_sent_at);
+    }
+
+    public function test_appointment_reminder_at_uses_its_own_business_configuration(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-08-22 08:00:00', 'UTC'));
+
+        $fourHourBusiness = $this->makeBusiness('email');
+        $fourHourAppointment = $this->makeTodayAppointment($fourHourBusiness, ['client_email' => 'four@example.com']);
+
+        $oneHourBusiness = $this->makeBusiness('email');
+        $oneHourBusiness->update(['reminder_hours_before' => 1]);
+        $oneHourAppointment = $this->makeTodayAppointment($oneHourBusiness, ['client_email' => 'one@example.com']);
+
+        $this->assertSame('2026-08-22 10:00:00', $fourHourAppointment->reminder_at->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-08-22 13:00:00', $oneHourAppointment->reminder_at->format('Y-m-d H:i:s'));
+    }
+
+    public function test_changing_business_hours_recalculates_future_unsent_appointments_only(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-08-22 08:00:00', 'UTC'));
+
+        $business = $this->makeBusiness('email');
+        $future = $this->makeTodayAppointment($business, ['client_email' => 'future@example.com']);
+        $alreadySent = $this->makeTodayAppointment($business, [
+            'booking_reference' => 'SENT'.$business->id,
+            'client_email' => 'sent@example.com',
+            'reminder_sent_at' => now(),
+        ]);
+
+        app(BusinessServiceInterface::class)->updateSettings($business->owner, [
+            'reminders_enabled' => true,
+            'reminder_hours_before' => 2,
+        ]);
+
+        $this->assertSame('2026-08-22 12:00:00', $future->fresh()->reminder_at->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-08-22 10:00:00', $alreadySent->fresh()->reminder_at->format('Y-m-d H:i:s'));
+    }
+
+    public function test_rescheduling_recalculates_reminder_at_and_allows_a_new_reminder(): void
+    {
+        $business = $this->makeBusiness('email');
+        $appointment = $this->makeTodayAppointment($business, [
+            'client_email' => 'client@example.com',
+            'reminder_sent_at' => now(),
+        ]);
+
+        $appointment->update(['start_time' => '16:00:00', 'end_time' => '16:30:00']);
+
+        $appointment->refresh();
+        $this->assertSame('12:00:00', $appointment->reminder_at->format('H:i:s'));
+        $this->assertNull($appointment->reminder_sent_at);
     }
 
     public function test_reminders_are_skipped_when_the_business_has_them_disabled(): void

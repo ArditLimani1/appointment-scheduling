@@ -143,7 +143,7 @@ export default function Index({
         uses_shared_resources: settings.uses_shared_resources ?? false,
         auto_confirm_appointments: settings.auto_confirm_appointments ?? false,
         reminders_enabled: settings.reminders_enabled ?? false,
-        reminder_time: settings.reminder_time || '08:00',
+        reminder_hours_before: settings.reminder_hours_before ?? 24,
         single_employee_mode: !!settings.single_employee_mode,
         ...(show_owner_staff_toggle ? { owner_also_works_as_staff: !!owner_also_works_as_staff } : {}),
     });
@@ -557,20 +557,22 @@ export default function Index({
                                     </div>
                                     {data.reminders_enabled && (
                                         <div className="mt-4 flex items-center gap-3">
-                                            <label htmlFor="reminder_time" className="text-xs font-bold text-on-surface-variant uppercase">
-                                                {t('admin.settings.reminder_time_label')}
+                                            <label htmlFor="reminder_hours_before" className="text-xs font-bold text-on-surface-variant uppercase">
+                                                {t('admin.settings.reminder_hours_before_label')}
                                             </label>
                                             <input
-                                                id="reminder_time"
-                                                type="time"
-                                                value={data.reminder_time}
-                                                onChange={e => setData('reminder_time', e.target.value)}
+                                                id="reminder_hours_before"
+                                                type="number"
+                                                min="0"
+                                                max="8760"
+                                                value={data.reminder_hours_before}
+                                                onChange={e => setData('reminder_hours_before', e.target.value)}
                                                 className={rulesNumberCls}
                                             />
                                         </div>
                                     )}
-                                    {rulesErrors.reminder_time && (
-                                        <p className="text-xs text-error mt-2">{rulesErrors.reminder_time}</p>
+                                    {rulesErrors.reminder_hours_before && (
+                                        <p className="text-xs text-error mt-2">{rulesErrors.reminder_hours_before}</p>
                                     )}
                                 </div>
                             </div>

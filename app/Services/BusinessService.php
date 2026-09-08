@@ -6,8 +6,10 @@ use App\Models\Business;
 use App\Models\User;
 use App\Repositories\Interfaces\BusinessRepositoryInterface;
 use App\Services\Interfaces\BusinessServiceInterface;
+use App\Support\AppointmentReminder;
 use App\Support\ClientIdentification;
 use Illuminate\Validation\ValidationException;
+use Carbon\Carbon;
 
 class BusinessService implements BusinessServiceInterface
 {
@@ -31,7 +33,7 @@ class BusinessService implements BusinessServiceInterface
             'uses_shared_resources' => false,
             'auto_confirm_appointments' => false,
             'reminders_enabled' => false,
-            'reminder_time' => '08:00',
+            'reminder_hours_before' => 24,
         ]);
 
         $showOwnerStaffToggle = $user->isAdmin()
@@ -94,11 +96,43 @@ class BusinessService implements BusinessServiceInterface
         $business = $user->panelBusiness();
 
         if ($business) {
-            return $this->businessRepository->update($business, $data);
+            $oldHours = (int) ($business->reminder_hours_before ?? 24);
+            $wasEnabled = (bool) $business->reminders_enabled;
+            $business = $this->businessRepository->update($business, $data);
+
+            if (
+                array_key_exists('reminder_hours_before', $data)
+                && ($oldHours !== (int) $business->reminder_hours_before || (! $wasEnabled && $business->reminders_enabled))
+            ) {
+                $this->refreshFutureReminderTimes($business);
+            }
+
+            return $business;
         }
 
         abort_unless($user->isAdmin(), 403);
 
         return $this->businessRepository->create(array_merge($data, ['owner_id' => $user->id]));
+    }
+
+    private function refreshFutureReminderTimes(Business $business): void
+    {
+        $timezone = $business->timezone ?: config('app.timezone');
+        $now = Carbon::now($timezone);
+
+        $business->appointments()
+            ->whereNull('reminder_sent_at')
+            ->where(function ($query) use ($now): void {
+                $query->whereDate('date', '>', $now->toDateString())
+                    ->orWhere(function ($query) use ($now): void {
+                        $query->whereDate('date', $now->toDateString())
+                            ->whereTime('start_time', '>', $now->format('H:i:s'));
+                    });
+            })
+            ->eachById(function ($appointment) use ($business): void {
+                $appointment->forceFill([
+                    'reminder_at' => AppointmentReminder::at($appointment, $business),
+                ])->saveQuietly();
+            });
     }
 }

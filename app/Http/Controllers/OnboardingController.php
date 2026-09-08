@@ -52,7 +52,7 @@ class OnboardingController extends Controller
             'single_employee_mode' => ['required', 'boolean'],
             'auto_confirm_appointments' => ['required', 'boolean'],
             'reminders_enabled' => ['required', 'boolean'],
-            'reminder_time' => ['required_if:reminders_enabled,true', 'nullable', 'date_format:H:i'],
+            'reminder_hours_before' => ['required_if:reminders_enabled,true', 'nullable', 'integer', 'min:0', 'max:8760'],
         ]);
 
         $ownerStaff = (bool) $validated['owner_also_works_as_staff'];
@@ -148,7 +148,7 @@ class OnboardingController extends Controller
             'uses_shared_resources' => false,
             'auto_confirm_appointments' => false,
             'reminders_enabled' => false,
-            'reminder_time' => '08:00',
+            'reminder_hours_before' => 24,
         ]);
 
         return Inertia::render('Onboarding/Admin', [
@@ -164,7 +164,7 @@ class OnboardingController extends Controller
                 'single_employee_mode' => false,
                 'auto_confirm_appointments' => (bool) ($business->auto_confirm_appointments ?? false),
                 'reminders_enabled' => (bool) ($business->reminders_enabled ?? false),
-                'reminder_time' => $business->reminder_time ?: '08:00',
+                'reminder_hours_before' => (int) ($business->reminder_hours_before ?? 24),
             ],
         ]);
     }

@@ -48,7 +48,7 @@ class UpdateSettingsRequest extends FormRequest
             'uses_shared_resources' => ['sometimes', 'boolean'],
             'auto_confirm_appointments' => ['sometimes', 'boolean'],
             'reminders_enabled' => ['sometimes', 'boolean'],
-            'reminder_time' => ['sometimes', 'required_if:reminders_enabled,true', 'nullable', 'date_format:H:i'],
+            'reminder_hours_before' => ['sometimes', 'required_if:reminders_enabled,true', 'nullable', 'integer', 'min:0', 'max:8760'],
         ];
     }
 

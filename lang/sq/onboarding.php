@@ -50,7 +50,7 @@ return [
         'reminders_help_email' => 'Kur është aktiv, klientët me termin të konfirmuar sot marrin automatikisht një kujtesë me email në orën që zgjedh. Kanali ndjek identifikimin e klientit që ke zgjedhur, prandaj kalon në WhatsApp nëse e ndryshon në telefon.',
         'reminders_label_phone' => 'Dërgo kujtesë në WhatsApp ditën e terminit',
         'reminders_label_email' => 'Dërgo kujtesë me email ditën e terminit',
-        'reminder_time_label' => 'Ora e kujtesës',
+        'reminder_hours_before_label' => 'Orë para terminit',
 
         'step_operations_title' => 'Preferencat e operimit',
         'step_operations_sub' => 'Disa rregullime të fundit për mënyrën se si do të punoni dhe si do të menaxhoni burimet.',
