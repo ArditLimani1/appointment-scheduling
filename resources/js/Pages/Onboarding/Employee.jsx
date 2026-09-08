@@ -31,7 +31,8 @@ function PersonalBookingUrlField({ label, businessSlug, value, onChange, error, 
     const prefix = `/book/${businessSlug ?? ''}/`;
     const [copied, setCopied] = useState(false);
     const handleCopy = () => {
-        navigator.clipboard.writeText(prefix + value).then(() => {
+        const absoluteUrl = `${window.location.origin}${prefix}${value}`;
+        navigator.clipboard.writeText(absoluteUrl).then(() => {
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         });

@@ -173,7 +173,8 @@ export default function Index({
     const bookingPath = `/book/${identity.data.slug || settings.slug}`;
     const [copiedBooking, setCopiedBooking] = useState(false);
     const copyBookingUrl = () => {
-        navigator.clipboard.writeText(bookingPath).then(() => {
+        const absoluteUrl = `${window.location.origin}${bookingPath}`;
+        navigator.clipboard.writeText(absoluteUrl).then(() => {
             setCopiedBooking(true);
             setTimeout(() => setCopiedBooking(false), 2000);
         });
