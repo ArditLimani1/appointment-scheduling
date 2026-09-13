@@ -1,7 +1,7 @@
 @php
     $business = $appointment->business;
     $clientName = trim(($appointment->client_first_name ?? '').' '.($appointment->client_last_name ?? ''));
-    $formattedDate = $appointment->date?->copy()?->locale(app()->getLocale())?->translatedFormat('d M Y');
+    $formattedDate = $appointment->date?->copy()?->locale(app()->getLocale())?->translatedFormat('d F Y');
     $formattedTime = $appointment->start_time
         ? \Carbon\Carbon::parse($appointment->start_time)->format('H:i')
         : '—';

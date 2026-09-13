@@ -104,7 +104,7 @@ class AppointmentReminderCommandTest extends TestCase
         $whatsApp->shouldReceive('isConfigured')->andReturnTrue();
         $whatsApp->shouldReceive('sendBookingReminder')
             ->once()
-            ->with('+38349100999', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
+            ->with('+38349100999', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
             ->andReturnTrue();
         $this->app->instance(WhatsAppSenderInterface::class, $whatsApp);
 

@@ -81,13 +81,13 @@ class AppointmentClientNotifier
             return false;
         }
 
-        [$businessName, $date, $time, $contact] = AppointmentWhatsAppParams::fromAppointment($appointment);
+        [$businessName, $serviceName, $employeeName, $date, $time, $contact] = AppointmentWhatsAppParams::fromAppointment($appointment);
 
         return (bool) match ($type) {
-            self::CONFIRMED => $this->whatsApp->sendBookingConfirmation($phone, $businessName, $date, $time, $contact),
-            self::CANCELLED => $this->whatsApp->sendBookingCancellation($phone, $businessName, $date, $time, $contact),
-            self::RESCHEDULED, self::CHANGED => $this->whatsApp->sendBookingUpdate($phone, $businessName, $date, $time, $contact),
-            self::REMINDER => $this->whatsApp->sendBookingReminder($phone, $businessName, $date, $time, $contact),
+            self::CONFIRMED => $this->whatsApp->sendBookingConfirmation($phone, $businessName, $serviceName, $employeeName, $date, $time, $contact),
+            self::CANCELLED => $this->whatsApp->sendBookingCancellation($phone, $businessName, $serviceName, $employeeName, $date, $time, $contact),
+            self::RESCHEDULED, self::CHANGED => $this->whatsApp->sendBookingUpdate($phone, $businessName, $serviceName, $employeeName, $date, $time, $contact),
+            self::REMINDER => $this->whatsApp->sendBookingReminder($phone, $businessName, $serviceName, $employeeName, $date, $time, $contact),
             default => false,
         };
     }

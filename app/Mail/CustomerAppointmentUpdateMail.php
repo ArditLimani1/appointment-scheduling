@@ -92,7 +92,7 @@ class CustomerAppointmentUpdateMail extends Mailable
             return __('common.dash');
         }
 
-        return Carbon::parse($value)->locale(app()->getLocale())->translatedFormat('d M Y');
+        return Carbon::parse($value)->locale(app()->getLocale())->translatedFormat('d F Y');
     }
 
     private function formatTimeValue(?string $value): string

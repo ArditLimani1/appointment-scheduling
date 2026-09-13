@@ -287,9 +287,11 @@ function DraggableEvent({
     const employeeName = apt.employee?.name || apt.employee_name || 'Staff';
     const serviceName = apt.service?.name || apt.service_name || 'Appointment';
     const startHm = formatTimeHm(apt.start_time);
+    const endHm = formatTimeHm(apt.end_time);
+    const timeRange = [startHm, endHm].filter(Boolean).join(' - ');
     const clientName = [apt.client_first_name, apt.client_last_name].filter(Boolean).join(' ').trim();
     const primaryLabel = clientName || employeeName;
-    const secondaryLabel = [serviceName, startHm].filter(Boolean).join(' - ');
+    const secondaryLabel = [serviceName, timeRange].filter(Boolean).join(' - ');
 
     return (
         <button

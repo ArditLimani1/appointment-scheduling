@@ -18,24 +18,24 @@ class MetaWhatsAppService implements WhatsAppSenderInterface
             && filled(config('services.meta_whatsapp.phone_number_id'));
     }
 
-    public function sendBookingConfirmation(string $toE164, string $businessName, string $date, string $time, string $contact): bool
+    public function sendBookingConfirmation(string $toE164, string $businessName, string $serviceName, string $employeeName, string $date, string $time, string $contact): bool
     {
-        return $this->sendConfiguredTemplate('booking_template', $toE164, [$businessName, $date, $time, $contact]);
+        return $this->sendConfiguredTemplate('booking_template', $toE164, [$businessName, $serviceName, $employeeName, $date, $time, $contact]);
     }
 
-    public function sendBookingUpdate(string $toE164, string $businessName, string $date, string $time, string $contact): bool
+    public function sendBookingUpdate(string $toE164, string $businessName, string $serviceName, string $employeeName, string $date, string $time, string $contact): bool
     {
-        return $this->sendConfiguredTemplate('update_template', $toE164, [$businessName, $date, $time, $contact]);
+        return $this->sendConfiguredTemplate('update_template', $toE164, [$businessName, $serviceName, $employeeName, $date, $time, $contact]);
     }
 
-    public function sendBookingCancellation(string $toE164, string $businessName, string $date, string $time, string $contact): bool
+    public function sendBookingCancellation(string $toE164, string $businessName, string $serviceName, string $employeeName, string $date, string $time, string $contact): bool
     {
-        return $this->sendConfiguredTemplate('cancellation_template', $toE164, [$businessName, $date, $time, $contact]);
+        return $this->sendConfiguredTemplate('cancellation_template', $toE164, [$businessName, $serviceName, $employeeName, $date, $time, $contact]);
     }
 
-    public function sendBookingReminder(string $toE164, string $businessName, string $date, string $time, string $contact): bool
+    public function sendBookingReminder(string $toE164, string $businessName, string $serviceName, string $employeeName, string $date, string $time, string $contact): bool
     {
-        return $this->sendConfiguredTemplate('reminder_template', $toE164, [$businessName, $date, $time, $contact]);
+        return $this->sendConfiguredTemplate('reminder_template', $toE164, [$businessName, $serviceName, $employeeName, $date, $time, $contact]);
     }
 
     /**
