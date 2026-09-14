@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Appointment;
+use Carbon\Carbon;
 
 class AppointmentWhatsAppParams
 {
@@ -25,7 +26,7 @@ class AppointmentWhatsAppParams
         $date = $appointment->date
             ? $appointment->date->locale('sq')->translatedFormat('d F Y')
             : '';
-        $time = (string) $appointment->start_time;
+        $time = $appointment->start_time ? Carbon::parse($appointment->start_time)->format('H:i') : '';
         $contact = (string) ($business?->phone ?: ($business?->email ?? ''));
 
         return [$businessName, $serviceName, $employeeName, $date, $time, $contact];
