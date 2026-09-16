@@ -12,6 +12,7 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,9 +37,15 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             set -e
-            cd "$HOME/laravel_app"
-            git pull origin master
-            /opt/alt/php84/usr/bin/php "$(command -v composer)" install --no-dev --optimize-autoloader
+            cd "${{ secrets.DEPLOY_PATH }}"
+
+            git pull --ff-only origin master
+
+            composer install \
+              --no-dev \
+              --no-interaction \
+              --prefer-dist \
+              --optimize-autoloader
 
       - name: Upload compiled assets
         uses: appleboy/scp-action@v0.1.7
@@ -59,6 +66,11 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             set -e
-            cd "$HOME/laravel_app"
-            /opt/alt/php84/usr/bin/php artisan migrate --force
-            /opt/alt/php84/usr/bin/php artisan optimize
+            cd "${{ secrets.DEPLOY_PATH }}"
+
+            /usr/bin/php8.4 artisan migrate --force
+
+            /usr/bin/php8.4 artisan optimize:clear
+            /usr/bin/php8.4 artisan config:cache
+
+            /usr/bin/php8.4 artisan queue:restart
