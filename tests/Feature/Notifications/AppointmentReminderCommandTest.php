@@ -116,6 +116,47 @@ class AppointmentReminderCommandTest extends TestCase
         $this->assertNotNull($appointment->fresh()->reminder_sent_at);
     }
 
+    public function test_phone_appointment_is_still_reminded_after_business_switches_to_email(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-08-22 10:00:00', 'UTC'));
+        config(['features.whatsapp' => true]);
+
+        $whatsApp = Mockery::mock(WhatsAppSenderInterface::class);
+        $whatsApp->shouldReceive('isConfigured')->andReturnTrue();
+        $whatsApp->shouldReceive('sendBookingReminder')
+            ->once()
+            ->with('+38349100999', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
+            ->andReturnTrue();
+        $this->app->instance(WhatsAppSenderInterface::class, $whatsApp);
+
+        $business = $this->makeBusiness('phone');
+        $appointment = $this->makeTodayAppointment($business, ['client_phone' => '+38349100999']);
+
+        $business->update(['client_identifier_type' => 'email']);
+
+        $this->artisan('appointments:send-reminders')->assertSuccessful();
+
+        $this->assertNotNull($appointment->fresh()->reminder_sent_at);
+    }
+
+    public function test_email_appointment_is_still_reminded_after_business_switches_to_phone(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-08-22 10:00:00', 'UTC'));
+        config(['features.whatsapp' => true]);
+        Mail::fake();
+
+        $business = $this->makeBusiness('email');
+        $appointment = $this->makeTodayAppointment($business, ['client_email' => 'client@example.com']);
+
+        $business->update(['client_identifier_type' => 'phone']);
+
+        $this->artisan('appointments:send-reminders')->assertSuccessful();
+
+        Mail::assertSent(CustomerAppointmentUpdateMail::class, fn ($mail) => $mail->notificationType === 'reminder'
+            && $mail->hasTo('client@example.com'));
+        $this->assertNotNull($appointment->fresh()->reminder_sent_at);
+    }
+
     public function test_nothing_is_sent_before_the_appointment_reminder_at_timestamp(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-08-22 09:59:00', 'UTC'));

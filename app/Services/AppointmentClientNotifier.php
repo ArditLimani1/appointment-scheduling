@@ -13,8 +13,9 @@ use App\Support\ClientIdentification;
  *
  * The business picks one channel in settings (`client_identifier_type`): clients are
  * identified by phone or by email, and that same choice decides where notifications go.
- * There is no fallback — a phone business never emails, an email business never sends
- * WhatsApp — because only one of the two fields is collected at booking time.
+ * The configured channel is preferred. If the business changed channels after an
+ * appointment was booked, the appointment's existing contact is used as a fallback
+ * so confirmations and reminders are not silently lost.
  *
  * Both channels carry the same set of events - including the day-of reminder - so
  * behaviour does not depend on the channel, the actor's role, or which screen the
@@ -57,7 +58,25 @@ class AppointmentClientNotifier
      */
     public function channelFor(Appointment $appointment): string
     {
-        return ClientIdentification::resolve($appointment->business?->client_identifier_type);
+        $configuredChannel = ClientIdentification::resolve($appointment->business?->client_identifier_type);
+
+        if ($configuredChannel === 'phone' && filled($appointment->client_phone)) {
+            return 'phone';
+        }
+
+        if ($configuredChannel === 'email' && filled($appointment->client_email)) {
+            return 'email';
+        }
+
+        if (filled($appointment->client_phone)) {
+            return 'phone';
+        }
+
+        if (filled($appointment->client_email)) {
+            return 'email';
+        }
+
+        return $configuredChannel;
     }
 
     /**
