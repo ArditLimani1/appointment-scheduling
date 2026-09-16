@@ -17,7 +17,7 @@ return [
     'nav_cta_trial_mobile' => '1 Muaj falas',
 
     // Hero
-    'hero_h1_line1' => 'Kalendari që ekipi juaj brindowllo automatic',
+    'hero_h1_line1' => 'Kalendari që ekipi juaj',
     'hero_h1_em' => 'vërtet',
     'hero_h1_line2' => 'e përdor.',
     'hero_lede' => 'Menaxhoni çdo biznes që punon me takime. Fokusoheni në punën tuaj, jo në telefonata për rezervime.',
