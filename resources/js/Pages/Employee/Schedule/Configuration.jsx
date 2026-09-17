@@ -541,7 +541,7 @@ export default function Configuration({
     );
 
     const tabBtnClass = (active) =>
-        `flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-all border-b-2 -mb-px ${
+        `flex min-w-0 flex-col items-center justify-center gap-1 border-b-2 -mb-px px-1.5 py-2.5 text-center text-[11px] font-semibold leading-tight transition-all sm:flex-row sm:gap-2 sm:px-4 sm:py-3 sm:text-sm sm:leading-normal ${
             active
                 ? 'border-on-surface text-on-surface'
                 : 'border-transparent text-on-surface-variant hover:text-on-surface'
@@ -564,7 +564,11 @@ export default function Configuration({
             )}
 
             {/* ── Tabs ──────────────────────────────────────────── */}
-            <div className="flex gap-1 mb-8 border-b border-outline-variant/40">
+            <div
+                className={`mb-8 grid border-b border-outline-variant/40 ${
+                    soloMode ? 'grid-cols-3' : 'grid-cols-2'
+                }`}
+            >
                 {soloMode ? (
                     <>
                         <button
@@ -572,20 +576,20 @@ export default function Configuration({
                             onClick={() => router.get(route('admin.settings.index'))}
                             className={tabBtnClass(false)}
                         >
-                            <Icon name="domain" size="text-base" />
-                            {t('admin.settings.tabs.identity')}
+                            <Icon name="domain" size="text-base" className="shrink-0" />
+                            <span className="min-w-0 break-words">{t('admin.settings.tabs.identity')}</span>
                         </button>
                         <button
                             type="button"
                             onClick={() => router.get(route('admin.settings.index'), { tab: 'rules' })}
                             className={tabBtnClass(false)}
                         >
-                            <Icon name="rule" size="text-base" />
-                            {t('admin.settings.tabs.rules')}
+                            <Icon name="rule" size="text-base" className="shrink-0" />
+                            <span className="min-w-0 break-words">{t('admin.settings.tabs.rules')}</span>
                         </button>
                         <button type="button" className={tabBtnClass(true)}>
-                            <Icon name="calendar_today" size="text-base" />
-                            {t('admin.settings.tabs.hours')}
+                            <Icon name="calendar_today" size="text-base" className="shrink-0" />
+                            <span className="min-w-0 break-words">{t('admin.settings.tabs.hours')}</span>
                         </button>
                     </>
                 ) : (
@@ -596,8 +600,8 @@ export default function Configuration({
                         onClick={() => setActiveTab(tab.id)}
                         className={tabBtnClass(activeTab === tab.id)}
                     >
-                        <Icon name={tab.icon} size="text-base" />
-                        {tab.label}
+                        <Icon name={tab.icon} size="text-base" className="shrink-0" />
+                        <span className="min-w-0 break-words">{tab.label}</span>
                     </button>
                     ))
                 )}

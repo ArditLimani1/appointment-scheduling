@@ -204,40 +204,44 @@ export default function Index({
                 </div>
             )}
 
-            {/* Tabs — Business Identity | Booking Rules */}
-            <div className="flex gap-1 mb-8 border-b border-outline-variant/40">
+            {/* Tabs — Business Identity | Booking Rules | Hours (solo) */}
+            <div
+                className={`mb-8 grid border-b border-outline-variant/40 ${
+                    soloMode ? 'grid-cols-3' : 'grid-cols-2'
+                }`}
+            >
                 <button
                     type="button"
                     onClick={() => setActiveTab('identity')}
-                    className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-all border-b-2 -mb-px ${
+                    className={`flex min-w-0 flex-col items-center justify-center gap-1 border-b-2 px-1.5 py-2.5 text-center text-[11px] font-semibold leading-tight transition-all sm:flex-row sm:gap-2 sm:px-4 sm:py-3 sm:text-sm sm:leading-normal ${
                         activeTab === 'identity'
-                            ? 'border-on-surface text-on-surface'
-                            : 'border-transparent text-on-surface-variant hover:text-on-surface'
+                            ? '-mb-px border-on-surface text-on-surface'
+                            : '-mb-px border-transparent text-on-surface-variant hover:text-on-surface'
                     }`}
                 >
-                    <Icon name="domain" size="text-base" />
-                    {t('admin.settings.tabs.identity')}
+                    <Icon name="domain" size="text-base" className="shrink-0" />
+                    <span className="min-w-0 break-words">{t('admin.settings.tabs.identity')}</span>
                 </button>
                 <button
                     type="button"
                     onClick={() => setActiveTab('rules')}
-                    className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-all border-b-2 -mb-px ${
+                    className={`flex min-w-0 flex-col items-center justify-center gap-1 border-b-2 px-1.5 py-2.5 text-center text-[11px] font-semibold leading-tight transition-all sm:flex-row sm:gap-2 sm:px-4 sm:py-3 sm:text-sm sm:leading-normal ${
                         activeTab === 'rules'
-                            ? 'border-on-surface text-on-surface'
-                            : 'border-transparent text-on-surface-variant hover:text-on-surface'
+                            ? '-mb-px border-on-surface text-on-surface'
+                            : '-mb-px border-transparent text-on-surface-variant hover:text-on-surface'
                     }`}
                 >
-                    <Icon name="rule" size="text-base" />
-                    {t('admin.settings.tabs.rules')}
+                    <Icon name="rule" size="text-base" className="shrink-0" />
+                    <span className="min-w-0 break-words">{t('admin.settings.tabs.rules')}</span>
                 </button>
                 {soloMode && (
                     <button
                         type="button"
                         onClick={() => router.get(route('employee.schedule.configuration'))}
-                        className="flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-all border-b-2 -mb-px border-transparent text-on-surface-variant hover:text-on-surface"
+                        className="flex min-w-0 flex-col items-center justify-center gap-1 border-b-2 border-transparent -mb-px px-1.5 py-2.5 text-center text-[11px] font-semibold leading-tight text-on-surface-variant transition-all hover:text-on-surface sm:flex-row sm:gap-2 sm:px-4 sm:py-3 sm:text-sm sm:leading-normal"
                     >
-                        <Icon name="calendar_today" size="text-base" />
-                        {t('admin.settings.tabs.hours')}
+                        <Icon name="calendar_today" size="text-base" className="shrink-0" />
+                        <span className="min-w-0 break-words">{t('admin.settings.tabs.hours')}</span>
                     </button>
                 )}
             </div>
