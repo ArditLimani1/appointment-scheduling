@@ -92,9 +92,27 @@ After seeding, the following accounts are available (password: `password`):
 | Employee | marcus@stratos.com   | Schedule management, daily appointments |
 | Employee | elena@stratos.com    | Schedule management, daily appointments |
 
+### Nail salon demo (Studio Aurora Thonjësh)
+
+Kosovo-style nail salon with phone client identification, 2 employees, and upcoming appointments (password: `password`):
+
+| Role     | Email                     | Access |
+|----------|---------------------------|--------|
+| Admin + staff | `leonora@aurora-nails.com`  | Owner who also takes appointments (full service menu) |
+| Employee | `blerta@aurora-nails.com`   | Manicure & gel specialist |
+| Employee | `arta@aurora-nails.com`     | Pedicure & nail art specialist |
+
+Public booking: `/book/studio-aurora-thonjesh`
+
+To seed only the nail salon (without resetting other data):
+
+```bash
+php artisan db:seed --class=NailSalonDemoSeeder
+```
+
 ## Public Booking
 
-After seeding, a public booking page is available at `/book/stratos-barbershop` where clients can select a provider, service, date/time, and book an appointment without logging in.
+After seeding, public booking pages are available at `/book/demo-barbershop` and `/book/studio-aurora-thonjesh` where clients can select a provider, service, date/time, and book an appointment without logging in.
 
 ## Key Features
 

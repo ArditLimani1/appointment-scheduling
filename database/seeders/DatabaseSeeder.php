@@ -210,6 +210,8 @@ class DatabaseSeeder extends Seeder
         }
 
         $this->seedAprilDemoAppointments($business, $john, $sarah, $marcus, $elena, $prerje, $fade, $mjekër, $ngjyrosje, $ekspres);
+
+        $this->call(NailSalonDemoSeeder::class);
     }
 
     private function seedAprilDemoAppointments(
