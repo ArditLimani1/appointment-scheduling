@@ -456,9 +456,8 @@ export default function Calendar({
 
     /** Display-only, so it lives in sessionStorage instead of the query string the server reads. */
     const viewOptionsStorageKey = employeeCalendar ? 'employee:calendar:options' : 'admin:calendar:options';
-    const [hidePast, setHidePast] = useState(
-        () => loadStoredFilters(viewOptionsStorageKey)?.hide_past !== false,
-    );
+    // Past days are shown by default while the scope toggle is hidden (see the commented block below).
+    const [hidePast, setHidePast] = useState(false);
 
     const changeScope = useCallback(
         (scope) => {
@@ -608,12 +607,14 @@ export default function Calendar({
                 )}
 
                 <div className="mb-6 rounded-2xl bg-surface-container-lowest p-4 ring-1 ring-slate-100 shadow-sm">
+                    {/* Scope toggle (upcoming / all) hidden for now: the list shows everything by default. The scope logic is kept on purpose, re-enable by restoring this block.
                     <AppointmentScopeToggle
                         value={hidePast ? APPOINTMENT_SCOPE_UPCOMING : APPOINTMENT_SCOPE_ALL}
                         onChange={changeScope}
                         translationRoot="admin.calendar"
                         className="mb-4 sm:max-w-sm"
                     />
+                    */}
                     <div className={calendarFilterBarClasses.navWrap}>
                         <button
                             type="button"

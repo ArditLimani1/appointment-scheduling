@@ -5,7 +5,8 @@ export const APPOINTMENT_SCOPE_UPCOMING = 'upcoming';
 export const APPOINTMENT_SCOPE_ALL = 'all';
 
 export function normalizeAppointmentScope(raw) {
-    return raw === APPOINTMENT_SCOPE_ALL ? APPOINTMENT_SCOPE_ALL : APPOINTMENT_SCOPE_UPCOMING;
+    // Default is 'all' while the toggle is hidden; only an explicit 'upcoming' narrows the list.
+    return raw === APPOINTMENT_SCOPE_UPCOMING ? APPOINTMENT_SCOPE_UPCOMING : APPOINTMENT_SCOPE_ALL;
 }
 
 /**

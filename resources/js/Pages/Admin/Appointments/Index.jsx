@@ -6,7 +6,7 @@ import PageHeader from '@/Components/PageHeader';
 import FilterListbox from '@/Components/FilterListbox';
 import FilterStatusMulti from '@/Components/FilterStatusMulti';
 import AppointmentScopeToggle, {
-    APPOINTMENT_SCOPE_UPCOMING,
+    APPOINTMENT_SCOPE_ALL,
     normalizeAppointmentScope,
 } from '@/Components/AppointmentScopeToggle';
 import DatePicker from '@/Components/DatePicker';
@@ -281,7 +281,7 @@ export default function Index({
     const clearFilters = () => {
         const defaultFilters = {
             employee_id: '',
-            scope: APPOINTMENT_SCOPE_UPCOMING,
+            scope: APPOINTMENT_SCOPE_ALL,
             date_from: currentMonthRange().from,
             date_to: currentMonthRange().to,
             status: [...DEFAULT_APPOINTMENT_STATUS_FILTER],
@@ -546,12 +546,14 @@ export default function Index({
             </PageHeader>
 
             <div className="mb-6 rounded-2xl bg-surface-container-lowest p-4 ring-1 ring-slate-100 shadow-sm">
+                {/* Scope toggle (upcoming / all) hidden for now: the list shows everything by default. The scope logic is kept on purpose, re-enable by restoring this block.
                 <AppointmentScopeToggle
                     value={localFilters.scope}
                     onChange={(scope) => patchFilters({ scope })}
                     translationRoot="admin.appointments"
                     className="mb-4 sm:max-w-sm"
                 />
+                */}
                 <div className="mb-3 lg:hidden">
                     <button
                         type="button"

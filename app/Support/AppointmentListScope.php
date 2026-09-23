@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 /**
  * Date scoping for the appointments list. The date pickers bound the window and
  * default to the current month; within that window the scope shows either every
- * appointment (`all`) or only what is still ahead (`upcoming`, the default).
+ * appointment (`all`, the default) or only what is still ahead (`upcoming`).
  */
 class AppointmentListScope
 {
@@ -19,7 +19,8 @@ class AppointmentListScope
 
     public static function normalize(mixed $raw): string
     {
-        return $raw === self::ALL ? self::ALL : self::UPCOMING;
+        // Default is 'all' while the toggle is hidden in the UI; only an explicit 'upcoming' narrows the list.
+        return $raw === self::UPCOMING ? self::UPCOMING : self::ALL;
     }
 
     /**
@@ -72,12 +73,10 @@ class AppointmentListScope
         });
     }
 
-    /** Upcoming reads best soonest-first; history reads best newest-first. */
+    /** Always earliest-first, whatever the scope, so the list reads as a timeline. */
     public static function applyOrder($query, array $filters)
     {
-        return self::normalize($filters['scope'] ?? null) === self::UPCOMING
-            ? $query->orderBy('date')->orderBy('start_time')
-            : $query->latest('date')->latest('start_time');
+        return $query->orderBy('date')->orderBy('start_time');
     }
 
     private static function parseDate(mixed $raw): ?string
