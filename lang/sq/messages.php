@@ -2,6 +2,10 @@
 
 return [
 
+    'push' => [
+        'new_appointment_title' => 'Termin i ri',
+    ],
+
     'service' => [
         'created' => 'Shërbimi u krijua me sukses.',
         'updated' => 'Shërbimi u përditësua me sukses.',

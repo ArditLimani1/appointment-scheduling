@@ -2,6 +2,14 @@
 
 return [
 
+    'push' => [
+        'label' => 'Browser notifications',
+        'hint' => 'Your browser will show a prompt: click "Allow". Also make sure your device allows notifications from the browser (System settings → Notifications → your browser).',
+        'denied' => 'Notifications are blocked by the browser. Allow them in the site settings (lock icon next to the address), then try again.',
+        'ios' => 'For iPhone notifications, add this site to your Home Screen (Share → Add to Home Screen) and open it from the icon.',
+        'error' => 'Could not enable notifications. Please try again.',
+    ],
+
     'toast' => [
         'dismiss' => 'Dismiss notification',
     ],

@@ -53,6 +53,7 @@ class HandleInertiaRequests extends Middleware
                 'onboarding' => trans('onboarding'),
                 'welcome' => trans('welcome'),
             ],
+            'vapidPublicKey' => config('webpush.vapid.public_key'),
             'auth' => [
                 'user' => $user,
                 'business' => $business,

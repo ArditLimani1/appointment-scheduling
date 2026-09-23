@@ -318,6 +318,11 @@ class User extends Authenticatable implements MustVerifyEmailContract, HasLocale
         return $this->hasMany(Appointment::class, 'employee_id');
     }
 
+    public function pushSubscriptions(): HasMany
+    {
+        return $this->hasMany(PushSubscription::class);
+    }
+
     public function appointmentViewPreference(): HasOne
     {
         return $this->hasOne(UserAppointmentViewPreference::class);

@@ -102,6 +102,7 @@ class EmployeeDashboardDateFilterTest extends TestCase
         ]);
 
         $response = $this->actingAs($employee)->get(route('employee.appointments.index', [
+            'scope' => 'all',
             'date_from' => $day,
             'date_to' => $day,
         ]));
@@ -150,7 +151,7 @@ class EmployeeDashboardDateFilterTest extends TestCase
             'status' => AppointmentStatus::Confirmed,
         ]);
 
-        $response = $this->actingAs($employee)->get(route('employee.appointments.index'));
+        $response = $this->actingAs($employee)->get(route('employee.appointments.index', ['scope' => 'all']));
 
         $response->assertOk();
         $response->assertInertia(fn (Assert $page) => $page
@@ -225,6 +226,7 @@ class EmployeeDashboardDateFilterTest extends TestCase
         ]);
 
         $response = $this->actingAs($employee)->get(route('employee.appointments.index', [
+            'scope' => 'all',
             'date_from' => $day,
             'date_to' => $day,
             'service_id' => $serviceA->id,
@@ -281,6 +283,7 @@ class EmployeeDashboardDateFilterTest extends TestCase
         ]);
 
         $response = $this->actingAs($employee)->get(route('employee.appointments.index', [
+            'scope' => 'all',
             'date_from' => $day,
             'date_to' => $day,
             'search' => 'Zar',
@@ -345,6 +348,7 @@ class EmployeeDashboardDateFilterTest extends TestCase
         ]);
 
         $response = $this->actingAs($employee)->get(route('employee.appointments.index', [
+            'scope' => 'all',
             'date_from' => $day,
             'date_to' => $day,
             'service_id' => $foreignService->id,

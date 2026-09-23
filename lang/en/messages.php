@@ -2,6 +2,10 @@
 
 return [
 
+    'push' => [
+        'new_appointment_title' => 'New appointment',
+    ],
+
     'service' => [
         'created' => 'Service created successfully.',
         'updated' => 'Service updated successfully.',

@@ -121,6 +121,7 @@ class EmployeeAppointmentEditTest extends TestCase
             'currency' => 'EUR',
             'currency_symbol' => 'EUR',
             'is_active' => true,
+            'client_identifier_type' => 'email',
         ]);
 
         $employee = User::factory()->create([
@@ -257,7 +258,7 @@ class EmployeeAppointmentEditTest extends TestCase
             'client_first_name' => 'A',
             'client_last_name' => 'B',
             'client_phone' => '000',
-            'client_email' => null,
+            'client_email' => 'client@example.com',
             'client_notes' => null,
             'date' => $day,
             'start_time' => '10:00',

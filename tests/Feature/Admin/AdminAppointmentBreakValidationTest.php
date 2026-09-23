@@ -93,7 +93,7 @@ class AdminAppointmentBreakValidationTest extends TestCase
         $response = $this->actingAs($admin)->put(route('admin.appointments.edit', $appointment), [
             'client_first_name' => 'A',
             'client_last_name' => 'B',
-            'client_phone' => '000',
+            'client_phone' => '+38349100000',
             'client_email' => null,
             'client_notes' => '',
             'service_id' => $service->id,

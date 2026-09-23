@@ -1,5 +1,6 @@
 import { SuccessToastProvider } from '@/Components/SuccessToastProvider';
 import Dropdown from '@/Components/Dropdown';
+import PushNotificationToggle from '@/Components/PushNotificationToggle';
 import EmployeeNotificationBell from '@/Components/EmployeeNotificationBell';
 import Icon from '@/Components/Icon';
 import WorkspaceTabs, { useWorkspace } from '@/Components/WorkspaceTabs';
@@ -288,7 +289,8 @@ export default function AdminLayout({ children }) {
                                     <Dropdown.Link href={route('admin.settings.index')}>{t('layout.admin.configuration')}</Dropdown.Link>
                                 )}
                                 <Dropdown.Link href={route('logout')} method="post" as="button">{t('layout.admin.log_out')}</Dropdown.Link>
-                                <div className="mt-1 flex items-center justify-between gap-2 border-t border-outline-variant/40 px-4 py-2.5">
+                                <PushNotificationToggle />
+                                <div className="flex items-center justify-between gap-2 border-t border-outline-variant/40 px-4 py-2.5">
                                     <span className="text-xs font-medium text-on-surface-variant">{t('common.language')}</span>
                                     <LanguageSwitcher />
                                 </div>

@@ -22,6 +22,14 @@ class SharedResourceBookingTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Fixtures use fixed weekdays; keep them in the future regardless of the real date.
+        $this->travelTo(Carbon::parse('2026-06-01 08:00:00', 'UTC'));
+    }
+
     public function test_second_overlapping_booking_fails_when_resource_capacity_is_one(): void
     {
         $this->seed(BusinessTypeSeeder::class);
@@ -36,6 +44,7 @@ class SharedResourceBookingTest extends TestCase
             'currency' => 'EUR',
             'currency_symbol' => '€',
             'is_active' => true,
+            'uses_shared_resources' => true,
             'slot_duration' => 30,
             'min_booking_notice' => 0,
         ]);
@@ -118,6 +127,7 @@ class SharedResourceBookingTest extends TestCase
             'currency' => 'EUR',
             'currency_symbol' => '€',
             'is_active' => true,
+            'uses_shared_resources' => true,
             'slot_duration' => 30,
             'min_booking_notice' => 0,
         ]);
@@ -202,6 +212,7 @@ class SharedResourceBookingTest extends TestCase
             'currency' => 'EUR',
             'currency_symbol' => '€',
             'is_active' => true,
+            'uses_shared_resources' => true,
             'slot_duration' => 30,
             'min_booking_notice' => 0,
         ]);

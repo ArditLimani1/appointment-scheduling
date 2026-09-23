@@ -89,12 +89,13 @@ class PublicBookingFlowRegressionTest extends TestCase
             'start_time' => '10:00',
             'client_first_name' => 'Guest',
             'client_last_name' => 'Person',
+            'client_phone' => '+38349100100',
             'client_email' => 'guest@example.com',
         ]);
 
         $response->assertRedirect();
         $this->assertMatchesRegularExpression(
-            '#/book(/|ing/)confirmation/\d+#',
+            '#/book/confirmation/[0-9a-f-]{36}#',
             (string) $response->headers->get('Location'),
         );
 

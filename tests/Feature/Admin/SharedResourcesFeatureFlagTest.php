@@ -21,6 +21,14 @@ class SharedResourcesFeatureFlagTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Fixtures use fixed weekdays; keep them in the future regardless of the real date.
+        $this->travelTo(Carbon::parse('2026-04-20 08:00:00', 'UTC'));
+    }
+
     public function test_shared_resources_index_returns_403_when_feature_disabled(): void
     {
         $this->seed(BusinessTypeSeeder::class);

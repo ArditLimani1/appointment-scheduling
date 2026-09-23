@@ -102,6 +102,7 @@ class AdminAppointmentsServiceFilterTest extends TestCase
         ]);
 
         $response = $this->actingAs($admin)->get(route('admin.appointments.index', [
+            'scope' => 'all',
             'list' => 1,
             'date_from' => $day,
             'date_to' => $day,

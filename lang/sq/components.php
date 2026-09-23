@@ -2,6 +2,14 @@
 
 return [
 
+    'push' => [
+        'label' => 'Njoftimet në shfletues',
+        'hint' => 'Shfletuesi do të shfaqë një dritare: kliko «Lejo» (Allow). Sigurohu edhe që pajisja lejon njoftimet nga shfletuesi (Cilësimet e sistemit → Njoftimet → shfletuesi yt).',
+        'denied' => 'Njoftimet janë bllokuar nga shfletuesi. Lejoji te cilësimet e faqes (ikona e kyçit pranë adresës), pastaj provo sërish.',
+        'ios' => 'Për njoftime në iPhone, shtoje faqen në Home Screen (Share → Add to Home Screen) dhe hape nga ikona.',
+        'error' => 'Aktivizimi i njoftimeve dështoi. Provo sërish.',
+    ],
+
     'toast' => [
         'dismiss' => 'Mbyll njoftimin',
     ],

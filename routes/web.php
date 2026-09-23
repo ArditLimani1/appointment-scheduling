@@ -140,6 +140,8 @@ Route::post('/super-admin/stop-impersonating', [SuperAdmin\UserController::class
 
 Route::middleware(['auth', 'employee_area', 'onboarding_completed', 'single_employee_workspace'])->prefix('employee')->name('employee.')->group(function () {
     Route::get('/notifications/feed', [Employee\NotificationController::class, 'feed'])->name('notifications.feed');
+    Route::post('/push-subscriptions', [Employee\PushSubscriptionController::class, 'store'])->name('push-subscriptions.store');
+    Route::delete('/push-subscriptions', [Employee\PushSubscriptionController::class, 'destroy'])->name('push-subscriptions.destroy');
     Route::post('/notifications/read-all', [Employee\NotificationController::class, 'markAllRead'])->name('notifications.read-all');
     Route::post('/notifications/{id}/read', [Employee\NotificationController::class, 'markRead'])->whereUuid('id')->name('notifications.read');
 
