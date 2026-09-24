@@ -12,8 +12,8 @@ self.addEventListener('push', (event) => {
     event.waitUntil(
         self.registration.showNotification(data.title || 'NiTermin', {
             body: data.body || '',
-            icon: '/icon-192.png',
-            badge: '/icon-192.png',
+            icon: '/notification-icon.png',
+            badge: '/notification-badge.png',
             tag: data.tag,
             data: { url: data.url || '/' },
         }),
