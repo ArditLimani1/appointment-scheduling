@@ -3,8 +3,9 @@ import { writeFileSync } from 'fs';
 
 const appIconSvg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="108" fill="#f5f6f8"/>
-  <g fill="none" stroke="#0E0E11" stroke-width="36" stroke-linecap="round" transform="translate(128 128) scale(4)">
+  <!-- Full-bleed square: iOS and Android mask the corners themselves (maskable), transparent corners render black on iOS. -->
+  <rect width="512" height="512" fill="#f5f6f8"/>
+  <g fill="none" stroke="#0E0E11" stroke-width="5" stroke-linecap="round" transform="translate(128 128) scale(4)">
     <circle cx="32" cy="32" r="27"/>
     <line x1="20" y1="46" x2="44" y2="18"/>
     <line x1="32" y1="11" x2="32" y2="14"/>
