@@ -12,7 +12,7 @@ self.addEventListener('push', (event) => {
     event.waitUntil(
         self.registration.showNotification(data.title || 'NiTermin', {
             body: data.body || '',
-            icon: '/nitermin-logo.png',
+            icon: '/nitermin-icon.png',
             badge: '/notification-badge.png',
             tag: data.tag,
             data: { url: data.url || '/' },
